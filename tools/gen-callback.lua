@@ -55,8 +55,8 @@ local function gen_remove_callback(cls, fi, write)
 
     local block = format([[
         std::string tag = ${TAG_MAKER};
-        void *callback_store_obj = (void *)${CALLBACK_STORE_OBJ};
-        olua_removecallback(L, callback_store_obj, tag.c_str(), ${TAG_MODE});
+        void *self_obj = (void *)${CALLBACK_STORE_OBJ};
+        olua_removecallback(L, self_obj, tag.c_str(), ${TAG_MODE});
     ]])
     return block
 end
@@ -75,9 +75,9 @@ local function gen_ret_callback(cls, fi, write)
     end
 
     local block = format([[
-        void *callback_store_obj = (void *)${CALLBACK_STORE_OBJ};
+        void *self_obj = (void *)${CALLBACK_STORE_OBJ};
         std::string tag = ${TAG_MAKER};
-        olua_getcallback(L, callback_store_obj, tag.c_str(), ${TAG_MODE});
+        olua_getcallback(L, self_obj, tag.c_str(), ${TAG_MODE});
     ]])
     return block
 end
@@ -197,11 +197,11 @@ function olua.gen_callback(cls, fi, write, out)
 
     if fi.CALLBACK_OPT.TAG_SCOPE == 'once' then
         CALLBACK.REMOVE_ONCE_CALLBACK = format([[
-            olua_removecallback(L, callback_store_obj, func.c_str(), OLUA_TAG_WHOLE);
+            olua_removecallback(L, self_obj, func.c_str(), OLUA_TAG_WHOLE);
         ]])
     elseif fi.CALLBACK_OPT.TAG_SCOPE == 'function' then
         CALLBACK.REMOVE_LOCAL_CALLBACK = format([[
-            olua_removecallback(L, callback_store_obj, func.c_str(), OLUA_TAG_WHOLE);
+            olua_removecallback(L, self_obj, func.c_str(), OLUA_TAG_WHOLE);
         ]])
     end
 
@@ -247,12 +247,12 @@ function olua.gen_callback(cls, fi, write, out)
             'olua_postpush(L, ret, OLUA_OBJ_NEW);'
         local REMOVE_CALLBACK = ''
         if OLUA_CALLBACK_TAG == 'OLUA_TAG_REPLACE' then
-            REMOVE_CALLBACK = 'olua_removecallback(L, callback_store_obj, tag.c_str(), OLUA_TAG_SUBEQUAL);'
+            REMOVE_CALLBACK = 'olua_removecallback(L, self_obj, tag.c_str(), OLUA_TAG_SUBEQUAL);'
         end
         CALLBACK_STORE_OBJ = format 'olua_allocobjstub(L, "${fi.RET.TYPE.LUACLS}")'
         out.PUSH_STUB = format [[
             const char *cls = olua_getluatype(L, ret, "${fi.RET.TYPE.LUACLS}");
-            if (olua_pushobjstub(L, ret, callback_store_obj, cls) == OLUA_OBJ_EXIST) {
+            if (olua_pushobjstub(L, ret, self_obj, cls) == OLUA_OBJ_EXIST) {
                 ${REMOVE_CALLBACK}
                 lua_pushstring(L, func.c_str());
                 lua_pushvalue(L, ${IDX});
@@ -295,7 +295,7 @@ function olua.gen_callback(cls, fi, write, out)
 
     local CALLBACK_CHUNK = format([[
         lua_Unsigned ctx = olua_context(L);
-        ${CALLBACK_ARG_NAME} = [callback_store_obj, func, ctx](${CALLBACK.ARGS}) {
+        ${CALLBACK_ARG_NAME} = [self_obj, func, ctx](${CALLBACK.ARGS}) {
             lua_State *L = olua_mainthread(NULL);
             ${CALLBACK.DECL_RESULT}
             if (L != NULL && (olua_context(L) == ctx)) {
@@ -304,7 +304,7 @@ function olua.gen_callback(cls, fi, write, out)
 
                 ${CALLBACK.INJECT_BEFORE}
 
-                olua_callback(L, callback_store_obj, func.c_str(), ${CALLBACK.NUM_ARGS});
+                olua_callback(L, self_obj, func.c_str(), ${CALLBACK.NUM_ARGS});
 
                 ${CALLBACK.CHECK_RESULT}
 
@@ -322,18 +322,18 @@ function olua.gen_callback(cls, fi, write, out)
     if ai.ATTR.OPTIONAL or ai.ATTR.NULLABLE then
         local OLUA_IS_VALUE = olua.convfunc(ai.TYPE, 'is')
         CALLBACK.REMOVE_NORMAL_CALLBACK = format [[
-            olua_removecallback(L, callback_store_obj, tag.c_str(), OLUA_TAG_SUBEQUAL);
+            olua_removecallback(L, self_obj, tag.c_str(), OLUA_TAG_SUBEQUAL);
         ]]
         if OLUA_CALLBACK_TAG ~= 'OLUA_TAG_REPLACE' then
             CALLBACK.REMOVE_NORMAL_CALLBACK = ''
         end
         if TAG_STORE == 0 then
             CALLBACK_CHUNK = format([[
-                void *callback_store_obj = (void *)${CALLBACK_STORE_OBJ};
+                void *self_obj = (void *)${CALLBACK_STORE_OBJ};
                 std::string tag = ${TAG_MAKER};
                 std::string func;
                 if (${OLUA_IS_VALUE}(L, ${IDX})) {
-                    func = olua_setcallback(L, callback_store_obj, tag.c_str(), ${IDX}, ${OLUA_CALLBACK_TAG});
+                    func = olua_setcallback(L, self_obj, tag.c_str(), ${IDX}, ${OLUA_CALLBACK_TAG});
                     ${CALLBACK_CHUNK}
                 } else {
                     ${CALLBACK.REMOVE_NORMAL_CALLBACK}
@@ -343,16 +343,16 @@ function olua.gen_callback(cls, fi, write, out)
         else
             if #CALLBACK.REMOVE_NORMAL_CALLBACK > 0 then
                 CALLBACK.REMOVE_NORMAL_CALLBACK = format([[
-                    void *callback_store_obj = (void *)${CALLBACK_STORE_OBJ};
+                    void *self_obj = (void *)${CALLBACK_STORE_OBJ};
                     std::string tag = ${TAG_MAKER};
                     ${CALLBACK.REMOVE_NORMAL_CALLBACK}
                 ]])
             end
             CALLBACK_CHUNK = format([[
                 if (${OLUA_IS_VALUE}(L, ${IDX})) {
-                    void *callback_store_obj = (void *)${CALLBACK_STORE_OBJ};
+                    void *self_obj = (void *)${CALLBACK_STORE_OBJ};
                     std::string tag = ${TAG_MAKER};
-                    std::string func = olua_setcallback(L, callback_store_obj, tag.c_str(), ${IDX}, ${OLUA_CALLBACK_TAG});
+                    std::string func = olua_setcallback(L, self_obj, tag.c_str(), ${IDX}, ${OLUA_CALLBACK_TAG});
                     ${CALLBACK_CHUNK}
                 } else {
                     ${CALLBACK.REMOVE_NORMAL_CALLBACK}
@@ -362,9 +362,9 @@ function olua.gen_callback(cls, fi, write, out)
         end
     else
         CALLBACK_CHUNK = format([[
-            void *callback_store_obj = (void *)${CALLBACK_STORE_OBJ};
+            void *self_obj = (void *)${CALLBACK_STORE_OBJ};
             std::string tag = ${TAG_MAKER};
-            std::string func = olua_setcallback(L, callback_store_obj, tag.c_str(), ${IDX}, ${OLUA_CALLBACK_TAG});
+            std::string func = olua_setcallback(L, self_obj, tag.c_str(), ${IDX}, ${OLUA_CALLBACK_TAG});
             ${CALLBACK_CHUNK}
         ]])
     end
