@@ -294,11 +294,11 @@ function olua.gen_callback(cls, fi, write, out)
     )
 
     local CALLBACK_CHUNK = format([[
-        lua_Unsigned ctx_id = olua_getid(L);
-        ${CALLBACK_ARG_NAME} = [callback_store_obj, func, ctx_id](${CALLBACK.ARGS}) {
+        lua_Unsigned ctx = olua_context(L);
+        ${CALLBACK_ARG_NAME} = [callback_store_obj, func, ctx](${CALLBACK.ARGS}) {
             lua_State *L = olua_mainthread(NULL);
             ${CALLBACK.DECL_RESULT}
-            if (L != NULL && (olua_getid(L) == ctx_id)) {
+            if (L != NULL && (olua_context(L) == ctx)) {
                 int top = lua_gettop(L);
                 ${CALLBACK.PUSH_ARGS}
 
