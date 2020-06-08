@@ -163,31 +163,46 @@ function M:is_excluded_type(type)
         return true
     end
 
-    local name = type:name()
+    local tn = type:name()
     -- remove const and &
     -- const T * => T *
     -- const T & => T
-    local rawname = name:gsub('^const *', ''):gsub(' *&$', '')
-    if self:is_excluded_typeanme(rawname) then
+    local rawtn = tn:gsub('^const *', ''):gsub(' *&$', '')
+    if self:is_excluded_typeanme(rawtn) then
         return true
-    elseif name ~= type:canonical():name() then
+    elseif tn ~= type:canonical():name() then
         return self:is_excluded_type(type:canonical())
     end
 end
 
-function M:totypename(type)
-    local name = type:name()
+function M:typename(cur, type)
+    local tn = type:name()
     -- remove const, & and *: const T * => T
-    local rawname = name:match('([^ ]+) ?[*&]?$')
-    local alias = type_alias[rawname]
-    if alias and not type_convs[rawname] then
-        -- T<A, B> => T
-        local rawalias = string.gsub(alias, '<.+>', '')
-        if olua.typeinfo(rawalias, nil, true) then
-            return string.gsub(name, rawname, alias)
+    local rawtn = tn:match('([^ ]+) ?[*&]?$')
+
+    -- typedef std::function<void (Object *)> ClickListener
+    -- const ClickListener & => const olua::ClickListener &
+    for _, cu in ipairs(cur:children()) do
+        if cu:kind() == 'TypeRef' then
+            local fullname = cu:name():match('([^ ]+)$')
+            if string.find(fullname, rawtn .. '$') then
+                tn = tn:gsub(rawtn, fullname)
+                rawtn = fullname
+                break
+            end
         end
     end
-    return name
+
+    local alias = type_alias[rawtn]
+    if alias and not type_convs[rawtn] then
+        local rawalias = string.gsub(alias, '<.+>', '')
+        if olua.typeinfo(rawalias, nil, true) then
+            -- old: const olua::ClickListener &
+            -- new: const std::function<void (Object *)> &
+            return string.gsub(tn, rawtn, alias)
+        end
+    end
+    return tn
 end
 
 local DEFAULT_ARG_TYPES = {
@@ -241,6 +256,7 @@ function M:visit_method(cls, cur)
     local attr = cls.CONF.ATTR[fn] or {}
     local callback = cls.CONF.CALLBACK[fn] or {}
     local exps = olua.newarray('')
+    local dn_exps = olua.newarray('')
 
     for i, arg in ipairs(cur:arguments()) do
         local attrn = (attr['ARG' .. i]) or ''
@@ -255,7 +271,7 @@ function M:visit_method(cls, cur)
     local cbtype
 
     if cur:kind() ~= 'Constructor' then
-        local result_type = self:totypename(cur:resultType())
+        local result_type = self:typename(cur, cur:resultType())
         if string.find(result_type, 'std::function') then
             cbtype = 'RET'
             if callback.NULLABLE then
@@ -273,12 +289,14 @@ function M:visit_method(cls, cur)
 
     local optional = false
     exps:push(fn .. '(')
+    dn_exps:push(fn .. '(')
     for i, arg in ipairs(cur:arguments()) do
-        local type = self:totypename(arg:type())
+        local type = self:typename(arg, arg:type())
         local display_name = cur:displayName()
         local ARGN = 'ARG' .. i
         if i > 1 then
             exps:push(', ')
+            dn_exps:push(', ')
         end
         if string.find(type, 'std::function') then
             if cbtype then
@@ -301,12 +319,15 @@ function M:visit_method(cls, cur)
         end
         exps:push(attr[ARGN] and (attr[ARGN] .. ' ') or nil)
         exps:push(type)
+        dn_exps:push(type)
         if not string.find(type, '[*&]$') then
             exps:push(' ')
+            dn_exps:push(' ')
         end
         exps:push(arg:name())
     end
     exps:push(')')
+    dn_exps:push(')')
 
     local decl = tostring(exps)
     if self.conf.EXCLUDE_PASS(cls.CPPCLS, fn, decl) then
@@ -315,7 +336,7 @@ function M:visit_method(cls, cur)
         if cbtype then
             refed_type[cls.CPPCLS] = true
         end
-        return decl, cbtype
+        return decl, tostring(dn_exps), cbtype
     end
 end
 
@@ -334,7 +355,7 @@ function M:visit_field(cls, cur)
         exps:push('@optional ')
     end
 
-    local type = self:totypename(cur:type())
+    local type = self:typename(cur, cur:type())
     local cbtype
     if string.find(type, 'std::function') then
         cbtype = 'VAR'
@@ -399,21 +420,22 @@ function M:visit_class(cur, cppcls)
                 cls.VARS[#cls.VARS + 1] = self:visit_field(cls, c)
             end
         elseif kind == 'Constructor' or kind == 'FunctionDecl' or kind == 'CXXMethod' then
-            local prototype = c:displayName()
+            local displayName = c:displayName()
             local fn = c:name()
-            if (conf.EXCLUDE['*'] or conf.EXCLUDE[fn] or filter[prototype]) or
+            if (conf.EXCLUDE['*'] or conf.EXCLUDE[fn] or filter[displayName]) or
                 (kind == 'Constructor' and (conf.EXCLUDE['new'] or cur:isAbstract())) then
                 goto continue
             end
-            local func, cbtype = self:visit_method(cls, c)
+            local func, prototype, cbtype = self:visit_method(cls, c)
             local static = c:isStatic()
-            if func then
+            if func and not filter[prototype] then
                 if kind == 'FunctionDecl' then
                     func = 'static ' .. func
                     static = true
                 elseif not c:isStatic() then
                     cls.INST_FUNCS[prototype] = cls.CPPCLS
                 end
+                filter[displayName] = true
                 filter[prototype] = true
                 cls.FUNCS[#cls.FUNCS + 1] = {
                     FUNC = func,
@@ -465,13 +487,19 @@ function M:visit(cur)
     elseif kind == 'TypeAliasDecl' then
         local ut = cur:underlyingType()
         local decl = ut:declaration()
+        local tn
         if decl:kind() == 'NoDeclFound' then
-            type_alias[cls] = ut:name()
+            -- typename std::vector<T>::iterator
+            tn = ut:name()
         elseif decl:kind() == 'EnumDecl' then
-            type_alias[cls] = 'enum ' ..  decl:fullname()
+            tn = 'enum ' ..  decl:fullname()
         else
-            type_alias[cls] = decl:fullname()
+            tn = decl:fullname()
+            if tn:find('^std::') then
+                tn = ut:name()
+            end
         end
+        type_alias[cls] = tn
     elseif kind == 'TypedefDecl' then
         local c = children[1]
         if c and c:kind() == 'UnexposedAttr' then

@@ -249,7 +249,7 @@ function olua.gen_callback(cls, fi, write, out)
         if OLUA_CALLBACK_TAG == 'OLUA_TAG_REPLACE' then
             REMOVE_CALLBACK = 'olua_removecallback(L, self_obj, tag.c_str(), OLUA_TAG_SUBEQUAL);'
         end
-        CALLBACK_STORE_OBJ = format 'olua_allocobjstub(L, "${fi.RET.TYPE.LUACLS}")'
+        CALLBACK_STORE_OBJ = format 'olua_newobjstub(L, "${fi.RET.TYPE.LUACLS}")'
         out.PUSH_STUB = format [[
             const char *cls = olua_getluatype(L, ret, "${fi.RET.TYPE.LUACLS}");
             if (olua_pushobjstub(L, ret, self_obj, cls) == OLUA_OBJ_EXIST) {
