@@ -1,9 +1,45 @@
-local file = select(2, ...)
+local olua = {}
+package.loaded['olua'] = olua
+
+local scrpath = select(2, ...)
 local osn = package.cpath:find('?.dll') and 'windows' or
     ((io.popen('uname'):read("*l"):find('Darwin')) and 'macosx' or 'linux')
+
+if osn == 'windows' then
+    olua.HOMEDIR = os.getenv('TMP'):gsub('\\', '/') .. '/olua'
+else
+    olua.HOMEDIR = os.getenv('HOME') .. '/.olua'
+end
+
+-- lua search path
+package.path = scrpath:gsub('olua.lua', '?.lua;') .. package.path
+
+-- lua c search path
 local suffix = osn == 'windows' and 'dll' or 'so'
-package.path = file:gsub('olua.lua', '?.lua;') .. package.path
-package.cpath = file:gsub('olua.lua', ("lib/%s/?.%s;"):format(osn, suffix)) .. package.cpath
+local version = string.match(_VERSION, '%d.%d'):gsub('%.', '')
+package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s', olua.HOMEDIR, version, osn, suffix, package.cpath)
+
+-- unzip lib and header
+if not io.open(olua.HOMEDIR .. '/version') then
+    local dir = scrpath:gsub('olua.lua', '')
+    local libzip = dir .. 'lib.zip'
+    local includezip = dir .. 'include.zip'
+    if osn == 'windows' then
+        print('##', olua.HOMEDIR)
+        local unzip = dir .. 'unzip.exe'
+        os.execute('mkdir ' .. olua.HOMEDIR:gsub('/', '\\'))
+        os.execute(unzip .. ' -f ' .. libzip .. ' -o ' .. olua.HOMEDIR)
+        os.execute(unzip .. ' -f ' .. includezip .. ' -o ' .. olua.HOMEDIR)
+        local v = io.open(olua.HOMEDIR .. '/version', 'w+')
+        v:write('1')
+        v:close()
+    else
+        os.execute('mkdir -p ' .. olua.HOMEDIR)
+        os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.HOMEDIR)
+        os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.HOMEDIR)
+        os.execute('echo 1 > ' .. olua.HOMEDIR .. '/version')
+    end
+end
 
 local _ipairs = ipairs
 function ipairs(t)
@@ -16,9 +52,6 @@ function pairs(t)
     local mt = getmetatable(t)
     return (mt and mt.__pairs or _pairs)(t)
 end
-
-local olua = {}
-package.loaded['olua'] = olua
 
 function olua.write(path, content, verbose)
     local f = io.open(path, 'r')
@@ -74,6 +107,14 @@ function olua.newarray(sep, prefix, posfix)
     function mt:pushf(v)
         self[#self + 1] = olua.format(v)
         return self
+    end
+
+    function mt:insert(v)
+        table.insert(self, 1, v)
+    end
+
+    function mt:insertf(v)
+        table.insert(self, 1, olua.format(v))
     end
 
     function mt:merge(t)

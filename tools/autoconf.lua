@@ -39,6 +39,10 @@ function M.init(path)
     ]])
     header:close()
     local index = clang.createIndex(false, true)
+    for i, v in ipairs(clang_args.FLAGS) do
+        local HOMEDIR = olua.HOMEDIR
+        clang_args.FLAGS[i] = format(v)
+    end
     clang_tu = index:parse(HEADER_PATH, clang_args.FLAGS)
     -- os.remove(HEADER_PATH)
 end
@@ -135,7 +139,7 @@ function M:create_class(cppcls)
 end
 
 function M:visit_enum(cur, cppcls)
-    local cls = self:create_class(cppcls or cur:fullname())
+    local cls = self:create_class(cppcls or self:classname(cur))
     if cur:kind() ~= 'TypeAliasDecl' then
         for _, c in ipairs(cur:children()) do
             local kind = c:kind()
@@ -170,24 +174,43 @@ function M:is_excluded_type(type)
     local rawtn = tn:gsub('^const *', ''):gsub(' *&$', '')
     if self:is_excluded_typeanme(rawtn) then
         return true
-    elseif tn ~= type:canonical():name() then
-        return self:is_excluded_type(type:canonical())
+    elseif tn ~= type:canonicalType():name() then
+        return self:is_excluded_type(type:canonicalType())
+    end
+end
+
+function M:classname(cur)
+    local type = cur:type()
+    if type then
+        return type:name()
+    elseif cur:kind() == 'Namespace' then
+        local ns = olua.newarray('::')
+        while cur and cur:kind() ~= 'TranslationUnit' do
+            ns:insert(cur:name())
+            cur = cur:parent()
+        end
+        return tostring(ns)
+    else
+        return cur:name()
     end
 end
 
 function M:typename(cur, type)
     local tn = type:name()
     -- remove const, & and *: const T * => T
-    local rawtn = tn:match('([^ ]+) ?[*&]?$')
+    local rawtn = tn:match('([%w:_]+) ?[&*]?$')
+    if not rawtn then
+        return tn
+    end
 
     -- typedef std::function<void (Object *)> ClickListener
     -- const ClickListener & => const olua::ClickListener &
     for _, cu in ipairs(cur:children()) do
         if cu:kind() == 'TypeRef' then
-            local fullname = cu:name():match('([^ ]+)$')
-            if string.find(fullname, rawtn .. '$') then
-                tn = tn:gsub(rawtn, fullname)
-                rawtn = fullname
+            local ftn = cu:name():match('([^ ]+)$')
+            if string.find(ftn, rawtn .. '$') then
+                tn = tn:gsub(rawtn, ftn)
+                rawtn = ftn
                 break
             end
         end
@@ -271,8 +294,8 @@ function M:visit_method(cls, cur)
     local cbtype
 
     if cur:kind() ~= 'Constructor' then
-        local result_type = self:typename(cur, cur:resultType())
-        if string.find(result_type, 'std::function') then
+        local tn = self:typename(cur, cur:resultType())
+        if string.find(tn, 'std::function') then
             cbtype = 'RET'
             if callback.NULLABLE then
                 exps:push('@nullable ')
@@ -281,8 +304,8 @@ function M:visit_method(cls, cur)
                 exps:push('@local ')
             end
         end
-        exps:push(result_type)
-        if not string.find(result_type, '[*&]$') then
+        exps:push(tn)
+        if not string.find(tn, '[*&]$') then
             exps:push(' ')
         end
     end
@@ -291,14 +314,14 @@ function M:visit_method(cls, cur)
     exps:push(fn .. '(')
     dn_exps:push(fn .. '(')
     for i, arg in ipairs(cur:arguments()) do
-        local type = self:typename(arg, arg:type())
+        local tn = self:typename(arg, arg:type())
         local display_name = cur:displayName()
         local ARGN = 'ARG' .. i
         if i > 1 then
             exps:push(', ')
             dn_exps:push(', ')
         end
-        if string.find(type, 'std::function') then
+        if string.find(tn, 'std::function') then
             if cbtype then
                 error(format('has more than one std::function: ${cls.CPPCLS}::${display_name}'))
             end
@@ -318,9 +341,9 @@ function M:visit_method(cls, cur)
             assert(not optional, cls.CPPCLS .. '::' .. display_name)
         end
         exps:push(attr[ARGN] and (attr[ARGN] .. ' ') or nil)
-        exps:push(type)
-        dn_exps:push(type)
-        if not string.find(type, '[*&]$') then
+        exps:push(tn)
+        dn_exps:push(tn)
+        if not string.find(tn, '[*&]$') then
             exps:push(' ')
             dn_exps:push(' ')
         end
@@ -355,9 +378,9 @@ function M:visit_field(cls, cur)
         exps:push('@optional ')
     end
 
-    local type = self:typename(cur, cur:type())
+    local tn = self:typename(cur, cur:type())
     local cbtype
-    if string.find(type, 'std::function') then
+    if string.find(tn, 'std::function') then
         cbtype = 'VAR'
         exps:push('@nullable ')
         local callback = cls.CONF.CALLBACK:take(cur:name()) or {}
@@ -368,8 +391,8 @@ function M:visit_field(cls, cur)
     if cur:kind() == 'VarDecl' then
         exps:push('static ')
     end
-    exps:push(type)
-    if not string.find(type, '[*&]$') then
+    exps:push(tn)
+    if not string.find(tn, '[*&]$') then
         exps:push(' ')
     end
 
@@ -388,7 +411,7 @@ end
 
 function M:visit_class(cur, cppcls)
     local filter = {}
-    local cls = self:create_class(cppcls or cur:fullname())
+    local cls = self:create_class(cppcls or self:classname(cur))
     local conf = cls.CONF
     cls.SUPERCLS = conf.SUPERCLS
     cls.KIND = 'Class'
@@ -427,16 +450,16 @@ function M:visit_class(cur, cppcls)
                 goto continue
             end
             local func, prototype, cbtype = self:visit_method(cls, c)
-            local static = c:isStatic()
             if func and not filter[prototype] then
+                filter[displayName] = true
+                filter[prototype] = true
+                local static = c:isStatic()
                 if kind == 'FunctionDecl' then
                     func = 'static ' .. func
                     static = true
                 elseif not c:isStatic() then
                     cls.INST_FUNCS[prototype] = cls.CPPCLS
                 end
-                filter[displayName] = true
-                filter[prototype] = true
                 cls.FUNCS[#cls.FUNCS + 1] = {
                     FUNC = func,
                     NAME = fn,
@@ -457,7 +480,7 @@ end
 function M:visit(cur)
     local kind = cur:kind()
     local children = cur:children()
-    local cls = cur:fullname()
+    local cls = self:classname(cur)
     local need_visit = self.conf.CLASSES[cls] and not visited_type[cls]
     if #children == 0 or string.find(cls, "^std::") then
         return
@@ -486,20 +509,11 @@ function M:visit(cur)
         end
     elseif kind == 'TypeAliasDecl' then
         local ut = cur:underlyingType()
-        local decl = ut:declaration()
-        local tn
-        if decl:kind() == 'NoDeclFound' then
-            -- typename std::vector<T>::iterator
-            tn = ut:name()
-        elseif decl:kind() == 'EnumDecl' then
-            tn = 'enum ' ..  decl:fullname()
+        if ut:declaration():kind() == 'EnumDecl' then
+            type_alias[cls] = 'enum ' ..  self:typename(cur, ut)
         else
-            tn = decl:fullname()
-            if tn:find('^std::') then
-                tn = ut:name()
-            end
+            type_alias[cls] = self:typename(cur, ut)
         end
-        type_alias[cls] = tn
     elseif kind == 'TypedefDecl' then
         local c = children[1]
         if c and c:kind() == 'UnexposedAttr' then
@@ -507,29 +521,29 @@ function M:visit(cur)
         end
 
         local alias = cur:type():name()
-        local utk = cur:underlyingType():declaration():kind()
-        local name = cur:underlyingType():name()
+        local decl = cur:underlyingType():declaration()
+        local utk = decl:kind()
+        local name
         --[[
             namespace test {
                 typedef enum TAG_ {
                 } TAG
             }
             cur:underlyingType():name() => enum TAG_
-            cur:type():canonical():name() => test::TAG_
+            cur:type():canonicalType():name() => test::TAG_
         ]]
         if utk == 'StructDecl' then
-            name = cur:type():canonical():name()
+            name = self:typename(decl, decl:type())
             if need_visit then
-                self:visit_class(cur:underlyingType():declaration(), cls)
+                self:visit_class(decl, cls)
             end
         elseif utk == 'EnumDecl' then
             if need_visit then
-                self:visit_enum(cur:underlyingType():declaration(), cls)
-                name = 'enum ' .. alias
-                alias =  cur:type():canonical():name()
-            else
-                name = 'enum ' .. cur:type():canonical():name()
+                self:visit_enum(decl, cls)
             end
+            name = 'enum ' .. self:typename(decl, decl:type())
+        else
+            name = self:typename(cur, cur:underlyingType())
         end
         type_alias[alias] = type_alias[name] or name
     else
