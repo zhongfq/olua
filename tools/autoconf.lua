@@ -44,7 +44,7 @@ function M.init(path)
         clang_args.FLAGS[i] = format(v)
     end
     clang_tu = index:parse(HEADER_PATH, clang_args.FLAGS)
-    -- os.remove(HEADER_PATH)
+    os.remove(HEADER_PATH)
 end
 
 function M:parse(path)
