@@ -205,7 +205,8 @@ local function gen_func_args(cls, fi, func)
         elseif ai.TYPE.DECLTYPE ~= ai.TYPE.CPPCLS and not ai.CALLBACK.ARGS then
             func.CALLER_ARGS:pushf('(${ai.TYPE.CPPCLS})${ARG_NAME}')
         else
-            func.CALLER_ARGS:pushf('${ARG_NAME}')
+            local TYPE_CAST = ai.TYPE.TYPE_CAST == '&' and '*' or ''
+            func.CALLER_ARGS:pushf('${TYPE_CAST}${ARG_NAME}')
         end
 
         olua.gen_decl_exp(ai, ARG_NAME, func)
@@ -219,7 +220,8 @@ function olua.gen_push_exp(arg, name, out)
     local ARG_NAME = name
     local OLUA_PUSH_VALUE = olua.convfunc(arg.TYPE, 'push')
     if olua.ispointee(arg.TYPE) then
-        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${ARG_NAME}, "${arg.TYPE.LUACLS}");')
+        local TYPE_CAST = arg.TYPE.TYPE_CAST or ''
+        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${TYPE_CAST}${ARG_NAME}, "${arg.TYPE.LUACLS}");')
     elseif arg.TYPE.SUBTYPES then
         if #arg.TYPE.SUBTYPES > 1 then
             out.PUSH_ARGS:push(arg.TYPE.PUSH_VALUE(arg, name))
@@ -259,7 +261,11 @@ end
 local function gen_func_ret(cls, fi, func)
     if fi.RET.NUM > 0 then
         local SPACE = string.find(fi.RET.DECLTYPE, '[ *&]$') and '' or ' '
-        func.RET_EXP = format('${fi.RET.DECLTYPE}${SPACE}ret = (${fi.RET.DECLTYPE})')
+        if fi.RET.TYPE.TYPE_CAST == '&' and SPACE == ' ' then
+            func.RET_EXP = format('${fi.RET.DECLTYPE} &ret = (${fi.RET.DECLTYPE} &)')
+        else
+            func.RET_EXP = format('${fi.RET.DECLTYPE}${SPACE}ret = (${fi.RET.DECLTYPE})')
+        end
 
         local RETEXP = {PUSH_ARGS = olua.newarray()}
 

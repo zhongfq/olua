@@ -27,7 +27,7 @@ function olua.assert(cond, fmt, ...)
     return cond
 end
 
-local function pretty_typename(tn)
+local function pretty_typename(tn, trimref)
     tn = string.gsub(tn, '^ *', '') -- trim head space
     tn = string.gsub(tn, ' *$', '') -- trim tail space
     tn = string.gsub(tn, ' +', ' ') -- remove needless space
@@ -39,35 +39,19 @@ local function pretty_typename(tn)
     tn = string.gsub(tn, ' *&', '&')
     tn = string.gsub(tn, '%&+', '%1')
 
-    return tn
-end
-
-local function rawtypename(tn)
-    tn = string.gsub(tn, ' *&+', '') -- remove '&'
-
-    if typeinfo_map[tn] then
-        return tn
-    end
-
-    local noconst = string.gsub(tn, 'const *', '')
-    if typeinfo_map[noconst] then
-        return noconst
+    if trimref then
+        tn = string.gsub(tn, ' *&+$', '') -- remove '&'
     end
 
     return tn
-end
-
-local function trynamespace(ns, tn)
-    -- const Object * => const ns::Object *
-    tn = rawtypename(string.gsub(tn, '[%w:_]+ *%**$', ns .. '::%1'))
-    return typeinfo_map[tn], tn
 end
 
 function olua.typeinfo(tn, cls, silence)
-    local ti, subtis -- for tn<T, ...>
+    local ti, tc, subtis -- for tn<T, ...>
 
-    tn = pretty_typename(tn)
+    tn = pretty_typename(tn, true)
 
+    -- parse template
     if string.find(tn, '<') then
         subtis = {}
         for subtn in string.gmatch(string.match(tn, '<(.*)>'), '[^,]+') do
@@ -77,30 +61,30 @@ function olua.typeinfo(tn, cls, silence)
         tn = pretty_typename(string.gsub(tn, '<.*>', ''))
     end
 
-    tn = rawtypename(tn)
     ti = typeinfo_map[tn]
 
-    if ti then
-        ti = setmetatable({SUBTYPES = subtis}, {__index = ti})
-        return ti, tn
+    -- try pointee
+    if not ti and not string.find(tn, '%*$') then
+        ti = olua.typeinfo(tn .. ' *', nil, true)
+        tc = ti and '&' or nil
     end
 
     -- search in class namespace
-    if cls and cls.CPPCLS then
+    if not ti and cls and cls.CPPCLS then
         local nsarr = {}
-        for n in string.gmatch(cls.CPPCLS, '[^:]+') do
-            nsarr[#nsarr + 1] = n
+        for ns in string.gmatch(cls.CPPCLS, '[^:]+') do
+            nsarr[#nsarr + 1] = ns
         end
         while #nsarr > 0 do
+            -- const Object * => const ns::Object *
             local ns = table.concat(nsarr, "::")
-            local ti1, tn1 = trynamespace(ns, tn)
-            if not ti1 then
-                nsarr[#nsarr] = nil
-            else
-                ti = ti1
-                tn = tn1
-                ti = setmetatable({SUBTYPES = subtis}, {__index = ti})
-                return ti, tn
+            local nstn = pretty_typename(string.gsub(tn, '[%w:_]+ *%**$', ns .. '::%1'), true)
+            local nsti = olua.typeinfo(nstn, nil, true)
+            nsarr[#nsarr] = nil
+            if nsti then
+                ti = nsti
+                tn = nstn
+                break
             end
         end
     end
@@ -108,11 +92,18 @@ function olua.typeinfo(tn, cls, silence)
     -- search in super class namespace
     if cls and cls.SUPERCLS then
         local super = class_map[cls.SUPERCLS]
-        olua.assert(super, "the super class '%s' of '%s' is not found", cls.SUPERCLS, cls.CPPCLS)
-        return olua.typeinfo(tn, super, silence)
+        olua.assert(super, "super class '%s' of '%s' is not found", cls.SUPERCLS, cls.CPPCLS)
+        local sti, stn = olua.typeinfo(tn, super, true)
+        if sti then
+            ti = sti
+            tn = stn
+        end
     end
 
-    if not ti and not silence then
+    if ti then
+        ti = setmetatable({SUBTYPES = subtis, TYPE_CAST = tc}, {__index = ti})
+        return ti, tn
+    elseif not silence then
         olua.error("type info not found: %s", tn)
     end
 end
