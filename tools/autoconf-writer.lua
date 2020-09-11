@@ -223,17 +223,6 @@ local function write_conf_callback(module, cls, append)
         if type(v.TAG_STORE) == 'string' then
             TAG_STORE = olua.stringify(v.TAG_STORE)
         end
-        if v.LIFECYCLE == 'once' then
-            TAG_SCOPE = 'once'
-            print(format [[
-                [*] please use: TAG_SCOPE = 'once' in '${cls.CPPCLS}::${v.NAME}'
-            ]])
-        elseif v.LIFECYCLE == 'local' then
-            TAG_SCOPE = 'function'
-            print(format [[
-                [*] please use: TAG_SCOPE = 'function' in '${cls.CPPCLS}::${v.NAME}'
-            ]])
-        end
         assert(v.TAG_MAKER, 'no tag maker')
         assert(v.TAG_MODE, 'no tag mode')
         if type(v.TAG_MAKER) == 'string' then
