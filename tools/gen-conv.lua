@@ -36,20 +36,6 @@ local function gen_conv_header(module)
     ]]))
 end
 
-local function getinitvalue(ti)
-    local v = olua.initialvalue(ti)
-    if v == '' then
-        if ti.DECLTYPE == 'std::string' then
-            v = '""'
-        elseif ti.CPPCLS then
-            v = ti.CPPCLS .. '()'
-        else
-            error('unknown type:' .. ti.TYPE.CPPCLS)
-        end
-    end
-    return v
-end
-
 local function gen_push_func(cv, write)
     local CPPCLS_PATH = olua.topath(cv.CPPCLS)
     local NUM_ARGS = #cv.PROPS

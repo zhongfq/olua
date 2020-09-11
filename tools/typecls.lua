@@ -47,7 +47,7 @@ local function pretty_typename(tn, trimref)
 end
 
 function olua.typeinfo(tn, cls, silence)
-    local ti, tc, subtis -- for tn<T, ...>
+    local ti, ref, subtis -- for tn<T, ...>
 
     tn = pretty_typename(tn, true)
 
@@ -66,7 +66,7 @@ function olua.typeinfo(tn, cls, silence)
     -- try pointee
     if not ti and not string.find(tn, '%*$') then
         ti = olua.typeinfo(tn .. ' *', nil, true)
-        tc = ti and '&' or nil
+        ref = ti and tn or nil
     end
 
     -- search in class namespace
@@ -101,7 +101,7 @@ function olua.typeinfo(tn, cls, silence)
     end
 
     if ti then
-        ti = setmetatable({SUBTYPES = subtis, TYPE_CAST = tc}, {__index = ti})
+        ti = setmetatable({SUBTYPES = subtis, TYPEREF = ref}, {__index = ti})
         return ti, tn
     elseif not silence then
         olua.error("type info not found: %s", tn)
@@ -444,7 +444,7 @@ local function parse_func(cls, name, ...)
         if string.find(declfunc, '{') then
             fi.LUAFUNC = assert(name)
             fi.CPPFUNC = name
-            fi.CPPFUNC_SNIPPET = declfunc
+            fi.SNIPPET = declfunc
             fi.DECLFUNC = '<function snippet>'
             fi.RET.NUM = 0
             fi.RET.TYPE = olua.typeinfo('void', cls)
@@ -552,13 +552,13 @@ local function parse_prop(cls, name, declget, declset)
         end
     end
 
-    if not pi.GET.CPPFUNC_SNIPPET then
+    if not pi.GET.SNIPPET then
         assert(pi.GET.RET.NUM > 0, declget)
     elseif declget then
         pi.GET.CPPFUNC = 'get_' .. pi.GET.CPPFUNC
     end
 
-    if pi.SET and pi.SET.CPPFUNC_SNIPPET and declset then
+    if pi.SET and pi.SET.SNIPPET and declset then
         pi.SET.CPPFUNC = 'set_' .. pi.SET.CPPFUNC
     end
 

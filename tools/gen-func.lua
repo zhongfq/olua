@@ -2,13 +2,11 @@ local olua = require "olua"
 
 local format = olua.format
 
-local function gen_snippet_func(cls, fi, write)
+local function gen_func_snippet(cls, fi, write)
     local CPPCLS_PATH = olua.topath(cls.CPPCLS)
-    local CPPFUNC = fi.CPPFUNC
-    local CPPFUNC_SNIPPET = fi.CPPFUNC_SNIPPET
-    CPPFUNC_SNIPPET = string.gsub(CPPFUNC_SNIPPET, '^[\n ]*{',
-        '{\n    olua_startinvoke(L);\n')
-    CPPFUNC_SNIPPET = string.gsub(CPPFUNC_SNIPPET, '(\n)([ ]*)(return )', function (lf, indent, ret)
+    local SNIPPET = fi.SNIPPET
+    SNIPPET = string.gsub(SNIPPET, '^[\n ]*{', '{\n    olua_startinvoke(L);\n')
+    SNIPPET = string.gsub(SNIPPET, '(\n)([ ]*)(return )', function (lf, indent, ret)
         local s = format([[
             ${lf}
 
@@ -19,8 +17,8 @@ local function gen_snippet_func(cls, fi, write)
         return s
     end)
     write(format([[
-        static int _${CPPCLS_PATH}_${CPPFUNC}(lua_State *L)
-        ${CPPFUNC_SNIPPET}
+        static int _${CPPCLS_PATH}_${fi.CPPFUNC}(lua_State *L)
+        ${SNIPPET}
     ]]))
     write('')
 end
@@ -29,7 +27,6 @@ function olua.gen_decl_exp(arg, name, out)
     local SPACE = string.find(arg.TYPE.DECLTYPE, '[ *&]$') and '' or ' '
     local ARG_NAME = name
     local VARNAME = ""
-    local INITIALVALUE = ''
     if arg.VARNAME then
         VARNAME = format([[/** ${arg.VARNAME} */]])
     end
@@ -45,16 +42,16 @@ function olua.gen_decl_exp(arg, name, out)
             -- arg.TYPE.CPPCLS = ssize_t
             DECLTYPE = arg.TYPE.CPPCLS
         end
-        local value = olua.initialvalue(arg.TYPE)
-        if value and #value > 0 then
+        local INIT_VALUE = olua.initialvalue(arg.TYPE)
+        if #INIT_VALUE > 0 then
             if DECLTYPE ~= arg.TYPE.DECLTYPE then
-                INITIALVALUE = ' ' .. format('= (${DECLTYPE})${value}')
+                INIT_VALUE = ' ' .. format('= (${DECLTYPE})${INIT_VALUE}')
             else
-                INITIALVALUE = ' = ' .. value
+                INIT_VALUE = ' = ' .. INIT_VALUE
             end
         end
         out.DECL_ARGS:pushf([[
-            ${DECLTYPE}${SPACE}${ARG_NAME}${INITIALVALUE};       ${VARNAME}
+            ${DECLTYPE}${SPACE}${ARG_NAME}${INIT_VALUE};       ${VARNAME}
         ]])
     end
 end
@@ -205,8 +202,8 @@ local function gen_func_args(cls, fi, func)
         elseif ai.TYPE.DECLTYPE ~= ai.TYPE.CPPCLS and not ai.CALLBACK.ARGS then
             func.CALLER_ARGS:pushf('(${ai.TYPE.CPPCLS})${ARG_NAME}')
         else
-            local TYPE_CAST = ai.TYPE.TYPE_CAST == '&' and '*' or ''
-            func.CALLER_ARGS:pushf('${TYPE_CAST}${ARG_NAME}')
+            local CAST = ai.TYPE.TYPEREF and '*' or ''
+            func.CALLER_ARGS:pushf('${CAST}${ARG_NAME}')
         end
 
         olua.gen_decl_exp(ai, ARG_NAME, func)
@@ -220,8 +217,8 @@ function olua.gen_push_exp(arg, name, out)
     local ARG_NAME = name
     local OLUA_PUSH_VALUE = olua.convfunc(arg.TYPE, 'push')
     if olua.ispointee(arg.TYPE) then
-        local TYPE_CAST = arg.TYPE.TYPE_CAST or ''
-        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${TYPE_CAST}${ARG_NAME}, "${arg.TYPE.LUACLS}");')
+        local CAST = arg.TYPE.TYPEREF and '&' or ''
+        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${CAST}${ARG_NAME}, "${arg.TYPE.LUACLS}");')
     elseif arg.TYPE.SUBTYPES then
         if #arg.TYPE.SUBTYPES > 1 then
             out.PUSH_ARGS:push(arg.TYPE.PUSH_VALUE(arg, name))
@@ -250,9 +247,7 @@ function olua.gen_push_exp(arg, name, out)
             end
         else
             -- other push func: olua_push_value(L, T *)
-            if not string.find(arg.DECLTYPE, '[*]$') then
-                TYPE_CAST = '&'
-            end
+            TYPE_CAST = '&'
         end
         out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${TYPE_CAST}${ARG_NAME});')
     end
@@ -261,7 +256,7 @@ end
 local function gen_func_ret(cls, fi, func)
     if fi.RET.NUM > 0 then
         local SPACE = string.find(fi.RET.DECLTYPE, '[ *&]$') and '' or ' '
-        if fi.RET.TYPE.TYPE_CAST == '&' and SPACE == ' ' then
+        if fi.RET.TYPE.TYPEREF and SPACE == ' ' then
             func.RET_EXP = format('${fi.RET.DECLTYPE} &ret = (${fi.RET.DECLTYPE} &)')
         else
             func.RET_EXP = format('${fi.RET.DECLTYPE}${SPACE}ret = (${fi.RET.DECLTYPE})')
@@ -330,8 +325,8 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
     end
     exported[funcname] = true
 
-    if fi.CPPFUNC_SNIPPET then
-        gen_snippet_func(cls, fi, write)
+    if fi.SNIPPET then
+        gen_func_snippet(cls, fi, write)
         return
     end
 
