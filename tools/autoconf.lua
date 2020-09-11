@@ -373,8 +373,9 @@ function M:visit_field(cls, cur)
     end
 
     local exps = olua.newarray('')
+    local attr = cls.CONF.ATTR[cur:name()] or cls.CONF.ATTR['*'] or {}
 
-    if self:has_default_value(cur) then
+    if attr.OPTIONAL or (self:has_default_value(cur) and attr.OPTIONAL == nil) then
         exps:push('@optional ')
     end
 

@@ -886,18 +886,6 @@ function olua.typecls(cppcls)
     return cls
 end
 
-function olua.typecast(type, rawtype)
-    if type.DECLTYPE ~= type.CPPCLS then
-        return string.format("(%s)", rawtype and type.CPPCLS or type.DECLTYPE)
-    else
-        return ""
-    end
-end
-
-function olua.pointercast(type)
-    return olua.isvaluetype(type) and '' or '&'
-end
-
 function olua.toluacls(cppcls)
     local ti = typeinfo_map[cppcls .. ' *'] or typeinfo_map[cppcls]
     assert(ti, 'type not found: ' .. cppcls)

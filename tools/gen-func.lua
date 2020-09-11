@@ -25,7 +25,7 @@ end
 
 function olua.gen_decl_exp(arg, name, out)
     local SPACE = string.find(arg.TYPE.DECLTYPE, '[ *&]$') and '' or ' '
-    local ARG_NAME = name
+    local ARGNAME = name
     local VARNAME = ""
     if arg.VARNAME then
         VARNAME = format([[/** ${arg.VARNAME} */]])
@@ -33,7 +33,7 @@ function olua.gen_decl_exp(arg, name, out)
     if arg.TYPE.SUBTYPES then
         -- arg.DECLTYPE = std::vector<std::string>
         -- arg.TYPE.DECLTYPE = std::vector
-        out.DECL_ARGS:pushf('${arg.DECLTYPE}${SPACE}${ARG_NAME};       ${VARNAME}')
+        out.DECL_ARGS:pushf('${arg.DECLTYPE}${SPACE}${ARGNAME};       ${VARNAME}')
     else
         local DECLTYPE = arg.TYPE.DECLTYPE
         if arg.ATTR.OUT == 'pointee' then
@@ -51,7 +51,7 @@ function olua.gen_decl_exp(arg, name, out)
             end
         end
         out.DECL_ARGS:pushf([[
-            ${DECLTYPE}${SPACE}${ARG_NAME}${INIT_VALUE};       ${VARNAME}
+            ${DECLTYPE}${SPACE}${ARGNAME}${INIT_VALUE};       ${VARNAME}
         ]])
     end
 end
@@ -59,14 +59,14 @@ end
 function olua.gen_check_exp(arg, name, i, out)
     -- lua value to cpp value
     local ARGN = i
-    local ARG_NAME = name
+    local ARGNAME = name
     local CHECK_FUNC = olua.convfunc(arg.TYPE, 'check')
     if arg.ATTR.OUT then
-        out.CHECK_ARGS:pushf([[// no need to check '${ARG_NAME}' with mark '@out']])
+        out.CHECK_ARGS:pushf([[// no need to check '${ARGNAME}' with mark '@out']])
         return
     elseif olua.ispointee(arg.TYPE) then
         out.CHECK_ARGS:pushf([[
-            ${CHECK_FUNC}(L, ${ARGN}, (void **)&${ARG_NAME}, "${arg.TYPE.LUACLS}");
+            ${CHECK_FUNC}(L, ${ARGN}, (void **)&${ARGNAME}, "${arg.TYPE.LUACLS}");
         ]])
     elseif arg.TYPE.SUBTYPES then
         if #arg.TYPE.SUBTYPES > 1 then
@@ -75,11 +75,11 @@ function olua.gen_check_exp(arg, name, i, out)
             local SUBTYPE = arg.TYPE.SUBTYPES[1]
             if olua.ispointee(SUBTYPE) then
                 out.CHECK_ARGS:pushf([[
-                    ${CHECK_FUNC}(L, ${ARGN}, ${ARG_NAME}, "${SUBTYPE.LUACLS}");
+                    ${CHECK_FUNC}(L, ${ARGN}, ${ARGNAME}, "${SUBTYPE.LUACLS}");
                 ]])
             else
                 local SUBTYPE_CHECK_FUNC = olua.convfunc(SUBTYPE, 'check')
-                local SUBTYPE_CAST = olua.typecast(SUBTYPE, true)
+                local SUBTYPE_CAST = format('(${SUBTYPE.CPPCLS})')
                 local CHECK_VALUE = format(arg.TYPE.CHECK_VALUE)
                 out.CHECK_ARGS:pushf([[
                     luaL_checktype(L, ${ARGN}, LUA_TTABLE);
@@ -90,10 +90,10 @@ function olua.gen_check_exp(arg, name, i, out)
     elseif not arg.CALLBACK or not arg.CALLBACK.ARGS then
         if arg.ATTR.PACK then
             CHECK_FUNC = olua.convfunc(arg.TYPE, 'pack')
-            out.TOTAL_ARGS = arg.TYPE.NUMVARS + out.TOTAL_ARGS - 1
+            out.TOTAL = arg.TYPE.NUMVARS + out.TOTAL - 1
             out.IDX = out.IDX + arg.TYPE.NUMVARS - 1
         end
-        out.CHECK_ARGS:pushf('${CHECK_FUNC}(L, ${ARGN}, &${ARG_NAME});')
+        out.CHECK_ARGS:pushf('${CHECK_FUNC}(L, ${ARGN}, &${ARGNAME});')
     end
 end
 
@@ -178,7 +178,7 @@ end
 local function gen_func_args(cls, fi, func)
     if not fi.STATIC then
         -- first argument is cpp userdata object
-        func.TOTAL_ARGS = func.TOTAL_ARGS + 1
+        func.TOTAL = func.TOTAL + 1
         func.IDX = func.IDX + 1
         local ti = olua.typeinfo(cls.CPPCLS .. "*")
         local OLUA_TO_TYPE = olua.convfunc(ti, 'to')
@@ -187,7 +187,7 @@ local function gen_func_args(cls, fi, func)
     end
 
     for i, ai in ipairs(fi.ARGS) do
-        local ARG_NAME = "arg" .. i
+        local ARGNAME = "arg" .. i
         local ARGN = func.IDX + 1
         func.IDX = ARGN
 
@@ -198,39 +198,41 @@ local function gen_func_args(cls, fi, func)
         -- function call args
         -- see 'basictype.lua'
         if ai.ATTR.OUT == 'pointee' then
-            func.CALLER_ARGS:pushf('&${ARG_NAME}')
+            func.CALLER_ARGS:pushf('&${ARGNAME}')
         elseif ai.TYPE.DECLTYPE ~= ai.TYPE.CPPCLS and not ai.CALLBACK.ARGS then
-            func.CALLER_ARGS:pushf('(${ai.TYPE.CPPCLS})${ARG_NAME}')
+            func.CALLER_ARGS:pushf('(${ai.TYPE.CPPCLS})${ARGNAME}')
         else
             local CAST = ai.TYPE.TYPEREF and '*' or ''
-            func.CALLER_ARGS:pushf('${CAST}${ARG_NAME}')
+            func.CALLER_ARGS:pushf('${CAST}${ARGNAME}')
         end
 
-        olua.gen_decl_exp(ai, ARG_NAME, func)
-        olua.gen_check_exp(ai, ARG_NAME, ARGN, func)
+        olua.gen_decl_exp(ai, ARGNAME, func)
+        olua.gen_check_exp(ai, ARGNAME, ARGN, func)
         olua.gen_addref_exp(fi, ai, ARGN, func)
         olua.gen_delref_exp(fi, ai, ARGN, func)
     end
 end
 
 function olua.gen_push_exp(arg, name, out)
-    local ARG_NAME = name
+    local ARGNAME = name
     local OLUA_PUSH_VALUE = olua.convfunc(arg.TYPE, 'push')
     if olua.ispointee(arg.TYPE) then
         local CAST = arg.TYPE.TYPEREF and '&' or ''
-        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${CAST}${ARG_NAME}, "${arg.TYPE.LUACLS}");')
+        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${CAST}${ARGNAME}, "${arg.TYPE.LUACLS}");')
     elseif arg.TYPE.SUBTYPES then
         if #arg.TYPE.SUBTYPES > 1 then
             out.PUSH_ARGS:push(arg.TYPE.PUSH_VALUE(arg, name))
         else
             local SUBTYPE = arg.TYPE.SUBTYPES[1]
             if olua.ispointee(SUBTYPE) then
-                out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${ARG_NAME}, "${SUBTYPE.LUACLS}");')
+                out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${ARGNAME}, "${SUBTYPE.LUACLS}");')
             else
-                local SUBTYPE_CAST = olua.pointercast(SUBTYPE) .. olua.typecast(SUBTYPE)
                 local SUBTYPE_PUSH_FUNC = olua.convfunc(SUBTYPE, 'push')
-                local TYPE_CAST = string.gsub(arg.DECLTYPE, '^const *', '')
-                local ARG_NAME_PATH = ARG_NAME:gsub('[%->.]+', '_')
+                local ARGNAME_PATH = ARGNAME:gsub('[%->.]+', '_')
+                local SUBTYPE_CAST = olua.isvaluetype(SUBTYPE) and '' or '&'
+                if SUBTYPE.DECLTYPE ~= SUBTYPE.CPPCLS then
+                    SUBTYPE_CAST = format("${SUBTYPE_CAST}(${SUBTYPE.DECLTYPE})")
+                end
                 out.PUSH_ARGS:pushf(arg.TYPE.PUSH_VALUE)
             end
         end
@@ -238,18 +240,16 @@ function olua.gen_push_exp(arg, name, out)
         if arg.ATTR.UNPACK then
             OLUA_PUSH_VALUE = olua.convfunc(arg.TYPE, 'unpack')
         end
-        local TYPE_CAST = ""
-        if olua.isvaluetype(arg.TYPE) then
+        local CAST = ""
+        if not olua.isvaluetype(arg.TYPE) then
+            -- push func: olua_push_value(L, T *)
+            CAST = '&'
+        elseif arg.TYPE.DECLTYPE ~= arg.TYPE.CPPCLS then
             -- value type push func: olua_push_value(L, T)
-            if arg.TYPE.DECLTYPE ~= arg.TYPE.CPPCLS then
-                -- int => lua_Interge
-                TYPE_CAST = format('(${arg.TYPE.DECLTYPE})')
-            end
-        else
-            -- other push func: olua_push_value(L, T *)
-            TYPE_CAST = '&'
+            -- int => lua_Interge
+            CAST = format('(${arg.TYPE.DECLTYPE})')
         end
-        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${TYPE_CAST}${ARG_NAME});')
+        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${CAST}${ARGNAME});')
     end
 end
 
@@ -301,7 +301,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
     local ARGS_END = not fi.VARIABLE and ')' or ''
 
     local FUNC = {
-        TOTAL_ARGS = #fi.ARGS,
+        TOTAL = #fi.ARGS,
         DECL_ARGS = olua.newarray(),
         CHECK_ARGS = olua.newarray(),
         CALLER_ARGS = olua.newarray(', '),

@@ -39,16 +39,8 @@ local function write_metadata(module, append)
         module.ignored_type[cls.CPPCLS] = false
 
         local DEF = olua.newarray("\n")
-        local attr = cls.CONF.ATTR["*"] or {}
         for _, v in ipairs(#cls.VARS == 0 and cls.CONF.VAR or cls.VARS) do
-            local optional = v.SNIPPET:match('@optional *') or ''
-            local SNIPPET = v.SNIPPET:gsub('@optional *', '')
-            if attr.OPTIONAL == false then
-                optional = ''
-            elseif attr.OPTIONAL and optional == '' then
-                optional = '@optional '
-            end
-            DEF:pushf('${optional}${SNIPPET};')
+            DEF:pushf('${v.SNIPPET};')
         end
 
         append(format([=[

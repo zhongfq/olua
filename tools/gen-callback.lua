@@ -164,7 +164,7 @@ function olua.gen_callback(cls, fi, write, out)
     end
 
     for i, v in ipairs(ai.CALLBACK.ARGS) do
-        local ARG_NAME = 'arg' .. i
+        local ARGNAME = 'arg' .. i
 
         if not localBlock then
             if v.ATTR.LOCAL then
@@ -178,11 +178,11 @@ function olua.gen_callback(cls, fi, write, out)
             end
         end
 
-        olua.gen_push_exp(v, ARG_NAME, CALLBACK)
+        olua.gen_push_exp(v, ARGNAME, CALLBACK)
 
         local SPACE = string.find(v.RAW_DECLTYPE, '[*&]$') and '' or ' '
         CALLBACK.ARGS:push(format([[
-            ${v.RAW_DECLTYPE}${SPACE}${ARG_NAME}
+            ${v.RAW_DECLTYPE}${SPACE}${ARGNAME}
         ]]))
     end
 

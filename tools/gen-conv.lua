@@ -42,9 +42,9 @@ local function gen_push_func(cv, write)
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
 
     for _, pi in ipairs(cv.PROPS) do
-        local ARG_NAME = format('value->${pi.VARNAME}')
-        local ARG_NAME_PATH = ARG_NAME:gsub('[%->.]', '_')
-        olua.gen_push_exp(pi, ARG_NAME, OUT)
+        local ARGNAME = format('value->${pi.VARNAME}')
+        local ARGNAME_PATH = ARGNAME:gsub('[%->.]', '_')
+        olua.gen_push_exp(pi, ARGNAME, OUT)
         OUT.PUSH_ARGS:pushf([[olua_setfield(L, -2, "${pi.LUANAME}");]])
         OUT.PUSH_ARGS:push('')
     end
@@ -72,27 +72,27 @@ local function gen_check_func(cv, write)
         CHECK_ARGS = olua.newarray(),
     }
     for i, pi in ipairs(cv.PROPS) do
-        local ARG_NAME = 'arg' .. i
+        local ARGNAME = 'arg' .. i
         local DECLTYPE = pi.TYPE.CPPCLS
         if pi.TYPE.SUBTYPES then
             DECLTYPE = pi.DECLTYPE
         end
-        olua.gen_decl_exp(pi, ARG_NAME, OUT)
+        olua.gen_decl_exp(pi, ARGNAME, OUT)
         OUT.CHECK_ARGS:pushf([[olua_getfield(L, idx, "${pi.LUANAME}");]])
         if pi.ATTR.OPTIONAL then
             local SUBOUT = {CHECK_ARGS = olua.newarray()}
-            olua.gen_check_exp(pi, ARG_NAME, -1, SUBOUT)
+            olua.gen_check_exp(pi, ARGNAME, -1, SUBOUT)
             OUT.CHECK_ARGS:pushf([[
                 if (!olua_isnoneornil(L, -1)) {
                     ${SUBOUT.CHECK_ARGS}
-                    value->${pi.VARNAME} = (${DECLTYPE})${ARG_NAME};
+                    value->${pi.VARNAME} = (${DECLTYPE})${ARGNAME};
                 }
                 lua_pop(L, 1);
             ]])
         else
-            olua.gen_check_exp(pi, ARG_NAME, -1, OUT)
+            olua.gen_check_exp(pi, ARGNAME, -1, OUT)
             OUT.CHECK_ARGS:pushf([[
-                value->${pi.VARNAME} = (${DECLTYPE})${ARG_NAME};
+                value->${pi.VARNAME} = (${DECLTYPE})${ARGNAME};
                 lua_pop(L, 1);
             ]])
         end
@@ -123,15 +123,15 @@ local function gen_pack_func(cv, write)
         CHECK_ARGS = olua.newarray(),
     }
     for i, pi in ipairs(cv.PROPS) do
-        local ARG_NAME = 'arg' .. i
+        local ARGNAME = 'arg' .. i
         local DECLTYPE = pi.TYPE.CPPCLS
         if pi.TYPE.SUBTYPES then
             DECLTYPE = pi.DECLTYPE
         end
-        olua.gen_decl_exp(pi, ARG_NAME, OUT)
-        olua.gen_check_exp(pi, ARG_NAME, 'idx + ' ..  (i - 1), OUT)
+        olua.gen_decl_exp(pi, ARGNAME, OUT)
+        olua.gen_check_exp(pi, ARGNAME, 'idx + ' ..  (i - 1), OUT)
         OUT.CHECK_ARGS:pushf([[
-            value->${pi.VARNAME} = (${DECLTYPE})${ARG_NAME};
+            value->${pi.VARNAME} = (${DECLTYPE})${ARGNAME};
         ]])
         OUT.CHECK_ARGS:push('')
     end
@@ -157,9 +157,9 @@ local function gen_unpack_func(cv, write)
     local NUM_ARGS = #cv.PROPS
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
     for _, pi in ipairs(cv.PROPS) do
-        local ARG_NAME = format('value->${pi.VARNAME}')
-        local ARG_NAME_PATH = ARG_NAME:gsub('[%->.]', '_')
-        olua.gen_push_exp(pi, ARG_NAME, OUT)
+        local ARGNAME = format('value->${pi.VARNAME}')
+        local ARGNAME_PATH = ARGNAME:gsub('[%->.]', '_')
+        olua.gen_push_exp(pi, ARGNAME, OUT)
     end
 
     write(format([[
