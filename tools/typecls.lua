@@ -225,7 +225,7 @@ local function parse_callback_type(cls, tn)
     local args = parse_args(cls, declstr)
     local decltype = {}
     for _, ai in ipairs(args) do
-        decltype[#decltype + 1] = ai.RAW_DECLTYPE
+        decltype[#decltype + 1] = ai.RAWTYPE
     end
     decltype = table.concat(decltype, ", ")
     decltype = string.format('std::function<%s(%s)>', todecltype(cls, rtn), decltype)
@@ -248,7 +248,7 @@ end
     {
         TYPE             -- type info
         DECLTYPE         -- decltype: std::vector<int>
-        RAW_DECLTYPE     -- raw decltype: const std::vector<int> &
+        RAWTYPE          -- rawtype: const std::vector<int> &
         VARNAME          -- var name: points
         ATTR             -- attr: {PACK = true}
         CALLBACK = {     -- eg: std::function<void (float, const A *a)>
@@ -330,7 +330,7 @@ function parse_args(cls, declstr)
             args[#args + 1] = {
                 TYPE = olua.typeinfo(tn, cls),
                 DECLTYPE = todecltype(cls, tn, true),
-                RAW_DECLTYPE = todecltype(cls, tn),
+                RAWTYPE = todecltype(cls, tn),
                 VARNAME = varname or '',
                 ATTR = attr,
                 CALLBACK = {},

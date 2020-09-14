@@ -180,9 +180,9 @@ function olua.gen_callback(cls, fi, write, out)
 
         olua.gen_push_exp(v, ARGNAME, CALLBACK)
 
-        local SPACE = string.find(v.RAW_DECLTYPE, '[*&]$') and '' or ' '
+        local SPACE = string.find(v.RAWTYPE, '[*&]$') and '' or ' '
         CALLBACK.ARGS:push(format([[
-            ${v.RAW_DECLTYPE}${SPACE}${ARGNAME}
+            ${v.RAWTYPE}${SPACE}${ARGNAME}
         ]]))
     end
 
@@ -231,13 +231,7 @@ function olua.gen_callback(cls, fi, write, out)
                 }
             ]])
         end
-
-        if RET.TYPE.DECLTYPE ~= RET.TYPE.CPPCLS then
-            CALLBACK.RETURN_RESULT = format([[return (${RET.TYPE.CPPCLS})ret;]])
-        else
-            CALLBACK.RETURN_RESULT = "return ret;"
-        end
-
+        CALLBACK.RETURN_RESULT = format([[return (${RET.DECLTYPE})ret;]])
     end
 
     TAG_STORE = get_callback_store(fi) + 1
