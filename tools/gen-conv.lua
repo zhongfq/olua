@@ -7,15 +7,14 @@ local function gen_conv_header(module)
     local DECL_FUNCS = olua.newarray('\n')
 
     for _, cv in ipairs(module.CONVS) do
-        local CPPCLS_PATH = olua.topath(cv.CPPCLS)
         DECL_FUNCS:pushf([[
             // ${cv.CPPCLS}
-            int auto_olua_push_${CPPCLS_PATH}(lua_State *L, const ${cv.CPPCLS} *value);
-            void auto_olua_check_${CPPCLS_PATH}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            bool auto_olua_is_${CPPCLS_PATH}(lua_State *L, int idx);
-            void auto_olua_pack_${CPPCLS_PATH}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            int auto_olua_unpack_${CPPCLS_PATH}(lua_State *L, const ${cv.CPPCLS} *value);
-            bool auto_olua_ispack_${CPPCLS_PATH}(lua_State *L, int idx);
+            int auto_olua_push_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value);
+            void auto_olua_check_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            bool auto_olua_is_${cv.CPPNAME}(lua_State *L, int idx);
+            void auto_olua_pack_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            int auto_olua_unpack_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value);
+            bool auto_olua_ispack_${cv.CPPNAME}(lua_State *L, int idx);
         ]])
         DECL_FUNCS:push("")
     end
@@ -37,7 +36,6 @@ local function gen_conv_header(module)
 end
 
 local function gen_push_func(cv, write)
-    local CPPCLS_PATH = olua.topath(cv.CPPCLS)
     local NUM_ARGS = #cv.PROPS
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
 
@@ -50,7 +48,7 @@ local function gen_push_func(cv, write)
     end
 
     write(format([[
-        int auto_olua_push_${CPPCLS_PATH}(lua_State *L, const ${cv.CPPCLS} *value)
+        int auto_olua_push_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 lua_createtable(L, 0, ${NUM_ARGS});
@@ -66,7 +64,6 @@ local function gen_push_func(cv, write)
 end
 
 local function gen_check_func(cv, write)
-    local CPPCLS_PATH = olua.topath(cv.CPPCLS)
     local OUT = {
         DECL_ARGS = olua.newarray(),
         CHECK_ARGS = olua.newarray(),
@@ -96,7 +93,7 @@ local function gen_check_func(cv, write)
     end
 
     write(format([[
-        void auto_olua_check_${CPPCLS_PATH}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void auto_olua_check_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -113,7 +110,6 @@ local function gen_check_func(cv, write)
 end
 
 local function gen_pack_func(cv, write)
-    local CPPCLS_PATH = olua.topath(cv.CPPCLS)
     local OUT = {
         DECL_ARGS = olua.newarray(),
         CHECK_ARGS = olua.newarray(),
@@ -129,7 +125,7 @@ local function gen_pack_func(cv, write)
     end
 
     write(format([[
-        void auto_olua_pack_${CPPCLS_PATH}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void auto_olua_pack_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -145,7 +141,6 @@ local function gen_pack_func(cv, write)
 end
 
 local function gen_unpack_func(cv, write)
-    local CPPCLS_PATH = olua.topath(cv.CPPCLS)
     local NUM_ARGS = #cv.PROPS
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
     for _, pi in ipairs(cv.PROPS) do
@@ -155,7 +150,7 @@ local function gen_unpack_func(cv, write)
     end
 
     write(format([[
-        int auto_olua_unpack_${CPPCLS_PATH}(lua_State *L, const ${cv.CPPCLS} *value)
+        int auto_olua_unpack_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 ${OUT.PUSH_ARGS}
@@ -172,7 +167,6 @@ local function gen_unpack_func(cv, write)
 end
 
 local function gen_is_func(cv, write)
-    local CPPCLS_PATH = olua.topath(cv.CPPCLS)
     local TEST_HAS = olua.newarray(' && ')
     TEST_HAS:push('olua_istable(L, idx)')
     for i = #cv.PROPS, 1, -1 do
@@ -182,7 +176,7 @@ local function gen_is_func(cv, write)
         end
     end
     write(format([[
-        bool auto_olua_is_${CPPCLS_PATH}(lua_State *L, int idx)
+        bool auto_olua_is_${cv.CPPNAME}(lua_State *L, int idx)
         {
             return ${TEST_HAS};
         }
@@ -191,7 +185,6 @@ local function gen_is_func(cv, write)
 end
 
 local function gen_is_pack_func(cv, write)
-    local CPPCLS_PATH = olua.topath(cv.CPPCLS)
     local TEST_TYPE = olua.newarray(' && ')
     for i, pi in ipairs(cv.PROPS) do
         local IS_VALUE = olua.convfunc(pi.TYPE, 'is')
@@ -203,7 +196,7 @@ local function gen_is_pack_func(cv, write)
         end
     end
     write(format([[
-        bool auto_olua_ispack_${CPPCLS_PATH}(lua_State *L, int idx)
+        bool auto_olua_ispack_${cv.CPPNAME}(lua_State *L, int idx)
         {
             return ${TEST_TYPE};
         }

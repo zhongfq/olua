@@ -188,11 +188,9 @@ function olua.gen_callback(cls, fi, write, out)
 
     if localBlock then
         CALLBACK.PUSH_ARGS:push("olua_disable_objpool(L);")
-    else
-        if enablepool then
-            CALLBACK.PUSH_ARGS:push("olua_disable_objpool(L);")
-            enablepool = false
-        end
+    elseif enablepool then
+        CALLBACK.PUSH_ARGS:push("olua_disable_objpool(L);")
+        enablepool = false
     end
 
     if fi.CALLBACK_OPT.TAG_SCOPE == 'once' then
@@ -315,11 +313,10 @@ function olua.gen_callback(cls, fi, write, out)
 
     if ai.ATTR.OPTIONAL or ai.ATTR.NULLABLE then
         local OLUA_IS_VALUE = olua.convfunc(ai.TYPE, 'is')
-        CALLBACK.REMOVE_NORMAL_CALLBACK = format [[
-            olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_SUBEQUAL);
-        ]]
-        if TAG_MODE ~= 'OLUA_TAG_REPLACE' then
-            CALLBACK.REMOVE_NORMAL_CALLBACK = ''
+        if TAG_MODE == 'OLUA_TAG_REPLACE' then
+            CALLBACK.REMOVE_NORMAL_CALLBACK = format [[
+                olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_SUBEQUAL);
+            ]]
         end
         CALLBACK_CHUNK = format([[
             void *cb_store = (void *)${CB_STORE};

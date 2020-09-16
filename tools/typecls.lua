@@ -566,15 +566,18 @@ local function parse_prop(cls, name, declget, declset)
 end
 
 function olua.typecls(cppcls)
-    local cls = {CPPCLS = cppcls}
-    cls.SIMPLE_CPPCLS = string.match(cppcls, '[^:]+$')
-    cls.FUNCS = {}
-    cls.CONSTS = {}
-    cls.ENUMS = {}
-    cls.PROPS = {}
-    cls.VARS = {}
-    cls.PROTOTYPES = {}
-    cls.REG_LUATYPE = true
+    local cls = {
+        CPPCLS = cppcls,
+        CPPNAME = string.gsub(cppcls, '[.:]+', '_'),
+        SIMPLE_CPPCLS = string.match(cppcls, '[^:]+$'),
+        FUNCS = {},
+        CONSTS = {},
+        ENUMS = {},
+        PROPS = {},
+        VARS = {},
+        PROTOTYPES = {},
+        REG_LUATYPE = true,
+    }
     class_map[cls.CPPCLS] = cls
 
     function cls.func(name, ...)
@@ -892,10 +895,6 @@ function olua.toluacls(cppcls)
     return ti.LUACLS
 end
 
-function olua.topath(cppcls)
-    return string.gsub(cppcls, '[.:]+', '_')
-end
-
 function olua.ispointee(ti)
     return ti.LUACLS and not olua.isvaluetype(ti)
 end
@@ -945,6 +944,7 @@ end
 
 function olua.typeconv(ci)
     ci.PROPS = {}
+    ci.CPPNAME = string.gsub(ci.CPPCLS, '[.:]+', '_')
     for str in string.gmatch(assert(ci.DEF, 'no DEF'), '[^\n\r]+') do
         if str:find('^ *//') then
             goto continue

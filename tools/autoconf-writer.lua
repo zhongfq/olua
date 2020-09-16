@@ -96,8 +96,7 @@ local function write_typedef(module)
         local CPPCLS = cls.CPPCLS
         local DECLTYPE, LUACLS, NUMVARS = 'nil', 'nil', 'nil'
         if cls.KIND == 'Conv' then
-            local CPPCLS_PATH = olua.topath(cls.CPPCLS)
-            CONV = 'auto_olua_$$_' .. CPPCLS_PATH
+            CONV = 'auto_olua_$$_' .. string.gsub(cls.CPPCLS, '[.:]+', '_')
             NUMVARS = #cls.VARS
         elseif cls.KIND == 'Enum' then
             CONV = 'olua_$$_uint'

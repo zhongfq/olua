@@ -102,7 +102,6 @@ local function gen_class_funcs(cls, write)
 end
 
 local function gen_class_open(cls, write)
-    local CPPCLS_PATH = olua.topath(cls.CPPCLS)
     local FUNCS = olua.newarray('\n')
     local REG_LUATYPE = ''
     local SUPRECLS = "nullptr"
@@ -119,26 +118,26 @@ local function gen_class_open(cls, write)
             error(format([[duplicate method: ${cls.CPPCLS}:${LUAFUNC}]]))
         end
         exported[LUAFUNC] = true
-        FUNCS:pushf('oluacls_func(L, "${LUAFUNC}", _${CPPCLS_PATH}_${CPPFUNC});')
+        FUNCS:pushf('oluacls_func(L, "${LUAFUNC}", _${cls.CPPNAME}_${CPPFUNC});')
     end
 
     for _, pi in ipairs(cls.PROPS) do
         local FUNC_GET = "nullptr"
         local FUNC_SET = "nullptr"
         if pi.GET then
-            FUNC_GET = format('_${CPPCLS_PATH}_${pi.GET.CPPFUNC}')
+            FUNC_GET = format('_${cls.CPPNAME}_${pi.GET.CPPFUNC}')
         end
         if pi.SET then
-            FUNC_SET = format('_${CPPCLS_PATH}_${pi.SET.CPPFUNC}')
+            FUNC_SET = format('_${cls.CPPNAME}_${pi.SET.CPPFUNC}')
         end
         FUNCS:pushf('oluacls_prop(L, "${pi.PROP_NAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
 
     for _, vi in ipairs(cls.VARS) do
-        local FUNC_GET = format('_${CPPCLS_PATH}_${vi.GET.CPPFUNC}')
+        local FUNC_GET = format('_${cls.CPPNAME}_${vi.GET.CPPFUNC}')
         local FUNC_SET = "nullptr"
         if vi.SET and vi.SET.CPPFUNC then
-           FUNC_SET = format('_${CPPCLS_PATH}_${vi.SET.CPPFUNC}')
+           FUNC_SET = format('_${cls.CPPNAME}_${vi.SET.CPPFUNC}')
         end
         FUNCS:pushf('oluacls_prop(L, "${vi.VARNAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
@@ -176,7 +175,7 @@ local function gen_class_open(cls, write)
     end
 
     write(format([[
-        static int luaopen_${CPPCLS_PATH}(lua_State *L)
+        static int luaopen_${cls.CPPNAME}(lua_State *L)
         {
             oluacls_class(L, "${cls.LUACLS}", ${SUPRECLS});
             ${FUNCS}
@@ -250,9 +249,8 @@ local function gen_luaopen(module, write)
     local REQUIRES = olua.newarray('\n')
 
     for _, cls in ipairs(module.CLASSES) do
-        local CPPCLS_PATH = olua.topath(cls.CPPCLS)
         REQUIRES:push(cls.DEFIF)
-        REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${CPPCLS_PATH});')
+        REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${cls.CPPNAME});')
         REQUIRES:push(cls.DEFIF and '#endif' or nil)
     end
 

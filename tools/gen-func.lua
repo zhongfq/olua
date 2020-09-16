@@ -3,7 +3,6 @@ local olua = require "olua"
 local format = olua.format
 
 local function gen_func_snippet(cls, fi, write)
-    local CPPCLS_PATH = olua.topath(cls.CPPCLS)
     local SNIPPET = fi.SNIPPET
     SNIPPET = string.gsub(SNIPPET, '^[\n ]*{', '{\n    olua_startinvoke(L);\n')
     SNIPPET = string.gsub(SNIPPET, '(\n)([ ]*)(return )', function (lf, indent, ret)
@@ -17,7 +16,7 @@ local function gen_func_snippet(cls, fi, write)
         return s
     end)
     write(format([[
-        static int _${CPPCLS_PATH}_${fi.CPPFUNC}(lua_State *L)
+        static int _${cls.CPPNAME}_${fi.CPPFUNC}(lua_State *L)
         ${SNIPPET}
     ]]))
     write('')
@@ -293,7 +292,6 @@ local function gen_func_ret(cls, fi, func)
 end
 
 local function gen_one_func(cls, fi, write, funcidx, exported)
-    local CPPCLS_PATH = olua.topath(cls.CPPCLS)
     local FUNC_INDEX = funcidx or ''
     local CALLER = fi.STATIC and (cls.CPPCLS .. '::') or 'self->'
     local CPPFUNC = not fi.VARIABLE and fi.CPPFUNC or fi.VARNAME
@@ -319,7 +317,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
 
     olua.message(fi.DECLFUNC)
 
-    local funcname = format([[_${CPPCLS_PATH}_${fi.CPPFUNC}${FUNC_INDEX}]])
+    local funcname = format([[_${cls.CPPNAME}_${fi.CPPFUNC}${FUNC_INDEX}]])
     if exported[funcname] then
         return
     end
@@ -378,7 +376,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
     end
 
     write(format([[
-        static int _${CPPCLS_PATH}_${fi.CPPFUNC}${FUNC_INDEX}(lua_State *L)
+        static int _${cls.CPPNAME}_${fi.CPPFUNC}${FUNC_INDEX}(lua_State *L)
         {
             olua_startinvoke(L);
 
@@ -420,7 +418,6 @@ end
 local function gen_test_and_call(cls, fns)
     local CALL_CHUNK = {}
     for _, fi in ipairs(fns) do
-        local CPPCLS_PATH = olua.topath(cls.CPPCLS)
         if #fi.ARGS > 0 then
             local TEST_ARGS = {}
             local MAX_VARS = 1
@@ -456,13 +453,13 @@ local function gen_test_and_call(cls, fns)
                 EXP1 = format([[
                     // if (${TEST_ARGS}) {
                         // ${fi.DECLFUNC}
-                        return _${CPPCLS_PATH}_${fi.CPPFUNC}${fi.INDEX}(L);
+                        return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                     // }
                 ]]),
                 EXP2 = format([[
                     if (${TEST_ARGS}) {
                         // ${fi.DECLFUNC}
-                        return _${CPPCLS_PATH}_${fi.CPPFUNC}${fi.INDEX}(L);
+                        return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                     }
                 ]]),
             }
@@ -477,7 +474,7 @@ local function gen_test_and_call(cls, fns)
                 MAX_VARS = 1,
                 EXP1 = format([[
                     // ${fi.DECLFUNC}
-                    return _${CPPCLS_PATH}_${fi.CPPFUNC}${fi.INDEX}(L);
+                    return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                 ]])
             }
         end
@@ -499,7 +496,6 @@ local function gen_test_and_call(cls, fns)
 end
 
 local function gen_multi_func(cls, fis, write, exported)
-    local CPPCLS_PATH = olua.topath(cls.CPPCLS)
     local CPPFUNC = fis[1].CPPFUNC
     local SUBONE = fis[1].STATIC and "" or " - 1"
     local IF_CHUNK = olua.newarray('\n\n')
@@ -508,7 +504,7 @@ local function gen_multi_func(cls, fis, write, exported)
         gen_one_func(cls, fi, write, fi.INDEX, exported)
     end
 
-    local funcname = format([[_${CPPCLS_PATH}_${CPPFUNC}]])
+    local funcname = format([[_${cls.CPPNAME}_${CPPFUNC}]])
     assert(not exported[funcname], cls.CPPCLS .. ' ' .. CPPFUNC)
     exported[funcname] = true
 
@@ -525,7 +521,7 @@ local function gen_multi_func(cls, fis, write, exported)
     end
 
     write(format([[
-        static int _${CPPCLS_PATH}_${CPPFUNC}(lua_State *L)
+        static int _${cls.CPPNAME}_${CPPFUNC}(lua_State *L)
         {
             int num_args = lua_gettop(L)${SUBONE};
 
