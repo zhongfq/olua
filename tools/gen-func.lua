@@ -253,7 +253,7 @@ function olua.gen_push_exp(arg, name, out)
 end
 
 local function gen_func_ret(cls, fi, func)
-    if fi.RET.NUM > 0 then
+    if fi.RET.TYPE.CPPCLS ~= 'void' then
         local SPACE = string.find(fi.RET.DECLTYPE, '[ *&]$') and '' or ' '
         if fi.RET.TYPE.TYPEREF and SPACE == ' ' then
             func.RET_EXP = format('${fi.RET.DECLTYPE} &ret = (${fi.RET.DECLTYPE} &)')
@@ -295,8 +295,8 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
     local FUNC_INDEX = funcidx or ''
     local CALLER = fi.STATIC and (cls.CPPCLS .. '::') or 'self->'
     local CPPFUNC = not fi.VARIABLE and fi.CPPFUNC or fi.VARNAME
-    local ARGS_BEGIN = not fi.VARIABLE and '(' or (fi.RET.NUM > 0 and '' or ' = ')
-    local ARGS_END = not fi.VARIABLE and ')' or ''
+    local BEGIN_ARGS = not fi.VARIABLE and '(' or (fi.RET.TYPE.CPPCLS ~= 'void' and '' or ' = ')
+    local END_ARGS = not fi.VARIABLE and ')' or ''
 
     local FUNC = {
         TOTAL = #fi.ARGS,
@@ -315,7 +315,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
         IDX = 0,
     }
 
-    olua.message(fi.DECLFUNC)
+    olua.message(fi.FUNCDEF)
 
     local funcname = format([[_${cls.CPPNAME}_${fi.CPPFUNC}${FUNC_INDEX}]])
     if exported[funcname] then
@@ -358,7 +358,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
         table.insert(FUNC.INJECT_AFTER, 1, '// inject code after call')
     end
 
-    if fi.CONSTRUCTOR then
+    if fi.CTOR then
         CALLER = 'new ' .. cls.CPPCLS
         FUNC.POST_NEW = 'olua_postnew(L, ret);'
     else
@@ -370,7 +370,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
         FUNC.PUSH_RET = format [[
             ${FUNC.PUSH_STUB};
         ]]
-        if not fi.CONSTRUCTOR then
+        if not fi.CTOR then
             FUNC.POST_NEW = ''
         end
     end
@@ -388,8 +388,8 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
 
             ${FUNC.CALLBACK}
 
-            // ${fi.DECLFUNC}
-            ${FUNC.RET_EXP}${CALLER}${ARGS_BEGIN}${FUNC.CALLER_ARGS}${ARGS_END};
+            // ${fi.FUNCDEF}
+            ${FUNC.RET_EXP}${CALLER}${BEGIN_ARGS}${FUNC.CALLER_ARGS}${END_ARGS};
             ${FUNC.PUSH_RET}
             ${FUNC.POST_NEW}
 
@@ -452,13 +452,13 @@ local function gen_test_and_call(cls, fns)
                 MAX_VARS = MAX_VARS,
                 EXP1 = format([[
                     // if (${TEST_ARGS}) {
-                        // ${fi.DECLFUNC}
+                        // ${fi.FUNCDEF}
                         return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                     // }
                 ]]),
                 EXP2 = format([[
                     if (${TEST_ARGS}) {
-                        // ${fi.DECLFUNC}
+                        // ${fi.FUNCDEF}
                         return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                     }
                 ]]),
@@ -473,7 +473,7 @@ local function gen_test_and_call(cls, fns)
             CALL_CHUNK[#CALL_CHUNK + 1] = {
                 MAX_VARS = 1,
                 EXP1 = format([[
-                    // ${fi.DECLFUNC}
+                    // ${fi.FUNCDEF}
                     return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                 ]])
             }

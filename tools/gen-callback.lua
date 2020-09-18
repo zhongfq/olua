@@ -71,7 +71,7 @@ local function gen_ret_callback(cls, fi, write)
         CB_STORE = 'self'
     else
         CB_STORE = 'arg' .. TAG_STORE
-        check_callback_store(TAG_STORE)
+        check_callback_store(fi, TAG_STORE)
     end
 
     local block = format([[
@@ -180,9 +180,9 @@ function olua.gen_callback(cls, fi, write, out)
 
         olua.gen_push_exp(v, ARGNAME, CALLBACK)
 
-        local SPACE = string.find(v.RAWTYPE, '[*&]$') and '' or ' '
+        local SPACE = string.find(v.RAWDECL, '[*&]$') and '' or ' '
         CALLBACK.ARGS:push(format([[
-            ${v.RAWTYPE}${SPACE}${ARGNAME}
+            ${v.RAWDECL}${SPACE}${ARGNAME}
         ]]))
     end
 
@@ -234,7 +234,7 @@ function olua.gen_callback(cls, fi, write, out)
 
     TAG_STORE = get_callback_store(fi) + 1
     if TAG_STORE == 0 then
-        local POST_PUSH = fi.CONSTRUCTOR and
+        local POST_PUSH = fi.CTOR and
             'olua_postnew(L, ret);' or
             'olua_postpush(L, ret, OLUA_OBJ_NEW);'
         local REMOVE_CALLBACK = ''

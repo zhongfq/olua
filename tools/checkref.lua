@@ -3,7 +3,7 @@ local olua = require "olua"
 local function check_func(cls, fn, refmap)
     if not fn.STATIC and refmap[fn.RET.TYPE.CPPCLS] then
         if not (fn.RET.ATTR.DELREF or fn.RET.ATTR.REF) then
-            print('not specify ref: ' .. cls.CPPCLS .. ' => ' .. fn.DECLFUNC)
+            print('not specify ref: ' .. cls.CPPCLS .. ' => ' .. fn.FUNCDEF)
         end
     end
 end

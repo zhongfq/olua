@@ -19,7 +19,7 @@ local function check_gc_method(cls)
     local has_constructor = false
     local has_move = false
     for _, v in ipairs(cls.FUNCS) do
-        if v[1].CONSTRUCTOR then
+        if v[1].CTOR then
             has_constructor = true
         end
         if v[1].LUAFUNC == '__move' then
@@ -88,13 +88,13 @@ local function gen_class_funcs(cls, write)
         check_gen_class_func(cls, fi, write, exported)
     end
 
-    olua.sort(cls.PROPS, 'PROP_NAME')
+    olua.sort(cls.PROPS, 'NAME')
     for _, pi in ipairs(cls.PROPS) do
         check_gen_class_func(cls, {pi.GET}, write, exported)
         check_gen_class_func(cls, {pi.SET}, write, exported)
     end
 
-    olua.sort(cls.VARS, 'VARNAME')
+    olua.sort(cls.VARS, 'NAME')
     for _, ai in ipairs(cls.VARS) do
         check_gen_class_func(cls, {ai.GET}, write, exported)
         check_gen_class_func(cls, {ai.SET}, write, exported)
@@ -130,7 +130,7 @@ local function gen_class_open(cls, write)
         if pi.SET then
             FUNC_SET = format('_${cls.CPPNAME}_${pi.SET.CPPFUNC}')
         end
-        FUNCS:pushf('oluacls_prop(L, "${pi.PROP_NAME}", ${FUNC_GET}, ${FUNC_SET});')
+        FUNCS:pushf('oluacls_prop(L, "${pi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
 
     for _, vi in ipairs(cls.VARS) do
@@ -139,7 +139,7 @@ local function gen_class_open(cls, write)
         if vi.SET and vi.SET.CPPFUNC then
            FUNC_SET = format('_${cls.CPPNAME}_${vi.SET.CPPFUNC}')
         end
-        FUNCS:pushf('oluacls_prop(L, "${vi.VARNAME}", ${FUNC_GET}, ${FUNC_SET});')
+        FUNCS:pushf('oluacls_prop(L, "${vi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
 
     olua.sort(cls.CONSTS, 'NAME')

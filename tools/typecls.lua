@@ -225,14 +225,13 @@ local function parse_callback_type(cls, tn)
     local args = parse_args(cls, declstr)
     local decltype = {}
     for _, ai in ipairs(args) do
-        decltype[#decltype + 1] = ai.RAWTYPE
+        decltype[#decltype + 1] = ai.RAWDECL
     end
     decltype = table.concat(decltype, ", ")
     decltype = string.format('std::function<%s(%s)>', todecltype(cls, rtn), decltype)
 
     local RET = {}
     RET.TYPE = olua.typeinfo(rtn, cls)
-    RET.NUM = RET.TYPE.CPPCLS == "void" and 0 or 1
     RET.DECLTYPE = todecltype(cls, rtn)
     RET.ATTR = rtattr
 
@@ -248,7 +247,7 @@ end
     {
         TYPE             -- type info
         DECLTYPE         -- decltype: std::vector<int>
-        RAWTYPE          -- rawtype: const std::vector<int> &
+        RAWDECL          -- rawdecl: const std::vector<int> &
         VARNAME          -- var name: points
         ATTR             -- attr: {PACK = true}
         CALLBACK = {     -- eg: std::function<void (float, const A *a)>
@@ -330,7 +329,7 @@ function parse_args(cls, declstr)
             args[#args + 1] = {
                 TYPE = olua.typeinfo(tn, cls),
                 DECLTYPE = todecltype(cls, tn, true),
-                RAWTYPE = todecltype(cls, tn),
+                RAWDECL = todecltype(cls, tn),
                 VARNAME = varname or '',
                 ATTR = attr,
                 CALLBACK = {},
@@ -384,7 +383,7 @@ local function gen_func_pack(cls, fi, funcs)
         fi2.RET = copy(fi.RET)
         fi2.RET.ATTR = copy(fi.RET.ATTR)
         fi2.ARGS = {}
-        fi2.DECLFUNC = string.gsub(fi.DECLFUNC, '@pack *', '')
+        fi2.FUNCDEF = string.gsub(fi.FUNCDEF, '@pack *', '')
         for i in ipairs(fi.ARGS) do
             fi2.ARGS[i] = copy(fi.ARGS[i])
             fi2.ARGS[i].ATTR = copy(fi.ARGS[i].ATTR)
@@ -445,8 +444,7 @@ local function parse_func(cls, name, ...)
             fi.LUAFUNC = assert(name)
             fi.CPPFUNC = name
             fi.SNIPPET = declfunc
-            fi.DECLFUNC = '<function snippet>'
-            fi.RET.NUM = 0
+            fi.FUNCDEF = '<function snippet>'
             fi.RET.TYPE = olua.typeinfo('void', cls)
             fi.RET.ATTR = {}
             fi.ARGS = {}
@@ -455,16 +453,16 @@ local function parse_func(cls, name, ...)
             fi.MAX_ARGS = #fi.ARGS
         else
             local typename, attr, str = parse_type(declfunc)
-            if typename == cls.SIMPLE_CPPCLS and string.find(str, '^%(') then
+            if typename == cls.CTORNAME and string.find(str, '^%(') then
                 typename = typename .. ' *'
                 str = 'new' .. str
-                fi.CONSTRUCTOR = true
+                fi.CTOR = true
                 attr.STATIC = true
             end
             fi.CPPFUNC = string.match(str, '[^ ()]+')
             fi.LUAFUNC = name or fi.CPPFUNC
             fi.STATIC = attr.STATIC
-            fi.DECLFUNC = declfunc
+            fi.FUNCDEF = declfunc
             fi.INJECT = {}
             if string.find(typename, 'std::function<') then
                 local callback = parse_callback_type(cls, typename, nil)
@@ -474,12 +472,10 @@ local function parse_func(cls, name, ...)
                     }, {__index = olua.typeinfo('std::function', cls)}),
                     DECLTYPE = callback.DECLTYPE,
                     ATTR = attr,
-                    NUM = 1,
                     CALLBACK = callback,
                 }
             else
                 fi.RET.TYPE = olua.typeinfo(typename, cls)
-                fi.RET.NUM = fi.RET.TYPE.CPPCLS == "void" and 0 or 1
                 fi.RET.DECLTYPE = todecltype(cls, typename)
                 fi.RET.ATTR = attr
             end
@@ -504,7 +500,7 @@ end
 
 local function parse_prop(cls, name, declget, declset)
     local pi = {}
-    pi.PROP_NAME = assert(name, 'no prop name')
+    pi.NAME = assert(name, 'no prop name')
 
     -- eg: name = url
     -- try getUrl and getURL
@@ -531,7 +527,7 @@ local function parse_prop(cls, name, declget, declset)
             for _, f in ipairs(v) do
                 if test(f, name, 'get') or test(f, name, 'is') or
                     test(f, name2, 'get') or test(f, name2, 'is') then
-                    olua.message(f.DECLFUNC)
+                    olua.message(f.FUNCDEF)
                     olua.assert(#f.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, f.CPPFUNC)
                     pi.GET = f
                 end
@@ -553,7 +549,7 @@ local function parse_prop(cls, name, declget, declset)
     end
 
     if not pi.GET.SNIPPET then
-        assert(pi.GET.RET.NUM > 0, declget)
+        assert(pi.GET.RET.TYPE.CPPCLS ~= 'void', declget)
     elseif declget then
         pi.GET.CPPFUNC = 'get_' .. pi.GET.CPPFUNC
     end
@@ -569,7 +565,7 @@ function olua.typecls(cppcls)
     local cls = {
         CPPCLS = cppcls,
         CPPNAME = string.gsub(cppcls, '[.:]+', '_'),
-        SIMPLE_CPPCLS = string.match(cppcls, '[^:]+$'),
+        CTORNAME = string.match(cppcls, '[^:]+$'),
         FUNCS = {},
         CONSTS = {},
         ENUMS = {},
@@ -592,20 +588,20 @@ function olua.typecls(cppcls)
     function cls.funcs(funcs)
         local arr = {}
         local dict = {}
-        for declfunc in string.gmatch(funcs, '[^\n\r]+') do
-            declfunc = string.gsub(declfunc, '^ *', '')
-            declfunc = string.gsub(declfunc, ' *inline ', '')
-            if #declfunc > 0 then
-                if not string.find(declfunc, '^ *//') then
-                    olua.message(declfunc)
-                    local _, str = parse_attr(declfunc)
+        for line in string.gmatch(funcs, '[^\n\r]+') do
+            line = string.gsub(line, '^ *', '')
+            line = string.gsub(line, ' *inline ', '')
+            if #line > 0 then
+                if not string.find(line, '^ *//') then
+                    olua.message(line)
+                    local _, str = parse_attr(line)
                     local fn
-                    if string.find(str, '^' .. cls.SIMPLE_CPPCLS .. ' *%(') then
+                    if string.find(str, '^' .. cls.CTORNAME .. ' *%(') then
                         fn = cppcls
                     else
                         _, _, str = parse_type(str)        -- skip return type
                         fn = string.match(str, '([^ ()]+) *%(')
-                        olua.assert(fn, 'error decl func: ' .. declfunc)
+                        olua.assert(fn, 'error decl func: ' .. line)
                     end
 
                     local fns = dict[fn]
@@ -614,7 +610,7 @@ function olua.typecls(cppcls)
                         arr[#arr + 1] = fns
                         dict[fn] = fns
                     end
-                    fns[#fns + 1] = string.gsub(declfunc, '^ *', '')
+                    fns[#fns + 1] = string.gsub(line, '^ *', '')
                 end
             end
         end
@@ -776,15 +772,14 @@ function olua.typecls(cppcls)
 
         -- make getter/setter function
         cls.VARS[#cls.VARS + 1] = {
-            VARNAME = assert(name),
+            NAME = assert(name),
             GET = {
                 LUAFUNC = name,
                 CPPFUNC = 'get_' .. ARGS[1].VARNAME,
                 VARNAME = ARGS[1].VARNAME,
                 INJECT = {},
-                DECLFUNC = rawstr,
+                FUNCDEF = rawstr,
                 RET = {
-                    NUM = 1,
                     TYPE = ARGS[1].TYPE,
                     DECLTYPE = ARGS[1].DECLTYPE,
                     ATTR = {},
@@ -801,9 +796,8 @@ function olua.typecls(cppcls)
                 VARNAME = ARGS[1].VARNAME,
                 INJECT = {},
                 STATIC = static > 0,
-                DECLFUNC = rawstr,
+                FUNCDEF = rawstr,
                 RET = {
-                    NUM = 0,
                     TYPE = olua.typeinfo('void', cls),
                     ATTR = {},
                 },
@@ -820,10 +814,10 @@ function olua.typecls(cppcls)
     end
 
     function cls.vars(vars)
-        for declvar in string.gmatch(vars, '[^\n\r]+') do
-            declvar = string.gsub(declvar, '^ *', '')
-            if #declvar > 0 and not string.find(declvar, '^ *//') then
-                cls.var(nil, declvar)
+        for line in string.gmatch(vars, '[^\n\r]+') do
+            line = string.gsub(line, '^ *', '')
+            if #line > 0 and not string.find(line, '^ *//') then
+                cls.var(nil, line)
             end
         end
     end
@@ -834,10 +828,10 @@ function olua.typecls(cppcls)
     end
 
     function cls.props(props)
-        for declprop in string.gmatch(props, '[^\n\r]+') do
-            declprop = string.gsub(declprop, '^ *', '')
-            if #declprop > 0 and not string.find(declprop, '^ *//') then
-                cls.prop(string.match(declprop, '[%w_]+'))
+        for line in string.gmatch(props, '[^\n\r]+') do
+            line = string.gsub(line, '^ *', '')
+            if #line > 0 and not string.find(line, '^ *//') then
+                cls.prop(string.match(line, '[%w_]+'))
             end
         end
     end
@@ -873,10 +867,10 @@ function olua.typecls(cppcls)
     end
 
     function cls.enums(enums)
-        for declenum in string.gmatch(enums, '[^\n\r]+') do
-            local name, value = string.match(declenum, '([^ ]+) *= *([^ ]+)')
+        for line in string.gmatch(enums, '[^\n\r]+') do
+            local name, value = string.match(line, '([^ ]+) *= *([^ ]+)')
             if not name then
-                name = string.match(declenum, '[%w:_]+')
+                name = string.match(line, '[%w:_]+')
             elseif not string.find(value, cls.CPPCLS) then
                 value = cls.CPPCLS .. '::' .. value
             end
@@ -945,15 +939,15 @@ end
 function olua.typeconv(ci)
     ci.PROPS = {}
     ci.CPPNAME = string.gsub(ci.CPPCLS, '[.:]+', '_')
-    for str in string.gmatch(assert(ci.DEF, 'no DEF'), '[^\n\r]+') do
-        if str:find('^ *//') then
+    for line in string.gmatch(assert(ci.DEF, 'no DEF'), '[^\n\r]+') do
+        if line:find('^ *//') then
             goto continue
         end
-        olua.message(str)
-        str = str:gsub('^ *', ''):gsub('; *$', '')
-        local arg = parse_args(ci, '(' .. str .. ')')[1]
+        olua.message(line)
+        line = line:gsub('^ *', ''):gsub('; *$', '')
+        local arg = parse_args(ci, '(' .. line .. ')')[1]
         if arg then
-            arg.VARNAME = arg.VARNAME
+            arg.NAME = arg.VARNAME
             arg.LUANAME = string.gsub(arg.VARNAME, '^_*', '')
             ci.PROPS[#ci.PROPS + 1] = arg
         end
