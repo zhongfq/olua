@@ -92,6 +92,10 @@ function olua.sort(arr, field)
     return arr
 end
 
+function olua.copy(t)
+    return setmetatable({}, {__index = t})
+end
+
 function olua.newarray(sep, prefix, posfix)
     local mt = {}
     mt.__index = mt

@@ -59,7 +59,7 @@ function olua.gen_check_exp(arg, name, i, out)
     -- lua value to cpp value
     local ARGN = i
     local ARGNAME = name
-    local CHECK_FUNC = olua.convfunc(arg.TYPE, 'check')
+    local CHECK_FUNC = olua.convfunc(arg.TYPE, arg.ATTR.PACK and 'pack' or 'check')
     if arg.ATTR.OUT then
         out.CHECK_ARGS:pushf([[// no need to check '${ARGNAME}' with mark '@out']])
         return
@@ -88,7 +88,6 @@ function olua.gen_check_exp(arg, name, i, out)
         end
     elseif not arg.CALLBACK or not arg.CALLBACK.ARGS then
         if arg.ATTR.PACK then
-            CHECK_FUNC = olua.convfunc(arg.TYPE, 'pack')
             out.TOTAL = arg.TYPE.NUMVARS + out.TOTAL - 1
             out.IDX = out.IDX + arg.TYPE.NUMVARS - 1
         end
@@ -125,12 +124,23 @@ function olua.gen_addref_exp(fi, arg, i, out)
 
     if ADDREF == '|' then
         if arg.TYPE.SUBTYPES then
-            out.INJECT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_MULTIPLE | OLUA_FLAG_ARRAY);')
+            if arg.ATTR.PACK then
+                local SUBTYPE = arg.TYPE.SUBTYPES[1]
+                local OLUA_PUSH_FUNC = olua.convfunc(arg.TYPE, 'push')
+                out.INSERT_AFTER:pushf([[
+                    int ref_store = lua_absindex(L, ${WHERE});
+                    ${OLUA_PUSH_FUNC}(L, arg${ARGN}, "${SUBTYPE.LUACLS}");
+                    olua_addref(L, ref_store, "${REFNAME}", -1, OLUA_MODE_MULTIPLE | OLUA_FLAG_ARRAY);
+                    lua_pop(L, 1);
+                ]])
+            else
+                out.INSERT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_MULTIPLE | OLUA_FLAG_ARRAY);')
+            end
         else
-            out.INJECT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_MULTIPLE);')
+            out.INSERT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_MULTIPLE);')
         end
     elseif ADDREF == "^" then
-        out.INJECT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_SINGLE);')
+        out.INSERT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_SINGLE);')
     else
         error('no support addref flag: ' .. ADDREF)
     end
@@ -160,14 +170,14 @@ function olua.gen_delref_exp(fi, arg, i, out)
     end
 
     if DELREF == '~' then
-        out.INJECT_BEFORE:pushf('olua_startcmpdelref(L, ${WHERE}, "${REFNAME}");')
-        out.INJECT_AFTER:pushf('olua_endcmpdelref(L, ${WHERE}, "${REFNAME}");')
+        out.INSERT_BEFORE:pushf('olua_startcmpdelref(L, ${WHERE}, "${REFNAME}");')
+        out.INSERT_AFTER:pushf('olua_endcmpdelref(L, ${WHERE}, "${REFNAME}");')
     elseif DELREF == '*' then
-        out.INJECT_AFTER:pushf('olua_delallrefs(L, ${WHERE}, "${REFNAME}");')
+        out.INSERT_AFTER:pushf('olua_delallrefs(L, ${WHERE}, "${REFNAME}");')
     elseif DELREF == '|' then
-        out.INJECT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_MULTIPLE);')
+        out.INSERT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_MULTIPLE);')
     elseif DELREF == "^" then
-        out.INJECT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_SINGLE);')
+        out.INSERT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REFNAME}", ${ARGN}, OLUA_MODE_SINGLE);')
     else
         error('no support delref flag: ' .. DELREF)
     end
@@ -300,11 +310,12 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
 
     local FUNC = {
         TOTAL = #fi.ARGS,
+        IDX = 0,
         DECL_ARGS = olua.newarray(),
         CHECK_ARGS = olua.newarray(),
         CALLER_ARGS = olua.newarray(', '),
-        INJECT_AFTER = olua.newarray():push(fi.INJECT.AFTER),
-        INJECT_BEFORE = olua.newarray():push(fi.INJECT.BEFORE),
+        INSERT_AFTER = olua.newarray():push(fi.INSERT.AFTER),
+        INSERT_BEFORE = olua.newarray():push(fi.INSERT.BEFORE),
         PUSH_RET = "",
         RET_EXP = "",
         NUM_RET = "0",
@@ -312,7 +323,6 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
         CALLBACK = "",
         PUSH_STUB = "",
         REMOVE_LOCAL_CALLBACK = "",
-        IDX = 0,
     }
 
     olua.message(fi.FUNCDEF)
@@ -350,12 +360,12 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
         end
     end
 
-    if #FUNC.INJECT_BEFORE > 0 then
-        table.insert(FUNC.INJECT_BEFORE, 1, '// inject code before call')
+    if #FUNC.INSERT_BEFORE > 0 then
+        table.insert(FUNC.INSERT_BEFORE, 1, '// insert code before call')
     end
 
-    if #FUNC.INJECT_AFTER > 0 then
-        table.insert(FUNC.INJECT_AFTER, 1, '// inject code after call')
+    if #FUNC.INSERT_AFTER > 0 then
+        table.insert(FUNC.INSERT_AFTER, 1, '// insert code after call')
     end
 
     if fi.CTOR then
@@ -384,7 +394,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
 
             ${FUNC.CHECK_ARGS}
 
-            ${FUNC.INJECT_BEFORE}
+            ${FUNC.INSERT_BEFORE}
 
             ${FUNC.CALLBACK}
 
@@ -393,7 +403,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
             ${FUNC.PUSH_RET}
             ${FUNC.POST_NEW}
 
-            ${FUNC.INJECT_AFTER}
+            ${FUNC.INSERT_AFTER}
 
             ${FUNC.REMOVE_LOCAL_CALLBACK}
 
@@ -484,12 +494,8 @@ local function gen_test_and_call(cls, fns)
         return a.MAX_VARS > b.MAX_VARS
     end)
 
-    if #CALL_CHUNK > 1 then
-        for i, v in ipairs(CALL_CHUNK) do
-            CALL_CHUNK[i] = i == #CALL_CHUNK and v.EXP1 or v.EXP2
-        end
-    else
-        CALL_CHUNK[1] = CALL_CHUNK[1].EXP1
+    for i, v in ipairs(CALL_CHUNK) do
+        CALL_CHUNK[i] = i == #CALL_CHUNK and v.EXP1 or v.EXP2
     end
 
     return table.concat(CALL_CHUNK, "\n\n")
@@ -500,8 +506,16 @@ local function gen_multi_func(cls, fis, write, exported)
     local SUBONE = fis[1].STATIC and "" or " - 1"
     local IF_CHUNK = olua.newarray('\n\n')
 
+    local pack_fi
+
     for _, fi in ipairs(fis) do
         gen_one_func(cls, fi, write, fi.INDEX, exported)
+        for _, arg in ipairs(fi.ARGS) do
+            if arg.ATTR.PACK and not arg.TYPE.NUMVARS then
+                pack_fi = fi
+                break
+            end
+        end
     end
 
     local funcname = format([[_${cls.CPPNAME}_${CPPFUNC}]])
@@ -518,6 +532,15 @@ local function gen_multi_func(cls, fis, write, exported)
                 }
             ]])
         end
+    end
+
+    if pack_fi then
+        IF_CHUNK:pushf([[
+            if (num_args > 0) {
+                // ${pack_fi.FUNCDEF}
+                return _${cls.CPPNAME}_${pack_fi.CPPFUNC}${pack_fi.INDEX}(L);
+            }
+        ]])
     end
 
     write(format([[

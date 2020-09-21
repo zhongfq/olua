@@ -129,8 +129,8 @@ function olua.gen_callback(cls, fi, write, out)
         DECL_RESULT = "",
         RETURN_RESULT = "",
         CHECK_RESULT = "",
-        INJECT_BEFORE = olua.newarray():push(fi.INJECT.CALLBACK_BEFORE),
-        INJECT_AFTER = olua.newarray():push(fi.INJECT.CALLBACK_AFTER),
+        INSERT_BEFORE = olua.newarray():push(fi.INSERT.CALLBACK_BEFORE),
+        INSERT_AFTER = olua.newarray():push(fi.INSERT.CALLBACK_AFTER),
     }
 
     local localBlock = false
@@ -264,17 +264,17 @@ function olua.gen_callback(cls, fi, write, out)
 
     CALLBACK.ARGS = table.concat(CALLBACK.ARGS, ", ")
 
-    if #CALLBACK.INJECT_BEFORE > 0 then
-        CALLBACK.INJECT_BEFORE = format [[
-            // inject code before call
-            ${CALLBACK.INJECT_BEFORE}
+    if #CALLBACK.INSERT_BEFORE > 0 then
+        CALLBACK.INSERT_BEFORE = format [[
+            // insert code before call
+            ${CALLBACK.INSERT_BEFORE}
         ]]
     end
 
-    if #CALLBACK.INJECT_AFTER > 0 then
-        CALLBACK.INJECT_AFTER = format [[
-            // inject code after call
-            ${CALLBACK.INJECT_AFTER}
+    if #CALLBACK.INSERT_AFTER > 0 then
+        CALLBACK.INSERT_AFTER = format [[
+            // insert code after call
+            ${CALLBACK.INSERT_AFTER}
         ]]
     end
 
@@ -294,13 +294,13 @@ function olua.gen_callback(cls, fi, write, out)
                 int top = lua_gettop(L);
                 ${CALLBACK.PUSH_ARGS}
 
-                ${CALLBACK.INJECT_BEFORE}
+                ${CALLBACK.INSERT_BEFORE}
 
                 olua_callback(L, cb_store, cb_name.c_str(), ${CALLBACK.NUM_ARGS});
 
                 ${CALLBACK.CHECK_RESULT}
 
-                ${CALLBACK.INJECT_AFTER}
+                ${CALLBACK.INSERT_AFTER}
 
                 ${CALLBACK.REMOVE_ONCE_CALLBACK}
 

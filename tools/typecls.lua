@@ -336,8 +336,9 @@ function parse_args(cls, declstr)
             }
         end
 
-        if attr.PACK then
-            count = count + olua.assert(args[#args].TYPE.NUMVARS, args[#args].TYPE.CPPCLS)
+        local num_vars = args[#args].TYPE.NUMVARS or 1
+        if attr.PACK and num_vars > 0 then
+            count = count + olua.assert(num_vars, args[#args].TYPE.CPPCLS)
         else
             count = count + 1
         end
@@ -358,80 +359,75 @@ end
 
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
-    local ARGS_DECL = {}
-    local RET_DECL = fi.RET.SUBTYPES and fi.RET.DECLTYPE or fi.RET.TYPE.CPPCLS
-    local CPPFUNC = fi.CPPFUNC
+    local DECL_ARGS = olua.newarray(', ')
     local STATIC = fi.STATIC and "static " or ""
     for _, v in ipairs(fi.ARGS) do
-        ARGS_DECL[#ARGS_DECL + 1] = (v.TYPE.SUBTYPES or next(v.CALLBACK)) and v.DECLTYPE or v.TYPE.CPPCLS
+        DECL_ARGS:push(v.DECLTYPE)
     end
-    ARGS_DECL = table.concat(ARGS_DECL, ", ")
     fi.PROTOTYPE = format([[
-        ${STATIC}${RET_DECL} ${CPPFUNC}(${ARGS_DECL})
+        ${STATIC}${fi.RET.DECLTYPE} ${fi.CPPFUNC}(${DECL_ARGS})
     ]])
     cls.PROTOTYPES[fi.PROTOTYPE] = true
 end
 
 local function gen_func_pack(cls, fi, funcs)
-    local function copy(t)
-        return setmetatable({}, {__index = t})
+    local has_pack = false
+    for i, arg in ipairs(fi.ARGS) do
+        if arg.ATTR.PACK then
+            has_pack = true
+            break
+        end
     end
     -- has @pack? gen one more func
-    if fi.MAX_ARGS ~= #fi.ARGS then
+    if has_pack then
         local packarg
-        local fi2 = copy(fi)
-        fi2.RET = copy(fi.RET)
-        fi2.RET.ATTR = copy(fi.RET.ATTR)
-        fi2.ARGS = {}
-        fi2.FUNCDEF = string.gsub(fi.FUNCDEF, '@pack *', '')
+        local newfi = olua.copy(fi)
+        newfi.RET = olua.copy(fi.RET)
+        newfi.RET.ATTR = olua.copy(fi.RET.ATTR)
+        newfi.ARGS = {}
+        newfi.FUNCDEF = string.gsub(fi.FUNCDEF, '@pack *', '')
         for i in ipairs(fi.ARGS) do
-            fi2.ARGS[i] = copy(fi.ARGS[i])
-            fi2.ARGS[i].ATTR = copy(fi.ARGS[i].ATTR)
+            newfi.ARGS[i] = olua.copy(fi.ARGS[i])
+            newfi.ARGS[i].ATTR = olua.copy(fi.ARGS[i].ATTR)
             if fi.ARGS[i].ATTR.PACK then
                 assert(not packarg, 'too many pack args')
                 packarg = fi.ARGS[i]
-                fi2.ARGS[i].ATTR.PACK = false
-                fi2.MAX_ARGS = fi2.MAX_ARGS + 1 - packarg.TYPE.NUMVARS
+                newfi.ARGS[i].ATTR.PACK = false
+                local num_vars = packarg.TYPE.NUMVARS
+                if num_vars and num_vars > 1 then
+                    newfi.MAX_ARGS = newfi.MAX_ARGS + 1 - num_vars
+                end
             end
         end
-        olua.assert(packarg, 'pack arg not found')
         if packarg.TYPE.CPPCLS == fi.RET.TYPE.CPPCLS then
-            fi2.RET.ATTR.UNPACK = fi.RET.ATTR.UNPACK or false
+            newfi.RET.ATTR.UNPACK = fi.RET.ATTR.UNPACK or false
             fi.RET.ATTR.UNPACK = true
         end
-        gen_func_prototype(cls, fi2)
-        funcs[#funcs + 1] = fi2
-        fi2.INDEX = #funcs
+        gen_func_prototype(cls, newfi)
+        funcs[#funcs + 1] = newfi
+        newfi.INDEX = #funcs
     end
 end
 
 local function gen_func_overload(cls, fi, funcs)
-    local function copy(t)
-        return setmetatable({}, {__index = t})
-    end
-    local MIN_ARGS = nil
+    local min_args = math.maxinteger
     for i, arg in ipairs(fi.ARGS) do
         if arg.ATTR.OPTIONAL then
-            MIN_ARGS = i - 1
+            min_args = i - 1
             break
         end
     end
-    if not MIN_ARGS then
-        return
-    end
-    for i = MIN_ARGS, #fi.ARGS do
-        if i < #fi.ARGS then
-            local newfi = copy(fi)
-            newfi.ARGS = {}
-            newfi.INJECT = {}
-            for k = 1, i do
-                newfi.ARGS[k] = copy(fi.ARGS[k])
-            end
-            gen_func_prototype(cls, newfi)
-            newfi.MAX_ARGS = i
-            funcs[#funcs + 1] = newfi
-            newfi.INDEX = #funcs
+    for i = min_args, #fi.ARGS - 1 do
+        local newfi = olua.copy(fi)
+        newfi.ARGS = {}
+        newfi.INSERT = {}
+        for k = 1, i do
+            newfi.ARGS[k] = olua.copy(fi.ARGS[k])
         end
+        gen_func_prototype(cls, newfi)
+        newfi.MAX_ARGS = i
+        newfi.INDEX = #funcs + 1
+        funcs[newfi.INDEX] = newfi
     end
 end
 
@@ -448,7 +444,7 @@ local function parse_func(cls, name, ...)
             fi.RET.TYPE = olua.typeinfo('void', cls)
             fi.RET.ATTR = {}
             fi.ARGS = {}
-            fi.INJECT = {}
+            fi.INSERT = {}
             fi.PROTOTYPE = false
             fi.MAX_ARGS = #fi.ARGS
         else
@@ -463,7 +459,7 @@ local function parse_func(cls, name, ...)
             fi.LUAFUNC = name or fi.CPPFUNC
             fi.STATIC = attr.STATIC
             fi.FUNCDEF = declfunc
-            fi.INJECT = {}
+            fi.INSERT = {}
             if string.find(typename, 'std::function<') then
                 local callback = parse_callback_type(cls, typename, nil)
                 fi.RET = {
@@ -482,7 +478,6 @@ local function parse_func(cls, name, ...)
             fi.ARGS, fi.MAX_ARGS = parse_args(cls, string.sub(str, #fi.CPPFUNC + 1))
             gen_func_prototype(cls, fi)
             gen_func_pack(cls, fi, arr)
-            -- gen_func_overload(cls, fi, arr)
         end
         arr[#arr + 1] = fi
         arr.MAX_ARGS = math.max(arr.MAX_ARGS, fi.MAX_ARGS)
@@ -509,14 +504,14 @@ local function parse_prop(cls, name, declget, declset)
         return string.upper(s)
     end)
 
-    local function test(f, name, op)
+    local function test(fi, name, op)
         name = topropfn(name, op)
-        if name == f.CPPFUNC or name == f.LUAFUNC then
+        if name == fi.CPPFUNC or name == fi.LUAFUNC then
             return true
         else
             -- getXXXXS => getXXXXs?
             name = name:sub(1, #name - 1) .. name:sub(#name):lower()
-            return name == f.CPPFUNC or name == f.LUAFUNC
+            return name == fi.CPPFUNC or name == fi.LUAFUNC
         end
     end
 
@@ -524,12 +519,12 @@ local function parse_prop(cls, name, declget, declset)
         pi.GET = declget and parse_func(cls, name, declget)[1] or nil
     else
         for _, v in ipairs(cls.FUNCS) do
-            for _, f in ipairs(v) do
-                if test(f, name, 'get') or test(f, name, 'is') or
-                    test(f, name2, 'get') or test(f, name2, 'is') then
-                    olua.message(f.FUNCDEF)
-                    olua.assert(#f.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, f.CPPFUNC)
-                    pi.GET = f
+            for _, fi in ipairs(v) do
+                if test(fi, name, 'get') or test(fi, name, 'is') or
+                    test(fi, name2, 'get') or test(fi, name2, 'is') then
+                    olua.message(fi.FUNCDEF)
+                    olua.assert(#fi.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, fi.CPPFUNC)
+                    pi.GET = fi
                 end
             end
         end
@@ -540,9 +535,9 @@ local function parse_prop(cls, name, declget, declset)
         pi.SET = declset and parse_func(cls, name, declset)[1] or nil
     else
         for _, v in ipairs(cls.FUNCS) do
-            for _, f in ipairs(v) do
-                if test(f, name, 'set') or test(f, name2, 'set') then
-                    pi.SET = f
+            for _, fi in ipairs(v) do
+                if test(fi, name, 'set') or test(fi, name2, 'set') then
+                    pi.SET = fi
                 end
             end
         end
@@ -636,23 +631,19 @@ function olua.typecls(cppcls)
         return 1;
         }
     ]]
-    function cls.inject(cppfunc, codes)
+    function cls.insert(cppfunc, codes)
         local funcs = type(cppfunc) == "string" and {cppfunc} or cppfunc
         local found
         local function format_code(code)
             return code and format(code) or nil
         end
-        local function apply_inject(fi, testname)
+        local function apply_insert(fi, testname)
             if fi and (fi.CPPFUNC == cppfunc or (testname and fi.LUAFUNC == cppfunc))then
                 found = true
-                olua.assert(not fi.INJECT.BEFORE, '%s::%s already has before injection', cls.CPPCLS, cppfunc)
-                olua.assert(not fi.INJECT.AFTER, '%s::%s already has after injection', cls.CPPCLS, cppfunc)
-                olua.assert(not fi.INJECT.CALLBACK_BEFORE, '%s::%s already has callback before injection', cls.CPPCLS, cppfunc)
-                olua.assert(not fi.INJECT.CALLBACK_AFTER, '%s::%s already has callback after injection', cls.CPPCLS, cppfunc)
-                fi.INJECT.BEFORE = format_code(codes.BEFORE)
-                fi.INJECT.AFTER = format_code(codes.AFTER)
-                fi.INJECT.CALLBACK_BEFORE = format_code(codes.CALLBACK_BEFORE)
-                fi.INJECT.CALLBACK_AFTER = format_code(codes.CALLBACK_AFTER)
+                fi.INSERT.BEFORE = format_code(codes.BEFORE)
+                fi.INSERT.AFTER = format_code(codes.AFTER)
+                fi.INSERT.CALLBACK_BEFORE = format_code(codes.CALLBACK_BEFORE)
+                fi.INSERT.CALLBACK_AFTER = format_code(codes.CALLBACK_AFTER)
             end
         end
 
@@ -660,16 +651,16 @@ function olua.typecls(cppcls)
             cppfunc = v
             for _, arr in ipairs(cls.FUNCS) do
                 for _, fi in ipairs(arr) do
-                    apply_inject(fi)
+                    apply_insert(fi)
                 end
             end
             for _, pi in ipairs(cls.PROPS) do
-                apply_inject(pi.GET)
-                apply_inject(pi.SET)
+                apply_insert(pi.GET)
+                apply_insert(pi.SET)
             end
             for _, vi in ipairs(cls.VARS) do
-                apply_inject(vi.GET, true)
-                apply_inject(vi.SET, true)
+                apply_insert(vi.GET, true)
+                apply_insert(vi.SET, true)
             end
         end
 
@@ -777,7 +768,7 @@ function olua.typecls(cppcls)
                 LUAFUNC = name,
                 CPPFUNC = 'get_' .. ARGS[1].VARNAME,
                 VARNAME = ARGS[1].VARNAME,
-                INJECT = {},
+                INSERT = {},
                 FUNCDEF = rawstr,
                 RET = {
                     TYPE = ARGS[1].TYPE,
@@ -794,7 +785,7 @@ function olua.typecls(cppcls)
                 LUAFUNC = name,
                 CPPFUNC = 'set_' .. ARGS[1].VARNAME,
                 VARNAME = ARGS[1].VARNAME,
-                INJECT = {},
+                INSERT = {},
                 STATIC = static > 0,
                 FUNCDEF = rawstr,
                 RET = {

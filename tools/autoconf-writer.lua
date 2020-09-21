@@ -266,9 +266,9 @@ local function write_conf_block(module, cls, append)
     end
 end
 
-local function write_conf_inject(module, cls, append)
-    for _, v in ipairs(cls.CONF.INJECT) do
-        append(string.format("cls.inject('%s', {", v.NAME))
+local function write_conf_insert(module, cls, append)
+    for _, v in ipairs(cls.CONF.INSERT) do
+        append(string.format("cls.insert('%s', {", v.NAME))
         if v.CODES.BEFORE then
             append(string.format('    BEFORE = [[\n%s]],', v.CODES.BEFORE))
         end
@@ -408,7 +408,7 @@ local function write_classes(module, append)
             write_conf_prop(module, cls, append)
             write_conf_callback(module, cls, append)
             write_conf_block(module, cls, append)
-            write_conf_inject(module, cls, append)
+            write_conf_insert(module, cls, append)
             write_conf_alias(module, cls, append)
             if #props > 0 then
                 append('cls.props [[')

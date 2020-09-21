@@ -683,10 +683,10 @@ local function add_command(cls)
         return CMD
     end
 
-    function CMD.INJECT(names, codes)
+    function CMD.INSERT(names, codes)
         names = type(names) == 'string' and {names} or names
         for _, n in ipairs(names) do
-            cls.INJECT[n] = {NAME = n, CODES = codes}
+            cls.INSERT[n] = {NAME = n, CODES = codes}
         end
         return CMD
     end
@@ -733,7 +733,7 @@ function M.typemod(name)
             PROP = create_table(classname),
             VAR = create_table(classname),
             ENUM = create_table(classname),
-            INJECT = create_table(classname),
+            INSERT = create_table(classname),
             INDEX = INDEX,
             MAKE_LUANAME = function (n) return n end,
         }
