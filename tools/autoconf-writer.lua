@@ -318,20 +318,22 @@ local function write_classes(module, append)
             ]=]))
         end
         if cls.KIND == 'Enum' then
-            append('cls.enums [[')
-            for _, value in ipairs(cls.ENUMS) do
-                append('    ' .. value)
+            for _, VALUE in ipairs(cls.ENUMS) do
+                local NAME = cls.CONF.MAKE_LUANAME(VALUE, 'ENUM')
+                append(format([[
+                    cls.enum('${NAME}', '${cls.CPPCLS}::${VALUE}')
+                ]]))
             end
-            append(']]')
         elseif cls.KIND == 'Class' then
             local props = {}
             local filter = {}
             if #cls.ENUMS > 0 then
-                append('cls.enums [[')
-                for _, value in ipairs(cls.ENUMS) do
-                    append('    ' .. value)
+                for _, VALUE in ipairs(cls.ENUMS) do
+                    local NAME = cls.CONF.MAKE_LUANAME(VALUE, 'ENUM')
+                    append(format([[
+                        cls.enum('${NAME}', '${cls.CPPCLS}::${VALUE}')
+                    ]]))
                 end
-                append(']]')
             end
             for _, v in ipairs(cls.CONSTS) do
                 append(format([[
