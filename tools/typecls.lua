@@ -580,40 +580,6 @@ function olua.typecls(cppcls)
         end
     end
 
-    function cls.funcs(funcs)
-        local arr = {}
-        local dict = {}
-        for line in string.gmatch(funcs, '[^\n\r]+') do
-            line = string.gsub(line, '^ *', '')
-            line = string.gsub(line, ' *inline ', '')
-            if #line > 0 then
-                if not string.find(line, '^ *//') then
-                    olua.message(line)
-                    local _, str = parse_attr(line)
-                    local fn
-                    if string.find(str, '^' .. cls.CTORNAME .. ' *%(') then
-                        fn = cppcls
-                    else
-                        _, _, str = parse_type(str)        -- skip return type
-                        fn = string.match(str, '([^ ()]+) *%(')
-                        olua.assert(fn, 'error decl func: ' .. line)
-                    end
-
-                    local fns = dict[fn]
-                    if not fns then
-                        fns = {}
-                        arr[#arr + 1] = fns
-                        dict[fn] = fns
-                    end
-                    fns[#fns + 1] = string.gsub(line, '^ *', '')
-                end
-            end
-        end
-        for _, v in ipairs(arr) do
-            cls.func(nil, table.unpack(v))
-        end
-    end
-
     --[[
         {
             ...
@@ -804,45 +770,12 @@ function olua.typecls(cppcls)
         end
     end
 
-    function cls.vars(vars)
-        for line in string.gmatch(vars, '[^\n\r]+') do
-            line = string.gsub(line, '^ *', '')
-            if #line > 0 and not string.find(line, '^ *//') then
-                cls.var(nil, line)
-            end
-        end
-    end
-
     function cls.prop(name, get, set)
         assert(not string.find(name, '[^_%w]+'), name)
         cls.PROPS[#cls.PROPS + 1] = parse_prop(cls, name, get, set)
     end
 
-    function cls.props(props)
-        for line in string.gmatch(props, '[^\n\r]+') do
-            line = string.gsub(line, '^ *', '')
-            if #line > 0 and not string.find(line, '^ *//') then
-                cls.prop(string.match(line, '[%w_]+'))
-            end
-        end
-    end
-
     function cls.const(name, value, typename)
-        if not typename then
-            local t = type(value)
-            if t == 'string' then
-                typename = 'const char *'
-                value = olua.stringify(value)
-            elseif t == 'boolean' then
-                typename = 'bool'
-            elseif math.type(value) == 'integer' then
-                typename = 'int64_t'
-            elseif t == 'number' then
-                typename = 'double'
-            else
-                error('type not support: ' .. t)
-            end
-        end
         cls.CONSTS[#cls.CONSTS + 1] = {
             NAME = assert(name),
             VALUE = value,
@@ -855,20 +788,6 @@ function olua.typecls(cppcls)
             NAME = name,
             VALUE = value or (cls.CPPCLS .. '::' .. name),
         }
-    end
-
-    function cls.enums(enums)
-        for line in string.gmatch(enums, '[^\n\r]+') do
-            local name, value = string.match(line, '([^ ]+) *= *([^ ]+)')
-            if not name then
-                name = string.match(line, '[%w:_]+')
-            elseif not string.find(value, cls.CPPCLS) then
-                value = cls.CPPCLS .. '::' .. value
-            end
-            if name then
-                cls.enum(name, value)
-            end
-        end
     end
 
     return cls

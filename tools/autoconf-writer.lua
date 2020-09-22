@@ -140,11 +140,11 @@ local function is_new_func(module, supercls, fn)
     end
 end
 
-local function try_add_prop(fn, filter, props)
-    if string.find(fn.NAME, '^get') or string.find(fn.NAME, '^is') then
+local function to_prop_name(fn, filter, props)
+    if (string.find(fn.NAME, '^get') or string.find(fn.NAME, '^is')) and fn.ARGS == 0 then
         -- getABCd isAbc => ABCd Abc
         local name = string.gsub(fn.NAME, '^%l+', '')
-        name = string.gsub(name, '^%u+', function (str)
+        return string.gsub(name, '^%u+', function (str)
             if #str > 1 and #str ~= #name then
                 if #str == #name - 1 then
                     -- ABCDs => abcds
@@ -158,41 +158,45 @@ local function try_add_prop(fn, filter, props)
                 return str:lower()
             end
         end)
-        if not filter[name] then
-            filter[name] = true
-            if fn.ARGS == 0 then
-                props[#props + 1] = name
-            end
-        else
-            for i, v in ipairs(props) do
-                if v == name then
-                    table.remove(props, i)
-                    break
-                end
-            end
-        end
     end
 end
 
-local function write_conf_enum(module, cls, append)
+local function get_func_array(module, cls)
+    local map = {}
+    local arr = {}
+    for _, fn in ipairs(cls.FUNCS) do
+        if is_new_func(module, cls.SUPERCLS, fn) then
+            local funcs = map[fn.NAME]
+            if not funcs then
+                funcs = {}
+                map[fn.NAME] = funcs
+                arr[#arr + 1] = funcs
+            end
+            funcs[#funcs + 1] = fn
+        end
+    end
+    return arr
+end
+
+local function write_cls_enum(module, cls, append)
     for _, e in ipairs(cls.CONF.ENUM) do
         append(format("cls.enum('${e.NAME}', '${e.VALUE}')"))
     end
 end
 
-local function write_conf_func(module, cls, append)
+local function write_cls_func(module, cls, append)
     for _, fn in ipairs(cls.CONF.FUNC) do
         append(format("cls.func('${fn.FUNC}', [[${fn.SNIPPET}]])"))
     end
 end
 
-local function write_conf_var(module, cls, append)
+local function write_cls_var(module, cls, append)
     for _, fn in ipairs(cls.CONF.VAR) do
         append(format("cls.var('${fn.NAME}', [[${fn.SNIPPET}]])"))
     end
 end
 
-local function write_conf_prop(module, cls, append)
+local function write_cls_prop(module, cls, append)
     for _, p in ipairs(cls.CONF.PROP) do
         if not p.GET then
             append(format("cls.prop('${p.NAME}')"))
@@ -212,7 +216,7 @@ local function write_conf_prop(module, cls, append)
     end
 end
 
-local function write_conf_callback(module, cls, append)
+local function write_cls_callback(module, cls, append)
     for _, v in ipairs(cls.CONF.CALLBACK) do
         local FUNCS = olua.newarray("',\n'", "'", "'"):merge(v.FUNCS)
         local TAG_MAKER = olua.newarray("', '", "'", "'")
@@ -260,13 +264,7 @@ local function write_conf_callback(module, cls, append)
     end
 end
 
-local function write_conf_block(module, cls, append)
-    if cls.CONF.BLOCK then
-        append(cls.CONF.BLOCK)
-    end
-end
-
-local function write_conf_insert(module, cls, append)
+local function write_cls_insert(module, cls, append)
     for _, v in ipairs(cls.CONF.INSERT) do
         append(string.format("cls.insert('%s', {", v.NAME))
         if v.CODES.BEFORE then
@@ -285,7 +283,7 @@ local function write_conf_insert(module, cls, append)
     end
 end
 
-local function write_conf_alias(module, cls, append)
+local function write_cls_alias(module, cls, append)
     for _, v in ipairs(cls.CONF.ALIAS) do
         append(format("cls.alias('${v.NAME}', '${v.ALIAS}')"))
     end
@@ -300,16 +298,21 @@ local function write_classes(module, append)
         end
 
         module.log("[%s]", cls.CPPCLS)
+
         append(format("cls = typecls '${cls.CPPCLS}'"))
+
         if cls.SUPERCLS then
             append(format('cls.SUPERCLS = "${cls.SUPERCLS}"'))
         end
+
         if cls.CONF.REG_LUATYPE == false or cls.REG_LUATYPE == false then
             append('cls.REG_LUATYPE = false')
         end
+
         if cls.CONF.DEFIF then
             append(format('cls.DEFIF = "${cls.CONF.DEFIF}"'))
         end
+
         if cls.CONF.CHUNK then
             append(format([=[
                 cls.CHUNK = [[
@@ -317,109 +320,77 @@ local function write_classes(module, append)
                 ]]
             ]=]))
         end
-        if cls.KIND == 'Enum' then
-            for _, VALUE in ipairs(cls.ENUMS) do
-                local NAME = cls.CONF.MAKE_LUANAME(VALUE, 'ENUM')
-                append(format([[
-                    cls.enum('${NAME}', '${cls.CPPCLS}::${VALUE}')
-                ]]))
+
+        for _, VALUE in ipairs(cls.ENUMS) do
+            local name = cls.CONF.MAKE_LUANAME(VALUE, 'ENUM')
+            cls.CONF.ENUM[name] = {
+                NAME = name,
+                VALUE = format('${cls.CPPCLS}::${VALUE}'),
+            }
+        end
+        
+        for _, v in ipairs(cls.CONSTS) do
+            append(format([[
+                cls.const('${v.NAME}', '${cls.CPPCLS}::${v.NAME}', '${v.TYPENAME}')
+            ]]))
+        end
+
+        for _, v in ipairs(cls.VARS) do
+            local NAME = cls.CONF.MAKE_LUANAME(v.NAME)
+            if v.CALLBACK_TYPE then
+                module.log(format([[
+                    var => NAME = '${NAME}'
+                           DECL = '${v.SNIPPET}'
+                ]], 4))
             end
-        elseif cls.KIND == 'Class' then
-            local props = {}
-            local filter = {}
-            if #cls.ENUMS > 0 then
-                for _, VALUE in ipairs(cls.ENUMS) do
-                    local NAME = cls.CONF.MAKE_LUANAME(VALUE, 'ENUM')
-                    append(format([[
-                        cls.enum('${NAME}', '${cls.CPPCLS}::${VALUE}')
-                    ]]))
+            cls.CONF.VAR[NAME] = {NAME = NAME, SNIPPET = v.SNIPPET}
+        end
+
+        for _, arr in ipairs(get_func_array(module, cls)) do
+            local FUNCS = olua.newarray("', '", "'", "'")
+            local has_callback = false
+            for _, fn in ipairs(arr) do
+                if fn.CALLBACK_TYPE or cls.CONF.CALLBACK[fn.NAME] then
+                    has_callback = true
+                end
+                FUNCS[#FUNCS + 1] = fn.FUNC
+            end
+            
+            if #arr == 1 then
+                local name = to_prop_name(arr[1])
+                if name then
+                    cls.CONF.PROP[name] = {NAME = name}
                 end
             end
-            for _, v in ipairs(cls.CONSTS) do
-                append(format([[
-                    cls.const('${v.NAME}', '${cls.CPPCLS}::${v.NAME}', '${v.TYPENAME}')
-                ]]))
-            end
-            append('cls.funcs [[')
-            local callbacks = {}
-            for _, fn in ipairs(cls.FUNCS) do
-                if is_new_func(module,cls.SUPERCLS, fn) then
-                    if not fn.CALLBACK_TYPE and not cls.CONF.CALLBACK[fn.NAME] then
-                        append('    ' .. fn.FUNC)
-                        try_add_prop(fn, filter, props)
-                    else
-                        local arr = callbacks[fn.NAME]
-                        if not arr then
-                            arr = {}
-                            callbacks[#callbacks + 1] = arr
-                            callbacks[fn.NAME] = arr
-                        end
-                        arr[#arr + 1] = fn
-                    end
-                end
-            end
-            for _, v in ipairs(callbacks) do
-                local FUNCS = {}
-                for i, fn in ipairs(v) do
-                    FUNCS[i] = fn.FUNC
-                end
-                local TAG = v[1].NAME:gsub('^set', ''):gsub('^get', '')
-                local mode = v[1].CALLBACK_TYPE == 'RET' and 'OLUA_TAG_SUBEQUAL' or 'OLUA_TAG_REPLACE'
-                local callback = cls.CONF.CALLBACK[v[1].NAME]
+            if not has_callback then
+                append(format("cls.func(nil, ${FUNCS})"))
+            else
+                local TAG = arr[1].NAME:gsub('^set', ''):gsub('^get', '')
+                local mode = arr[1].CALLBACK_TYPE == 'RET' and 'OLUA_TAG_SUBEQUAL' or 'OLUA_TAG_REPLACE'
+                local callback = cls.CONF.CALLBACK[arr[1].NAME]
                 if callback then
                     callback.FUNCS = FUNCS
-                    if not callback.TAG_MAKER then
-                        callback.TAG_MAKER = olua.format '${TAG}'
-                    end
-                    if not callback.TAG_MODE then
-                        callback.TAG_MODE = mode
-                    end
+                    callback.TAG_MAKER = callback.TAG_MAKER or format('${TAG}')
+                    callback.TAG_MODE = callback.TAG_MODE or mode
                 else
-                    cls.CONF.CALLBACK[v[1].NAME] = {
-                        NAME = v[1].NAME,
+                    cls.CONF.CALLBACK[arr[1].NAME] = {
+                        NAME = arr[1].NAME,
                         FUNCS = FUNCS,
                         TAG_MAKER = olua.format '${TAG}',
                         TAG_MODE = mode,
                     }
                 end
             end
-            for _, cb in ipairs(cls.CONF.CALLBACK) do
-                assert(cb.FUNCS, "callback '" .. cb.NAME .. "' not found")
-                if #cb.FUNCS == 1 and (string.match(cb.FUNCS[1], '%(%) *$')
-                        or (string.match(cb.FUNCS[1], '%( *void *%) *$'))) then
-                    try_add_prop({
-                        NAME = cb.NAME,
-                        ARGS = 0,
-                    }, filter, props)
-                end
-            end
-            append(']]')
-            for _, v in ipairs(cls.VARS) do
-                local LUANAME = cls.CONF.MAKE_LUANAME(v.NAME)
-                if v.CALLBACK_TYPE then
-                    module.log(format([[
-                        var => NAME = '${LUANAME}'
-                               DECL = '${v.SNIPPET}'
-                    ]], 4))
-                end
-                append(format("cls.var('${LUANAME}', [[${v.SNIPPET}]])"))
-            end
-            write_conf_enum(module, cls, append)
-            write_conf_func(module, cls, append)
-            write_conf_var(module, cls, append)
-            write_conf_prop(module, cls, append)
-            write_conf_callback(module, cls, append)
-            write_conf_block(module, cls, append)
-            write_conf_insert(module, cls, append)
-            write_conf_alias(module, cls, append)
-            if #props > 0 then
-                append('cls.props [[')
-                for _, v in ipairs(props) do
-                    append('    ' .. v)
-                end
-                append(']]')
-            end
         end
+
+        write_cls_enum(module, cls, append)
+        write_cls_func(module, cls, append)
+        write_cls_var(module, cls, append)
+        write_cls_callback(module, cls, append)
+        write_cls_prop(module, cls, append)
+        write_cls_insert(module, cls, append)
+        write_cls_alias(module, cls, append)
+
         append('M.CLASSES[#M.CLASSES + 1] = cls')
         append('')
 
