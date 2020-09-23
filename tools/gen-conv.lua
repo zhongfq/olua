@@ -167,38 +167,38 @@ local function gen_unpack_func(cv, write)
 end
 
 local function gen_is_func(cv, write)
-    local TEST_HAS = olua.newarray(' && ')
-    TEST_HAS:push('olua_istable(L, idx)')
+    local EXPS = olua.newarray(' && ')
+    EXPS:push('olua_istable(L, idx)')
     for i = #cv.PROPS, 1, -1 do
         local pi = cv.PROPS[i]
         if not pi.ATTR.OPTIONAL then
-            TEST_HAS:pushf('olua_hasfield(L, idx, "${pi.LUANAME}")')
+            EXPS:pushf('olua_hasfield(L, idx, "${pi.LUANAME}")')
         end
     end
     write(format([[
         bool auto_olua_is_${cv.CPPNAME}(lua_State *L, int idx)
         {
-            return ${TEST_HAS};
+            return ${EXPS};
         }
     ]]))
     write('')
 end
 
 local function gen_is_pack_func(cv, write)
-    local TEST_TYPE = olua.newarray(' && ')
+    local EXPS = olua.newarray(' && ')
     for i, pi in ipairs(cv.PROPS) do
         local IS_VALUE = olua.convfunc(pi.TYPE, 'is')
         local VIDX = i - 1
         if olua.ispointee(pi.TYPE) then
-            TEST_TYPE:pushf('${IS_VALUE}(L, idx + ${VIDX}, "${pi.TYPE.LUACLS}")')
+            EXPS:pushf('${IS_VALUE}(L, idx + ${VIDX}, "${pi.TYPE.LUACLS}")')
         else
-            TEST_TYPE:pushf('${IS_VALUE}(L, idx + ${VIDX})')
+            EXPS:pushf('${IS_VALUE}(L, idx + ${VIDX})')
         end
     end
     write(format([[
         bool auto_olua_ispack_${cv.CPPNAME}(lua_State *L, int idx)
         {
-            return ${TEST_TYPE};
+            return ${EXPS};
         }
     ]]))
     write('')

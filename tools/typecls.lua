@@ -449,7 +449,8 @@ local function parse_func(cls, name, ...)
             fi.MAX_ARGS = #fi.ARGS
         else
             local typename, attr, str = parse_type(declfunc)
-            if typename == cls.CTORNAME and string.find(str, '^%(') then
+            local ctor = string.match(cls.CPPCLS, '[^:]+$')
+            if typename == ctor and string.find(str, '^%(') then
                 typename = typename .. ' *'
                 str = 'new' .. str
                 fi.CTOR = true
@@ -560,7 +561,6 @@ function olua.typecls(cppcls)
     local cls = {
         CPPCLS = cppcls,
         CPPNAME = string.gsub(cppcls, '[.:]+', '_'),
-        CTORNAME = string.match(cppcls, '[^:]+$'),
         FUNCS = {},
         CONSTS = {},
         ENUMS = {},

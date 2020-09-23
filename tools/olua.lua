@@ -135,6 +135,54 @@ function olua.newarray(sep, prefix, posfix)
     return setmetatable({}, mt)
 end
 
+function olua.newhash()
+    local t = {}
+    local arr = {}
+    local map = {}
+
+    function t:__len()
+        return #arr
+    end
+
+    function t:__index(key)
+        if type(key) == 'number' then
+            return arr[key]
+        else
+            return map[key]
+        end
+    end
+
+    function t:__newindex(key, value)
+        assert(type(key) == 'string', 'only support string key')
+        assert(not map[key], 'key conflict: ' .. key)
+        map[key] = value
+        arr[#arr + 1] = value
+    end
+
+    function t:__pairs()
+        return pairs(map)
+    end
+
+    function t:__ipairs()
+        return ipairs(arr)
+    end
+
+    function t:take(key)
+        local value = map[key]
+        if value then
+            for i, v in ipairs(arr) do
+                if value == v then
+                    table.remove(arr, i)
+                    break
+                end
+            end
+        end
+        return value
+    end
+
+    return setmetatable(t, t)
+end
+
 local function lookup(level, key)
     assert(key and #key > 0, key)
 

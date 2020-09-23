@@ -4,34 +4,34 @@ local format = olua.format
 
 local function write_metadata(module, append)
     append(format([[
-        M.NAME = "${module.conf.NAME}"
-        M.PATH = "${module.conf.PATH}"
+        M.NAME = "${module.NAME}"
+        M.PATH = "${module.PATH}"
     ]]))
 
-    if module.conf.HEADER_INCLUDES then
+    if module.HEADER_INCLUDES then
         append(format([=[
             M.HEADER_INCLUDES = [[
-            ${module.conf.HEADER_INCLUDES}
+            ${module.HEADER_INCLUDES}
             ]]
         ]=]))
     end
 
     append(format([=[
         M.INCLUDES = [[
-        ${module.conf.INCLUDES}
+        ${module.INCLUDES}
         ]]
     ]=]))
 
-    if module.conf.CHUNK then
+    if module.CHUNK then
         append(format([=[
             M.CHUNK = [[
-            ${module.conf.CHUNK}
+            ${module.CHUNK}
             ]]
         ]=]))
     end
 
     append("\nM.CONVS = {")
-    for _, cls in ipairs(module.classes) do
+    for _, cls in ipairs(module.CLASSES) do
         if cls.KIND ~= "Conv" then
             goto continue
         end
@@ -39,7 +39,7 @@ local function write_metadata(module, append)
         module.ignored_type[cls.CPPCLS] = false
 
         local DEF = olua.newarray("\n")
-        for _, v in ipairs(#cls.VARS == 0 and cls.CONF.VAR or cls.VARS) do
+        for _, v in ipairs(cls.VAR) do
             DEF:pushf('${v.SNIPPET};')
         end
 
@@ -69,7 +69,7 @@ local function write_typedef(module)
     writeLine('local olua = require "olua"')
     writeLine('local typedef = olua.typedef')
     writeLine('')
-    for _, td in ipairs(module.conf.TYPEDEFS) do
+    for _, td in ipairs(module.TYPEDEFS) do
         local arr = {}
         module.ignored_type[td.CPPCLS] = false
         for k, v in pairs(td) do
@@ -91,13 +91,13 @@ local function write_typedef(module)
         writeLine("}")
         writeLine("")
     end
-    for _, cls in ipairs(module.classes) do
+    for _, cls in ipairs(module.CLASSES) do
         local CONV
         local CPPCLS = cls.CPPCLS
         local DECLTYPE, LUACLS, NUMVARS = 'nil', 'nil', 'nil'
         if cls.KIND == 'Conv' then
             CONV = 'auto_olua_$$_' .. string.gsub(cls.CPPCLS, '[.:]+', '_')
-            NUMVARS = #cls.VARS
+            NUMVARS = #cls.VAR
         elseif cls.KIND == 'Enum' then
             CONV = 'olua_$$_uint'
             LUACLS = olua.stringify(cls.LUACLS, "'")
@@ -122,7 +122,7 @@ local function write_typedef(module)
         t:push('')
     end
     t:push('')
-    olua.write(module.type_file_path, tostring(t))
+    olua.write(module.TYPE_FILE_PATH, tostring(t))
 end
 
 local function is_new_func(module, supercls, fn)
@@ -133,7 +133,7 @@ local function is_new_func(module, supercls, fn)
     local super = module.visited_type[supercls]
     if not super then
         error(format("not found super class '${supercls}'"))
-    elseif super.INST_FUNCS[fn.PROTOTYPE] or super.CONF.EXCLUDE[fn.NAME] then
+    elseif super.FUNC[fn.PROTOTYPE] or super.EXCLUDE_FUNC[fn.NAME] then
         return false
     else
         return is_new_func(module, super.SUPERCLS, fn)
@@ -141,7 +141,7 @@ local function is_new_func(module, supercls, fn)
 end
 
 local function to_prop_name(fn, filter, props)
-    if (string.find(fn.NAME, '^get') or string.find(fn.NAME, '^is')) and fn.ARGS == 0 then
+    if (string.find(fn.NAME, '^get') or string.find(fn.NAME, '^is')) and fn.NUM_ARGS == 0 then
         -- getABCd isAbc => ABCd Abc
         local name = string.gsub(fn.NAME, '^%l+', '')
         return string.gsub(name, '^%u+', function (str)
@@ -161,43 +161,86 @@ local function to_prop_name(fn, filter, props)
     end
 end
 
-local function get_func_array(module, cls)
-    local map = {}
-    local arr = {}
-    for _, fn in ipairs(cls.FUNCS) do
+local function write_cls_func(module, cls, append)
+    local dict = {}
+    local func_group = {}
+    for _, fn in ipairs(cls.FUNC) do
         if is_new_func(module, cls.SUPERCLS, fn) then
-            local funcs = map[fn.NAME]
-            if not funcs then
-                funcs = {}
-                map[fn.NAME] = funcs
-                arr[#arr + 1] = funcs
+            local arr = dict[fn.NAME]
+            if not arr then
+                arr = {}
+                dict[fn.NAME] = arr
+                func_group[#func_group + 1] = arr
             end
-            funcs[#funcs + 1] = fn
+            arr[#arr + 1] = fn
         end
     end
-    return arr
+
+    for _, arr in ipairs(func_group) do
+        local FUNCS = olua.newarray("', '", "'", "'")
+        local has_callback = false
+        local fn = arr[1]
+        for _, v in ipairs(arr) do
+            if v.CALLBACK_TYPE or cls.CALLBACK[v.NAME] then
+                has_callback = true
+            end
+            FUNCS[#FUNCS + 1] = v.FUNC
+        end
+        
+        if #arr == 1 then
+            local name = to_prop_name(fn)
+            if name then
+                cls.PROP[name] = {NAME = name}
+            end
+        end
+        if not has_callback then
+            if #FUNCS > 0 then
+                append(format("cls.func(nil, ${FUNCS})"))
+            else
+                append(format("cls.func('${fn.NAME}', [[${fn.SNIPPET}]])"))
+            end
+        else
+            local TAG = fn.NAME:gsub('^set', ''):gsub('^get', '')
+            local mode = fn.CALLBACK_TYPE == 'RET' and 'OLUA_TAG_SUBEQUAL' or 'OLUA_TAG_REPLACE'
+            local callback = cls.CALLBACK[fn.NAME]
+            if callback then
+                callback.FUNCS = FUNCS
+                callback.TAG_MAKER = callback.TAG_MAKER or format('${TAG}')
+                callback.TAG_MODE = callback.TAG_MODE or mode
+            else
+                cls.CALLBACK[fn.NAME] = {
+                    NAME = fn.NAME,
+                    FUNCS = FUNCS,
+                    TAG_MAKER = olua.format '${TAG}',
+                    TAG_MODE = mode,
+                }
+            end
+        end
+    end
+end
+
+local function write_cls_const(module, cls, append)
+    for _, v in ipairs(cls.CONST) do
+        append(format([[
+            cls.const('${v.NAME}', '${cls.CPPCLS}::${v.NAME}', '${v.TYPENAME}')
+        ]]))
+    end
 end
 
 local function write_cls_enum(module, cls, append)
-    for _, e in ipairs(cls.CONF.ENUM) do
+    for _, e in ipairs(cls.ENUM) do
         append(format("cls.enum('${e.NAME}', '${e.VALUE}')"))
     end
 end
 
-local function write_cls_func(module, cls, append)
-    for _, fn in ipairs(cls.CONF.FUNC) do
-        append(format("cls.func('${fn.FUNC}', [[${fn.SNIPPET}]])"))
-    end
-end
-
 local function write_cls_var(module, cls, append)
-    for _, fn in ipairs(cls.CONF.VAR) do
+    for _, fn in ipairs(cls.VAR) do
         append(format("cls.var('${fn.NAME}', [[${fn.SNIPPET}]])"))
     end
 end
 
 local function write_cls_prop(module, cls, append)
-    for _, p in ipairs(cls.CONF.PROP) do
+    for _, p in ipairs(cls.PROP) do
         if not p.GET then
             append(format("cls.prop('${p.NAME}')"))
         elseif string.find(p.GET, '{') then
@@ -217,7 +260,7 @@ local function write_cls_prop(module, cls, append)
 end
 
 local function write_cls_callback(module, cls, append)
-    for _, v in ipairs(cls.CONF.CALLBACK) do
+    for _, v in ipairs(cls.CALLBACK) do
         local FUNCS = olua.newarray("',\n'", "'", "'"):merge(v.FUNCS)
         local TAG_MAKER = olua.newarray("', '", "'", "'")
         local TAG_MODE = olua.newarray("', '", "'", "'")
@@ -265,7 +308,7 @@ local function write_cls_callback(module, cls, append)
 end
 
 local function write_cls_insert(module, cls, append)
-    for _, v in ipairs(cls.CONF.INSERT) do
+    for _, v in ipairs(cls.INSERT) do
         append(string.format("cls.insert('%s', {", v.NAME))
         if v.CODES.BEFORE then
             append(string.format('    BEFORE = [[\n%s]],', v.CODES.BEFORE))
@@ -284,7 +327,7 @@ local function write_cls_insert(module, cls, append)
 end
 
 local function write_cls_alias(module, cls, append)
-    for _, v in ipairs(cls.CONF.ALIAS) do
+    for _, v in ipairs(cls.ALIAS) do
         append(format("cls.alias('${v.NAME}', '${v.ALIAS}')"))
     end
 end
@@ -292,7 +335,7 @@ end
 local function write_classes(module, append)
     append('M.CLASSES = {}')
     append('')
-    for _, cls in ipairs(module.classes) do
+    for _, cls in ipairs(module.CLASSES) do
         if cls.KIND == "EnumAlias" or cls.KIND == "Conv" then
             goto continue
         end
@@ -305,86 +348,25 @@ local function write_classes(module, append)
             append(format('cls.SUPERCLS = "${cls.SUPERCLS}"'))
         end
 
-        if cls.CONF.REG_LUATYPE == false or cls.REG_LUATYPE == false then
+        if cls.REG_LUATYPE == false then
             append('cls.REG_LUATYPE = false')
         end
 
-        if cls.CONF.DEFIF then
-            append(format('cls.DEFIF = "${cls.CONF.DEFIF}"'))
+        if cls.DEFIF then
+            append(format('cls.DEFIF = "${cls.DEFIF}"'))
         end
 
-        if cls.CONF.CHUNK then
+        if cls.CHUNK then
             append(format([=[
                 cls.CHUNK = [[
-                ${cls.CONF.CHUNK}
+                ${cls.CHUNK}
                 ]]
             ]=]))
         end
-
-        for _, VALUE in ipairs(cls.ENUMS) do
-            local name = cls.CONF.MAKE_LUANAME(VALUE, 'ENUM')
-            cls.CONF.ENUM[name] = {
-                NAME = name,
-                VALUE = format('${cls.CPPCLS}::${VALUE}'),
-            }
-        end
         
-        for _, v in ipairs(cls.CONSTS) do
-            append(format([[
-                cls.const('${v.NAME}', '${cls.CPPCLS}::${v.NAME}', '${v.TYPENAME}')
-            ]]))
-        end
-
-        for _, v in ipairs(cls.VARS) do
-            local NAME = cls.CONF.MAKE_LUANAME(v.NAME)
-            if v.CALLBACK_TYPE then
-                module.log(format([[
-                    var => NAME = '${NAME}'
-                           DECL = '${v.SNIPPET}'
-                ]], 4))
-            end
-            cls.CONF.VAR[NAME] = {NAME = NAME, SNIPPET = v.SNIPPET}
-        end
-
-        for _, arr in ipairs(get_func_array(module, cls)) do
-            local FUNCS = olua.newarray("', '", "'", "'")
-            local has_callback = false
-            for _, fn in ipairs(arr) do
-                if fn.CALLBACK_TYPE or cls.CONF.CALLBACK[fn.NAME] then
-                    has_callback = true
-                end
-                FUNCS[#FUNCS + 1] = fn.FUNC
-            end
-            
-            if #arr == 1 then
-                local name = to_prop_name(arr[1])
-                if name then
-                    cls.CONF.PROP[name] = {NAME = name}
-                end
-            end
-            if not has_callback then
-                append(format("cls.func(nil, ${FUNCS})"))
-            else
-                local TAG = arr[1].NAME:gsub('^set', ''):gsub('^get', '')
-                local mode = arr[1].CALLBACK_TYPE == 'RET' and 'OLUA_TAG_SUBEQUAL' or 'OLUA_TAG_REPLACE'
-                local callback = cls.CONF.CALLBACK[arr[1].NAME]
-                if callback then
-                    callback.FUNCS = FUNCS
-                    callback.TAG_MAKER = callback.TAG_MAKER or format('${TAG}')
-                    callback.TAG_MODE = callback.TAG_MODE or mode
-                else
-                    cls.CONF.CALLBACK[arr[1].NAME] = {
-                        NAME = arr[1].NAME,
-                        FUNCS = FUNCS,
-                        TAG_MAKER = olua.format '${TAG}',
-                        TAG_MODE = mode,
-                    }
-                end
-            end
-        end
-
-        write_cls_enum(module, cls, append)
+        write_cls_const(module, cls, append)
         write_cls_func(module, cls, append)
+        write_cls_enum(module, cls, append)
         write_cls_var(module, cls, append)
         write_cls_callback(module, cls, append)
         write_cls_prop(module, cls, append)
@@ -410,7 +392,7 @@ function M.write_module(module)
     append(format([[
         -- AUTO BUILD, DON'T MODIFY!
 
-        require "autobuild.${module.filename}-types"
+        dofile "${module.TYPE_FILE_PATH}"
 
         local olua = require "olua"
         local typeconv = olua.typeconv
@@ -426,7 +408,7 @@ function M.write_module(module)
 
     append('return M\n')
 
-    olua.write(module.file_path, tostring(t))
+    olua.write(module.FILE_PATH, tostring(t))
 end
 
 function M.write_alias_and_log(module)
@@ -488,8 +470,8 @@ function M.write_alias_and_log(module)
     local type_files = olua.newarray('\n')
     type_files:push('dofile "autobuild/alias-types.lua"')
     for _, v in ipairs(module.module_files) do
-        files:push(format('export "${v.file_path}"'))
-        type_files:push(format('dofile "${v.type_file_path}"'))
+        files:push(format('export "${v.FILE_PATH}"'))
+        type_files:push(format('dofile "${v.TYPE_FILE_PATH}"'))
     end
     olua.write('autobuild/make.lua', format([[
         local olua = require "olua"
