@@ -210,9 +210,13 @@ local function gen_func_args(cls, fi, func)
             func.CALLER_ARGS:pushf('&${ARGNAME}')
         elseif ai.TYPE.DECLTYPE ~= ai.TYPE.CPPCLS and not ai.CALLBACK.ARGS then
             func.CALLER_ARGS:pushf('(${ai.TYPE.CPPCLS})${ARGNAME}')
-        else
-            local CAST = ai.TYPE.TYPEREF and '*' or ''
+        elseif ai.TYPE.VARIANT then
+            -- void f(T), has 'T *' conv: T *arg => f(*arg)
+            -- void f(T *) has T conv: T arg => f(&arg)
+            local CAST = olua.ispointee(ai.TYPE) and '*' or '&'
             func.CALLER_ARGS:pushf('${CAST}${ARGNAME}')
+        else
+            func.CALLER_ARGS:pushf('${ARGNAME}')
         end
 
         olua.gen_decl_exp(ai, ARGNAME, func)
@@ -226,7 +230,7 @@ function olua.gen_push_exp(arg, name, out)
     local ARGNAME = name
     local OLUA_PUSH_VALUE = olua.convfunc(arg.TYPE, 'push')
     if olua.ispointee(arg.TYPE) then
-        local CAST = arg.TYPE.TYPEREF and '&' or ''
+        local CAST = arg.TYPE.VARIANT and '&' or ''
         out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${CAST}${ARGNAME}, "${arg.TYPE.LUACLS}");')
     elseif arg.TYPE.SUBTYPES then
         if #arg.TYPE.SUBTYPES > 1 then
@@ -252,7 +256,8 @@ function olua.gen_push_exp(arg, name, out)
         local CAST = ""
         if not olua.isvaluetype(arg.TYPE) then
             -- push func: olua_push_value(L, T *)
-            CAST = '&'
+            -- T *f(), has T conv
+            CAST = not arg.TYPE.VARIANT and '&' or ''
         elseif arg.TYPE.DECLTYPE ~= arg.TYPE.CPPCLS then
             -- value type push func: olua_push_value(L, T)
             -- int => lua_Interge
@@ -265,20 +270,20 @@ end
 local function gen_func_ret(cls, fi, func)
     if fi.RET.TYPE.CPPCLS ~= 'void' then
         local SPACE = string.find(fi.RET.DECLTYPE, '[ *&]$') and '' or ' '
-        if fi.RET.TYPE.TYPEREF and SPACE == ' ' then
+        if fi.RET.TYPE.VARIANT and SPACE == ' ' then
             func.RET_EXP = format('${fi.RET.DECLTYPE} &ret = (${fi.RET.DECLTYPE} &)')
         else
             func.RET_EXP = format('${fi.RET.DECLTYPE}${SPACE}ret = (${fi.RET.DECLTYPE})')
         end
 
-        local RETEXP = {PUSH_ARGS = olua.newarray()}
+        local EXPS = {PUSH_ARGS = olua.newarray()}
 
-        olua.gen_push_exp(fi.RET, 'ret', RETEXP)
+        olua.gen_push_exp(fi.RET, 'ret', EXPS)
 
         if fi.RET.TYPE.SUBTYPES and not olua.ispointee(fi.RET.TYPE.SUBTYPES[1]) then
             func.PUSH_RET = format([[
                 int num_ret = 1;
-                ${RETEXP.PUSH_ARGS}
+                ${EXPS.PUSH_ARGS}
             ]])
         elseif fi.RET.TYPE.DECLTYPE == 'const char *' and fi.RET.ATTR.LENGTH then
             local arg = fi.RET.ATTR.LENGTH[1]
@@ -288,13 +293,12 @@ local function gen_func_ret(cls, fi, func)
                 lua_pushlstring(L, (${DECLTYPE})ret, ${arg});
             ]])
         else
-            func.PUSH_RET = format('int num_ret = ${RETEXP.PUSH_ARGS}')
+            func.PUSH_RET = format('int num_ret = ${EXPS.PUSH_ARGS}')
         end
 
         if #func.PUSH_RET > 0 then
             func.NUM_RET = "num_ret"
         end
-
     end
 
     olua.gen_addref_exp(fi, fi.RET, -1, func)

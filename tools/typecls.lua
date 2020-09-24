@@ -46,7 +46,7 @@ local function pretty_typename(tn, trimref)
     return tn
 end
 
-function olua.typeinfo(tn, cls, silence)
+function olua.typeinfo(tn, cls, silence, variant)
     local ti, ref, subtis -- for tn<T, ...>
 
     tn = pretty_typename(tn, true)
@@ -63,45 +63,58 @@ function olua.typeinfo(tn, cls, silence)
 
     ti = typeinfo_map[tn]
 
-    -- try pointee
-    if not ti and not string.find(tn, '%*$') then
-        ti = olua.typeinfo(tn .. ' *', nil, true)
-        ref = ti and tn or nil
-    end
+    if ti then
+        ti = setmetatable({}, {__index = ti})
+    else
+        if not variant then
+            -- try pointee
+            if not ti and not string.find(tn, '%*$') then
+                ti = olua.typeinfo(tn .. ' *', nil, true, true)
+                ref = ti and tn or nil
+            end
 
-    -- search in class namespace
-    if not ti and cls and cls.CPPCLS then
-        local nsarr = {}
-        for ns in string.gmatch(cls.CPPCLS, '[^:]+') do
-            nsarr[#nsarr + 1] = ns
+            -- try reference type
+            if not ti and string.find(tn, '%*$') then
+                ti = olua.typeinfo(tn:gsub('[ *]+$', ''), nil, true, true)
+                ref = ti and tn or nil
+            end
         end
-        while #nsarr > 0 do
-            -- const Object * => const ns::Object *
-            local ns = table.concat(nsarr, "::")
-            local nstn = pretty_typename(string.gsub(tn, '[%w:_]+ *%**$', ns .. '::%1'), true)
-            local nsti = olua.typeinfo(nstn, nil, true)
-            nsarr[#nsarr] = nil
-            if nsti then
-                ti = nsti
-                tn = nstn
-                break
+
+        -- search in class namespace
+        if not ti and cls and cls.CPPCLS then
+            local nsarr = {}
+            for ns in string.gmatch(cls.CPPCLS, '[^:]+') do
+                nsarr[#nsarr + 1] = ns
+            end
+            while #nsarr > 0 do
+                -- const Object * => const ns::Object *
+                local ns = table.concat(nsarr, "::")
+                local nstn = pretty_typename(string.gsub(tn, '[%w:_]+ *%**$', ns .. '::%1'), true)
+                local nsti = olua.typeinfo(nstn, nil, true)
+                nsarr[#nsarr] = nil
+                if nsti then
+                    ti = nsti
+                    tn = nstn
+                    break
+                end
+            end
+        end
+
+        -- search in super class namespace
+        if not ti and cls and cls.SUPERCLS then
+            local super = class_map[cls.SUPERCLS]
+            olua.assert(super, "super class '%s' of '%s' is not found", cls.SUPERCLS, cls.CPPCLS)
+            local sti, stn = olua.typeinfo(tn, super, true)
+            if sti then
+                ti = sti
+                tn = stn
             end
         end
     end
 
-    -- search in super class namespace
-    if cls and cls.SUPERCLS then
-        local super = class_map[cls.SUPERCLS]
-        olua.assert(super, "super class '%s' of '%s' is not found", cls.SUPERCLS, cls.CPPCLS)
-        local sti, stn = olua.typeinfo(tn, super, true)
-        if sti then
-            ti = sti
-            tn = stn
-        end
-    end
-
     if ti then
-        ti = setmetatable({SUBTYPES = subtis, TYPEREF = ref}, {__index = ti})
+        ti.SUBTYPES = subtis or ti.SUBTYPES
+        ti.VARIANT = (ref ~= nil) or ti.VARIANT
         return ti, tn
     elseif not silence then
         olua.error("type info not found: %s", tn)
@@ -520,13 +533,13 @@ local function parse_prop(cls, name, declget, declset)
         pi.GET = declget and parse_func(cls, name, declget)[1] or nil
     else
         for _, v in ipairs(cls.FUNCS) do
-            for _, fi in ipairs(v) do
-                if test(fi, name, 'get') or test(fi, name, 'is') or
-                    test(fi, name2, 'get') or test(fi, name2, 'is') then
-                    olua.message(fi.FUNCDEF)
-                    olua.assert(#fi.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, fi.CPPFUNC)
-                    pi.GET = fi
-                end
+            local fi = v[1]
+            if test(fi, name, 'get') or test(fi, name, 'is') or
+                test(fi, name2, 'get') or test(fi, name2, 'is') then
+                olua.message(fi.FUNCDEF)
+                olua.assert(#fi.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, fi.CPPFUNC)
+                pi.GET = fi
+                break
             end
         end
         assert(pi.GET, name)
@@ -536,10 +549,10 @@ local function parse_prop(cls, name, declget, declset)
         pi.SET = declset and parse_func(cls, name, declset)[1] or nil
     else
         for _, v in ipairs(cls.FUNCS) do
-            for _, fi in ipairs(v) do
-                if test(fi, name, 'set') or test(fi, name2, 'set') then
-                    pi.SET = fi
-                end
+            local fi = v[1]
+            if test(fi, name, 'set') or test(fi, name2, 'set') then
+                pi.SET = fi
+                break
             end
         end
     end
@@ -685,7 +698,6 @@ function olua.typecls(cppcls)
     function cls.callback(opt)
         cls.FUNCS[#cls.FUNCS + 1] = parse_func(cls, nil, table.unpack(opt.FUNCS))
         for i, v in ipairs(cls.FUNCS[#cls.FUNCS]) do
-            v.CALLBACK_OPT = opt
             v.CALLBACK_OPT = setmetatable({}, {__index = opt})
             if type(v.CALLBACK_OPT.TAG_MAKER) == 'table' then
                 v.CALLBACK_OPT.TAG_MAKER = assert(v.CALLBACK_OPT.TAG_MAKER[i])
@@ -800,7 +812,12 @@ function olua.toluacls(cppcls)
 end
 
 function olua.ispointee(ti)
-    return ti.LUACLS and not olua.isvaluetype(ti)
+    if type(ti) == 'string' then
+        -- is 'T *'?
+        return string.find(ti, '[*]$')
+    else
+        return ti.LUACLS and not olua.isvaluetype(ti)
+    end
 end
 
 function olua.isenum(cls)
