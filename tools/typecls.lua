@@ -398,7 +398,7 @@ local function gen_func_pack(cls, fi, funcs)
         newfi.RET = olua.copy(fi.RET)
         newfi.RET.ATTR = olua.copy(fi.RET.ATTR)
         newfi.ARGS = {}
-        newfi.FUNCDEF = string.gsub(fi.FUNCDEF, '@pack *', '')
+        newfi.FUNCDECL = string.gsub(fi.FUNCDECL, '@pack *', '')
         for i in ipairs(fi.ARGS) do
             newfi.ARGS[i] = olua.copy(fi.ARGS[i])
             newfi.ARGS[i].ATTR = olua.copy(fi.ARGS[i].ATTR)
@@ -452,8 +452,8 @@ local function parse_func(cls, name, ...)
         if string.find(declfunc, '{') then
             fi.LUAFUNC = assert(name)
             fi.CPPFUNC = name
-            fi.SNIPPET = declfunc
-            fi.FUNCDEF = '<function snippet>'
+            fi.SNIPPET = olua.trim(declfunc)
+            fi.FUNCDECL = '<function snippet>'
             fi.RET.TYPE = olua.typeinfo('void', cls)
             fi.RET.ATTR = {}
             fi.ARGS = {}
@@ -472,7 +472,7 @@ local function parse_func(cls, name, ...)
             fi.CPPFUNC = string.match(str, '[^ ()]+')
             fi.LUAFUNC = name or fi.CPPFUNC
             fi.STATIC = attr.STATIC
-            fi.FUNCDEF = declfunc
+            fi.FUNCDECL = declfunc
             fi.INSERT = {}
             if string.find(typename, 'std::function<') then
                 local callback = parse_callback_type(cls, typename, nil)
@@ -536,7 +536,7 @@ local function parse_prop(cls, name, declget, declset)
             local fi = v[1]
             if test(fi, name, 'get') or test(fi, name, 'is') or
                 test(fi, name2, 'get') or test(fi, name2, 'is') then
-                olua.message(fi.FUNCDEF)
+                olua.message(fi.FUNCDECL)
                 olua.assert(#fi.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, fi.CPPFUNC)
                 pi.GET = fi
                 break
@@ -580,7 +580,6 @@ function olua.typecls(cppcls)
         PROPS = {},
         VARS = {},
         PROTOTYPES = {},
-        REG_LUATYPE = true,
     }
     class_map[cls.CPPCLS] = cls
 
@@ -747,7 +746,7 @@ function olua.typecls(cppcls)
                 CPPFUNC = 'get_' .. ARGS[1].VARNAME,
                 VARNAME = ARGS[1].VARNAME,
                 INSERT = {},
-                FUNCDEF = rawstr,
+                FUNCDECL = rawstr,
                 RET = {
                     TYPE = ARGS[1].TYPE,
                     DECLTYPE = ARGS[1].DECLTYPE,
@@ -765,7 +764,7 @@ function olua.typecls(cppcls)
                 VARNAME = ARGS[1].VARNAME,
                 INSERT = {},
                 STATIC = static > 0,
-                FUNCDEF = rawstr,
+                FUNCDECL = rawstr,
                 RET = {
                     TYPE = olua.typeinfo('void', cls),
                     ATTR = {},
@@ -834,6 +833,13 @@ local valuetype = {
     ['lua_Integer'] = '0',
     ['lua_Unsigned'] = '0',
 }
+
+function olua.typespace(ti)
+    if type(ti) ~= 'string' then
+        ti = ti.DECLTYPE
+    end
+    return ti:find('[*&]$') and '' or ' '
+end
 
 function olua.initialvalue(ti)
     if olua.ispointee(ti) then

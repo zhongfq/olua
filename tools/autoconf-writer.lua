@@ -8,27 +8,9 @@ local function write_metadata(module, append)
         M.PATH = "${module.PATH}"
     ]]))
 
-    if module.HEADER_INCLUDES then
-        append(format([=[
-            M.HEADER_INCLUDES = [[
-            ${module.HEADER_INCLUDES}
-            ]]
-        ]=]))
-    end
-
-    append(format([=[
-        M.INCLUDES = [[
-        ${module.INCLUDES}
-        ]]
-    ]=]))
-
-    if module.CHUNK then
-        append(format([=[
-            M.CHUNK = [[
-            ${module.CHUNK}
-            ]]
-        ]=]))
-    end
+    append(format('M.HEADER_INCLUDES = ${module.HEADER_INCLUDES?}'))
+    append(format('M.INCLUDES = ${module.INCLUDES?}'))
+    append(format('M.CHUNK = ${module.CHUNK?}'))
 
     append("\nM.CONVS = {")
     for _, cls in ipairs(module.CLASSES) do
@@ -38,19 +20,19 @@ local function write_metadata(module, append)
 
         module.ignored_type[cls.CPPCLS] = false
 
-        local DEF = olua.newarray("\n")
+        local EXPS = olua.newarray("\n")
         for _, v in ipairs(cls.VAR) do
-            DEF:pushf('${v.SNIPPET};')
+            EXPS:pushf('${v.SNIPPET};')
         end
 
         append(format([=[
             typeconv {
                 CPPCLS = '${cls.CPPCLS}',
                 DEF = [[
-                    ${DEF}
+                    ${EXPS}
                 ]],
             },
-        ]=],4))
+        ]=], 4))
 
         ::continue::
     end
@@ -78,15 +60,8 @@ local function write_typedef(module)
         table.sort(arr, function (a, b) return a[1] < b[1] end)
         writeLine("typedef {")
         for _, p in ipairs(arr) do
-            if type(p[2]) == 'string' then
-                if string.find(p[2], '[\n\r]') then
-                    writeLine("    %s = [[\n%s]],", p[1], p[2])
-                else
-                    writeLine("    %s = '%s',", p[1], p[2])
-                end
-            else
-                writeLine("    %s = %s,", p[1], p[2])
-            end
+            local KEY, VALUE = p[1], olua.trim(p[2])
+            writeLine(format('${KEY} = ${VALUE?},', 4))
         end
         writeLine("}")
         writeLine("")
@@ -221,9 +196,7 @@ end
 
 local function write_cls_const(module, cls, append)
     for _, v in ipairs(cls.CONST) do
-        append(format([[
-            cls.const('${v.NAME}', '${cls.CPPCLS}::${v.NAME}', '${v.TYPENAME}')
-        ]]))
+        append(format([[cls.const('${v.NAME}', '${cls.CPPCLS}::${v.NAME}', '${v.TYPENAME}')]]))
     end
 end
 
@@ -241,26 +214,12 @@ end
 
 local function write_cls_prop(module, cls, append)
     for _, p in ipairs(cls.PROP) do
-        if not p.GET then
-            append(format("cls.prop('${p.NAME}')"))
-        elseif string.find(p.GET, '{') then
-            if p.SET then
-                append(format("cls.prop('${p.NAME}', [[\n${p.GET}]], [[\n${p.SET}]])"))
-            else
-                append(format("cls.prop('${p.NAME}', [[\n${p.GET}]])"))
-            end
-        else
-            if p.SET then
-                append(format("cls.prop('${p.NAME}', '${p.GET}', '${p.SET}')"))
-            else
-                append(format("cls.prop('${p.NAME}', '${p.GET}')"))
-            end
-        end
+        append(format([[cls.prop('${p.NAME}', ${p.GET?}, ${p.SET?})]]))
     end
 end
 
 local function write_cls_callback(module, cls, append)
-    for _, v in ipairs(cls.CALLBACK) do
+    for i, v in ipairs(cls.CALLBACK) do
         local FUNCS = olua.newarray("',\n'", "'", "'"):merge(v.FUNCS)
         local TAG_MAKER = olua.newarray("', '", "'", "'")
         local TAG_MODE = olua.newarray("', '", "'", "'")
@@ -275,13 +234,13 @@ local function write_cls_callback(module, cls, append)
             TAG_MAKER:push(v.TAG_MAKER)
         else
             TAG_MAKER:merge(v.TAG_MAKER)
-            TAG_MAKER = '{' .. tostring(TAG_MAKER) .. '}'
+            TAG_MAKER = format('{${TAG_MAKER}}')
         end
         if type(v.TAG_MODE) == 'string' then
             TAG_MODE:push(v.TAG_MODE)
         else
             TAG_MODE:merge(v.TAG_MODE)
-            TAG_MODE = '{' .. tostring(TAG_MODE) .. '}'
+            TAG_MODE = format('{${TAG_MODE}}')
         end
         append(format([[
             cls.callback {
@@ -292,6 +251,7 @@ local function write_cls_callback(module, cls, append)
                 TAG_MODE = ${TAG_MODE},
                 TAG_STORE = ${TAG_STORE},
                 TAG_SCOPE = '${TAG_SCOPE}',
+            }
         ]]))
         module.log(format([[
             FUNC => NAME = '${v.NAME}'
@@ -303,26 +263,19 @@ local function write_cls_callback(module, cls, append)
                     TAG_STORE = ${TAG_STORE}
                     TAG_SCOPE = ${TAG_SCOPE}
         ]], 4))
-        append('}')
     end
 end
 
 local function write_cls_insert(module, cls, append)
     for _, v in ipairs(cls.INSERT) do
-        append(string.format("cls.insert('%s', {", v.NAME))
-        if v.CODES.BEFORE then
-            append(string.format('    BEFORE = [[\n%s]],', v.CODES.BEFORE))
-        end
-        if v.CODES.AFTER then
-            append(string.format('    AFTER = [[\n%s]],', v.CODES.AFTER))
-        end
-        if v.CODES.CALLBACK_BEFORE then
-            append(string.format('    CALLBACK_BEFORE = [[\n%s]],', v.CODES.CALLBACK_BEFORE))
-        end
-        if v.CODES.CALLBACK_AFTER then
-            append(string.format('    CALLBACK_AFTER = [[\n%s]],', v.CODES.CALLBACK_AFTER))
-        end
-        append(string.format('})'))
+        append(format([[
+            cls.insert('${v.NAME}', {
+                BEFORE = ${v.CODES.BEFORE?},
+                AFTER = ${v.CODES.AFTER?},
+                CALLBACK_BEFORE = ${v.CODES.CALLBACK_BEFORE?},
+                CALLBACK_AFTER = ${v.CODES.CALLBACK_AFTER?},
+            })
+        ]]))
     end
 end
 
@@ -343,26 +296,10 @@ local function write_classes(module, append)
         module.log("[%s]", cls.CPPCLS)
 
         append(format("cls = typecls '${cls.CPPCLS}'"))
-
-        if cls.SUPERCLS then
-            append(format('cls.SUPERCLS = "${cls.SUPERCLS}"'))
-        end
-
-        if cls.REG_LUATYPE == false then
-            append('cls.REG_LUATYPE = false')
-        end
-
-        if cls.DEFIF then
-            append(format('cls.DEFIF = "${cls.DEFIF}"'))
-        end
-
-        if cls.CHUNK then
-            append(format([=[
-                cls.CHUNK = [[
-                ${cls.CHUNK}
-                ]]
-            ]=]))
-        end
+        append(format('cls.SUPERCLS = ${cls.SUPERCLS?}'))
+        append(format('cls.REG_LUATYPE = ${cls.REG_LUATYPE?}'))
+        append(format('cls.DEFIF = ${cls.DEFIF?}'))
+        append(format('cls.CHUNK = ${cls.CHUNK?}'))
         
         write_cls_const(module, cls, append)
         write_cls_func(module, cls, append)

@@ -209,12 +209,11 @@ local function lookup(level, key)
     end
 end
 
-local function eval(expr)
-    return string.gsub(expr, "([ ]*)(${[%w_.]+})", function (indent, str)
-        local key = string.match(str, "[%w_]+")
+local function eval(line)
+    return string.gsub(line, '${[%w_.?]+}', function (str)
+        -- search caller file path
         local level = 1
         local path
-        -- search caller file path
         while true do
             local info = debug.getinfo(level, 'Sn')
             if info then
@@ -232,7 +231,11 @@ local function eval(expr)
                 break
             end
         end
+
         -- search in the functin local value
+        local indent = string.match(line, ' *')
+        local key = string.match(str, '[%w_]+')
+        local opt = string.match(str, '%?')
         local value = lookup(level + 1, key) or _G[key]
         for field in string.gmatch(string.match(str, "[%w_.]+"), '[^.]+') do
             if not value then
@@ -241,36 +244,77 @@ local function eval(expr)
                 value = value[field]
             end
         end
-        if value == nil then
+
+        if value == nil and not opt then
             error("value not found for '" .. str .. "'")
-        else
-            -- indent the value if value has multiline
-            if type(value) == 'table' then
-                local mt = getmetatable(value)
-                if mt and mt.__tostring then
-                    value = tostring(value)
+        end
+
+        -- indent the value if value has multiline
+        local prefix, posfix = '', ''
+        if type(value) == 'table' then
+            local mt = getmetatable(value)
+            if mt and mt.__tostring then
+                value = tostring(value)
+            else
+                error("no meta method '__tostring' for " .. str)
+            end
+        elseif value == nil then
+            value = 'nil'
+        elseif type(value) == 'string' then
+            value = tostring(value):gsub('[\n]*$', '')
+            if opt then
+                if string.find(value, '[\n\r]') then
+                    value = '\n' .. value
+                    prefix = '[['
+                    posfix =  '\n' .. indent .. ']]'
+                    indent = indent .. '    '
+                elseif string.find(value, '[\'"]') then
+                    value = '[[' .. value .. ']]'
                 else
-                    error("no meta method '__tostring' for " .. str)
+                    value = "'" .. value .. "'"
                 end
             end
-            value = string.gsub(value, '[\n]*$', '')
-            return indent .. string.gsub(tostring(value), '\n', '\n' .. indent)
+        else
+            value = tostring(value)
         end
+
+        return prefix .. string.gsub(value, '\n', '\n' .. indent) .. posfix
     end)
 end
 
+local function doeval(expr)
+    local arr = {}
+    local idx = 1
+    while idx <= #expr do
+        local from, to = string.find(expr, '[\n\r]', idx)
+        if not from then
+            from = #expr + 1
+            to = from
+        end
+        arr[#arr + 1] = eval(string.sub(expr, idx, from - 1))
+        idx = to + 1
+    end
+    return table.concat(arr, '\n')
+end
+
+function olua.trim(expr, indent)
+    if type(expr) == 'string' then
+        expr = string.gsub(expr, '[\n\r]', '\n')
+        expr = string.gsub(expr, '^[\n]*', '') -- trim head '\n'
+        expr = string.gsub(expr, '[ \n]*$', '') -- trim tail '\n' or ' '
+
+        local space = string.match(expr, '^[ ]*')
+        indent = string.rep(' ', indent or 0)
+        expr = string.gsub(expr, '^[ ]*', '')  -- trim head space
+        expr = string.gsub(expr, '\n' .. space, '\n' .. indent)
+        expr = indent .. expr
+    end
+    return expr
+end
+
 function olua.format(expr, indent)
-    expr = string.gsub(expr, '[\n\r]', '\n')
-    expr = string.gsub(expr, '^[\n]*', '') -- trim head '\n'
-    expr = string.gsub(expr, '[ \n]*$', '') -- trim tail '\n' or ' '
+    expr = doeval(olua.trim(expr, indent))
 
-    local space = string.match(expr, '^[ ]*')
-    indent = string.rep(' ', indent or 0)
-    expr = string.gsub(expr, '^[ ]*', '')  -- trim head space
-    expr = string.gsub(expr, '\n' .. space, '\n' .. indent)
-    expr = indent .. expr
-
-    expr = eval(expr)
     while true do
         local s, n = string.gsub(expr, '\n[ ]+\n', '\n\n')
         expr = s

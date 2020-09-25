@@ -23,7 +23,7 @@ local function gen_func_snippet(cls, fi, write)
 end
 
 function olua.gen_decl_exp(arg, name, out)
-    local SPACE = string.find(arg.TYPE.DECLTYPE, '[ *&]$') and '' or ' '
+    local TYPE_SPACE = olua.typespace(arg.TYPE.DECLTYPE)
     local ARGNAME = name
     local VARNAME = ""
     if arg.VARNAME then
@@ -32,7 +32,7 @@ function olua.gen_decl_exp(arg, name, out)
     if arg.TYPE.SUBTYPES then
         -- arg.DECLTYPE = std::vector<std::string>
         -- arg.TYPE.DECLTYPE = std::vector
-        out.DECL_ARGS:pushf('${arg.DECLTYPE}${SPACE}${ARGNAME};       ${VARNAME}')
+        out.DECL_ARGS:pushf('${arg.DECLTYPE}${TYPE_SPACE}${ARGNAME};       ${VARNAME}')
     else
         local DECLTYPE = arg.TYPE.DECLTYPE
         if arg.ATTR.OUT == 'pointee' then
@@ -50,7 +50,7 @@ function olua.gen_decl_exp(arg, name, out)
             end
         end
         out.DECL_ARGS:pushf([[
-            ${DECLTYPE}${SPACE}${ARGNAME}${INIT_VALUE};       ${VARNAME}
+            ${DECLTYPE}${TYPE_SPACE}${ARGNAME}${INIT_VALUE};       ${VARNAME}
         ]])
     end
 end
@@ -269,11 +269,11 @@ end
 
 local function gen_func_ret(cls, fi, func)
     if fi.RET.TYPE.CPPCLS ~= 'void' then
-        local SPACE = string.find(fi.RET.DECLTYPE, '[ *&]$') and '' or ' '
-        if fi.RET.TYPE.VARIANT and SPACE == ' ' then
+        local TYPE_SPACE = olua.typespace(fi.RET.DECLTYPE)
+        if fi.RET.TYPE.VARIANT and TYPE_SPACE == ' ' then
             func.RET_EXP = format('${fi.RET.DECLTYPE} &ret = (${fi.RET.DECLTYPE} &)')
         else
-            func.RET_EXP = format('${fi.RET.DECLTYPE}${SPACE}ret = (${fi.RET.DECLTYPE})')
+            func.RET_EXP = format('${fi.RET.DECLTYPE}${TYPE_SPACE}ret = (${fi.RET.DECLTYPE})')
         end
 
         local EXPS = {PUSH_ARGS = olua.newarray()}
@@ -329,7 +329,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
         REMOVE_LOCAL_CALLBACK = "",
     }
 
-    olua.message(fi.FUNCDEF)
+    olua.message(fi.FUNCDECL)
 
     local funcname = format([[_${cls.CPPNAME}_${fi.CPPFUNC}${FUNC_INDEX}]])
     if exported[funcname] then
@@ -402,7 +402,7 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
 
             ${FUNC.CALLBACK}
 
-            // ${fi.FUNCDEF}
+            // ${fi.FUNCDECL}
             ${FUNC.RET_EXP}${CALLER}${BEGIN_ARGS}${FUNC.CALLER_ARGS}${END_ARGS};
             ${FUNC.PUSH_RET}
             ${FUNC.POST_NEW}
@@ -466,13 +466,13 @@ local function gen_test_and_call(cls, fns)
                 MAX_VARS = MAX_VARS,
                 EXP1 = format([[
                     // if (${TEST_ARGS}) {
-                        // ${fi.FUNCDEF}
+                        // ${fi.FUNCDECL}
                         return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                     // }
                 ]]),
                 EXP2 = format([[
                     if (${TEST_ARGS}) {
-                        // ${fi.FUNCDEF}
+                        // ${fi.FUNCDECL}
                         return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                     }
                 ]]),
@@ -487,7 +487,7 @@ local function gen_test_and_call(cls, fns)
             CALL_CHUNK[#CALL_CHUNK + 1] = {
                 MAX_VARS = 1,
                 EXP1 = format([[
-                    // ${fi.FUNCDEF}
+                    // ${fi.FUNCDECL}
                     return _${cls.CPPNAME}_${fi.CPPFUNC}${fi.INDEX}(L);
                 ]])
             }
@@ -541,7 +541,7 @@ local function gen_multi_func(cls, fis, write, exported)
     if pack_fi then
         IF_CHUNK:pushf([[
             if (num_args > 0) {
-                // ${pack_fi.FUNCDEF}
+                // ${pack_fi.FUNCDECL}
                 return _${cls.CPPNAME}_${pack_fi.CPPFUNC}${pack_fi.INDEX}(L);
             }
         ]])

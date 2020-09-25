@@ -20,6 +20,7 @@ local function gen_conv_header(module)
     end
 
     local PATH = olua.format '${module.PATH}/lua_${module.NAME}.h'
+    local HEADER_INCLUDES = olua.trim(module.HEADER_INCLUDES)
     olua.write(PATH, format([[
         //
         // AUTO BUILD, DON'T MODIFY!
@@ -27,7 +28,7 @@ local function gen_conv_header(module)
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
-        ${module.HEADER_INCLUDES}
+        ${HEADER_INCLUDES}
 
         ${DECL_FUNCS}
 
@@ -39,12 +40,12 @@ local function gen_push_func(cv, write)
     local NUM_ARGS = #cv.PROPS
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
 
-    for _, pi in ipairs(cv.PROPS) do
+    for i, pi in ipairs(cv.PROPS) do
         local ARGNAME = format('value->${pi.NAME}')
         local ARGNAME_PATH = ARGNAME:gsub('[%->.]', '_')
+        OUT.PUSH_ARGS:push(i > 1 and '' or nil)
         olua.gen_push_exp(pi, ARGNAME, OUT)
         OUT.PUSH_ARGS:pushf([[olua_setfield(L, -2, "${pi.LUANAME}");]])
-        OUT.PUSH_ARGS:push('')
     end
 
     write(format([[

@@ -180,9 +180,9 @@ function olua.gen_callback(cls, fi, write, out)
 
         olua.gen_push_exp(v, ARGNAME, CALLBACK)
 
-        local SPACE = string.find(v.RAWDECL, '[*&]$') and '' or ' '
+        local TYPE_SPACE = olua.typespace(v.RAWDECL)
         CALLBACK.ARGS:push(format([[
-            ${v.RAWDECL}${SPACE}${ARGNAME}
+            ${v.RAWDECL}${TYPE_SPACE}${ARGNAME}
         ]]))
     end
 

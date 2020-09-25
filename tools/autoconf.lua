@@ -121,8 +121,6 @@ function M:visit_enum(cur, cppcls)
     ignored_type[cppcls] = false
     if cur:kind() ~= 'TypeAliasDecl' then
         for _, c in ipairs(cur:children()) do
-            local kind = c:kind()
-            assert(kind == 'EnumConstantDecl', kind)
             local VALUE =  c:name()
             local name = cls.MAKE_LUANAME(VALUE, 'ENUM')
             cls.ENUM[name] = {
@@ -226,25 +224,18 @@ function M:has_default_value(cur)
     for _, c in ipairs(cur:children()) do
         if DEFAULT_ARG_TYPES[c:kind()] then
             return true
-        else
-            if self:has_default_value(c) then
-                return true
-            end
+        elseif self:has_default_value(c) then
+            return true
         end
     end
 end
 
 function M:visit_method(cls, cur)
-    if cur:isVariadic() or cur:name():find('^_') then
-        return
-    end
-
-    if cur:kind() == 'Constructor' then
-        if cur:isCopyConstructor() or
-            cur:isMoveConstructor() then
-            return
-        end
-    elseif cur:name():find('operator *[%-=+/*><!()]?')
+    if cur:isVariadic()
+            or cur:name():find('^_')
+            or cur:isCopyConstructor()
+            or cur:isMoveConstructor()
+            or cur:name():find('operator *[%-=+/*><!()]?')
             or self:is_excluded_type(cur:resultType()) then
         return
     end
@@ -257,10 +248,10 @@ function M:visit_method(cls, cur)
     end
 
     local fn = cur:name()
-    local attr = cls.ATTR[fn] or {}
+    local attr = cls.ATTR[fn] or cls.ATTR['*'] or {}
     local callback = cls.CALLBACK[fn] or {}
     local exps = olua.newarray('')
-    local dn_exps = olua.newarray('')
+    local declexps = olua.newarray('')
 
     for i, arg in ipairs(cur:arguments()) do
         local attrn = (attr['ARG' .. i]) or ''
@@ -286,25 +277,23 @@ function M:visit_method(cls, cur)
             end
         end
         exps:push(tn)
-        if not string.find(tn, '[*&]$') then
-            exps:push(' ')
-        end
+        exps:push(olua.typespace(tn))
     end
 
     local optional = false
     exps:push(fn .. '(')
-    dn_exps:push(fn .. '(')
+    declexps:push(fn .. '(')
     for i, arg in ipairs(cur:arguments()) do
         local tn = self:typename(arg, arg:type())
-        local display_name = cur:displayName()
+        local DISPLAY_NAME = cur:displayName()
         local ARGN = 'ARG' .. i
         if i > 1 then
             exps:push(', ')
-            dn_exps:push(', ')
+            declexps:push(', ')
         end
         if string.find(tn, 'std::function') then
             if cbtype then
-                error(format('has more than one std::function: ${cls.CPPCLS}::${display_name}'))
+                error(format('has more than one std::function: ${cls.CPPCLS}::${DISPLAY_NAME}'))
             end
             assert(not cbtype, cls.CPPCLS .. '::' .. cur:displayName())
             cbtype = 'ARG'
@@ -319,19 +308,17 @@ function M:visit_method(cls, cur)
             exps:push('@optional ')
             optional = true
         else
-            assert(not optional, cls.CPPCLS .. '::' .. display_name)
+            assert(not optional, cls.CPPCLS .. '::' .. DISPLAY_NAME)
         end
         exps:push(attr[ARGN] and (attr[ARGN] .. ' ') or nil)
         exps:push(tn)
-        dn_exps:push(tn)
-        if not string.find(tn, '[*&]$') then
-            exps:push(' ')
-            dn_exps:push(' ')
-        end
+        exps:push(olua.typespace(tn))
         exps:push(arg:name())
+
+        declexps:push(tn)
     end
     exps:push(')')
-    dn_exps:push(')')
+    declexps:push(')')
 
     local decl = tostring(exps)
     if self.module.EXCLUDE_PASS(cls.CPPCLS, fn, decl) then
@@ -340,7 +327,7 @@ function M:visit_method(cls, cur)
         if cbtype then
             refed_type[cls.CPPCLS] = true
         end
-        return decl, tostring(dn_exps), cbtype
+        return decl, tostring(declexps), cbtype
     end
 end
 
@@ -370,10 +357,7 @@ function M:visit_var(cls, cur)
         exps:push('static ')
     end
     exps:push(tn)
-    if not string.find(tn, '[*&]$') then
-        exps:push(' ')
-    end
-
+    exps:push(olua.typespace(tn))
     exps:push(cur:name())
 
     local decl = tostring(exps)
@@ -581,7 +565,7 @@ local function add_command(cls)
     
     function CMD.FUNC(fn, snippet)
         cls.EXCLUDE_FUNC[fn] = true
-        cls.FUNC[fn] = {NAME = fn, SNIPPET = snippet}
+        cls.FUNC[fn] = {NAME = fn, SNIPPET = olua.trim(snippet)}
         return CMD
     end
 
@@ -596,7 +580,7 @@ local function add_command(cls)
     end
 
     function CMD.PROP(name, get, set)
-        cls.PROP[name] = {NAME = name, GET = get, SET = set}
+        cls.PROP[name] = {NAME = name, GET = olua.trim(get), SET = olua.trim(set)}
         return CMD
     end
 
@@ -604,7 +588,7 @@ local function add_command(cls)
         local varname = olua.funcname(snippet)
         assert(#varname > 0, 'no variable name')
         cls.EXCLUDE_FUNC[varname] = true
-        cls.VAR[name or varname] = {NAME = name, SNIPPET = snippet}
+        cls.VAR[name or varname] = {NAME = name, SNIPPET = olua.trim(snippet)}
         return CMD
     end
     
@@ -615,6 +599,9 @@ local function add_command(cls)
 
     function CMD.INSERT(names, codes)
         names = type(names) == 'string' and {names} or names
+        for k, v in pairs(codes) do
+            codes[k] = olua.trim(v)
+        end
         for _, n in ipairs(names) do
             cls.INSERT[n] = {NAME = n, CODES = codes}
         end
@@ -667,6 +654,7 @@ function M.typemod(name)
             ALIAS = olua.newhash(),
             INSERT = olua.newhash(),
             INDEX = INDEX,
+            REG_LUATYPE = true,
             MAKE_LUANAME = function (n) return n end,
         }
         INDEX = INDEX + 1
