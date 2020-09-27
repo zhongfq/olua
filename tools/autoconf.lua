@@ -94,14 +94,22 @@ local function is_ref_class(cls)
     end
 end
 
+function M:has_define_class(cls)
+    local name = string.match(cls.CPPCLS, '[^:]+$')
+    return string.find(cls.CHUNK or '', 'class +' .. name) ~= nil
+end
+
 function M:check_class()
     for _, cls in ipairs(self.module.CLASSES) do
-        if cls.NOTCONF then
-            cls.KIND = 'Class'
-            visited_type[cls.CPPCLS] = cls
-            ignored_type[cls.CPPCLS] = false
-        elseif not visited_type[cls.CPPCLS] then
-            error(format("class not found: ${cls.CPPCLS}"))
+        if not visited_type[cls.CPPCLS] then
+            if #cls.FUNC > 0 or #cls.PROP > 0 then
+                cls.KIND = 'Class'
+                cls.REG_LUATYPE = self:has_define_class(cls)
+                visited_type[cls.CPPCLS] = cls
+                ignored_type[cls.CPPCLS] = false
+            else
+                error(format("class not found: ${cls.CPPCLS}"))
+            end
         end
     end
     for _, cls in ipairs(self.module.CLASSES) do
