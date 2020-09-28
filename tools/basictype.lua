@@ -91,20 +91,20 @@ typedef {
     CPPCLS = 'std::set',
     CONV = 'olua_$$_std_set',
     PUSH_VALUE = [[
-        int ${ARGNAME}_i = 1;
-        lua_createtable(L, (int)${ARGNAME}.size(), 0);
-        for (auto it = ${ARGNAME}.begin(); it != ${ARGNAME}.end(); ++it) {
+        int ${ARG_NAME}_i = 1;
+        lua_createtable(L, (int)${ARG_NAME}.size(), 0);
+        for (auto it = ${ARG_NAME}.begin(); it != ${ARG_NAME}.end(); ++it) {
             ${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_CAST}(*it));
-            lua_rawseti(L, -2, ${ARGNAME}_i++);
+            lua_rawseti(L, -2, ${ARG_NAME}_i++);
         }
     ]],
     CHECK_VALUE = [[
-        size_t ${ARGNAME}_total = lua_rawlen(L, ${ARGN});
-        for (int i = 1; i <= ${ARGNAME}_total; i++) {
+        size_t ${ARG_NAME}_total = lua_rawlen(L, ${ARGN});
+        for (int i = 1; i <= ${ARG_NAME}_total; i++) {
             ${SUBTYPE.DECLTYPE} obj;
             lua_rawgeti(L, ${ARGN}, i);
             ${SUBTYPE_CHECK_FUNC}(L, -1, &obj);
-            ${ARGNAME}.insert(${SUBTYPE_CAST}obj);
+            ${ARG_NAME}.insert(${SUBTYPE_CAST}obj);
             lua_pop(L, 1);
         }
     ]],
@@ -114,21 +114,21 @@ typedef {
     CPPCLS = 'std::vector',
     CONV = 'olua_$$_std_vector',
     PUSH_VALUE = [[
-        int ${ARGNAME_PATH}_size = (int)${ARGNAME}.size();
-        lua_createtable(L, ${ARGNAME_PATH}_size, 0);
-        for (int i = 0; i < ${ARGNAME_PATH}_size; i++) {
-            ${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_CAST}${ARGNAME}[i]);
+        int ${ARG_PREFIX}_size = (int)${ARG_NAME}.size();
+        lua_createtable(L, ${ARG_PREFIX}_size, 0);
+        for (int i = 0; i < ${ARG_PREFIX}_size; i++) {
+            ${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_CAST}${ARG_NAME}[i]);
             lua_rawseti(L, -2, i + 1);
         }
     ]],
     CHECK_VALUE = [[
-        size_t ${ARGNAME}_total = lua_rawlen(L, ${ARGN});
-        ${ARGNAME}.reserve(${ARGNAME}_total);
-        for (int i = 1; i <= ${ARGNAME}_total; i++) {
+        size_t ${ARG_NAME}_total = lua_rawlen(L, ${ARGN});
+        ${ARG_NAME}.reserve(${ARG_NAME}_total);
+        for (int i = 1; i <= ${ARG_NAME}_total; i++) {
             ${SUBTYPE.DECLTYPE} obj;
             lua_rawgeti(L, ${ARGN}, i);
             ${SUBTYPE_CHECK_FUNC}(L, -1, &obj);
-            ${ARGNAME}.push_back(${SUBTYPE_CAST}obj);
+            ${ARG_NAME}.push_back(${SUBTYPE_CAST}obj);
             lua_pop(L, 1);
         }
     ]],

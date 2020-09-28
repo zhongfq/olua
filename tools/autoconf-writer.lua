@@ -14,7 +14,7 @@ local function write_metadata(module, append)
 
     append("\nM.CONVS = {")
     for _, cls in ipairs(module.CLASSES) do
-        if cls.KIND ~= "Conv" then
+        if cls.KIND ~= "conv" then
             goto continue
         end
 
@@ -60,7 +60,7 @@ local function write_typedef(module)
         table.sort(arr, function (a, b) return a[1] < b[1] end)
         writeLine("typedef {")
         for _, p in ipairs(arr) do
-            local KEY, VALUE = p[1], olua.trim(p[2])
+            local KEY, VALUE = p[1], p[2]
             writeLine(format('${KEY} = ${VALUE?},', 4))
         end
         writeLine("}")
@@ -69,15 +69,15 @@ local function write_typedef(module)
     for _, cls in ipairs(module.CLASSES) do
         local CONV
         local CPPCLS = cls.CPPCLS
-        local DECLTYPE, LUACLS, NUMVARS = 'nil', 'nil', 'nil'
-        if cls.KIND == 'Conv' then
+        local DECLTYPE, LUACLS, NUM_VARS = 'nil', 'nil', 'nil'
+        if cls.KIND == 'conv' then
             CONV = 'auto_olua_$$_' .. string.gsub(cls.CPPCLS, '[.:]+', '_')
-            NUMVARS = #cls.VAR
-        elseif cls.KIND == 'Enum' then
+            NUM_VARS = #cls.VAR
+        elseif cls.KIND == 'enum' then
             CONV = 'olua_$$_uint'
             LUACLS = olua.stringify(cls.LUACLS, "'")
             DECLTYPE = olua.stringify('lua_Unsigned')
-        elseif cls.KIND == 'Class' then
+        elseif cls.KIND == 'class' then
             CPPCLS = CPPCLS .. ' *'
             LUACLS = olua.stringify(cls.LUACLS, "'")
             CONV = 'olua_$$_cppobj'
@@ -91,7 +91,7 @@ local function write_typedef(module)
                 LUACLS = ${LUACLS},
                 DECLTYPE = ${DECLTYPE},
                 CONV = '${CONV}',
-                NUMVARS = ${NUMVARS},
+                NUM_VARS = ${NUM_VARS},
             }
         ]]))
         t:push('')
@@ -156,7 +156,7 @@ local function write_cls_func(module, cls, append)
         local has_callback = false
         local fn = arr[1]
         for _, v in ipairs(arr) do
-            if v.CALLBACK_TYPE or cls.CALLBACK[v.NAME] then
+            if v.CALLBACK_KIND or cls.CALLBACK[v.NAME] then
                 has_callback = true
             end
             FUNCS[#FUNCS + 1] = v.FUNC
@@ -172,11 +172,11 @@ local function write_cls_func(module, cls, append)
             if #FUNCS > 0 then
                 append(format("cls.func(nil, ${FUNCS})"))
             else
-                append(format("cls.func('${fn.NAME}', [[${fn.SNIPPET}]])"))
+                append(format("cls.func('${fn.NAME}', ${fn.SNIPPET?})"))
             end
         else
             local TAG = fn.NAME:gsub('^set', ''):gsub('^get', '')
-            local mode = fn.CALLBACK_TYPE == 'RET' and 'OLUA_TAG_SUBEQUAL' or 'OLUA_TAG_REPLACE'
+            local mode = fn.CALLBACK_KIND == 'RET' and 'OLUA_TAG_SUBEQUAL' or 'OLUA_TAG_REPLACE'
             local callback = cls.CALLBACK[fn.NAME]
             if callback then
                 callback.FUNCS = FUNCS
@@ -208,7 +208,7 @@ end
 
 local function write_cls_var(module, cls, append)
     for _, fn in ipairs(cls.VAR) do
-        append(format("cls.var('${fn.NAME}', [[${fn.SNIPPET}]])"))
+        append(format("cls.var('${fn.NAME}', ${fn.SNIPPET?})"))
     end
 end
 
@@ -220,6 +220,7 @@ end
 
 local function write_cls_callback(module, cls, append)
     for i, v in ipairs(cls.CALLBACK) do
+        assert(v.FUNCS, cls.CPPCLS .. '::' .. v.NAME)
         local FUNCS = olua.newarray("',\n'", "'", "'"):merge(v.FUNCS)
         local TAG_MAKER = olua.newarray("', '", "'", "'")
         local TAG_MODE = olua.newarray("', '", "'", "'")
@@ -289,7 +290,7 @@ local function write_classes(module, append)
     append('M.CLASSES = {}')
     append('')
     for _, cls in ipairs(module.CLASSES) do
-        if cls.KIND == "EnumAlias" or cls.KIND == "Conv" then
+        if cls.KIND == "enumAlias" or cls.KIND == "conv" then
             goto continue
         end
 

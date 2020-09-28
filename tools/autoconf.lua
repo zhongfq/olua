@@ -73,7 +73,7 @@ function M:parse(path)
     end
 
     for _, cls in pairs(self.module.CLASSES) do
-        type_convs[cls.CPPCLS] = cls.KIND == 'Conv' and toconv(cls) or true
+        type_convs[cls.CPPCLS] = cls.KIND == 'conv' and toconv(cls) or true
     end
 
     self:visit(clang_tu:cursor())
@@ -103,7 +103,7 @@ function M:check_class()
     for _, cls in ipairs(self.module.CLASSES) do
         if not visited_type[cls.CPPCLS] then
             if #cls.FUNC > 0 or #cls.PROP > 0 then
-                cls.KIND = 'Class'
+                cls.KIND = 'class'
                 cls.REG_LUATYPE = self:has_define_class(cls)
                 visited_type[cls.CPPCLS] = cls
                 ignored_type[cls.CPPCLS] = false
@@ -136,10 +136,10 @@ function M:visit_enum(cur, cppcls)
                 VALUE = format('${cls.CPPCLS}::${VALUE}'),
             }
         end
-        cls.KIND = 'Enum'
+        cls.KIND = 'enum'
         type_alias[cls.CPPCLS] = nil
     else
-        cls.KIND = 'EnumAlias'
+        cls.KIND = 'enumAlias'
     end
 end
 
@@ -271,12 +271,12 @@ function M:visit_method(cls, cur)
     exps:push(attr.RET and (attr.RET .. ' ') or nil)
     exps:push(cur:isStatic() and 'static ' or nil)
 
-    local cbtype
+    local cbkind
 
     if cur:kind() ~= 'Constructor' then
         local tn = self:typename(cur, cur:resultType())
         if string.find(tn, 'std::function') then
-            cbtype = 'RET'
+            cbkind = 'RET'
             if callback.NULLABLE then
                 exps:push('@nullable ')
             end
@@ -300,11 +300,11 @@ function M:visit_method(cls, cur)
             declexps:push(', ')
         end
         if string.find(tn, 'std::function') then
-            if cbtype then
+            if cbkind then
                 error(format('has more than one std::function: ${cls.CPPCLS}::${DISPLAY_NAME}'))
             end
-            assert(not cbtype, cls.CPPCLS .. '::' .. cur:displayName())
-            cbtype = 'ARG'
+            assert(not cbkind, cls.CPPCLS .. '::' .. cur:displayName())
+            cbkind = 'ARG'
             if callback.NULLABLE then
                 exps:push('@nullable ')
             end
@@ -332,10 +332,10 @@ function M:visit_method(cls, cur)
     if self.module.EXCLUDE_PASS(cls.CPPCLS, fn, decl) then
         return
     else
-        if cbtype then
+        if cbkind then
             refed_type[cls.CPPCLS] = true
         end
-        return decl, tostring(declexps), cbtype
+        return decl, tostring(declexps), cbkind
     end
 end
 
@@ -352,9 +352,9 @@ function M:visit_var(cls, cur)
     end
 
     local tn = self:typename(cur, cur:type())
-    local cbtype
+    local cbkind
     if string.find(tn, 'std::function') then
-        cbtype = 'VAR'
+        cbkind = 'VAR'
         exps:push('@nullable ')
         local callback = cls.CALLBACK:take(cur:name()) or {}
         if callback.LOCAL ~= false then
@@ -372,12 +372,12 @@ function M:visit_var(cls, cur)
     if self.module.EXCLUDE_PASS(cls.CPPCLS, cur:name(), decl) then
         return
     else
-        if cbtype then
+        if cbkind then
             refed_type[cls.CPPCLS] = true
         end
 
         local name = cls.MAKE_LUANAME(cur:name(), 'VAR')
-        cls.VAR[name] = {NAME = name, SNIPPET = decl, CALLBACK_TYPE = cbtype}
+        cls.VAR[name] = {NAME = name, SNIPPET = decl, CALLBACK_KIND = cbkind}
     end
 end
 
@@ -387,7 +387,7 @@ function M:visit_class(cur, cppcls)
     local cls = self.module.CLASSES[cppcls]
     visited_type[cppcls] = cls
     ignored_type[cppcls] = false
-    cls.KIND = cls.KIND or 'Class'
+    cls.KIND = cls.KIND or 'class'
 
     if cur:kind() == 'Namespace' then
         cls.REG_LUATYPE = false
@@ -422,7 +422,7 @@ function M:visit_class(cur, cppcls)
                 (kind == 'Constructor' and (cls.EXCLUDE_FUNC['new'] or cur:isAbstract())) then
                 goto continue
             end
-            local func, prototype, cbtype = self:visit_method(cls, c)
+            local func, prototype, cbkind = self:visit_method(cls, c)
             if func and not filter[prototype] then
                 filter[displayName] = true
                 filter[prototype] = true
@@ -436,7 +436,7 @@ function M:visit_class(cur, cppcls)
                     NAME = fn,
                     STATIC = static,
                     NUM_ARGS = #c:arguments(),
-                    CALLBACK_TYPE = cbtype,
+                    CALLBACK_KIND = cbkind,
                     PROTOTYPE = prototype,
                 }
             end
@@ -573,7 +573,7 @@ local function add_command(cls)
     
     function CMD.FUNC(fn, snippet)
         cls.EXCLUDE_FUNC[fn] = true
-        cls.FUNC[fn] = {NAME = fn, SNIPPET = olua.trim(snippet)}
+        cls.FUNC[fn] = {NAME = fn, SNIPPET = snippet}
         return CMD
     end
 
@@ -588,7 +588,7 @@ local function add_command(cls)
     end
 
     function CMD.PROP(name, get, set)
-        cls.PROP[name] = {NAME = name, GET = olua.trim(get), SET = olua.trim(set)}
+        cls.PROP[name] = {NAME = name, GET = get, SET = set}
         return CMD
     end
 
@@ -596,7 +596,7 @@ local function add_command(cls)
         local varname = olua.funcname(snippet)
         assert(#varname > 0, 'no variable name')
         cls.EXCLUDE_FUNC[varname] = true
-        cls.VAR[name or varname] = {NAME = name, SNIPPET = olua.trim(snippet)}
+        cls.VAR[name or varname] = {NAME = name, SNIPPET = snippet}
         return CMD
     end
     
@@ -607,9 +607,6 @@ local function add_command(cls)
 
     function CMD.INSERT(names, codes)
         names = type(names) == 'string' and {names} or names
-        for k, v in pairs(codes) do
-            codes[k] = olua.trim(v)
-        end
         for _, n in ipairs(names) do
             cls.INSERT[n] = {NAME = n, CODES = codes}
         end
@@ -683,7 +680,7 @@ function M.typemod(name)
 
     function modinst.typeconv(classname)
         local cls = modinst.typeconf(classname)
-        cls.KIND = 'Conv'
+        cls.KIND = 'conv'
         return cls
     end
 

@@ -9,12 +9,12 @@ local function gen_conv_header(module)
     for _, cv in ipairs(module.CONVS) do
         DECL_FUNCS:pushf([[
             // ${cv.CPPCLS}
-            int auto_olua_push_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value);
-            void auto_olua_check_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            bool auto_olua_is_${cv.CPPNAME}(lua_State *L, int idx);
-            void auto_olua_pack_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            int auto_olua_unpack_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value);
-            bool auto_olua_ispack_${cv.CPPNAME}(lua_State *L, int idx);
+            int auto_olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
+            void auto_olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            bool auto_olua_is_${cv.CPP_SYM}(lua_State *L, int idx);
+            void auto_olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            int auto_olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
+            bool auto_olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx);
         ]])
         DECL_FUNCS:push("")
     end
@@ -41,15 +41,15 @@ local function gen_push_func(cv, write)
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
 
     for i, pi in ipairs(cv.PROPS) do
-        local ARGNAME = format('value->${pi.NAME}')
-        local ARGNAME_PATH = ARGNAME:gsub('[%->.]', '_')
+        local ARG_NAME = format('value->${pi.NAME}')
+        local ARG_PREFIX = ARG_NAME:gsub('[%->.]', '_')
         OUT.PUSH_ARGS:push(i > 1 and '' or nil)
-        olua.gen_push_exp(pi, ARGNAME, OUT)
-        OUT.PUSH_ARGS:pushf([[olua_setfield(L, -2, "${pi.LUANAME}");]])
+        olua.gen_push_exp(pi, ARG_NAME, OUT)
+        OUT.PUSH_ARGS:pushf([[olua_setfield(L, -2, "${pi.NAME}");]])
     end
 
     write(format([[
-        int auto_olua_push_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value)
+        int auto_olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 lua_createtable(L, 0, ${NUM_ARGS});
@@ -70,23 +70,23 @@ local function gen_check_func(cv, write)
         CHECK_ARGS = olua.newarray(),
     }
     for i, pi in ipairs(cv.PROPS) do
-        local ARGNAME = 'arg' .. i
-        olua.gen_decl_exp(pi, ARGNAME, OUT)
-        OUT.CHECK_ARGS:pushf([[olua_getfield(L, idx, "${pi.LUANAME}");]])
+        local ARG_NAME = 'arg' .. i
+        olua.gen_decl_exp(pi, ARG_NAME, OUT)
+        OUT.CHECK_ARGS:pushf([[olua_getfield(L, idx, "${pi.NAME}");]])
         if pi.ATTR.OPTIONAL then
             local SUBOUT = {CHECK_ARGS = olua.newarray()}
-            olua.gen_check_exp(pi, ARGNAME, -1, SUBOUT)
+            olua.gen_check_exp(pi, ARG_NAME, -1, SUBOUT)
             OUT.CHECK_ARGS:pushf([[
                 if (!olua_isnoneornil(L, -1)) {
                     ${SUBOUT.CHECK_ARGS}
-                    value->${pi.NAME} = (${pi.DECLTYPE})${ARGNAME};
+                    value->${pi.NAME} = (${pi.DECLTYPE})${ARG_NAME};
                 }
                 lua_pop(L, 1);
             ]])
         else
-            olua.gen_check_exp(pi, ARGNAME, -1, OUT)
+            olua.gen_check_exp(pi, ARG_NAME, -1, OUT)
             OUT.CHECK_ARGS:pushf([[
-                value->${pi.NAME} = (${pi.DECLTYPE})${ARGNAME};
+                value->${pi.NAME} = (${pi.DECLTYPE})${ARG_NAME};
                 lua_pop(L, 1);
             ]])
         end
@@ -94,7 +94,7 @@ local function gen_check_func(cv, write)
     end
 
     write(format([[
-        void auto_olua_check_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void auto_olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -116,17 +116,17 @@ local function gen_pack_func(cv, write)
         CHECK_ARGS = olua.newarray(),
     }
     for i, pi in ipairs(cv.PROPS) do
-        local ARGNAME = 'arg' .. i
-        olua.gen_decl_exp(pi, ARGNAME, OUT)
-        olua.gen_check_exp(pi, ARGNAME, 'idx + ' ..  (i - 1), OUT)
+        local ARG_NAME = 'arg' .. i
+        olua.gen_decl_exp(pi, ARG_NAME, OUT)
+        olua.gen_check_exp(pi, ARG_NAME, 'idx + ' ..  (i - 1), OUT)
         OUT.CHECK_ARGS:pushf([[
-            value->${pi.NAME} = (${pi.DECLTYPE})${ARGNAME};
+            value->${pi.NAME} = (${pi.DECLTYPE})${ARG_NAME};
         ]])
         OUT.CHECK_ARGS:push('')
     end
 
     write(format([[
-        void auto_olua_pack_${cv.CPPNAME}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void auto_olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -145,13 +145,13 @@ local function gen_unpack_func(cv, write)
     local NUM_ARGS = #cv.PROPS
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
     for _, pi in ipairs(cv.PROPS) do
-        local ARGNAME = format('value->${pi.NAME}')
-        local ARGNAME_PATH = ARGNAME:gsub('[%->.]', '_')
-        olua.gen_push_exp(pi, ARGNAME, OUT)
+        local ARG_NAME = format('value->${pi.NAME}')
+        local ARG_PREFIX = ARG_NAME:gsub('[%->.]', '_')
+        olua.gen_push_exp(pi, ARG_NAME, OUT)
     end
 
     write(format([[
-        int auto_olua_unpack_${cv.CPPNAME}(lua_State *L, const ${cv.CPPCLS} *value)
+        int auto_olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 ${OUT.PUSH_ARGS}
@@ -173,11 +173,11 @@ local function gen_is_func(cv, write)
     for i = #cv.PROPS, 1, -1 do
         local pi = cv.PROPS[i]
         if not pi.ATTR.OPTIONAL then
-            EXPS:pushf('olua_hasfield(L, idx, "${pi.LUANAME}")')
+            EXPS:pushf('olua_hasfield(L, idx, "${pi.NAME}")')
         end
     end
     write(format([[
-        bool auto_olua_is_${cv.CPPNAME}(lua_State *L, int idx)
+        bool auto_olua_is_${cv.CPP_SYM}(lua_State *L, int idx)
         {
             return ${EXPS};
         }
@@ -185,7 +185,7 @@ local function gen_is_func(cv, write)
     write('')
 end
 
-local function gen_is_pack_func(cv, write)
+local function gen_ispack_func(cv, write)
     local EXPS = olua.newarray(' && ')
     for i, pi in ipairs(cv.PROPS) do
         local IS_VALUE = olua.convfunc(pi.TYPE, 'is')
@@ -197,7 +197,7 @@ local function gen_is_pack_func(cv, write)
         end
     end
     write(format([[
-        bool auto_olua_ispack_${cv.CPPNAME}(lua_State *L, int idx)
+        bool auto_olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx)
         {
             return ${EXPS};
         }
@@ -211,7 +211,7 @@ local function gen_funcs(cv, write)
     gen_is_func(cv, write)
     gen_pack_func(cv, write)
     gen_unpack_func(cv, write)
-    gen_is_pack_func(cv, write)
+    gen_ispack_func(cv, write)
 end
 
 local function gen_conv_source(module)

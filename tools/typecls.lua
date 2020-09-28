@@ -261,9 +261,9 @@ end
         TYPE             -- type info
         DECLTYPE         -- decltype: std::vector<int>
         RAWDECL          -- rawdecl: const std::vector<int> &
-        VARNAME          -- var name: points
+        VAR_NAME         -- var name: points
         ATTR             -- attr: {PACK = true}
-        CALLBACK = {     -- eg: std::function<void (float, const A *a)>
+        CBTYPE = {       -- eg: std::function<void (float, const A *a)>
             ARGS         -- callback functions args: float, A *a
             RET          -- return type info: void type info
             DECLTYPE     -- std::function<void (float, const A *)>
@@ -328,28 +328,27 @@ function parse_args(cls, declstr)
 
         -- is callback
         if string.find(tn, 'std::function<') then
-            local callback = parse_callback_type(cls, tn)
+            local cbtype = parse_callback_type(cls, tn)
             args[#args + 1] = {
                 TYPE = setmetatable({
-                    DECLTYPE = callback.DECLTYPE,
+                    DECLTYPE = cbtype.DECLTYPE,
                 }, {__index = olua.typeinfo('std::function', cls)}),
-                DECLTYPE = callback.DECLTYPE,
-                VARNAME = varname or '',
+                DECLTYPE = cbtype.DECLTYPE,
+                VAR_NAME = varname or '',
                 ATTR = attr,
-                CALLBACK = callback,
+                CBTYPE = cbtype,
             }
         else
             args[#args + 1] = {
                 TYPE = olua.typeinfo(tn, cls),
                 DECLTYPE = todecltype(cls, tn, true),
                 RAWDECL = todecltype(cls, tn),
-                VARNAME = varname or '',
+                VAR_NAME = varname or '',
                 ATTR = attr,
-                CALLBACK = {},
             }
         end
 
-        local num_vars = args[#args].TYPE.NUMVARS or 1
+        local num_vars = args[#args].TYPE.NUM_VARS or 1
         if attr.PACK and num_vars > 0 then
             count = count + olua.assert(num_vars, args[#args].TYPE.CPPCLS)
         else
@@ -365,11 +364,6 @@ function olua.funcname(declfunc)
     return string.match(str, '[^ ()]+')
 end
 
-function olua.varname(declfunc)
-    local _, _, str = parse_type(declfunc)
-    return string.match(str, '[%w_]+')
-end
-
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
     local DECL_ARGS = olua.newarray(', ')
@@ -378,7 +372,7 @@ local function gen_func_prototype(cls, fi)
         DECL_ARGS:push(v.DECLTYPE)
     end
     fi.PROTOTYPE = format([[
-        ${STATIC}${fi.RET.DECLTYPE} ${fi.CPPFUNC}(${DECL_ARGS})
+        ${STATIC}${fi.RET.DECLTYPE} ${fi.CPP_FUNC}(${DECL_ARGS})
     ]])
     cls.PROTOTYPES[fi.PROTOTYPE] = true
 end
@@ -398,7 +392,7 @@ local function gen_func_pack(cls, fi, funcs)
         newfi.RET = olua.copy(fi.RET)
         newfi.RET.ATTR = olua.copy(fi.RET.ATTR)
         newfi.ARGS = {}
-        newfi.FUNCDECL = string.gsub(fi.FUNCDECL, '@pack *', '')
+        newfi.FUNC_DECL = string.gsub(fi.FUNC_DECL, '@pack *', '')
         for i in ipairs(fi.ARGS) do
             newfi.ARGS[i] = olua.copy(fi.ARGS[i])
             newfi.ARGS[i].ATTR = olua.copy(fi.ARGS[i].ATTR)
@@ -406,7 +400,7 @@ local function gen_func_pack(cls, fi, funcs)
                 assert(not packarg, 'too many pack args')
                 packarg = fi.ARGS[i]
                 newfi.ARGS[i].ATTR.PACK = false
-                local num_vars = packarg.TYPE.NUMVARS
+                local num_vars = packarg.TYPE.NUM_VARS
                 if num_vars and num_vars > 1 then
                     newfi.MAX_ARGS = newfi.MAX_ARGS + 1 - num_vars
                 end
@@ -450,10 +444,10 @@ local function parse_func(cls, name, ...)
         local fi = {RET = {}}
         olua.message(declfunc)
         if string.find(declfunc, '{') then
-            fi.LUAFUNC = assert(name)
-            fi.CPPFUNC = name
+            fi.LUA_FUNC = assert(name)
+            fi.CPP_FUNC = name
             fi.SNIPPET = olua.trim(declfunc)
-            fi.FUNCDECL = '<function snippet>'
+            fi.FUNC_DECL = '<function snippet>'
             fi.RET.TYPE = olua.typeinfo('void', cls)
             fi.RET.ATTR = {}
             fi.ARGS = {}
@@ -469,27 +463,27 @@ local function parse_func(cls, name, ...)
                 fi.CTOR = true
                 attr.STATIC = true
             end
-            fi.CPPFUNC = string.match(str, '[^ ()]+')
-            fi.LUAFUNC = name or fi.CPPFUNC
+            fi.CPP_FUNC = string.match(str, '[^ ()]+')
+            fi.LUA_FUNC = name or fi.CPP_FUNC
             fi.STATIC = attr.STATIC
-            fi.FUNCDECL = declfunc
+            fi.FUNC_DECL = declfunc
             fi.INSERT = {}
             if string.find(typename, 'std::function<') then
-                local callback = parse_callback_type(cls, typename, nil)
+                local cbtype = parse_callback_type(cls, typename, nil)
                 fi.RET = {
                     TYPE = setmetatable({
-                        DECLTYPE = callback.DECLTYPE,
+                        DECLTYPE = cbtype.DECLTYPE,
                     }, {__index = olua.typeinfo('std::function', cls)}),
-                    DECLTYPE = callback.DECLTYPE,
+                    DECLTYPE = cbtype.DECLTYPE,
                     ATTR = attr,
-                    CALLBACK = callback,
+                    CBTYPE = cbtype,
                 }
             else
                 fi.RET.TYPE = olua.typeinfo(typename, cls)
                 fi.RET.DECLTYPE = todecltype(cls, typename)
                 fi.RET.ATTR = attr
             end
-            fi.ARGS, fi.MAX_ARGS = parse_args(cls, string.sub(str, #fi.CPPFUNC + 1))
+            fi.ARGS, fi.MAX_ARGS = parse_args(cls, string.sub(str, #fi.CPP_FUNC + 1))
             gen_func_prototype(cls, fi)
             gen_func_pack(cls, fi, arr)
         end
@@ -520,12 +514,12 @@ local function parse_prop(cls, name, declget, declset)
 
     local function test(fi, name, op)
         name = topropfn(name, op)
-        if name == fi.CPPFUNC or name == fi.LUAFUNC then
+        if name == fi.CPP_FUNC or name == fi.LUA_FUNC then
             return true
         else
             -- getXXXXS => getXXXXs?
             name = name:sub(1, #name - 1) .. name:sub(#name):lower()
-            return name == fi.CPPFUNC or name == fi.LUAFUNC
+            return name == fi.CPP_FUNC or name == fi.LUA_FUNC
         end
     end
 
@@ -536,8 +530,8 @@ local function parse_prop(cls, name, declget, declset)
             local fi = v[1]
             if test(fi, name, 'get') or test(fi, name, 'is') or
                 test(fi, name2, 'get') or test(fi, name2, 'is') then
-                olua.message(fi.FUNCDECL)
-                olua.assert(#fi.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, fi.CPPFUNC)
+                olua.message(fi.FUNC_DECL)
+                olua.assert(#fi.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, fi.CPP_FUNC)
                 pi.GET = fi
                 break
             end
@@ -560,11 +554,11 @@ local function parse_prop(cls, name, declget, declset)
     if not pi.GET.SNIPPET then
         assert(pi.GET.RET.TYPE.CPPCLS ~= 'void', declget)
     elseif declget then
-        pi.GET.CPPFUNC = 'get_' .. pi.GET.CPPFUNC
+        pi.GET.CPP_FUNC = 'get_' .. pi.GET.CPP_FUNC
     end
 
     if pi.SET and pi.SET.SNIPPET and declset then
-        pi.SET.CPPFUNC = 'set_' .. pi.SET.CPPFUNC
+        pi.SET.CPP_FUNC = 'set_' .. pi.SET.CPP_FUNC
     end
 
     return pi
@@ -573,7 +567,7 @@ end
 function olua.typecls(cppcls)
     local cls = {
         CPPCLS = cppcls,
-        CPPNAME = string.gsub(cppcls, '[.:]+', '_'),
+        CPP_SYM = string.gsub(cppcls, '[.:]+', '_'),
         FUNCS = {},
         CONSTS = {},
         ENUMS = {},
@@ -616,7 +610,7 @@ function olua.typecls(cppcls)
             return code and format(code) or nil
         end
         local function apply_insert(fi, testname)
-            if fi and (fi.CPPFUNC == cppfunc or (testname and fi.LUAFUNC == cppfunc))then
+            if fi and (fi.CPP_FUNC == cppfunc or (testname and fi.LUA_FUNC == cppfunc))then
                 found = true
                 fi.INSERT.BEFORE = format_code(codes.BEFORE)
                 fi.INSERT.AFTER = format_code(codes.AFTER)
@@ -649,8 +643,8 @@ function olua.typecls(cppcls)
         local funcs = {}
         for _, arr in ipairs(cls.FUNCS) do
             for _, fi in ipairs(arr) do
-                if fi.LUAFUNC == func then
-                    funcs[#funcs + 1] = setmetatable({LUAFUNC = assert(aliasname)}, {__index = fi})
+                if fi.LUA_FUNC == func then
+                    funcs[#funcs + 1] = setmetatable({LUA_FUNC = assert(aliasname)}, {__index = fi})
                 end
             end
             if #funcs > 0 then
@@ -697,12 +691,12 @@ function olua.typecls(cppcls)
     function cls.callback(opt)
         cls.FUNCS[#cls.FUNCS + 1] = parse_func(cls, nil, table.unpack(opt.FUNCS))
         for i, v in ipairs(cls.FUNCS[#cls.FUNCS]) do
-            v.CALLBACK_OPT = setmetatable({}, {__index = opt})
-            if type(v.CALLBACK_OPT.TAG_MAKER) == 'table' then
-                v.CALLBACK_OPT.TAG_MAKER = assert(v.CALLBACK_OPT.TAG_MAKER[i])
+            v.CALLBACK = setmetatable({}, {__index = opt})
+            if type(v.CALLBACK.TAG_MAKER) == 'table' then
+                v.CALLBACK.TAG_MAKER = assert(v.CALLBACK.TAG_MAKER[i])
             end
-            if type(v.CALLBACK_OPT.TAG_MODE) == 'table' then
-                v.CALLBACK_OPT.TAG_MODE = assert(v.CALLBACK_OPT.TAG_MODE[i])
+            if type(v.CALLBACK.TAG_MODE) == 'table' then
+                v.CALLBACK.TAG_MODE = assert(v.CALLBACK.TAG_MODE[i])
             end
         end
 
@@ -722,12 +716,12 @@ function olua.typecls(cppcls)
         olua.message(declstr)
 
         local ARGS = parse_args(cls, '(' .. declstr .. ')')
-        name = name or ARGS[1].VARNAME
+        name = name or ARGS[1].VAR_NAME
 
         -- variable is callback?
         local CALLBACK_OPT_GET
         local CALLBACK_OPT_SET
-        if ARGS[1].CALLBACK.ARGS then
+        if ARGS[1].CBTYPE then
             CALLBACK_OPT_SET = {
                 TAG_MAKER =  name,
                 TAG_MODE = 'OLUA_TAG_REPLACE',
@@ -742,11 +736,11 @@ function olua.typecls(cppcls)
         cls.VARS[#cls.VARS + 1] = {
             NAME = assert(name),
             GET = {
-                LUAFUNC = name,
-                CPPFUNC = 'get_' .. ARGS[1].VARNAME,
-                VARNAME = ARGS[1].VARNAME,
+                LUA_FUNC = name,
+                CPP_FUNC = 'get_' .. ARGS[1].VAR_NAME,
+                VAR_NAME = ARGS[1].VAR_NAME,
                 INSERT = {},
-                FUNCDECL = rawstr,
+                FUNC_DECL = rawstr,
                 RET = {
                     TYPE = ARGS[1].TYPE,
                     DECLTYPE = ARGS[1].DECLTYPE,
@@ -756,15 +750,15 @@ function olua.typecls(cppcls)
                 VARIABLE = true,
                 ARGS = {},
                 INDEX = 0,
-                CALLBACK_OPT = CALLBACK_OPT_GET,
+                CALLBACK = CALLBACK_OPT_GET,
             },
             SET = {
-                LUAFUNC = name,
-                CPPFUNC = 'set_' .. ARGS[1].VARNAME,
-                VARNAME = ARGS[1].VARNAME,
+                LUA_FUNC = name,
+                CPP_FUNC = 'set_' .. ARGS[1].VAR_NAME,
+                VAR_NAME = ARGS[1].VAR_NAME,
                 INSERT = {},
                 STATIC = static > 0,
-                FUNCDECL = rawstr,
+                FUNC_DECL = rawstr,
                 RET = {
                     TYPE = olua.typeinfo('void', cls),
                     ATTR = {},
@@ -772,7 +766,7 @@ function olua.typecls(cppcls)
                 VARIABLE = true,
                 ARGS = ARGS,
                 INDEX = 0,
-                CALLBACK_OPT = CALLBACK_OPT_SET,
+                CALLBACK = CALLBACK_OPT_SET,
             },
         }
 
@@ -871,7 +865,7 @@ end
 
 function olua.typeconv(ci)
     ci.PROPS = {}
-    ci.CPPNAME = string.gsub(ci.CPPCLS, '[.:]+', '_')
+    ci.CPP_SYM = string.gsub(ci.CPPCLS, '[.:]+', '_')
     for line in string.gmatch(assert(ci.DEF, 'no DEF'), '[^\n\r]+') do
         if line:find('^ *//') then
             goto continue
@@ -880,8 +874,7 @@ function olua.typeconv(ci)
         line = line:gsub('^ *', ''):gsub('; *$', '')
         local arg = parse_args(ci, '(' .. line .. ')')[1]
         if arg then
-            arg.NAME = arg.VARNAME
-            arg.LUANAME = string.gsub(arg.VARNAME, '^_*', '')
+            arg.NAME = arg.VAR_NAME
             ci.PROPS[#ci.PROPS + 1] = arg
         end
         ::continue::

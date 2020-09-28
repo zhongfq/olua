@@ -5,7 +5,7 @@ local prototypes = {}
 
 local function has_gc_method(cls)
     for _, v in ipairs(cls.FUNCS) do
-        if v[1].LUAFUNC == '__gc' then
+        if v[1].LUA_FUNC == '__gc' then
             return true
         end
     end
@@ -16,17 +16,17 @@ local function has_gc_method(cls)
 end
 
 local function check_gc_method(cls)
-    local has_constructor = false
+    local has_ctor = false
     local has_move = false
     for _, v in ipairs(cls.FUNCS) do
         if v[1].CTOR then
-            has_constructor = true
+            has_ctor = true
         end
-        if v[1].LUAFUNC == '__move' then
+        if v[1].LUA_FUNC == '__move' then
             has_move = true
         end
     end
-    if has_constructor then
+    if has_ctor then
         if not has_gc_method(cls) then
             cls.func('__gc', format([[
             {
@@ -82,7 +82,7 @@ local function gen_class_funcs(cls, write)
 
     local exported = {}
     table.sort(cls.FUNCS, function (a, b)
-        return a[1].LUAFUNC < b[1].LUAFUNC
+        return a[1].LUA_FUNC < b[1].LUA_FUNC
     end)
     for _, fi in ipairs(cls.FUNCS) do
         check_gen_class_func(cls, fi, write, exported)
@@ -112,32 +112,32 @@ local function gen_class_open(cls, write)
     end
 
     for _, fis in ipairs(cls.FUNCS) do
-        local CPPFUNC = fis[1].CPPFUNC
-        local LUAFUNC = fis[1].LUAFUNC
-        if exported[LUAFUNC] then
-            error(format([[duplicate method: ${cls.CPPCLS}:${LUAFUNC}]]))
+        local CPP_FUNC = fis[1].CPP_FUNC
+        local LUA_FUNC = fis[1].LUA_FUNC
+        if exported[LUA_FUNC] then
+            error(format([[duplicate method: ${cls.CPPCLS}:${LUA_FUNC}]]))
         end
-        exported[LUAFUNC] = true
-        FUNCS:pushf('oluacls_func(L, "${LUAFUNC}", _${cls.CPPNAME}_${CPPFUNC});')
+        exported[LUA_FUNC] = true
+        FUNCS:pushf('oluacls_func(L, "${LUA_FUNC}", _${cls.CPP_SYM}_${CPP_FUNC});')
     end
 
     for _, pi in ipairs(cls.PROPS) do
         local FUNC_GET = "nullptr"
         local FUNC_SET = "nullptr"
         if pi.GET then
-            FUNC_GET = format('_${cls.CPPNAME}_${pi.GET.CPPFUNC}')
+            FUNC_GET = format('_${cls.CPP_SYM}_${pi.GET.CPP_FUNC}')
         end
         if pi.SET then
-            FUNC_SET = format('_${cls.CPPNAME}_${pi.SET.CPPFUNC}')
+            FUNC_SET = format('_${cls.CPP_SYM}_${pi.SET.CPP_FUNC}')
         end
         FUNCS:pushf('oluacls_prop(L, "${pi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
 
     for _, vi in ipairs(cls.VARS) do
-        local FUNC_GET = format('_${cls.CPPNAME}_${vi.GET.CPPFUNC}')
+        local FUNC_GET = format('_${cls.CPP_SYM}_${vi.GET.CPP_FUNC}')
         local FUNC_SET = "nullptr"
-        if vi.SET and vi.SET.CPPFUNC then
-           FUNC_SET = format('_${cls.CPPNAME}_${vi.SET.CPPFUNC}')
+        if vi.SET and vi.SET.CPP_FUNC then
+           FUNC_SET = format('_${cls.CPP_SYM}_${vi.SET.CPP_FUNC}')
         end
         FUNCS:pushf('oluacls_prop(L, "${vi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
@@ -175,7 +175,7 @@ local function gen_class_open(cls, write)
     end
 
     write(format([[
-        static int luaopen_${cls.CPPNAME}(lua_State *L)
+        static int luaopen_${cls.CPP_SYM}(lua_State *L)
         {
             oluacls_class(L, "${cls.LUACLS}", ${SUPRECLS});
             ${FUNCS}
@@ -250,7 +250,7 @@ local function gen_luaopen(module, write)
 
     for _, cls in ipairs(module.CLASSES) do
         REQUIRES:push(cls.DEFIF)
-        REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${cls.CPPNAME});')
+        REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${cls.CPP_SYM});')
         REQUIRES:push(cls.DEFIF and '#endif' or nil)
     end
 

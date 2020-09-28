@@ -235,7 +235,7 @@ local function eval(line)
         -- search in the functin local value
         local indent = string.match(line, ' *')
         local key = string.match(str, '[%w_]+')
-        local opt = string.match(str, '%?')
+        local opt = string.match(str, '%?+')
         local value = lookup(level + 1, key) or _G[key]
         for field in string.gmatch(string.match(str, "[%w_.]+"), '[^.]+') do
             if not value then
@@ -261,8 +261,9 @@ local function eval(line)
         elseif value == nil then
             value = 'nil'
         elseif type(value) == 'string' then
-            value = tostring(value):gsub('[\n]*$', '')
+            value = value:gsub('[\n]*$', '')
             if opt then
+                value = olua.trim(value)
                 if string.find(value, '[\n\r]') then
                     value = '\n' .. value
                     prefix = '[['
