@@ -38,25 +38,23 @@ local function check_callback_store(fi, idx)
 end
 
 local function gen_remove_callback(cls, fi)
-    local TAG_MODE = fi.CALLBACK.TAG_MODE
-    local TAG_STORE = get_callback_store(fi)
+    local tag_store = get_callback_store(fi)
     local CB_TAG = gen_callback_tag(cls, fi)
     local CB_STORE
 
-    if TAG_STORE == 0 then
-        CB_STORE = 'self'
-        if fi.STATIC then
-            CB_STORE = format 'olua_pushclassobj(L, "${cls.LUACLS}")'
-        end
+    if tag_store > 0 then
+        CB_STORE = 'arg' .. tag_store
+        check_callback_store(fi, tag_store)
+    elseif fi.STATIC then
+        CB_STORE = format 'olua_pushclassobj(L, "${cls.LUACLS}")'
     else
-        CB_STORE = 'arg' .. TAG_STORE
-        check_callback_store(fi, TAG_STORE)
+        CB_STORE = 'self'
     end
 
     return format([[
         std::string cb_tag = ${CB_TAG};
         void *cb_store = (void *)${CB_STORE};
-        olua_removecallback(L, cb_store, cb_tag.c_str(), ${TAG_MODE});
+        olua_removecallback(L, cb_store, cb_tag.c_str(), ${fi.CALLBACK.TAG_MODE});
     ]]), nil
 end
 
@@ -92,20 +90,20 @@ function olua.gen_callback(cls, fi, out)
         return
     end
 
-    local ai
+    local cbarg
     local ARGN = not fi.STATIC and 1 or 0
     local ARG_NAME = ""
 
-    for i, v in ipairs(fi.ARGS) do
+    for i, arg in ipairs(fi.ARGS) do
         ARGN = ARGN + 1
-        if v.CBTYPE then
+        if arg.CALLBACK then
             ARG_NAME = 'arg' .. i
-            ai = v
+            cbarg = arg
             break
         end
     end
 
-    if not ai then
+    if not cbarg then
         return ''
     end
 
@@ -118,7 +116,7 @@ function olua.gen_callback(cls, fi, out)
 
     local cbout = {
         ARGS = olua.newarray(),
-        NUM_ARGS = #ai.CBTYPE.ARGS,
+        NUM_ARGS = #cbarg.CALLBACK.ARGS,
         PUSH_ARGS = olua.newarray(),
         REMOVE_ONCE_CALLBACK = "",
         REMOVE_LOCAL_CALLBACK = "",
@@ -133,9 +131,9 @@ function olua.gen_callback(cls, fi, out)
 
     local localBlock = false
 
-    if ai.ATTR.LOCAL then
-        for _, v in ipairs(ai.CBTYPE.ARGS) do
-            if not olua.isvaluetype(v.TYPE) then
+    if cbarg.ATTR.LOCAL then
+        for _, arg in ipairs(cbarg.CALLBACK.ARGS) do
+            if not olua.isvaluetype(arg.TYPE) then
                 localBlock = true
             end
         end
@@ -149,8 +147,8 @@ function olua.gen_callback(cls, fi, out)
             olua_pop_objpool(L, last);
         ]])
     else
-        for _, v in ipairs(ai.CBTYPE.ARGS) do
-            if v.ATTR.LOCAL then
+        for _, arg in ipairs(cbarg.CALLBACK.ARGS) do
+            if arg.ATTR.LOCAL then
                 cbout.PUSH_ARGS:push( "size_t last = olua_push_objpool(L);")
                 cbout.POP_OBJPOOL = format([[
                     //pop stack value
@@ -161,11 +159,11 @@ function olua.gen_callback(cls, fi, out)
         end
     end
 
-    for i, v in ipairs(ai.CBTYPE.ARGS) do
+    for i, arg in ipairs(cbarg.CALLBACK.ARGS) do
         local CB_ARG_NAME = 'arg' .. i
 
         if not localBlock then
-            if v.ATTR.LOCAL then
+            if arg.ATTR.LOCAL then
                 if not enablepool then
                     enablepool = true
                     cbout.PUSH_ARGS:push("olua_enable_objpool(L);")
@@ -176,12 +174,12 @@ function olua.gen_callback(cls, fi, out)
             end
         end
 
-        olua.gen_push_exp(v, CB_ARG_NAME, cbout)
+        olua.gen_push_exp(arg, CB_ARG_NAME, cbout)
 
-        local TYPE_SPACE = olua.typespace(v.RAWDECL)
-        cbout.ARGS:push(format([[
-            ${v.RAWDECL}${TYPE_SPACE}${CB_ARG_NAME}
-        ]]))
+        local TYPE_SPACE = olua.typespace(arg.RAWDECL)
+        cbout.ARGS:pushf([[
+            ${arg.RAWDECL}${TYPE_SPACE}${CB_ARG_NAME}
+        ]])
     end
 
     if localBlock then
@@ -201,7 +199,7 @@ function olua.gen_callback(cls, fi, out)
         ]])
     end
 
-    local RET = ai.CBTYPE.RET
+    local RET = cbarg.CALLBACK.RET
     if RET.TYPE.CPPCLS ~= "void" then
         local OUT = {
             DECL_ARGS = olua.newarray(),
@@ -309,8 +307,8 @@ function olua.gen_callback(cls, fi, out)
         };
     ]])
 
-    if ai.ATTR.OPTIONAL or ai.ATTR.NULLABLE then
-        local OLUA_IS_VALUE = olua.convfunc(ai.TYPE, 'is')
+    if cbarg.ATTR.OPTIONAL or cbarg.ATTR.NULLABLE then
+        local OLUA_IS_VALUE = olua.convfunc(cbarg.TYPE, 'is')
         if TAG_MODE == 'OLUA_TAG_REPLACE' then
             cbout.REMOVE_NORMAL_CALLBACK = format [[
                 olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_SUBEQUAL);

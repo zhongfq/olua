@@ -85,7 +85,7 @@ function olua.gen_check_exp(arg, name, i, out)
                 ]])
             end
         end
-    elseif not arg.CBTYPE then
+    elseif not arg.CALLBACK then
         if arg.ATTR.PACK then
             out.IDX = out.IDX + arg.TYPE.NUM_VARS - 1
         end
@@ -205,7 +205,7 @@ local function gen_func_args(cls, fi, out)
         -- see 'basictype.lua'
         if ai.ATTR.OUT == 'pointee' then
             out.CALLER_ARGS:pushf('&${ARG_NAME}')
-        elseif ai.TYPE.DECLTYPE ~= ai.TYPE.CPPCLS and not ai.CBTYPE then
+        elseif ai.TYPE.DECLTYPE ~= ai.TYPE.CPPCLS and not ai.CALLBACK then
             out.CALLER_ARGS:pushf('(${ai.TYPE.CPPCLS})${ARG_NAME}')
         elseif ai.TYPE.VARIANT then
             -- void f(T), has 'T *' conv: T *arg => f(*arg)
@@ -352,9 +352,6 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
 
     if fi.CALLBACK then
         olua.gen_callback(cls, fi, out)
-        if not out.REMOVE_LOCAL_CALLBACK then
-            out.REMOVE_LOCAL_CALLBACK = ''
-        end
     end
 
     if #out.INSERT_BEFORE > 0 then

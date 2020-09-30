@@ -85,7 +85,7 @@ local function write_typedef(module)
             error(cls.CPPCLS .. ' ' .. cls.KIND)
         end
 
-        t:push(format([[
+        t:pushf([[
             typedef {
                 CPPCLS = '${CPPCLS}',
                 LUACLS = ${LUACLS},
@@ -93,7 +93,7 @@ local function write_typedef(module)
                 CONV = '${CONV}',
                 NUM_VARS = ${NUM_VARS},
             }
-        ]]))
+        ]])
         t:push('')
     end
     t:push('')
@@ -408,8 +408,8 @@ function M.write_alias_and_log(module)
     local type_files = olua.newarray('\n')
     type_files:push('dofile "autobuild/alias-types.lua"')
     for _, v in ipairs(module.module_files) do
-        files:push(format('export "${v.FILE_PATH}"'))
-        type_files:push(format('dofile "${v.TYPE_FILE_PATH}"'))
+        files:pushf('export "${v.FILE_PATH}"')
+        type_files:pushf('dofile "${v.TYPE_FILE_PATH}"')
     end
     olua.write('autobuild/make.lua', format([[
         local olua = require "olua"

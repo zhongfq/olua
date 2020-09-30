@@ -229,7 +229,7 @@ end
 
 local parse_args
 
-local function parse_callback_type(cls, tn)
+local function parse_callback(cls, tn)
     local rtn, rtattr
     local declstr = string.match(tn, '<(.*)>') -- match callback function prototype
     rtn, rtattr, declstr = parse_type(declstr)
@@ -263,7 +263,7 @@ end
         RAWDECL          -- rawdecl: const std::vector<int> &
         VAR_NAME         -- var name: points
         ATTR             -- attr: {PACK = true}
-        CBTYPE = {       -- eg: std::function<void (float, const A *a)>
+        CALLBACK = {     -- eg: std::function<void (float, const A *a)>
             ARGS         -- callback functions args: float, A *a
             RET          -- return type info: void type info
             DECLTYPE     -- std::function<void (float, const A *)>
@@ -328,15 +328,15 @@ function parse_args(cls, declstr)
 
         -- is callback
         if string.find(tn, 'std::function<') then
-            local cbtype = parse_callback_type(cls, tn)
+            local cb = parse_callback(cls, tn)
             args[#args + 1] = {
                 TYPE = setmetatable({
-                    DECLTYPE = cbtype.DECLTYPE,
+                    DECLTYPE = cb.DECLTYPE,
                 }, {__index = olua.typeinfo('std::function', cls)}),
-                DECLTYPE = cbtype.DECLTYPE,
+                DECLTYPE = cb.DECLTYPE,
                 VAR_NAME = varname or '',
                 ATTR = attr,
-                CBTYPE = cbtype,
+                CALLBACK = cb,
             }
         else
             args[#args + 1] = {
@@ -469,14 +469,14 @@ local function parse_func(cls, name, ...)
             fi.FUNC_DECL = declfunc
             fi.INSERT = {}
             if string.find(typename, 'std::function<') then
-                local cbtype = parse_callback_type(cls, typename, nil)
+                local cb = parse_callback(cls, typename, nil)
                 fi.RET = {
                     TYPE = setmetatable({
-                        DECLTYPE = cbtype.DECLTYPE,
+                        DECLTYPE = cb.DECLTYPE,
                     }, {__index = olua.typeinfo('std::function', cls)}),
-                    DECLTYPE = cbtype.DECLTYPE,
+                    DECLTYPE = cb.DECLTYPE,
                     ATTR = attr,
-                    CBTYPE = cbtype,
+                    CALLBACK = cb,
                 }
             else
                 fi.RET.TYPE = olua.typeinfo(typename, cls)
@@ -495,12 +495,6 @@ local function parse_func(cls, name, ...)
     return arr
 end
 
-local function topropfn(cppfunc, prefix)
-    return prefix .. string.gsub(cppfunc, '^%w', function (s)
-        return string.upper(s)
-    end)
-end
-
 local function parse_prop(cls, name, declget, declset)
     local pi = {}
     pi.NAME = assert(name, 'no prop name')
@@ -513,7 +507,9 @@ local function parse_prop(cls, name, declget, declset)
     end)
 
     local function test(fi, name, op)
-        name = topropfn(name, op)
+        name = op .. string.gsub(name, '^%w', function (s)
+            return string.upper(s)
+        end)
         if name == fi.CPP_FUNC or name == fi.LUA_FUNC then
             return true
         else
@@ -603,40 +599,36 @@ function olua.typecls(cppcls)
         return 1;
         }
     ]]
-    function cls.insert(cppfunc, codes)
-        local funcs = type(cppfunc) == "string" and {cppfunc} or cppfunc
+    function cls.insert(name, codes)
         local found
-        local function format_code(code)
-            return code and format(code) or nil
+        local function trim(code)
+            return code and olua.trim(code) or nil
         end
-        local function apply_insert(fi, testname)
-            if fi and (fi.CPP_FUNC == cppfunc or (testname and fi.LUA_FUNC == cppfunc))then
+        local function apply_insert(fi)
+            if fi and (fi.CPP_FUNC == name or fi.LUA_FUNC == name) then
                 found = true
-                fi.INSERT.BEFORE = format_code(codes.BEFORE)
-                fi.INSERT.AFTER = format_code(codes.AFTER)
-                fi.INSERT.CALLBACK_BEFORE = format_code(codes.CALLBACK_BEFORE)
-                fi.INSERT.CALLBACK_AFTER = format_code(codes.CALLBACK_AFTER)
+                fi.INSERT.BEFORE = trim(codes.BEFORE)
+                fi.INSERT.AFTER = trim(codes.AFTER)
+                fi.INSERT.CALLBACK_BEFORE = trim(codes.CALLBACK_BEFORE)
+                fi.INSERT.CALLBACK_AFTER = trim(codes.CALLBACK_AFTER)
             end
         end
 
-        for _, v in ipairs(funcs) do
-            cppfunc = v
-            for _, arr in ipairs(cls.FUNCS) do
-                for _, fi in ipairs(arr) do
-                    apply_insert(fi)
-                end
-            end
-            for _, pi in ipairs(cls.PROPS) do
-                apply_insert(pi.GET)
-                apply_insert(pi.SET)
-            end
-            for _, vi in ipairs(cls.VARS) do
-                apply_insert(vi.GET, true)
-                apply_insert(vi.SET, true)
+        for _, arr in ipairs(cls.FUNCS) do
+            for _, fi in ipairs(arr) do
+                apply_insert(fi)
             end
         end
+        for _, pi in ipairs(cls.PROPS) do
+            apply_insert(pi.GET)
+            apply_insert(pi.SET)
+        end
+        for _, vi in ipairs(cls.VARS) do
+            apply_insert(vi.GET, true)
+            apply_insert(vi.SET, true)
+        end
 
-        olua.assert(found, 'function not found: %s::%s', cls.CPPCLS, cppfunc)
+        olua.assert(found, 'function not found: %s::%s', cls.CPPCLS, name)
     end
 
     function cls.alias(func, aliasname)
@@ -690,13 +682,13 @@ function olua.typecls(cppcls)
     ]]
     function cls.callback(opt)
         cls.FUNCS[#cls.FUNCS + 1] = parse_func(cls, nil, table.unpack(opt.FUNCS))
-        for i, v in ipairs(cls.FUNCS[#cls.FUNCS]) do
-            v.CALLBACK = setmetatable({}, {__index = opt})
-            if type(v.CALLBACK.TAG_MAKER) == 'table' then
-                v.CALLBACK.TAG_MAKER = assert(v.CALLBACK.TAG_MAKER[i])
+        for i, fi in ipairs(cls.FUNCS[#cls.FUNCS]) do
+            fi.CALLBACK = setmetatable({}, {__index = opt})
+            if type(fi.CALLBACK.TAG_MAKER) == 'table' then
+                fi.CALLBACK.TAG_MAKER = assert(fi.CALLBACK.TAG_MAKER[i])
             end
-            if type(v.CALLBACK.TAG_MODE) == 'table' then
-                v.CALLBACK.TAG_MODE = assert(v.CALLBACK.TAG_MODE[i])
+            if type(fi.CALLBACK.TAG_MODE) == 'table' then
+                fi.CALLBACK.TAG_MODE = assert(fi.CALLBACK.TAG_MODE[i])
             end
         end
 
@@ -719,14 +711,14 @@ function olua.typecls(cppcls)
         name = name or ARGS[1].VAR_NAME
 
         -- variable is callback?
-        local CALLBACK_OPT_GET
-        local CALLBACK_OPT_SET
-        if ARGS[1].CBTYPE then
-            CALLBACK_OPT_SET = {
+        local CALLBACK_GET
+        local CALLBACK_SET
+        if ARGS[1].CALLBACK then
+            CALLBACK_SET = {
                 TAG_MAKER =  name,
                 TAG_MODE = 'OLUA_TAG_REPLACE',
             }
-            CALLBACK_OPT_GET = {
+            CALLBACK_GET = {
                 TAG_MAKER = name,
                 TAG_MODE = 'OLUA_TAG_SUBEQUAL',
             }
@@ -750,7 +742,7 @@ function olua.typecls(cppcls)
                 VARIABLE = true,
                 ARGS = {},
                 INDEX = 0,
-                CALLBACK = CALLBACK_OPT_GET,
+                CALLBACK = CALLBACK_GET,
             },
             SET = {
                 LUA_FUNC = name,
@@ -766,7 +758,7 @@ function olua.typecls(cppcls)
                 VARIABLE = true,
                 ARGS = ARGS,
                 INDEX = 0,
-                CALLBACK = CALLBACK_OPT_SET,
+                CALLBACK = CALLBACK_SET,
             },
         }
 
