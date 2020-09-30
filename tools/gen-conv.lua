@@ -42,7 +42,6 @@ local function gen_push_func(cv, write)
 
     for i, pi in ipairs(cv.PROPS) do
         local ARG_NAME = format('value->${pi.NAME}')
-        local ARG_PREFIX = ARG_NAME:gsub('[%->.]', '_')
         OUT.PUSH_ARGS:push(i > 1 and '' or nil)
         olua.gen_push_exp(pi, ARG_NAME, OUT)
         OUT.PUSH_ARGS:pushf([[olua_setfield(L, -2, "${pi.NAME}");]])
@@ -146,7 +145,6 @@ local function gen_unpack_func(cv, write)
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
     for _, pi in ipairs(cv.PROPS) do
         local ARG_NAME = format('value->${pi.NAME}')
-        local ARG_PREFIX = ARG_NAME:gsub('[%->.]', '_')
         olua.gen_push_exp(pi, ARG_NAME, OUT)
     end
 
