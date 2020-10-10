@@ -2,6 +2,7 @@ local olua = require "olua"
 
 local format = olua.format
 local prototypes = {}
+local symbols = {}
 
 local function has_gc_method(cls)
     for _, v in ipairs(cls.FUNCS) do
@@ -52,10 +53,18 @@ local function check_gc_method(cls)
     end
 end
 
-local function check_gen_class_func(cls, fis, write, exported)
+local function check_gen_class_func(cls, fis, write)
     if #fis == 0 then
         return
     end
+
+    local CPP_FUNC = fis[1].CPP_FUNC
+    local fn = format([[_${cls.CPP_SYM}_${CPP_FUNC}]])
+    if symbols[fn] then
+        return
+    end
+    symbols[fn] = true
+
     local pts = assert(prototypes[cls.CPPCLS], cls.CPPCLS)
     if pts and getmetatable(pts) then
         local supermeta = getmetatable(pts).__index
@@ -66,7 +75,7 @@ local function check_gen_class_func(cls, fis, write, exported)
             end
         end
     end
-    olua.gen_class_func(cls, fis, write, exported)
+    olua.gen_class_func(cls, fis, write)
 end
 
 local function gen_class_funcs(cls, write)
@@ -80,24 +89,23 @@ local function gen_class_funcs(cls, write)
     end
     prototypes[cls.CPPCLS] = pts
 
-    local exported = {}
     table.sort(cls.FUNCS, function (a, b)
         return a[1].LUA_FUNC < b[1].LUA_FUNC
     end)
     for _, fi in ipairs(cls.FUNCS) do
-        check_gen_class_func(cls, fi, write, exported)
+        check_gen_class_func(cls, fi, write)
     end
 
     olua.sort(cls.PROPS, 'NAME')
     for _, pi in ipairs(cls.PROPS) do
-        check_gen_class_func(cls, {pi.GET}, write, exported)
-        check_gen_class_func(cls, {pi.SET}, write, exported)
+        check_gen_class_func(cls, {pi.GET}, write)
+        check_gen_class_func(cls, {pi.SET}, write)
     end
 
     olua.sort(cls.VARS, 'NAME')
     for _, ai in ipairs(cls.VARS) do
-        check_gen_class_func(cls, {ai.GET}, write, exported)
-        check_gen_class_func(cls, {ai.SET}, write, exported)
+        check_gen_class_func(cls, {ai.GET}, write)
+        check_gen_class_func(cls, {ai.SET}, write)
     end
 end
 
@@ -105,7 +113,6 @@ local function gen_class_open(cls, write)
     local FUNCS = olua.newarray('\n')
     local REG_LUATYPE = ''
     local SUPRECLS = "nullptr"
-    local exported = {}
 
     if cls.SUPERCLS then
         SUPRECLS = olua.stringify(olua.toluacls(cls.SUPERCLS))
@@ -114,10 +121,6 @@ local function gen_class_open(cls, write)
     for _, fis in ipairs(cls.FUNCS) do
         local CPP_FUNC = fis[1].CPP_FUNC
         local LUA_FUNC = fis[1].LUA_FUNC
-        if exported[LUA_FUNC] then
-            error(format([[duplicate method: ${cls.CPPCLS}:${LUA_FUNC}]]))
-        end
-        exported[LUA_FUNC] = true
         FUNCS:pushf('oluacls_func(L, "${LUA_FUNC}", _${cls.CPP_SYM}_${CPP_FUNC});')
     end
 
