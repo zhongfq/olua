@@ -20,7 +20,7 @@ local function gen_conv_header(module)
     end
 
     local PATH = olua.format '${module.PATH}/lua_${module.NAME}.h'
-    local HEADER_INCLUDES = olua.trim(module.HEADER_INCLUDES)
+    local INCLUDES = olua.trim(module.INCLUDES)
     olua.write(PATH, format([[
         //
         // AUTO BUILD, DON'T MODIFY!
@@ -28,7 +28,7 @@ local function gen_conv_header(module)
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
-        ${HEADER_INCLUDES}
+        ${INCLUDES}
 
         ${DECL_FUNCS}
 
@@ -221,11 +221,13 @@ local function gen_conv_source(module)
         end
     end
 
+    local INCLUDES = olua.trim(module.INCLUDES)
     arr:pushf([[
         //
         // AUTO BUILD, DON'T MODIFY!
         //
-        ${module.INCLUDES}
+        #include "lua_${module.NAME}.h"
+        ${INCLUDES}
     ]])
     arr:push('')
 

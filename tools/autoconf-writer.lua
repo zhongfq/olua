@@ -8,7 +8,6 @@ local function write_metadata(module, append)
         M.PATH = "${module.PATH}"
     ]]))
 
-    append(format('M.HEADER_INCLUDES = ${module.HEADER_INCLUDES?}'))
     append(format('M.INCLUDES = ${module.INCLUDES?}'))
     append(format('M.CHUNK = ${module.CHUNK?}'))
 

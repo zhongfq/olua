@@ -209,7 +209,7 @@ function olua.gen_header(module)
 
         #include "xgame/xlua.h"
 
-        LUALIB_API int luaopen_${module.NAME}(lua_State *L);
+        int luaopen_${module.NAME}(lua_State *L);
 
         #endif
     ]]))
@@ -221,6 +221,7 @@ local function gen_include(module, write)
         //
         // AUTO BUILD, DON'T MODIFY!
         //
+        #include "lua_${module.NAME}.h"
         ${module.INCLUDES}
     ]]))
     write('')
