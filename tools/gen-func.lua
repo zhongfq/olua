@@ -109,9 +109,7 @@ function olua.gen_addref_exp(fi, arg, i, out)
         olua.assert(fi.RET == arg)
         olua.assert(not fi.STATIC, 'no addref object')
         olua.assert(arg.ATTR.ADDREF[3], 'must supply where to addref object')
-        if arg.ATTR.ADDREF[3] then
-            ARGN = 1
-        end
+        ARGN = 1
     elseif arg.TYPE.SUBTYPES then
         local SUBTYPE = arg.TYPE.SUBTYPES[1]
         olua.assert(ADDREF == '|', "expect use like: @addref(ref_name |)")
@@ -299,7 +297,7 @@ local function gen_func_ret(cls, fi, out)
     olua.gen_delref_exp(fi, fi.RET, -1, out)
 end
 
-local function gen_one_func(cls, fi, write, funcidx, exported)
+local function gen_one_func(cls, fi, write, funcidx)
     local FUNC_IDX = funcidx or ''
     local CALLER = fi.STATIC and (cls.CPPCLS .. '::') or 'self->'
     local CPP_FUNC = not fi.VARIABLE and fi.CPP_FUNC or fi.VAR_NAME
@@ -323,12 +321,6 @@ local function gen_one_func(cls, fi, write, funcidx, exported)
     }
 
     olua.message(fi.FUNC_DECL)
-
-    local funcname = format([[_${cls.CPP_SYM}_${fi.CPP_FUNC}${FUNC_IDX}]])
-    if exported[funcname] then
-        return
-    end
-    exported[funcname] = true
 
     if fi.SNIPPET then
         gen_func_snippet(cls, fi, write)
@@ -491,7 +483,7 @@ local function gen_test_and_call(cls, fns)
     return table.concat(CALL_CHUNK, "\n\n")
 end
 
-local function gen_multi_func(cls, fis, write, exported)
+local function gen_multi_func(cls, fis, write)
     local CPP_FUNC = fis[1].CPP_FUNC
     local SUBONE = fis[1].STATIC and "" or " - 1"
     local IF_CHUNK = olua.newarray('\n\n')
@@ -499,7 +491,7 @@ local function gen_multi_func(cls, fis, write, exported)
     local pack_fi
 
     for _, fi in ipairs(fis) do
-        gen_one_func(cls, fi, write, fi.INDEX, exported)
+        gen_one_func(cls, fi, write, fi.INDEX)
         for _, arg in ipairs(fi.ARGS) do
             if arg.ATTR.PACK and not arg.TYPE.NUM_VARS then
                 pack_fi = fi
@@ -507,10 +499,6 @@ local function gen_multi_func(cls, fis, write, exported)
             end
         end
     end
-
-    local funcname = format([[_${cls.CPP_SYM}_${CPP_FUNC}]])
-    assert(not exported[funcname], cls.CPPCLS .. ' ' .. CPP_FUNC)
-    exported[funcname] = true
 
     for i = 0, fis.MAX_ARGS do
         local fns = get_func_nargs(cls, fis, i)
@@ -548,10 +536,10 @@ local function gen_multi_func(cls, fis, write, exported)
     write('')
 end
 
-function olua.gen_class_func(cls, fis, write, exported)
+function olua.gen_class_func(cls, fis, write)
     if #fis == 1 then
-        gen_one_func(cls, fis[1], write, nil, exported)
+        gen_one_func(cls, fis[1], write)
     else
-        gen_multi_func(cls, fis, write, exported)
+        gen_multi_func(cls, fis, write)
     end
 end
