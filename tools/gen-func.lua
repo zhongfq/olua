@@ -265,7 +265,8 @@ local function gen_func_ret(cls, fi, out)
         if fi.RET.TYPE.VARIANT and TYPE_SPACE == ' ' then
             out.DECL_RET = format('${fi.RET.DECLTYPE} &ret = (${fi.RET.DECLTYPE} &)')
         else
-            out.DECL_RET = format('${fi.RET.DECLTYPE}${TYPE_SPACE}ret = (${fi.RET.DECLTYPE})')
+            olua.assert(fi.RET.DECLTYPE:find(fi.RET.TYPE.CPPCLS))
+            out.DECL_RET = format('${fi.RET.DECLTYPE}${TYPE_SPACE}ret = ') .. ' '
         end
 
         local EXPS = {PUSH_ARGS = olua.newarray()}
