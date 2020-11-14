@@ -47,9 +47,10 @@ local function pretty_typename(tn, trimref)
 end
 
 function olua.typeinfo(tn, cls, silence, variant)
-    local ti, ref, subtis -- for tn<T, ...>
+    local ti, ref, subtis, const -- for tn<T, ...>
 
     tn = pretty_typename(tn, true)
+    const = string.find(tn, '^const ')
 
     -- parse template
     if string.find(tn, '<') then
@@ -114,6 +115,7 @@ function olua.typeinfo(tn, cls, silence, variant)
 
     if ti then
         ti.SUBTYPES = subtis or ti.SUBTYPES
+        ti.CONST = const and true or nil
         ti.VARIANT = (ref ~= nil) or ti.VARIANT
         return ti, tn
     elseif not silence then
@@ -139,7 +141,11 @@ local function todecltype(cls, typename, isvariable)
     if ti.SUBTYPES then
         local arr = {}
         for i, v in ipairs(ti.SUBTYPES) do
-            arr[i] = v.CPPCLS
+            if v.CONST then
+                arr[i] = 'const ' ..  v.CPPCLS
+            else
+                arr[i] = v.CPPCLS
+            end
         end
         tn = string.format('%s<%s>', tn, table.concat(arr, ', '))
         if isvariable then
