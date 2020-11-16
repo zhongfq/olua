@@ -282,7 +282,7 @@ function olua.gen_callback(cls, fi, out)
     )
 
     local CALLBACK_CHUNK = format([[
-        lua_Unsigned cb_ctx = olua_context(L);
+        lua_Integer cb_ctx = olua_context(L);
         ${ARG_NAME} = [cb_store, cb_name, cb_ctx](${cbout.ARGS}) {
             lua_State *L = olua_mainthread(NULL);
             ${cbout.DECL_RESULT}
