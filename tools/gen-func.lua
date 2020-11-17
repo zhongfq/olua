@@ -418,10 +418,12 @@ local function gen_test_and_call(cls, fns)
         if #fi.ARGS > 0 then
             local TEST_EXPS = {}
             local MAX_VARS = 1
+            local ARGN = (fi.STATIC and 0 or 1)
             for i, ai in ipairs(fi.ARGS) do
-                local ARGN = (fi.STATIC and 0 or 1) + i
                 local OLUA_IS_VALUE = olua.convfunc(ai.TYPE, ai.ATTR.PACK and 'ispack' or 'is')
                 local TEST_NULL = ""
+
+                ARGN = ARGN + 1
 
                 MAX_VARS = math.max(ai.TYPE.NUM_VARS or 1, MAX_VARS)
 
@@ -437,6 +439,10 @@ local function gen_test_and_call(cls, fns)
                     TEST_EXPS[#TEST_EXPS + 1] = format([[
                         (${OLUA_IS_VALUE}(L, ${ARGN})${TEST_NULL})
                     ]])
+                end
+
+                if ai.ATTR.PACK and ai.TYPE.NUM_VARS then
+                    ARGN = ARGN + ai.TYPE.NUM_VARS - 1
                 end
             end
 
