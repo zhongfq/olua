@@ -99,7 +99,7 @@ typedef {
         }
     ]],
     CHECK_VALUE = [[
-        size_t ${ARG_NAME}_total = lua_rawlen(L, ${ARGN});
+        int ${ARG_NAME}_total = (int)lua_rawlen(L, ${ARGN});
         for (int i = 1; i <= ${ARG_NAME}_total; i++) {
             ${SUBTYPE.DECLTYPE} obj;
             lua_rawgeti(L, ${ARGN}, i);
@@ -122,8 +122,8 @@ typedef {
         }
     ]],
     CHECK_VALUE = [[
-        size_t ${ARG_NAME}_total = lua_rawlen(L, ${ARGN});
-        ${ARG_NAME}.reserve(${ARG_NAME}_total);
+        int ${ARG_NAME}_total = (int)lua_rawlen(L, ${ARGN});
+        ${ARG_NAME}.reserve((size_t)${ARG_NAME}_total);
         for (int i = 1; i <= ${ARG_NAME}_total; i++) {
             ${SUBTYPE.DECLTYPE} obj;
             lua_rawgeti(L, ${ARGN}, i);
