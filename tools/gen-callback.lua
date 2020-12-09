@@ -285,6 +285,7 @@ function olua.gen_callback(cls, fi, out)
         lua_Integer cb_ctx = olua_context(L);
         ${ARG_NAME} = [cb_store, cb_name, cb_ctx](${cbout.ARGS}) {
             lua_State *L = olua_mainthread(NULL);
+            olua_checkhostthread();
             ${cbout.DECL_RESULT}
             if (L != NULL && olua_context(L) == cb_ctx) {
                 int top = lua_gettop(L);
