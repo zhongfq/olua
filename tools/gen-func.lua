@@ -63,9 +63,17 @@ function olua.gen_check_exp(arg, name, i, out)
         out.CHECK_ARGS:pushf([[// no need to check '${ARG_NAME}' with mark '@out']])
         return
     elseif olua.ispointee(arg.TYPE) then
-        out.CHECK_ARGS:pushf([[
-            ${CHECK_FUNC}(L, ${ARGN}, (void **)&${ARG_NAME}, "${arg.TYPE.LUACLS}");
-        ]])
+        if arg.ATTR.NULLABLE then
+            out.CHECK_ARGS:pushf([[
+                if (!olua_isnoneornil(L, ${ARGN})) {
+                    ${CHECK_FUNC}(L, ${ARGN}, (void **)&${ARG_NAME}, "${arg.TYPE.LUACLS}");
+                }
+            ]])
+        else
+            out.CHECK_ARGS:pushf([[
+                ${CHECK_FUNC}(L, ${ARGN}, (void **)&${ARG_NAME}, "${arg.TYPE.LUACLS}");
+            ]])
+        end
     elseif arg.TYPE.SUBTYPES then
         if #arg.TYPE.SUBTYPES > 1 then
             out.CHECK_ARGS:push(arg.TYPE.CHECK_VALUE(arg, name, i))
