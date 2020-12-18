@@ -31,13 +31,7 @@ local function check_gc_method(cls)
         if not has_gc_method(cls) then
             cls.func('__gc', format([[
             {
-                auto self = (${cls.CPPCLS} *)olua_toobj(L, 1, "${cls.LUACLS}");
-                lua_pushstring(L, ".ownership");
-                olua_getvariable(L, 1);
-                if (lua_toboolean(L, -1)) {
-                    olua_setrawobj(L, 1, nullptr);
-                    delete self;
-                }
+                olua_postgc<${cls.CPPCLS}>(L, 1);
                 return 0;
             }]]))
         end
