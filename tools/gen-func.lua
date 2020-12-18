@@ -174,8 +174,8 @@ function olua.gen_delref_exp(fi, arg, i, out)
     end
 
     if DELREF == '~' then
-        out.INSERT_BEFORE:pushf('olua_startcmpdelref(L, ${WHERE}, "${REF_NAME}");')
-        out.INSERT_AFTER:pushf('olua_endcmpdelref(L, ${WHERE}, "${REF_NAME}");')
+        out.INSERT_BEFORE:pushf('olua_startcmpref(L, ${WHERE}, "${REF_NAME}");')
+        out.INSERT_AFTER:pushf('olua_endcmpref(L, ${WHERE}, "${REF_NAME}");')
     elseif DELREF == '*' then
         out.INSERT_AFTER:pushf('olua_delallrefs(L, ${WHERE}, "${REF_NAME}");')
     elseif DELREF == '|' then
