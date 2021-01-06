@@ -192,9 +192,17 @@ local function gen_class_chunk(cls, write)
 end
 
 function olua.gen_header(module)
+    local arr = olua.newarray('\n')
+    local function append(value)
+        if value then
+            -- '   #if' => '#if'
+            arr:push(value:gsub('\n *#', '\n#'))
+        end
+    end
+
     local HEADER = string.upper(module.NAME)
-    local PATH = olua.format('${module.PATH}/lua_${module.NAME}.h')
-    olua.write(PATH, format([[
+
+    append(format([[
         //
         // AUTO BUILD, DON'T MODIFY!
         //
@@ -202,11 +210,25 @@ function olua.gen_header(module)
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
         #include "xgame/xlua.h"
-
-        int luaopen_${module.NAME}(lua_State *L);
-
-        #endif
     ]]))
+
+    append('')
+
+    if module.DEFIF then
+        append(module.DEFIF)
+    end
+
+    append(format('int luaopen_${module.NAME}(lua_State *L);'))
+    
+    if module.DEFIF then
+        append(module.DEFIF and '#endif' or nil)
+    end
+
+    append('')
+    append('#endif')
+
+    local PATH = format('${module.PATH}/lua_${module.NAME}.h')
+    olua.write(PATH, tostring(arr))
 end
 
 local function gen_include(module, write)
@@ -272,8 +294,18 @@ function olua.gen_source(module)
     end
 
     gen_include(module, append)
+
+    if module.DEFIF then
+        append(module.DEFIF)
+        append('')
+    end
+
     gen_classes(module, append)
     gen_luaopen(module, append)
+
+    if module.DEFIF then
+        append(module.DEFIF and '#endif' or nil)
+    end
 
     local PATH = format('${module.PATH}/lua_${module.NAME}.cpp')
     olua.write(PATH, tostring(arr))
