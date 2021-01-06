@@ -10,6 +10,7 @@ local function write_metadata(module, append)
 
     append(format('M.INCLUDES = ${module.INCLUDES?}'))
     append(format('M.CHUNK = ${module.CHUNK?}'))
+    append(format('M.DEFIF = ${module.DEFIF?}'))
 
     append("\nM.CONVS = {")
     for _, cls in ipairs(module.CLASSES) do
