@@ -209,7 +209,7 @@ function olua.gen_header(module)
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
-        #include "xgame/xlua.h"
+        #include "lua.hpp"
     ]]))
 
     append('')
