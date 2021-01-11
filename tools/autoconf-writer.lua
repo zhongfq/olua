@@ -301,6 +301,7 @@ local function write_classes(module, append)
         append(format('cls.REG_LUATYPE = ${cls.REG_LUATYPE?}'))
         append(format('cls.DEFIF = ${cls.DEFIF?}'))
         append(format('cls.CHUNK = ${cls.CHUNK?}'))
+        append(format('cls.REQUIRE = ${cls.REQUIRE?}'))
         
         write_cls_const(module, cls, append)
         write_cls_func(module, cls, append)
