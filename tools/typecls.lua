@@ -575,9 +575,14 @@ function olua.typecls(cppcls)
         ENUMS = {},
         PROPS = {},
         VARS = {},
+        IFDEFS = {},
         PROTOTYPES = {},
     }
     class_map[cls.CPPCLS] = cls
+
+    function cls.ifdef(name, value)
+        cls.IFDEFS[name] = value
+    end
 
     function cls.func(name, ...)
         cls.FUNCS[#cls.FUNCS + 1] = parse_func(cls, name, ...)

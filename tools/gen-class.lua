@@ -69,7 +69,11 @@ local function check_gen_class_func(cls, fis, write)
             end
         end
     end
+    local IFDEF = cls.IFDEFS[CPP_FUNC]
+    write(IFDEF)
     olua.gen_class_func(cls, fis, write)
+    write(IFDEF and '#endif' or nil)
+    write('')
 end
 
 local function gen_class_funcs(cls, write)
@@ -116,7 +120,10 @@ local function gen_class_open(cls, write)
     for _, fis in ipairs(cls.FUNCS) do
         local CPP_FUNC = fis[1].CPP_FUNC
         local LUA_FUNC = fis[1].LUA_FUNC
+        local IFDEF = cls.IFDEFS[CPP_FUNC]
+        FUNCS:push(IFDEF)
         FUNCS:pushf('oluacls_func(L, "${LUA_FUNC}", _${cls.CPP_SYM}_${CPP_FUNC});')
+        FUNCS:push(IFDEF and '#endif' or nil)
     end
 
     for _, pi in ipairs(cls.PROPS) do
@@ -212,22 +219,11 @@ function olua.gen_header(module)
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
         #include "lua.hpp"
+
+        int luaopen_${module.NAME}(lua_State *L);
+
+        #endif
     ]]))
-
-    append('')
-
-    if module.DEFIF then
-        append(module.DEFIF)
-    end
-
-    append(format('int luaopen_${module.NAME}(lua_State *L);'))
-    
-    if module.DEFIF then
-        append(module.DEFIF and '#endif' or nil)
-    end
-
-    append('')
-    append('#endif')
 
     local PATH = format('${module.PATH}/lua_${module.NAME}.h')
     olua.write(PATH, tostring(arr))
@@ -257,12 +253,13 @@ end
 local function gen_classes(module, write)
     for _, cls in ipairs(module.CLASSES) do
         cls.LUACLS = olua.toluacls(cls.CPPCLS)
-        write(cls.DEFIF)
+        local IFDEF = cls.IFDEFS['*']
+        write(IFDEF)
         check_gc_method(cls)
         gen_class_chunk(cls, write)
         gen_class_funcs(cls, write)
         gen_class_open(cls, write)
-        write(cls.DEFIF and '#endif' or nil)
+        write(IFDEF and '#endif' or nil)
         write('')
     end
 end
@@ -271,9 +268,10 @@ local function gen_luaopen(module, write)
     local REQUIRES = olua.newarray('\n')
 
     for _, cls in ipairs(module.CLASSES) do
-        REQUIRES:push(cls.DEFIF)
+        local IFDEF = cls.IFDEFS['*']
+        REQUIRES:push(IFDEF)
         REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${cls.CPP_SYM});')
-        REQUIRES:push(cls.DEFIF and '#endif' or nil)
+        REQUIRES:push(IFDEF and '#endif' or nil)
     end
 
     write(format([[
@@ -296,18 +294,8 @@ function olua.gen_source(module)
     end
 
     gen_include(module, append)
-
-    if module.DEFIF then
-        append(module.DEFIF)
-        append('')
-    end
-
     gen_classes(module, append)
     gen_luaopen(module, append)
-
-    if module.DEFIF then
-        append(module.DEFIF and '#endif' or nil)
-    end
 
     local PATH = format('${module.PATH}/lua_${module.NAME}.cpp')
     olua.write(PATH, tostring(arr))

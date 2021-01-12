@@ -557,6 +557,11 @@ local function add_command(cls)
         return CMD
     end
 
+    function CMD.IFDEF(name, value)
+        cls.IFDEF[name] = {NAME = name, VALUE = value}
+        return CMD
+    end
+
     function CMD.ATTR(name, attrs)
         cls.ATTR[name] = attrs
         return CMD
@@ -658,6 +663,7 @@ function M.typemod(name)
             VAR = olua.newhash(),
             ALIAS = olua.newhash(),
             INSERT = olua.newhash(),
+            IFDEF = olua.newhash(),
             INDEX = INDEX,
             REG_LUATYPE = true,
             MAKE_LUANAME = function (n) return n end,

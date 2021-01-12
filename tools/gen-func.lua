@@ -18,7 +18,6 @@ local function gen_func_snippet(cls, fi, write)
         static int _${cls.CPP_SYM}_${fi.CPP_FUNC}(lua_State *L)
         ${SNIPPET}
     ]]))
-    write('')
 end
 
 function olua.gen_decl_exp(arg, name, out)
@@ -407,7 +406,6 @@ local function gen_one_func(cls, fi, write, funcidx)
             return ${out.NUM_RET};
         }
     ]]))
-    write('')
 end
 
 local function get_func_nargs(cls, fis, n)
@@ -505,8 +503,9 @@ local function gen_multi_func(cls, fis, write)
 
     local pack_fi
 
-    for _, fi in ipairs(fis) do
+    for i, fi in ipairs(fis) do
         gen_one_func(cls, fi, write, fi.INDEX)
+        write('')
         for _, arg in ipairs(fi.ARGS) do
             if arg.ATTR.PACK and not arg.TYPE.NUM_VARS then
                 pack_fi = fi
@@ -548,7 +547,6 @@ local function gen_multi_func(cls, fis, write)
             return 0;
         }
     ]]))
-    write('')
 end
 
 function olua.gen_class_func(cls, fis, write)

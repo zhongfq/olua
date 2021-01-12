@@ -10,7 +10,6 @@ local function write_metadata(module, append)
 
     append(format('M.INCLUDES = ${module.INCLUDES?}'))
     append(format('M.CHUNK = ${module.CHUNK?}'))
-    append(format('M.DEFIF = ${module.DEFIF?}'))
 
     append("\nM.CONVS = {")
     for _, cls in ipairs(module.CLASSES) do
@@ -194,6 +193,12 @@ local function write_cls_func(module, cls, append)
     end
 end
 
+local function write_cls_ifdef(module, cls, append)
+    for _, v in pairs(cls.IFDEF) do
+        append(format([[cls.ifdef('${v.NAME}', '${v.VALUE}')]]))
+    end
+end
+
 local function write_cls_const(module, cls, append)
     for _, v in ipairs(cls.CONST) do
         append(format([[cls.const('${v.NAME}', '${cls.CPPCLS}::${v.NAME}', '${v.TYPENAME}')]]))
@@ -299,10 +304,10 @@ local function write_classes(module, append)
         append(format("cls = typecls '${cls.CPPCLS}'"))
         append(format('cls.SUPERCLS = ${cls.SUPERCLS?}'))
         append(format('cls.REG_LUATYPE = ${cls.REG_LUATYPE?}'))
-        append(format('cls.DEFIF = ${cls.DEFIF?}'))
         append(format('cls.CHUNK = ${cls.CHUNK?}'))
         append(format('cls.REQUIRE = ${cls.REQUIRE?}'))
         
+        write_cls_ifdef(module, cls, append)
         write_cls_const(module, cls, append)
         write_cls_func(module, cls, append)
         write_cls_enum(module, cls, append)
