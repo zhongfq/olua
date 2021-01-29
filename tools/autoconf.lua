@@ -6,7 +6,6 @@ local format = olua.format
 
 local ignored_type = {}
 local visited_type = {}
-local refed_type = {}
 local type_alias = {}
 local type_convs = {}
 local module_files = {}
@@ -19,10 +18,6 @@ local logfile = io.open('autobuild/autoconf.log', 'w')
 local function log(fmt, ...)
     logfile:write(string.format(fmt, ...))
     logfile:write('\n')
-end
-
-function M.addref(cppcls)
-    refed_type[cppcls] = true
 end
 
 function M.init(path)
@@ -86,14 +81,6 @@ function M:parse(path)
     }, {__index = self.module}))
 end
 
-local function is_ref_class(cls)
-    if refed_type[cls.CPPCLS] then
-        return true
-    elseif cls.SUPERCLS then
-        return is_ref_class(visited_type[cls.SUPERCLS])
-    end
-end
-
 function M:has_define_class(cls)
     local name = string.match(cls.CPPCLS, '[^:]+$')
     return string.find(cls.CHUNK or '', 'class +' .. name) ~= nil
@@ -115,9 +102,6 @@ function M:check_class()
     for _, cls in ipairs(self.module.CLASSES) do
         if cls.SUPERCLS and not visited_type[cls.SUPERCLS]then
             error(format('super class not found: ${cls.CPPCLS} -> ${cls.SUPERCLS}'))
-        end
-        if is_ref_class(cls) then
-            refed_type[cls.CPPCLS] = true
         end
     end
 end
@@ -332,9 +316,6 @@ function M:visit_method(cls, cur)
     if self.module.EXCLUDE_PASS(cls.CPPCLS, fn, decl) then
         return
     else
-        if cbkind then
-            refed_type[cls.CPPCLS] = true
-        end
         return decl, tostring(declexps), cbkind
     end
 end
@@ -372,10 +353,6 @@ function M:visit_var(cls, cur)
     if self.module.EXCLUDE_PASS(cls.CPPCLS, cur:name(), decl) then
         return
     else
-        if cbkind then
-            refed_type[cls.CPPCLS] = true
-        end
-
         local name = cls.MAKE_LUANAME(cur:name(), 'VAR')
         cls.VAR[name] = {NAME = name, SNIPPET = decl, CALLBACK_KIND = cbkind}
     end
@@ -534,7 +511,6 @@ function M.__gc()
         writer.write_alias_and_log({
             visited_type = visited_type,
             ignored_type = ignored_type,
-            refed_type = refed_type,
             type_alias = type_alias,
             type_convs = type_convs,
             module_files = module_files,

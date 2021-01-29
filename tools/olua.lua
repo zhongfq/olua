@@ -354,6 +354,5 @@ require "gen-class"
 require "gen-func"
 require "gen-callback"
 require "gen-conv"
-require "checkref"
 
 return olua

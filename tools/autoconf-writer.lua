@@ -367,9 +367,6 @@ function M.write_alias_and_log(module)
     for _, cls in pairs(arr) do
         file:write(string.format("[ignore class] %s\n", cls))
     end
-    for cls in pairs(module.refed_type) do
-        module.log('ref class: %s', cls)
-    end
 
     local types = olua.newarray('\n')
     for cppcls, v in pairs(module.type_alias) do
