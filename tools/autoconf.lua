@@ -136,12 +136,12 @@ function M:is_excluded_typeanme(name)
     end
 end
 
-function M:is_excluded_type(type)
+function M:is_excluded_type(type, cur)
     if type:kind() == 'IncompleteArray' then
         return true
     end
 
-    local tn = type:name()
+    local tn = cur and self:typename(cur, type) or type:name()
     -- remove const and &
     -- const T * => T *
     -- const T & => T
@@ -228,7 +228,7 @@ function M:visit_method(cls, cur)
             or cur:isCopyConstructor()
             or cur:isMoveConstructor()
             or cur:name():find('operator *[%-=+/*><!()]?')
-            or self:is_excluded_type(cur:resultType()) then
+            or self:is_excluded_type(cur:resultType(), cur) then
         return
     end
 
@@ -247,7 +247,7 @@ function M:visit_method(cls, cur)
 
     for i, arg in ipairs(cur:arguments()) do
         local attrn = (attr['ARG' .. i]) or ''
-        if not attrn:find('@out') and self:is_excluded_type(arg:type()) then
+        if not attrn:find('@out') and self:is_excluded_type(arg:type(), arg) then
             return
         end
     end
@@ -321,7 +321,7 @@ function M:visit_method(cls, cur)
 end
 
 function M:visit_var(cls, cur)
-    if cur:type():isConst() or self:is_excluded_type(cur:type()) then
+    if cur:type():isConst() or self:is_excluded_type(cur:type(), cur) then
         return
     end
 
@@ -358,6 +358,15 @@ function M:visit_var(cls, cur)
     end
 end
 
+function M:visit_alias_class(cppcls, super)
+    local cls = self.module.CLASSES[cppcls]
+    visited_type[cppcls] = cls
+    ignored_type[cppcls] = false
+    cls.KIND = cls.KIND or 'classAlias'
+    cls.SUPERCLS = super
+    cls.LUACLS = self.module.MAKE_LUACLS(super)
+end
+
 function M:visit_class(cur, cppcls)
     local filter = {}
     cppcls = cppcls or self:typename(cur, cur:type())
@@ -386,7 +395,7 @@ function M:visit_class(cur, cppcls)
                 goto continue
             end
             if ct:isConst() and kind == 'VarDecl' then
-                if not self:is_excluded_type(ct) then
+                if not self:is_excluded_type(ct, c) then
                     cls.CONST[vn] = {NAME = vn, TYPENAME = ct:name()}
                 end
             else
@@ -461,6 +470,9 @@ function M:visit(cur)
             type_alias[cls] = 'enum ' ..  self:typename(cur, ut)
         else
             type_alias[cls] = self:typename(cur, ut)
+            if need_visit then
+                self:visit_alias_class(cls, type_alias[cls])
+            end
         end
     elseif kind == 'TypedefDecl' then
         local c = children[1]
@@ -494,6 +506,10 @@ function M:visit(cur)
             name = self:typename(cur, cur:underlyingType())
         end
         type_alias[alias] = type_alias[name] or name
+        need_visit = self.module.CLASSES[alias] and not visited_type[alias]
+        if need_visit then
+            self:visit_alias_class(alias, type_alias[alias])
+        end
     else
         for _, c in ipairs(children) do
             self:visit(c)

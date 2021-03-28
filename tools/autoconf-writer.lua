@@ -76,7 +76,7 @@ local function write_typedef(module)
             CONV = 'olua_$$_uint'
             LUACLS = olua.stringify(cls.LUACLS, "'")
             DECLTYPE = olua.stringify('lua_Unsigned')
-        elseif cls.KIND == 'class' then
+        elseif cls.KIND == 'class' or cls.KIND == 'classAlias' then
             CPPCLS = CPPCLS .. ' *'
             LUACLS = olua.stringify(cls.LUACLS, "'")
             CONV = 'olua_$$_cppobj'
@@ -295,7 +295,7 @@ local function write_classes(module, append)
     append('M.CLASSES = {}')
     append('')
     for _, cls in ipairs(module.CLASSES) do
-        if cls.KIND == "enumAlias" or cls.KIND == "conv" then
+        if cls.KIND ~= 'class' and cls.KIND ~= 'enum' then
             goto continue
         end
 

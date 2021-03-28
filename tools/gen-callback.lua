@@ -108,6 +108,7 @@ function olua.gen_callback(cls, fi, out)
     end
 
     local TAG_MODE = assert(fi.CALLBACK.TAG_MODE, 'no tag mode')
+    local TAG_SCOPE = fi.CALLBACK.TAG_SCOPE
     local CB_TAG = gen_callback_tag(cls, fi)
     local CB_STORE
     local TAG_STORE
@@ -189,11 +190,11 @@ function olua.gen_callback(cls, fi, out)
         enablepool = false
     end
 
-    if fi.CALLBACK.TAG_SCOPE == 'once' then
+    if TAG_SCOPE == 'once' then
         cbout.REMOVE_ONCE_CALLBACK = format([[
             olua_removecallback(L, cb_store, cb_name.c_str(), OLUA_TAG_WHOLE);
         ]])
-    elseif fi.CALLBACK.TAG_SCOPE == 'function' then
+    elseif TAG_SCOPE == 'function' then
         cbout.REMOVE_LOCAL_CALLBACK = format([[
             olua_removecallback(L, cb_store, cb_name.c_str(), OLUA_TAG_WHOLE);
         ]])
@@ -251,7 +252,7 @@ function olua.gen_callback(cls, fi, out)
         ]]
     elseif TAG_STORE == 1 then
         CB_STORE = 'self'
-        if fi.STATIC and fi.RET.TYPE.CPPCLS == 'void' then
+        if (fi.STATIC and fi.RET.TYPE.CPPCLS == 'void') or TAG_SCOPE == 'function' then
             CB_STORE = format 'olua_pushclassobj(L, "${cls.LUACLS}")'
         end
     else
