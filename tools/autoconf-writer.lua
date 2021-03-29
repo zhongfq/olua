@@ -194,7 +194,7 @@ local function write_cls_func(module, cls, append)
 end
 
 local function write_cls_ifdef(module, cls, append)
-    for _, v in pairs(cls.IFDEF) do
+    for _, v in ipairs(cls.IFDEF) do
         append(format([[cls.ifdef('${v.NAME}', '${v.VALUE}')]]))
     end
 end
