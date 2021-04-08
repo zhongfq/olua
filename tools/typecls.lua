@@ -212,6 +212,7 @@ local function parse_type(str)
                 -- str = unsigned count = 1, ... ?
                 if not (substr:find('^ *int *')
                     or substr:find('^ *short *')
+                    or substr:find('^ *long *')
                     or substr:find('^ *char *')) then
                     tn = string.sub(str, 1, to) .. ' int'
                     str = string.sub(str, to + 1)
