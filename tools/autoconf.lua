@@ -342,9 +342,8 @@ function M:visit_var(cls, cur)
             exps:push('@local ')
         end
     end
-    if cur:kind() == 'VarDecl' then
-        exps:push('static ')
-    end
+    exps:push(attr.RET and (attr.RET .. ' ') or nil)
+    exps:push(cur:kind() == 'VarDecl' and 'static ' or nil)
     exps:push(tn)
     exps:push(olua.typespace(tn))
     exps:push(cur:name())

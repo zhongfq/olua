@@ -60,12 +60,7 @@ local function write_typedef(module)
         writeLine("typedef {")
         for _, p in ipairs(arr) do
             local KEY, VALUE = p[1], p[2]
-            if string.match(VALUE, '^[\n\r ]*function *%(') then
-                VALUE = olua.trim(VALUE)
-                writeLine(format('${KEY} = ${VALUE},', 4))
-            else
-                writeLine(format('${KEY} = ${VALUE?},', 4))
-            end
+            writeLine(format('${KEY} = ${VALUE?},', 4))
         end
         writeLine("}")
         writeLine("")

@@ -74,23 +74,72 @@ function olua.gen_check_exp(arg, name, i, out)
             ]])
         end
     elseif arg.TYPE.SUBTYPES then
-        if #arg.TYPE.SUBTYPES > 1 then
-            out.CHECK_ARGS:push(arg.TYPE.CHECK_VALUE(arg, name, i))
-        else
+        if #arg.TYPE.SUBTYPES == 1 then
             local SUBTYPE = arg.TYPE.SUBTYPES[1]
+            local TYPE_SPACE = olua.typespace(SUBTYPE.DECLTYPE)
+            local SUBTYPE_CHECK_FUNC = olua.convfunc(SUBTYPE, 'check')
             if olua.ispointee(SUBTYPE) then
                 out.CHECK_ARGS:pushf([[
-                    ${CHECK_FUNC}(L, ${ARGN}, ${ARG_NAME}, "${SUBTYPE.LUACLS}");
+                    ${CHECK_FUNC}<${SUBTYPE.CPPCLS}>(L, ${ARGN}, &${ARG_NAME}, [L](${SUBTYPE.CPPCLS}*value) {
+                        ${SUBTYPE_CHECK_FUNC}(L, -1, (void **)value, "${SUBTYPE.LUACLS}");
+                    });
                 ]])
             else
-                local SUBTYPE_CHECK_FUNC = olua.convfunc(SUBTYPE, 'check')
-                local SUBTYPE_CAST = format('(${SUBTYPE.CPPCLS})')
-                local CHECK_VALUE = format(arg.TYPE.CHECK_VALUE)
-                out.CHECK_ARGS:pushf([[
-                    luaL_checktype(L, ${ARGN}, LUA_TTABLE);
-                    ${CHECK_VALUE}
-                ]])
+                if SUBTYPE.CPPCLS == SUBTYPE.DECLTYPE then
+                    out.CHECK_ARGS:pushf([[
+                        ${CHECK_FUNC}<${SUBTYPE.CPPCLS}>(L, ${ARGN}, &${ARG_NAME}, [L](${SUBTYPE.CPPCLS} *value) {
+                            ${SUBTYPE_CHECK_FUNC}(L, -1, value);
+                        });
+                    ]])
+                else
+                    out.CHECK_ARGS:pushf([[
+                        ${CHECK_FUNC}<${SUBTYPE.CPPCLS}>(L, ${ARGN}, &${ARG_NAME}, [L](${SUBTYPE.CPPCLS} *value) {
+                            ${SUBTYPE.DECLTYPE}${TYPE_SPACE}obj;
+                            ${SUBTYPE_CHECK_FUNC}(L, -1, &obj);
+                            *value = (${SUBTYPE.CPPCLS})obj;
+                        });
+                    ]])
+                end
             end
+        else
+            olua.assert(#arg.TYPE.SUBTYPES == 2)
+            local SUBTYPE_DECL_ARGS = olua.newarray(', ')
+            local SUBTYPE_TEMPLATE_ARGS = olua.newarray(', ')
+            local SUBTYPE_CHECK_EXP = olua.newarray()
+            local idx = -1
+            for ii, SUBTYPE in ipairs(arg.TYPE.SUBTYPES) do
+                local SUBTYPE_CHECK_FUNC = olua.convfunc(SUBTYPE, 'check')
+                local TYPE_SPACE = olua.typespace(SUBTYPE.DECLTYPE)
+                local SUBTYPE_NAME = 'arg' .. ii
+                local CONST = SUBTYPE.CONST and 'const ' or ''
+                if olua.ispointee(SUBTYPE) then
+                    SUBTYPE_DECL_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS}*${SUBTYPE_NAME}')
+                    SUBTYPE_TEMPLATE_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS}')
+                    SUBTYPE_CHECK_EXP:pushf([[
+                        ${SUBTYPE_CHECK_FUNC}(L, ${idx}, (void **)${SUBTYPE_NAME}, "${SUBTYPE.LUACLS}");
+                    ]])
+                else
+                    SUBTYPE_DECL_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS} *${SUBTYPE_NAME}')
+                    SUBTYPE_TEMPLATE_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS}')
+                    if SUBTYPE.CPPCLS == SUBTYPE.DECLTYPE then
+                        SUBTYPE_CHECK_EXP:pushf([[
+                            ${SUBTYPE_CHECK_FUNC}(L, ${idx}, ${SUBTYPE_NAME});
+                        ]])
+                    else
+                        SUBTYPE_CHECK_EXP:pushf([[
+                            ${SUBTYPE.DECLTYPE}${TYPE_SPACE}${SUBTYPE_NAME}obj;
+                            ${SUBTYPE_CHECK_FUNC}(L, ${idx}, &${SUBTYPE_NAME}obj);
+                            *${SUBTYPE_NAME} = (${SUBTYPE.CPPCLS})${SUBTYPE_NAME}obj;
+                        ]])
+                    end
+                end
+                idx = idx - 1
+            end
+            out.CHECK_ARGS:pushf([[
+                ${CHECK_FUNC}<${SUBTYPE_TEMPLATE_ARGS}>(L, ${ARGN}, &${ARG_NAME}, [L](${SUBTYPE_DECL_ARGS}) {
+                    ${SUBTYPE_CHECK_EXP}
+                });
+            ]])
         end
     elseif not arg.CALLBACK then
         if arg.ATTR.PACK then
@@ -100,7 +149,7 @@ function olua.gen_check_exp(arg, name, i, out)
     end
 end
 
-function olua.gen_addref_exp(fi, arg, i, out)
+function olua.gen_addref_exp(fi, arg, i, name, out)
     if not arg.ATTR.ADDREF then
         return
     end
@@ -108,6 +157,7 @@ function olua.gen_addref_exp(fi, arg, i, out)
     olua.assert(not fi.STATIC or fi.RET.TYPE.LUACLS)
 
     local ARGN = i
+    local ARG_NAME = name
     local REF_NAME = assert(arg.ATTR.ADDREF[1], fi.CPP_FUNC .. ' no addref name')
     local ADDREF = assert(arg.ATTR.ADDREF[2], fi.CPP_FUNC .. ' no addref flag')
     local WHERE = arg.ATTR.ADDREF[3] or (fi.STATIC and -1 or 1)
@@ -118,26 +168,39 @@ function olua.gen_addref_exp(fi, arg, i, out)
         olua.assert(arg.ATTR.ADDREF[3], 'must supply where to addref object')
         ARGN = 1
     elseif arg.TYPE.SUBTYPES then
-        local SUBTYPE = arg.TYPE.SUBTYPES[1]
         olua.assert(ADDREF == '|', "expect use like: @addref(ref_name |)")
-        olua.assert(olua.ispointee(SUBTYPE), "'%s' not a pointer type", SUBTYPE.CPPCLS)
+        if #arg.TYPE.SUBTYPES == 1 then
+            local SUBTYPE = arg.TYPE.SUBTYPES[1]
+            olua.assert(olua.ispointee(SUBTYPE), "'%s' not a pointer type", SUBTYPE.CPPCLS)
+        else
+            olua.assert(#arg.TYPE.SUBTYPES == 2)
+            local SUBTYPE1 = arg.TYPE.SUBTYPES[1]
+            local SUBTYPE2 = arg.TYPE.SUBTYPES[2]
+            olua.assert(olua.ispointee(SUBTYPE1) or olua.ispointee(SUBTYPE2))
+        end
     else
         olua.assert(olua.ispointee(arg.TYPE), "'%s' not a pointer type", arg.TYPE.CPPCLS)
     end
 
     if ADDREF == '|' then
         if arg.TYPE.SUBTYPES then
-            if arg.ATTR.PACK then
+            if arg.ATTR.PACK or arg.ATTR.OUT then
                 local SUBTYPE = arg.TYPE.SUBTYPES[1]
-                local OLUA_PUSH_FUNC = olua.convfunc(arg.TYPE, 'push')
+                local PUSH_FUNC = olua.convfunc(arg.TYPE, 'push')
+                local SUBTYPE_PUSH_FUNC = olua.convfunc(SUBTYPE, 'push')
                 out.INSERT_AFTER:pushf([[
                     int ref_store = lua_absindex(L, ${WHERE});
-                    ${OLUA_PUSH_FUNC}(L, arg${ARGN}, "${SUBTYPE.LUACLS}");
-                    olua_addref(L, ref_store, "${REF_NAME}", -1, OLUA_MODE_MULTIPLE | OLUA_FLAG_ARRAY);
+                    ${PUSH_FUNC}<${SUBTYPE.CPPCLS}>(L, &${ARG_NAME}, [L](${SUBTYPE.CPPCLS}value) {
+                        ${SUBTYPE_PUSH_FUNC}(L, value, "${SUBTYPE.LUACLS}");
+                    });
+                    olua_addref(L, ref_store, "${REF_NAME}", -1, OLUA_MODE_MULTIPLE | OLUA_FLAG_TABLE);
                     lua_pop(L, 1);
                 ]])
             else
-                out.INSERT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REF_NAME}", ${ARGN}, OLUA_MODE_MULTIPLE | OLUA_FLAG_ARRAY);')
+                if fi.VARIABLE then
+                    out.INSERT_AFTER:pushf('olua_delallrefs(L, ${WHERE}, "${REF_NAME}");')
+                end
+                out.INSERT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REF_NAME}", ${ARGN}, OLUA_MODE_MULTIPLE | OLUA_FLAG_TABLE);')
             end
         else
             out.INSERT_AFTER:pushf('olua_addref(L, ${WHERE}, "${REF_NAME}", ${ARGN}, OLUA_MODE_MULTIPLE);')
@@ -150,7 +213,7 @@ function olua.gen_addref_exp(fi, arg, i, out)
 
 end
 
-function olua.gen_delref_exp(fi, arg, i, out)
+function olua.gen_delref_exp(fi, arg, i, name, out)
     if not arg.ATTR.DELREF then
         return
     end
@@ -158,6 +221,7 @@ function olua.gen_delref_exp(fi, arg, i, out)
     olua.assert(not fi.STATIC or arg.TYPE.LUACLS)
 
     local ARGN = i
+    local ARG_NAME = name
     local REF_NAME = assert(arg.ATTR.DELREF[1], fi.CPP_FUNC .. ' no ref name')
     local DELREF = assert(arg.ATTR.DELREF[2], fi.CPP_FUNC .. ' no delref flag')
     local WHERE = arg.ATTR.DELREF[3] or (fi.STATIC and -1 or 1)
@@ -178,7 +242,11 @@ function olua.gen_delref_exp(fi, arg, i, out)
     elseif DELREF == '*' then
         out.INSERT_AFTER:pushf('olua_delallrefs(L, ${WHERE}, "${REF_NAME}");')
     elseif DELREF == '|' then
-        out.INSERT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REF_NAME}", ${ARGN}, OLUA_MODE_MULTIPLE);')
+        if arg.TYPE.SUBTYPES then
+            out.INSERT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REF_NAME}", ${ARGN}, OLUA_MODE_MULTIPLE | OLUA_FLAG_TABLE);')
+        else
+            out.INSERT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REF_NAME}", ${ARGN}, OLUA_MODE_MULTIPLE);')
+        end
     elseif DELREF == "^" then
         out.INSERT_AFTER:pushf('olua_delref(L, ${WHERE}, "${REF_NAME}", ${ARGN}, OLUA_MODE_SINGLE);')
     else
@@ -223,33 +291,60 @@ local function gen_func_args(cls, fi, out)
 
         olua.gen_decl_exp(ai, ARG_NAME, out)
         olua.gen_check_exp(ai, ARG_NAME, ARGN, out)
-        olua.gen_addref_exp(fi, ai, ARGN, out)
-        olua.gen_delref_exp(fi, ai, ARGN, out)
+        olua.gen_addref_exp(fi, ai, ARGN, ARG_NAME, out)
+        olua.gen_delref_exp(fi, ai, ARGN, ARG_NAME, out)
     end
 end
 
 function olua.gen_push_exp(arg, name, out)
     local ARG_NAME = name
-    local OLUA_PUSH_VALUE = olua.convfunc(arg.TYPE, arg.ATTR.UNPACK and 'unpack' or 'push')
+    local PUSH_FUNC = olua.convfunc(arg.TYPE, arg.ATTR.UNPACK and 'unpack' or 'push')
     if olua.ispointee(arg.TYPE) then
         local CAST = arg.TYPE.VARIANT and '&' or ''
-        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${CAST}${ARG_NAME}, "${arg.TYPE.LUACLS}");')
+        out.PUSH_ARGS:pushf('${PUSH_FUNC}(L, ${CAST}${ARG_NAME}, "${arg.TYPE.LUACLS}");')
     elseif arg.TYPE.SUBTYPES then
-        if #arg.TYPE.SUBTYPES > 1 then
-            out.PUSH_ARGS:push(arg.TYPE.PUSH_VALUE(arg, name))
-        else
+        if #arg.TYPE.SUBTYPES == 1 then
             local SUBTYPE = arg.TYPE.SUBTYPES[1]
+            local SUBTYPE_PUSH_FUNC = olua.convfunc(SUBTYPE, 'push')
+            local SUBTYPE_CAST = olua.isvaluetype(SUBTYPE) and format('(${SUBTYPE.DECLTYPE})') or '&'
             if olua.ispointee(SUBTYPE) then
-                out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${ARG_NAME}, "${SUBTYPE.LUACLS}");')
+                out.PUSH_ARGS:pushf([[
+                    ${PUSH_FUNC}<${SUBTYPE.CPPCLS}>(L, &${ARG_NAME}, [L](${SUBTYPE.CPPCLS}value) {
+                        ${SUBTYPE_PUSH_FUNC}(L, value, "${SUBTYPE.LUACLS}");
+                    });
+                ]])
             else
-                local SUBTYPE_PUSH_FUNC = olua.convfunc(SUBTYPE, 'push')
-                local ARG_PREFIX = ARG_NAME:gsub('[%->.]+', '_')
-                local SUBTYPE_CAST = olua.isvaluetype(SUBTYPE) and '' or '&'
-                if SUBTYPE.DECLTYPE ~= SUBTYPE.CPPCLS then
-                    SUBTYPE_CAST = format("${SUBTYPE_CAST}(${SUBTYPE.DECLTYPE})")
-                end
-                out.PUSH_ARGS:pushf(arg.TYPE.PUSH_VALUE)
+                out.PUSH_ARGS:pushf([[
+                    ${PUSH_FUNC}<${SUBTYPE.CPPCLS}>(L, &${ARG_NAME}, [L](${SUBTYPE.CPPCLS} value) {
+                        ${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_CAST}value);
+                    });
+                ]])
             end
+        else
+            olua.assert(#arg.TYPE.SUBTYPES == 2)
+            local SUBTYPE_DECL_ARGS = olua.newarray(', ')
+            local SUBTYPE_TEMPLATE_ARGS = olua.newarray(', ')
+            local SUBTYPE_PUSH_EXP = olua.newarray()
+            for i, SUBTYPE in ipairs(arg.TYPE.SUBTYPES) do
+                local SUBTYPE_PUSH_FUNC = olua.convfunc(SUBTYPE, 'push')
+                local SUBTYPE_CAST = olua.isvaluetype(SUBTYPE) and format('(${SUBTYPE.DECLTYPE})') or '&'
+                local SUBTYPE_NAME = 'arg' .. i
+                local CONST = SUBTYPE.CONST and 'const ' or ''
+                if olua.ispointee(SUBTYPE) then
+                    SUBTYPE_DECL_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS}${SUBTYPE_NAME}')
+                    SUBTYPE_TEMPLATE_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS}')
+                    SUBTYPE_PUSH_EXP:pushf('${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_NAME}, "${SUBTYPE.LUACLS}");')
+                else
+                    SUBTYPE_DECL_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS} ${SUBTYPE_NAME}')
+                    SUBTYPE_TEMPLATE_ARGS:pushf('${CONST}${SUBTYPE.CPPCLS}')
+                    SUBTYPE_PUSH_EXP:pushf('${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_CAST}${SUBTYPE_NAME});')
+                end
+            end
+            out.PUSH_ARGS:pushf([[
+                ${PUSH_FUNC}<${SUBTYPE_TEMPLATE_ARGS}>(L, &${ARG_NAME}, [L](${SUBTYPE_DECL_ARGS}) {
+                    ${SUBTYPE_PUSH_EXP}
+                });
+            ]])
         end
     else
         local CAST = ""
@@ -262,7 +357,7 @@ function olua.gen_push_exp(arg, name, out)
             -- int => lua_Interge
             CAST = format('(${arg.TYPE.DECLTYPE})')
         end
-        out.PUSH_ARGS:pushf('${OLUA_PUSH_VALUE}(L, ${CAST}${ARG_NAME});')
+        out.PUSH_ARGS:pushf('${PUSH_FUNC}(L, ${CAST}${ARG_NAME});')
     end
 end
 
@@ -280,11 +375,9 @@ local function gen_func_ret(cls, fi, out)
 
         olua.gen_push_exp(fi.RET, 'ret', EXPS)
 
-        if fi.RET.TYPE.SUBTYPES and not olua.ispointee(fi.RET.TYPE.SUBTYPES[1]) then
-            out.PUSH_RET = format([[
-                int num_ret = 1;
-                ${EXPS.PUSH_ARGS}
-            ]])
+        -- if fi.RET.TYPE.SUBTYPES and not olua.ispointee(fi.RET.TYPE.SUBTYPES[1]) then
+        if fi.RET.TYPE.SUBTYPES then
+            out.PUSH_RET = format([[int num_ret = ${EXPS.PUSH_ARGS}]])
         elseif fi.RET.TYPE.DECLTYPE == 'const char *' and fi.RET.ATTR.LENGTH then
             local arg = fi.RET.ATTR.LENGTH[1]
             local DECLTYPE = fi.RET.TYPE.DECLTYPE
@@ -301,8 +394,8 @@ local function gen_func_ret(cls, fi, out)
         end
     end
 
-    olua.gen_addref_exp(fi, fi.RET, -1, out)
-    olua.gen_delref_exp(fi, fi.RET, -1, out)
+    olua.gen_addref_exp(fi, fi.RET, -1, 'ret', out)
+    olua.gen_delref_exp(fi, fi.RET, -1, 'ret', out)
 end
 
 local function gen_one_func(cls, fi, write, funcidx)

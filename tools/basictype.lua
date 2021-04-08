@@ -44,94 +44,23 @@ typedef {
 }
 
 typedef {
-    CPPCLS = [[
-        std::unordered_map
-        std::map
-    ]],
+    CPPCLS = 'std::unordered_map',
     CONV = 'olua_$$_std_unordered_map',
-    PUSH_VALUE = function (arg, name)
-        local SUBTYPES = arg.TYPE.SUBTYPES
-        local key = {TYPE = SUBTYPES[1], DECLTYPE = SUBTYPES[1].DECLTYPE, ATTR = {}}
-        local value = {TYPE = SUBTYPES[2], DECLTYPE = SUBTYPES[2].DECLTYPE, ATTR = {}}
-        local OUT = {PUSH_ARGS = olua.newarray()}
-        olua.gen_push_exp(key, "entry.first", OUT)
-        olua.gen_push_exp(value, "entry.second", OUT)
-        local str = olua.format([[
-            lua_createtable(L, 0, (int)${name}.size());
-            for (auto &entry : ${name}) {
-                ${OUT.PUSH_ARGS}
-                lua_rawset(L, -3);
-            }
-        ]])
-        return str
-    end,
-    CHECK_VALUE = function (arg, name, i)
-        local SUBTYPES = arg.TYPE.SUBTYPES
-        local key = {TYPE = SUBTYPES[1], DECLTYPE = SUBTYPES[1].DECLTYPE, ATTR = {}}
-        local value = {TYPE = SUBTYPES[2], DECLTYPE = SUBTYPES[2].DECLTYPE, ATTR = {}}
-        local OUT = {CHECK_ARGS = olua.newarray(), DECL_ARGS = olua.newarray()}
-        olua.gen_decl_exp(key, "key", OUT)
-        olua.gen_decl_exp(value, "value", OUT)
-        olua.gen_check_exp(key, 'key', -2, OUT)
-        olua.gen_check_exp(value, 'value', -1, OUT)
-        local str = olua.format([[
-            lua_pushnil(L);
-            while (lua_next(L, ${i})) {
-                ${OUT.DECL_ARGS}
-                ${OUT.CHECK_ARGS}
-                ${name}.insert(std::make_pair(key, value));
-                lua_pop(L, 1);
-            }
-        ]])
-        return str
-    end,
+}
+
+typedef {
+    CPPCLS = 'std::map',
+    CONV = 'olua_$$_std_map',
 }
 
 typedef {
     CPPCLS = 'std::set',
     CONV = 'olua_$$_std_set',
-    PUSH_VALUE = [[
-        int ${ARG_NAME}_i = 1;
-        lua_createtable(L, (int)${ARG_NAME}.size(), 0);
-        for (auto it = ${ARG_NAME}.begin(); it != ${ARG_NAME}.end(); ++it) {
-            ${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_CAST}(*it));
-            lua_rawseti(L, -2, ${ARG_NAME}_i++);
-        }
-    ]],
-    CHECK_VALUE = [[
-        int ${ARG_NAME}_total = (int)lua_rawlen(L, ${ARGN});
-        for (int i = 1; i <= ${ARG_NAME}_total; i++) {
-            ${SUBTYPE.DECLTYPE} obj;
-            lua_rawgeti(L, ${ARGN}, i);
-            ${SUBTYPE_CHECK_FUNC}(L, -1, &obj);
-            ${ARG_NAME}.insert(${SUBTYPE_CAST}obj);
-            lua_pop(L, 1);
-        }
-    ]],
 }
 
 typedef {
     CPPCLS = 'std::vector',
     CONV = 'olua_$$_std_vector',
-    PUSH_VALUE = [[
-        int ${ARG_PREFIX}_size = (int)${ARG_NAME}.size();
-        lua_createtable(L, ${ARG_PREFIX}_size, 0);
-        for (int i = 0; i < ${ARG_PREFIX}_size; i++) {
-            ${SUBTYPE_PUSH_FUNC}(L, ${SUBTYPE_CAST}${ARG_NAME}[i]);
-            lua_rawseti(L, -2, i + 1);
-        }
-    ]],
-    CHECK_VALUE = [[
-        int ${ARG_NAME}_total = (int)lua_rawlen(L, ${ARGN});
-        ${ARG_NAME}.reserve((size_t)${ARG_NAME}_total);
-        for (int i = 1; i <= ${ARG_NAME}_total; i++) {
-            ${SUBTYPE.DECLTYPE} obj;
-            lua_rawgeti(L, ${ARGN}, i);
-            ${SUBTYPE_CHECK_FUNC}(L, -1, &obj);
-            ${ARG_NAME}.push_back(${SUBTYPE_CAST}obj);
-            lua_pop(L, 1);
-        }
-    ]],
 }
 
 typedef {

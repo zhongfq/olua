@@ -747,7 +747,10 @@ function olua.typecls(cppcls)
                 RET = {
                     TYPE = ARGS[1].TYPE,
                     DECLTYPE = ARGS[1].DECLTYPE,
-                    ATTR = {},
+                    ATTR = {
+                        ADDREF = ARGS[1].ATTR.ADDREF,
+                        DELREF = ARGS[1].ATTR.DELREF,
+                    },
                 },
                 STATIC = static > 0,
                 VARIABLE = true,
