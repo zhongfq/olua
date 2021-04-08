@@ -109,6 +109,7 @@ typedef {
         unsigned char
         unsigned int
         unsigned short
+        unsigned long
     ]],
     DECLTYPE = 'lua_Unsigned',
     CONV = 'olua_$$_uint',
