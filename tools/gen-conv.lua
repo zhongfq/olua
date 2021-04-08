@@ -9,12 +9,12 @@ local function gen_conv_header(module)
     for _, cv in ipairs(module.CONVS) do
         DECL_FUNCS:pushf([[
             // ${cv.CPPCLS}
-            int auto_olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
-            void auto_olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            bool auto_olua_is_${cv.CPP_SYM}(lua_State *L, int idx);
-            void auto_olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            int auto_olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
-            bool auto_olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx);
+            int olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
+            void olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            bool olua_is_${cv.CPP_SYM}(lua_State *L, int idx);
+            void olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            int olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
+            bool olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx);
         ]])
         DECL_FUNCS:push("")
     end
@@ -48,7 +48,7 @@ local function gen_push_func(cv, write)
     end
 
     write(format([[
-        int auto_olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
+        int olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 lua_createtable(L, 0, ${NUM_ARGS});
@@ -93,7 +93,7 @@ local function gen_check_func(cv, write)
     end
 
     write(format([[
-        void auto_olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -125,7 +125,7 @@ local function gen_pack_func(cv, write)
     end
 
     write(format([[
-        void auto_olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -149,7 +149,7 @@ local function gen_unpack_func(cv, write)
     end
 
     write(format([[
-        int auto_olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
+        int olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 ${OUT.PUSH_ARGS}
@@ -175,7 +175,7 @@ local function gen_is_func(cv, write)
         end
     end
     write(format([[
-        bool auto_olua_is_${cv.CPP_SYM}(lua_State *L, int idx)
+        bool olua_is_${cv.CPP_SYM}(lua_State *L, int idx)
         {
             return ${EXPS};
         }
@@ -195,7 +195,7 @@ local function gen_ispack_func(cv, write)
         end
     end
     write(format([[
-        bool auto_olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx)
+        bool olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx)
         {
             return ${EXPS};
         }

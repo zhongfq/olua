@@ -60,7 +60,7 @@ function M:parse(path)
     end
 
     local function toconv(cls)
-        return 'auto_olua_$$_' .. string.gsub(cls.CPPCLS, '::', '_')
+        return 'olua_$$_' .. string.gsub(cls.CPPCLS, '::', '_')
     end
 
     for _, v in ipairs(self.module.TYPEDEFS) do
