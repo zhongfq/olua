@@ -135,22 +135,53 @@ local function to_prop_name(fn, filter, props)
     end
 end
 
-local function write_cls_func(module, cls, append)
-    local dict = {}
-    local func_group = {}
-    for _, fn in ipairs(cls.FUNC) do
-        if is_new_func(module, cls.SUPERCLS, fn) then
-            local arr = dict[fn.NAME]
-            if not arr then
-                arr = {}
-                dict[fn.NAME] = arr
-                func_group[#func_group + 1] = arr
+local function search_using_func(module, cls)
+    local function search_parent(arr, name, supercls)
+        local super = module.visited_type[supercls]
+        if super then
+            for _, fn in ipairs(super.FUNC) do
+                if fn.NAME == name then
+                    arr[#arr + 1] = fn
+                end
             end
-            arr[#arr + 1] = fn
+            search_parent(arr, name, super.SUPERCLS)
         end
+    end
+    for name in pairs(cls.USING) do
+        local arr = {}
+        search_parent(arr, name, cls.SUPERCLS)
+        for _, fn in ipairs(arr) do
+            if not cls.FUNC[fn.PROTOTYPE] then
+                cls.FUNC[fn.PROTOTYPE] = fn
+            end
+        end
+    end
+end
+
+local function write_cls_func(module, cls, append)
+    search_using_func(module, cls)
+
+    local func_group = olua.newhash()
+    for _, fn in ipairs(cls.FUNC) do
+        local arr = func_group[fn.NAME]
+        if not arr then
+            arr = {}
+            func_group[fn.NAME] = arr
+        end
+        if is_new_func(module, cls.SUPERCLS, fn) then
+            arr.has_new = true
+        else
+            fn = setmetatable({
+                FUNC = '@using ' .. fn.FUNC
+            }, {__index = fn})
+        end
+        arr[#arr + 1] = fn
     end
 
     for _, arr in ipairs(func_group) do
+        if not arr.has_new then
+            goto continue
+        end
         local FUNCS = olua.newarray("', '", "'", "'")
         local has_callback = false
         local fn = arr[1]
@@ -190,6 +221,8 @@ local function write_cls_func(module, cls, append)
                 }
             end
         end
+
+        ::continue::
     end
 end
 

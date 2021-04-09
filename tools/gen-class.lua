@@ -64,8 +64,9 @@ local function check_gen_class_func(cls, fis, write)
         local supermeta = getmetatable(pts).__index
         for _, f in ipairs(fis) do
             if not f.STATIC and f.PROTOTYPE and rawget(pts, f.PROTOTYPE)
-                    and supermeta[f.PROTOTYPE] then
-                print(format("super class already export: ${cls.CPPCLS}::${f.PROTOTYPE}"))
+                    and supermeta[f.PROTOTYPE]
+                    and not f.RET.ATTR.USING then
+                print(format("${cls.CPPCLS}: super class already export ${f.FUNC_DECL}"))
             end
         end
     end

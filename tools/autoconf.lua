@@ -387,6 +387,8 @@ function M:visit_class(cur, cppcls)
             if not cls.SUPERCLS then
                 cls.SUPERCLS = c:type():name()
             end
+        elseif kind == 'UsingDeclaration' then
+            cls.USING[c:name()] = true
         elseif kind == 'FieldDecl' or kind == 'VarDecl' then
             local vn = c:name()
             local ct = c:type()
@@ -645,6 +647,7 @@ function M.typemod(name)
             CPPCLS = assert(classname, 'not specify classname'),
             LUACLS = modinst.MAKE_LUACLS(classname),
             EXCLUDE_FUNC = olua.newhash(),
+            USING = olua.newhash(),
             ATTR = olua.newhash(),
             ENUM = olua.newhash(),
             CONST = olua.newhash(),

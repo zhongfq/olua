@@ -173,6 +173,7 @@ function olua.newhash()
             for i, v in ipairs(arr) do
                 if value == v then
                     table.remove(arr, i)
+                    map[key] = nil
                     break
                 end
             end
