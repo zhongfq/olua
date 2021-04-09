@@ -95,7 +95,10 @@ function M:check_class()
                 visited_type[cls.CPPCLS] = cls
                 ignored_type[cls.CPPCLS] = false
             else
-                error(format("class not found: ${cls.CPPCLS}"))
+                error(format([[
+                    class not found: ${cls.CPPCLS}
+                      *** add include header file in 'conf/clang-args.lua' or check the class name
+                ]]))
             end
         end
     end
