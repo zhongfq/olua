@@ -21,7 +21,8 @@ package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
     olua.HOMEDIR, version, osn, suffix, package.cpath)
 
 -- unzip lib and header
-if not io.open(olua.HOMEDIR .. '/version') then
+local vf = io.open(olua.HOMEDIR .. '/version')
+if not vf or vf:read('*a') ~= '2' then
     local dir = scrpath:gsub('olua.lua', '')
     local libzip = dir .. 'lib.zip'
     local includezip = dir .. 'include.zip'
@@ -35,7 +36,7 @@ if not io.open(olua.HOMEDIR .. '/version') then
         os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.HOMEDIR)
         os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.HOMEDIR)
     end
-    io.open(olua.HOMEDIR .. '/version', 'w+'):write('1'):close()
+    io.open(olua.HOMEDIR .. '/version', 'w+'):write('2'):close()
 end
 
 local _ipairs = ipairs
@@ -99,6 +100,13 @@ end
 function olua.newarray(sep, prefix, posfix)
     local mt = {}
     mt.__index = mt
+
+    function mt:clear()
+        for i = 1, #self do
+            self[i] = nil
+        end
+        return self
+    end
 
     function mt:push(v)
         self[#self + 1] = v
@@ -341,12 +349,8 @@ end
 
 function olua.export(path)
     local module = dofile(path)
-    if #module.CLASSES > 0 then
-        olua.gen_header(module)
-        olua.gen_source(module)
-    elseif #module.CONVS > 0 then
-        olua.gen_conv(module)
-    end
+    olua.gen_header(module)
+    olua.gen_source(module)
 end
 
 require "typecls"

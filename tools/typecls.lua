@@ -7,7 +7,7 @@ local format = olua.format
 
 local message = ""
 
-function olua.getclass(cls)
+function olua.get_class(cls)
     return cls == '*' and class_map or class_map[cls]
 end
 
@@ -234,11 +234,20 @@ local function parse_type(str)
     return pretty_typename(tn), attr, str
 end
 
+local function type_func_info(tn, cls)
+    if not string.find(tn, 'std::function') then
+        return olua.typeinfo(tn, cls)
+    else
+        return olua.typeinfo('std::function', cls)
+    end
+end
+
 local parse_args
 
 local function parse_callback(cls, tn)
     local rtn, rtattr
-    local declstr = string.match(tn, '<(.*)>') -- match callback function prototype
+    local ti = type_func_info(tn, cls)
+    local declstr = string.match(ti.FUNC_DEF or tn, '<(.*)>') -- match callback function prototype
     rtn, rtattr, declstr = parse_type(declstr)
     declstr = string.gsub(declstr, '^[^(]+', '') -- match callback args
 
@@ -258,7 +267,7 @@ local function parse_callback(cls, tn)
     return {
         ARGS = args,
         RET = RET,
-        DECLTYPE = decltype,
+        DECLTYPE = ti.FUNC_DEF and ti.DECLTYPE or decltype,
     }
 end
 
@@ -334,12 +343,12 @@ function parse_args(cls, declstr)
         end
 
         -- is callback
-        if string.find(tn, 'std::function<') then
+        if olua.is_func_type(tn, cls) then
             local cb = parse_callback(cls, tn)
             args[#args + 1] = {
                 TYPE = setmetatable({
                     DECLTYPE = cb.DECLTYPE,
-                }, {__index = olua.typeinfo('std::function', cls)}),
+                }, {__index = type_func_info(tn, cls)}),
                 DECLTYPE = cb.DECLTYPE,
                 VAR_NAME = varname or '',
                 ATTR = attr,
@@ -366,7 +375,7 @@ function parse_args(cls, declstr)
     return args, count
 end
 
-function olua.funcname(declfunc)
+function olua.func_name(declfunc)
     local _, _, str = parse_type(declfunc)
     return string.match(str, '[^ ()]+')
 end
@@ -399,7 +408,7 @@ local function gen_func_pack(cls, fi, funcs)
         newfi.RET = olua.copy(fi.RET)
         newfi.RET.ATTR = olua.copy(fi.RET.ATTR)
         newfi.ARGS = {}
-        newfi.FUNC_DECL = string.gsub(fi.FUNC_DECL, '@pack *', '')
+        newfi.FUNC_DESC = string.gsub(fi.FUNC_DESC, '@pack *', '')
         for i in ipairs(fi.ARGS) do
             newfi.ARGS[i] = olua.copy(fi.ARGS[i])
             newfi.ARGS[i].ATTR = olua.copy(fi.ARGS[i].ATTR)
@@ -454,7 +463,7 @@ local function parse_func(cls, name, ...)
             fi.LUA_FUNC = assert(name)
             fi.CPP_FUNC = name
             fi.SNIPPET = olua.trim(declfunc)
-            fi.FUNC_DECL = '<function snippet>'
+            fi.FUNC_DESC = '<function snippet>'
             fi.RET.TYPE = olua.typeinfo('void', cls)
             fi.RET.ATTR = {}
             fi.ARGS = {}
@@ -462,10 +471,10 @@ local function parse_func(cls, name, ...)
             fi.PROTOTYPE = false
             fi.MAX_ARGS = #fi.ARGS
         else
-            local typename, attr, str = parse_type(declfunc)
+            local tn, attr, str = parse_type(declfunc)
             local ctor = string.match(cls.CPPCLS, '[^:]+$')
-            if typename == ctor and string.find(str, '^%(') then
-                typename = typename .. ' *'
+            if tn == ctor and string.find(str, '^%(') then
+                tn = tn .. ' *'
                 str = 'new' .. str
                 fi.CTOR = true
                 attr.STATIC = true
@@ -473,21 +482,21 @@ local function parse_func(cls, name, ...)
             fi.CPP_FUNC = string.match(str, '[^ ()]+')
             fi.LUA_FUNC = name or fi.CPP_FUNC
             fi.STATIC = attr.STATIC
-            fi.FUNC_DECL = declfunc
+            fi.FUNC_DESC = declfunc
             fi.INSERT = {}
-            if string.find(typename, 'std::function<') then
-                local cb = parse_callback(cls, typename, nil)
+            if olua.is_func_type(tn, cls) then
+                local cb = parse_callback(cls, tn, nil)
                 fi.RET = {
                     TYPE = setmetatable({
                         DECLTYPE = cb.DECLTYPE,
-                    }, {__index = olua.typeinfo('std::function', cls)}),
+                    }, {__index = type_func_info(tn, cls)}),
                     DECLTYPE = cb.DECLTYPE,
                     ATTR = attr,
                     CALLBACK = cb,
                 }
             else
-                fi.RET.TYPE = olua.typeinfo(typename, cls)
-                fi.RET.DECLTYPE = todecltype(cls, typename)
+                fi.RET.TYPE = olua.typeinfo(tn, cls)
+                fi.RET.DECLTYPE = todecltype(cls, tn)
                 fi.RET.ATTR = attr
             end
             fi.ARGS, fi.MAX_ARGS = parse_args(cls, string.sub(str, #fi.CPP_FUNC + 1))
@@ -533,7 +542,7 @@ local function parse_prop(cls, name, declget, declset)
             local fi = v[1]
             if test(fi, name, 'get') or test(fi, name, 'is') or
                 test(fi, name2, 'get') or test(fi, name2, 'is') then
-                olua.message(fi.FUNC_DECL)
+                olua.message(fi.FUNC_DESC)
                 olua.assert(#fi.ARGS == 0, "function '%s::%s' has arguments", cls.CPPCLS, fi.CPP_FUNC)
                 pi.GET = fi
                 break
@@ -744,7 +753,7 @@ function olua.typecls(cppcls)
                 CPP_FUNC = 'get_' .. ARGS[1].VAR_NAME,
                 VAR_NAME = ARGS[1].VAR_NAME,
                 INSERT = {},
-                FUNC_DECL = rawstr,
+                FUNC_DESC = rawstr,
                 RET = {
                     TYPE = ARGS[1].TYPE,
                     DECLTYPE = ARGS[1].DECLTYPE,
@@ -765,7 +774,7 @@ function olua.typecls(cppcls)
                 VAR_NAME = ARGS[1].VAR_NAME,
                 INSERT = {},
                 STATIC = static > 0,
-                FUNC_DECL = rawstr,
+                FUNC_DESC = rawstr,
                 RET = {
                     TYPE = olua.typeinfo('void', cls),
                     ATTR = {},
@@ -805,24 +814,36 @@ function olua.typecls(cppcls)
     return cls
 end
 
-function olua.toluacls(cppcls)
+function olua.luacls(cppcls)
     local ti = typeinfo_map[cppcls .. ' *'] or typeinfo_map[cppcls]
     assert(ti, 'type not found: ' .. cppcls)
     return ti.LUACLS
 end
 
-function olua.ispointee(ti)
+function olua.is_func_type(tn, cls)
+    if type(tn) == 'table' then
+        tn = tn.CPPCLS
+    end
+    if string.find(tn, 'std::function') then
+        return true
+    else
+        local ti = olua.typeinfo(tn, cls)
+        return ti and ti.FUNC_DEF
+    end
+end
+
+function olua.is_pointer_type(ti)
     if type(ti) == 'string' then
         -- is 'T *'?
         return string.find(ti, '[*]$')
     else
-        return ti.LUACLS and not olua.isvaluetype(ti)
+        return not ti.FUNC_DEF and ti.LUACLS and not olua.is_value_type(ti)
     end
 end
 
-function olua.isenum(cls)
+function olua.is_enum_type(cls)
     local ti = typeinfo_map[cls.CPPCLS] or typeinfo_map[cls.CPPCLS .. ' *']
-    return cls.REG_LUATYPE and olua.isvaluetype(ti)
+    return cls.REG_LUATYPE and olua.is_value_type(ti)
 end
 
 local valuetype = {
@@ -842,8 +863,8 @@ function olua.typespace(ti)
     return ti:find('[*&]$') and '' or ' '
 end
 
-function olua.initialvalue(ti)
-    if olua.ispointee(ti) then
+function olua.initial_value(ti)
+    if olua.is_pointer_type(ti) then
         return 'nullptr'
     else
         return valuetype[ti.DECLTYPE] or ''
@@ -851,11 +872,11 @@ function olua.initialvalue(ti)
 end
 
 -- enum has cpp cls, but declared as lua_Unsigned
-function olua.isvaluetype(ti)
+function olua.is_value_type(ti)
     return valuetype[ti.DECLTYPE]
 end
 
-function olua.convfunc(ti, fn)
+function olua.conv_func(ti, fn)
     return string.gsub(ti.CONV, '[$]+', fn)
 end
 
@@ -864,7 +885,12 @@ function olua.typedef(typeinfo)
         local ti = setmetatable({}, {__index = typeinfo})
         tn = pretty_typename(tn)
         ti.CPPCLS = tn
-        ti.DECLTYPE = ti.DECLTYPE or tn
+        if ti.DECLTYPE and string.find(ti.DECLTYPE, 'std::function') then
+            ti.FUNC_DEF = ti.DECLTYPE
+            ti.DECLTYPE = tn
+        else
+            ti.DECLTYPE = ti.DECLTYPE or tn
+        end
         typeinfo_map[tn] = ti
         typeinfo_map['const ' .. tn] = ti
     end

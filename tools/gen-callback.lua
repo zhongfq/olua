@@ -33,7 +33,7 @@ end
 local function check_callback_store(fi, idx)
     if idx > 0 then
         local ai = fi.ARGS[idx]
-        olua.assert(olua.ispointee(ai.TYPE), 'arg #%d is not a userdata', idx)
+        olua.assert(olua.is_pointer_type(ai.TYPE), 'arg #%d is not a userdata', idx)
     end
 end
 
@@ -79,7 +79,7 @@ local function gen_ret_callback(cls, fi)
 end
 
 function olua.gen_callback(cls, fi, out)
-    if fi.RET.TYPE.CPPCLS == "std::function" then
+    if olua.is_func_type(fi.RET.TYPE) then
         out.CALLBACK = gen_ret_callback(cls, fi)
         return
     end
@@ -134,10 +134,14 @@ function olua.gen_callback(cls, fi, out)
 
     if cbarg.ATTR.LOCAL then
         for _, arg in ipairs(cbarg.CALLBACK.ARGS) do
-            if not olua.isvaluetype(arg.TYPE) then
+            if not olua.is_value_type(arg.TYPE) then
                 localBlock = true
             end
         end
+    end
+
+    if fi.RET.ATTR.USING then
+        CB_TAG = CB_TAG .. ' + std::string(".using")'
     end
 
     if localBlock then
@@ -212,8 +216,8 @@ function olua.gen_callback(cls, fi, out)
         cbout.DECL_RESULT = OUT.DECL_ARGS
         cbout.CHECK_RESULT = OUT.CHECK_ARGS
 
-        local OLUA_IS_VALUE = olua.convfunc(RET.TYPE, 'is')
-        if olua.ispointee(RET.TYPE) then
+        local OLUA_IS_VALUE = olua.conv_func(RET.TYPE, 'is')
+        if olua.is_pointer_type(RET.TYPE) then
             cbout.CHECK_RESULT = format([[
                 if (${OLUA_IS_VALUE}(L, -1, "${RET.TYPE.LUACLS}")) {
                     ${cbout.CHECK_RESULT}
@@ -310,7 +314,7 @@ function olua.gen_callback(cls, fi, out)
     ]])
 
     if cbarg.ATTR.OPTIONAL or cbarg.ATTR.NULLABLE then
-        local OLUA_IS_VALUE = olua.convfunc(cbarg.TYPE, 'is')
+        local OLUA_IS_VALUE = olua.conv_func(cbarg.TYPE, 'is')
         if TAG_MODE == 'OLUA_TAG_REPLACE' then
             cbout.REMOVE_NORMAL_CALLBACK = format [[
                 olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_SUBEQUAL);

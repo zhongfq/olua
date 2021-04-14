@@ -80,6 +80,10 @@ local function write_typedef(module)
             CPPCLS = CPPCLS .. ' *'
             LUACLS = olua.stringify(cls.LUACLS, "'")
             CONV = 'olua_$$_cppobj'
+        elseif cls.KIND == 'classFunc' then
+            LUACLS = olua.stringify(cls.LUACLS, "'")
+            DECLTYPE = olua.stringify(cls.DECLTYPE, "'")
+            CONV = 'olua_$$_' .. string.gsub(cls.CPPCLS, '[.:]+', '_')
         else
             error(cls.CPPCLS .. ' ' .. cls.KIND)
         end
@@ -144,12 +148,21 @@ local function search_using_func(module, cls)
                     arr[#arr + 1] = fn
                 end
             end
-            search_parent(arr, name, super.SUPERCLS)
+            if #arr == 0 then
+                search_parent(arr, name, super.SUPERCLS)
+            end
         end
     end
-    for name in pairs(cls.USING) do
+    for name, where in pairs(cls.USING) do
         local arr = {}
-        search_parent(arr, name, cls.SUPERCLS)
+        local supercls = cls.SUPERCLS
+        while supercls and supercls ~= where do
+            local super = module.visited_type[supercls]
+            if super then
+                supercls = super.SUPERCLS
+            end
+        end
+        search_parent(arr, name, supercls)
         for _, fn in ipairs(arr) do
             if not cls.FUNC[fn.PROTOTYPE] then
                 cls.FUNC[fn.PROTOTYPE] = fn
@@ -328,7 +341,7 @@ local function write_classes(module, append)
     append('M.CLASSES = {}')
     append('')
     for _, cls in ipairs(module.CLASSES) do
-        if cls.KIND ~= 'class' and cls.KIND ~= 'enum' then
+        if cls.KIND ~= 'class' and cls.KIND ~= 'enum' and cls.KIND ~= 'classFunc' then
             goto continue
         end
 

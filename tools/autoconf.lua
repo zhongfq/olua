@@ -225,6 +225,12 @@ function M:has_default_value(cur)
     end
 end
 
+function M:is_func_type(tn)
+    local rawtn = tn:match('([%w:_]+) ?[&*]?$')
+    local decl = type_alias[rawtn] or ''
+    return tn:find('std::function') or decl:find('std::function')
+end
+
 function M:visit_method(cls, cur)
     if cur:isVariadic()
             or cur:name():find('^_')
@@ -262,7 +268,7 @@ function M:visit_method(cls, cur)
 
     if cur:kind() ~= 'Constructor' then
         local tn = self:typename(cur, cur:resultType())
-        if string.find(tn, 'std::function') then
+        if self:is_func_type(tn) then
             cbkind = 'RET'
             if callback.NULLABLE then
                 exps:push('@nullable ')
@@ -286,7 +292,7 @@ function M:visit_method(cls, cur)
             exps:push(', ')
             declexps:push(', ')
         end
-        if string.find(tn, 'std::function') then
+        if self:is_func_type(tn) then
             if cbkind then
                 error(format('has more than one std::function: ${cls.CPPCLS}::${DISPLAY_NAME}'))
             end
@@ -330,14 +336,19 @@ function M:visit_var(cls, cur)
 
     local exps = olua.newarray('')
     local attr = cls.ATTR[cur:name()] or cls.ATTR['*'] or {}
+    local tn = self:typename(cur, cur:type())
+    local cbkind
 
-    if attr.OPTIONAL or (self:has_default_value(cur) and attr.OPTIONAL == nil) then
+    local length = string.match(tn, '%[(%d+)%]$')
+    if length then
+        exps:pushf('@array(${length})')
+        exps:push(' ')
+        tn = string.gsub(tn, ' %[%d+%]$', '')
+    elseif attr.OPTIONAL or (self:has_default_value(cur) and attr.OPTIONAL == nil) then
         exps:push('@optional ')
     end
 
-    local tn = self:typename(cur, cur:type())
-    local cbkind
-    if string.find(tn, 'std::function') then
+    if self:is_func_type(tn) then
         cbkind = 'VAR'
         exps:push('@nullable ')
         local callback = cls.CALLBACK:take(cur:name()) or {}
@@ -345,6 +356,7 @@ function M:visit_var(cls, cur)
             exps:push('@local ')
         end
     end
+
     exps:push(attr.RET and (attr.RET .. ' ') or nil)
     exps:push(cur:kind() == 'VarDecl' and 'static ' or nil)
     exps:push(tn)
@@ -364,9 +376,15 @@ function M:visit_alias_class(cppcls, super)
     local cls = self.module.CLASSES[cppcls]
     visited_type[cppcls] = cls
     ignored_type[cppcls] = false
-    cls.KIND = cls.KIND or 'classAlias'
-    cls.SUPERCLS = super
-    cls.LUACLS = self.module.MAKE_LUACLS(super)
+    if M:is_func_type(super) then
+        cls.KIND = 'classFunc'
+        cls.DECLTYPE = super
+        cls.LUACLS = self.module.MAKE_LUACLS(cppcls)
+    else
+        cls.KIND = cls.KIND or 'classAlias'
+        cls.SUPERCLS = super
+        cls.LUACLS = self.module.MAKE_LUACLS(super)
+    end
 end
 
 function M:visit_class(cur, cppcls)
@@ -391,7 +409,12 @@ function M:visit_class(cur, cppcls)
                 cls.SUPERCLS = c:type():name()
             end
         elseif kind == 'UsingDeclaration' then
-            cls.USING[c:name()] = true
+            for _, cc in ipairs(c:children()) do
+                if cc:kind() == 'TypeRef' then
+                    cls.USING[c:name()] = cc:name():match('([^ ]+)$')
+                    break
+                end
+            end
         elseif kind == 'FieldDecl' or kind == 'VarDecl' then
             local vn = c:name()
             local ct = c:type()
@@ -509,6 +532,21 @@ function M:visit(cur)
         else
             name = self:typename(cur, cur:underlyingType())
         end
+        local ftype = cur:underlyingType():templateArgumentAsType()[1]
+        if ftype and ftype:kind() == 'FunctionProto' then
+            local arr = olua.newarray('')
+            arr:push('std::function<')
+            arr:push(ftype:resultType():name())
+            arr:push(' (')
+            for i, v in ipairs(ftype:argTypes()) do
+                if i > 1 then
+                    arr:push(', ')
+                end
+                arr:push(v:name())
+            end
+            arr:push(')>')
+            name = tostring(arr)
+        end
         type_alias[alias] = type_alias[name] or name
         need_visit = self.module.CLASSES[alias] and not visited_type[alias]
         if need_visit then
@@ -580,7 +618,7 @@ local function add_command(cls)
 
     function CMD.CALLBACK(cb)
         if not cb.NAME then
-            cb.NAME = olua.funcname(cb.FUNCS[1])
+            cb.NAME = olua.func_name(cb.FUNCS[1])
             cls.EXCLUDE_FUNC[cb.NAME] = true
         end
         assert(#cb.NAME > 0, 'no callback function name')
@@ -594,7 +632,7 @@ local function add_command(cls)
     end
 
     function CMD.VAR(name, snippet)
-        local varname = olua.funcname(snippet)
+        local varname = olua.func_name(snippet)
         assert(#varname > 0, 'no variable name')
         cls.EXCLUDE_FUNC[varname] = true
         cls.VAR[name or varname] = {NAME = name, SNIPPET = snippet}

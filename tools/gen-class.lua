@@ -12,13 +12,14 @@ local function has_gc_method(cls)
     end
 
     if cls.SUPERCLS then
-        return has_gc_method(olua.getclass(cls.SUPERCLS))
+        return has_gc_method(olua.get_class(cls.SUPERCLS))
     end
 end
 
-local function check_gc_method(cls)
+local function check_meta_method(cls)
     local has_ctor = false
     local has_move = false
+    local ti = olua.typeinfo(cls.CPPCLS, cls, true)
     for _, v in ipairs(cls.FUNCS) do
         if v[1].CTOR then
             has_ctor = true
@@ -36,7 +37,19 @@ local function check_gc_method(cls)
             }]]))
         end
     end
-    if cls.REG_LUATYPE and not has_move and not olua.isenum(cls) then
+    if olua.is_func_type(cls) then
+        cls.func('__call', format([[
+            {
+                luaL_checktype(L, 2, LUA_TFUNCTION);
+                lua_createtable(L, 0, 2);
+                lua_pushvalue(L, 2);
+                olua_rawsetf(L, -2, "callback");
+                lua_pushstring(L, "${cls.LUACLS}");
+                olua_rawsetf(L, -2, "classname");
+                return 1;
+            }]]
+        ))
+    elseif not olua.is_enum_type(cls) and cls.REG_LUATYPE and not has_move then
         cls.func('__move', format([[
             {
                 auto self = (${cls.CPPCLS} *)olua_toobj(L, 1, "${cls.LUACLS}");
@@ -66,7 +79,7 @@ local function check_gen_class_func(cls, fis, write)
             if not f.STATIC and f.PROTOTYPE and rawget(pts, f.PROTOTYPE)
                     and supermeta[f.PROTOTYPE]
                     and not f.RET.ATTR.USING then
-                print(format("${cls.CPPCLS}: super class already export ${f.FUNC_DECL}"))
+                print(format("${cls.CPPCLS}: super class already export ${f.FUNC_DESC}"))
             end
         end
     end
@@ -115,7 +128,7 @@ local function gen_class_open(cls, write)
     local REQUIRE = cls.REQUIRE or ''
 
     if cls.SUPERCLS then
-        SUPRECLS = olua.stringify(olua.toluacls(cls.SUPERCLS))
+        SUPRECLS = olua.stringify(olua.luacls(cls.SUPERCLS))
     end
 
     for _, fis in ipairs(cls.FUNCS) do
@@ -203,7 +216,7 @@ end
 
 function olua.gen_header(module)
     local arr = olua.newarray('\n')
-    local function append(value)
+    local function write(value)
         if value then
             -- '   #if' => '#if'
             arr:push(value:gsub('\n *#', '\n#'))
@@ -212,19 +225,22 @@ function olua.gen_header(module)
 
     local HEADER = string.upper(module.NAME)
 
-    append(format([[
+    write(format([[
         //
         // AUTO BUILD, DON'T MODIFY!
         //
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
-        #include "lua.hpp"
+        ${module.INCLUDES}
 
         int luaopen_${module.NAME}(lua_State *L);
-
-        #endif
     ]]))
+    write('')
+
+    olua.gen_conv_header(module, write)
+
+    write('#endif')
 
     local PATH = format('${module.PATH}/lua_${module.NAME}.h')
     olua.write(PATH, tostring(arr))
@@ -237,7 +253,6 @@ local function gen_include(module, write)
         // AUTO BUILD, DON'T MODIFY!
         //
         #include "lua_${module.NAME}.h"
-        ${module.INCLUDES}
     ]]))
     write('')
 
@@ -246,17 +261,15 @@ local function gen_include(module, write)
         write('')
     end
 
-    if module.CONVS then
-        olua.gen_conv(module, write)
-    end
+    olua.gen_conv_source(module, write)
 end
 
 local function gen_classes(module, write)
     for _, cls in ipairs(module.CLASSES) do
-        cls.LUACLS = olua.toluacls(cls.CPPCLS)
+        cls.LUACLS = olua.luacls(cls.CPPCLS)
         local IFDEF = cls.IFDEFS['*']
         write(IFDEF)
-        check_gc_method(cls)
+        check_meta_method(cls)
         gen_class_chunk(cls, write)
         gen_class_funcs(cls, write)
         gen_class_open(cls, write)
