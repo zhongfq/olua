@@ -216,16 +216,16 @@ function olua.gen_callback(cls, fi, out)
         cbout.DECL_RESULT = OUT.DECL_ARGS
         cbout.CHECK_RESULT = OUT.CHECK_ARGS
 
-        local OLUA_IS_VALUE = olua.conv_func(RET.TYPE, 'is')
+        local IS_FUNC = olua.conv_func(RET.TYPE, 'is')
         if olua.is_pointer_type(RET.TYPE) then
             cbout.CHECK_RESULT = format([[
-                if (${OLUA_IS_VALUE}(L, -1, "${RET.TYPE.LUACLS}")) {
+                if (${IS_FUNC}(L, -1, "${RET.TYPE.LUACLS}")) {
                     ${cbout.CHECK_RESULT}
                 }
             ]])
         else
             cbout.CHECK_RESULT = format([[
-                if (${OLUA_IS_VALUE}(L, -1)) {
+                if (${IS_FUNC}(L, -1)) {
                     ${cbout.CHECK_RESULT}
                 }
             ]])
@@ -279,11 +279,8 @@ function olua.gen_callback(cls, fi, out)
         ]]
     end
 
-    olua.assert(TAG_MODE == 'OLUA_TAG_REPLACE' or
-        TAG_MODE == 'OLUA_TAG_NEW',
-        "expect '%s' or '%s', got '%s'",
-        'OLUA_TAG_REPLACE', 'OLUA_TAG_NEW',
-        TAG_MODE
+    olua.assert(TAG_MODE == 'OLUA_TAG_REPLACE' or TAG_MODE == 'OLUA_TAG_NEW',
+        "expect 'OLUA_TAG_REPLACE' or 'OLUA_TAG_NEW', got '%s'",TAG_MODE
     )
 
     local CALLBACK_CHUNK = format([[
@@ -314,7 +311,7 @@ function olua.gen_callback(cls, fi, out)
     ]])
 
     if cbarg.ATTR.OPTIONAL or cbarg.ATTR.NULLABLE then
-        local OLUA_IS_VALUE = olua.conv_func(cbarg.TYPE, 'is')
+        local IS_FUNC = olua.conv_func(cbarg.TYPE, 'is')
         if TAG_MODE == 'OLUA_TAG_REPLACE' then
             cbout.REMOVE_NORMAL_CALLBACK = format [[
                 olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_SUBEQUAL);
@@ -324,7 +321,7 @@ function olua.gen_callback(cls, fi, out)
             void *cb_store = (void *)${CB_STORE};
             std::string cb_tag = ${CB_TAG};
             std::string cb_name;
-            if (${OLUA_IS_VALUE}(L, ${ARGN})) {
+            if (${IS_FUNC}(L, ${ARGN})) {
                 cb_name = olua_setcallback(L, cb_store, cb_tag.c_str(), ${ARGN}, ${TAG_MODE});
                 ${CALLBACK_CHUNK}
             } else {

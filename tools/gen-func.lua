@@ -353,7 +353,6 @@ function olua.gen_push_exp(arg, name, out)
             -- T *f(), has T conv
             CAST = not arg.TYPE.VARIANT and '&' or ''
         elseif arg.TYPE.DECLTYPE ~= arg.TYPE.CPPCLS then
-            -- value type push func: olua_push_value(L, T)
             -- int => lua_Interge
             CAST = format('(${arg.TYPE.DECLTYPE})')
         end
@@ -374,13 +373,7 @@ local function gen_func_ret(cls, fi, out)
         local EXPS = {PUSH_ARGS = olua.newarray()}
 
         olua.gen_push_exp(fi.RET, 'ret', EXPS)
-
-        -- if fi.RET.TYPE.SUBTYPES and not olua.is_pointer_type(fi.RET.TYPE.SUBTYPES[1]) then
-        if fi.RET.TYPE.SUBTYPES then
-            out.PUSH_RET = format([[int num_ret = ${EXPS.PUSH_ARGS}]])
-        else
-            out.PUSH_RET = format('int num_ret = ${EXPS.PUSH_ARGS}')
-        end
+        out.PUSH_RET = format('int num_ret = ${EXPS.PUSH_ARGS}')
 
         if #out.PUSH_RET > 0 then
             out.NUM_RET = "num_ret"

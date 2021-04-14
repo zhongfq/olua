@@ -40,7 +40,6 @@ local function gen_push_func(cv, write)
             return 1;
         }
     ]]))
-    write('')
 end
 
 local function gen_check_func(cv, write)
@@ -108,7 +107,6 @@ local function gen_check_func(cv, write)
             ${OUT.CHECK_ARGS}
         }
     ]]))
-    write('')
 end
 
 local function gen_pack_func(cv, write)
@@ -147,7 +145,6 @@ local function gen_pack_func(cv, write)
             ${OUT.CHECK_ARGS}
         }
     ]]))
-    write('')
 end
 
 local function gen_unpack_func(cv, write)
@@ -179,7 +176,6 @@ local function gen_unpack_func(cv, write)
             return ${NUM_ARGS};
         }
     ]]))
-    write('')
 end
 
 local function gen_is_func(cv, write)
@@ -197,18 +193,17 @@ local function gen_is_func(cv, write)
             return ${EXPS};
         }
     ]]))
-    write('')
 end
 
 local function gen_ispack_func(cv, write)
     local EXPS = olua.newarray(' && ')
     for i, pi in ipairs(cv.PROPS) do
-        local IS_VALUE = olua.conv_func(pi.TYPE, 'is')
-        local VIDX = i - 1
+        local ISFUNC = olua.conv_func(pi.TYPE, 'is')
+        local N = i - 1
         if olua.is_pointer_type(pi.TYPE) then
-            EXPS:pushf('${IS_VALUE}(L, idx + ${VIDX}, "${pi.TYPE.LUACLS}")')
+            EXPS:pushf('${ISFUNC}(L, idx + ${N}, "${pi.TYPE.LUACLS}")')
         else
-            EXPS:pushf('${IS_VALUE}(L, idx + ${VIDX})')
+            EXPS:pushf('${ISFUNC}(L, idx + ${N})')
         end
     end
     write(format([[
@@ -217,11 +212,12 @@ local function gen_ispack_func(cv, write)
             return ${EXPS};
         }
     ]]))
-    write('')
 end
 
 function olua.gen_conv_header(module, write)
     for _, cv in ipairs(module.CONVS) do
+        local IFDEF = cv.IFDEF
+        write(IFDEF)
         write(format([[
             // ${cv.CPPCLS}
             int olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
@@ -231,6 +227,7 @@ function olua.gen_conv_header(module, write)
             int olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
             bool olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx);
         ]]))
+        write(IFDEF and '#endif' or nil)
         write("")
     end
 
@@ -296,12 +293,21 @@ end
 
 function olua.gen_conv_source(module, write)
     for _, cv in ipairs(module.CONVS) do
+        local IFDEF = cv.IFDEF
+        write(IFDEF)
         gen_push_func(cv, write)
+        write('')
         gen_check_func(cv, write)
+        write('')
         gen_is_func(cv, write)
+        write('')
         gen_pack_func(cv, write)
+        write('')
         gen_unpack_func(cv, write)
+        write('')
         gen_ispack_func(cv, write)
+        write(IFDEF and '#endif' or nil)
+        write('')
     end
 
     for _, cls in ipairs(module.CLASSES) do

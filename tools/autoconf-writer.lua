@@ -19,6 +19,7 @@ local function write_metadata(module, append)
 
         module.ignored_type[cls.CPPCLS] = false
 
+        local IFDEF = (cls.IFDEF['*'] or {}).VALUE
         local EXPS = olua.newarray("\n")
         for _, v in ipairs(cls.VAR) do
             EXPS:pushf('${v.SNIPPET};')
@@ -27,6 +28,7 @@ local function write_metadata(module, append)
         append(format([=[
             typeconv {
                 CPPCLS = '${cls.CPPCLS}',
+                IFDEF = ${IFDEF?},
                 DEF = [[
                     ${EXPS}
                 ]],
