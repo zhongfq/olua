@@ -93,7 +93,7 @@ function M:check_class()
 end
 
 function M:visit_enum(cur, cppcls)
-    cppcls = cppcls or self:typename(cur, cur:type())
+    cppcls = cppcls or self:fullname(cur)
     local cls = self.module.CLASSES[cppcls]
     writer.visited_types[cppcls] = cls
     writer.ignored_types[cppcls] = false
@@ -127,7 +127,7 @@ function M:is_excluded_type(type, cur)
         return true
     end
 
-    local tn = cur and self:typename(cur, type) or type:name()
+    local tn = cur and self:typename(type, cur) or type:name()
     -- remove const and &
     -- const T * => T *
     -- const T & => T
@@ -139,35 +139,51 @@ function M:is_excluded_type(type, cur)
     end
 end
 
-function M:typename(cur, type)
-    if not type then
-        if cur:kind() == 'Namespace' then
-            local ns = olua.newarray('::')
-            while cur and cur:kind() ~= 'TranslationUnit' do
-                ns:insert(cur:name())
-                cur = cur:parent()
-            end
-            return tostring(ns)
-        else
-            return cur:name()
+function M:fullname(cur)
+    if cur:kind() == 'Namespace' then
+        local ns = olua.newarray('::')
+        while cur and cur:kind() ~= 'TranslationUnit' do
+            ns:insert(cur:name())
+            cur = cur:parent()
         end
+        return tostring(ns)
+    else
+        return (cur:type() or cur):name()
     end
+end
 
+function M:typename(type, cur)
     local tn = type:name()
     -- remove const, & and *: const T * => T
     local rawtn = tn:match('([%w:_]+) ?[&*]?$')
     if not rawtn then
-        return tn
+        local ftype = type:templateArgumentAsType()[1]
+        if ftype and ftype:kind() == 'FunctionProto' then
+            local exps = olua.newarray('')
+            exps:push(tn:find('^const') and 'const ' or nil)
+            exps:push('std::function<')
+            exps:push(ftype:resultType():name())
+            exps:push(' (')
+            for i, v in ipairs(ftype:argTypes()) do
+                exps:push(i > 1 and ', ' or nil)
+                exps:push(v:name())
+            end
+            exps:push(')>')
+            exps:push(tn:find('&$') and ' &' or nil)
+            return tostring(exps)
+        else
+            return tn
+        end
     end
 
     -- typedef std::function<void (Object *)> ClickListener
     -- const ClickListener & => const olua::ClickListener &
     for _, cu in ipairs(cur:children()) do
         if cu:kind() == 'TypeRef' then
-            local ftn = cu:name():match('([^ ]+)$')
-            if string.find(ftn, rawtn .. '$') then
-                tn = tn:gsub(rawtn, ftn)
-                rawtn = ftn
+            local typeref = cu:name():match('([^ ]+)$')
+            if rawtn ~= typeref and string.find(typeref, rawtn .. '$') then
+                tn = tn:gsub(rawtn, typeref)
+                rawtn = typeref
                 break
             end
         end
@@ -175,13 +191,15 @@ function M:typename(cur, type)
 
     local alias = writer.alias_types[rawtn]
     if alias and not writer.type_convs[rawtn] then
-        local rawalias = string.gsub(alias, '<.+>', '')
-        if olua.typeinfo(rawalias, nil, true) then
-            -- old: const olua::ClickListener &
-            -- new: const std::function<void (Object *)> &
+        -- namespace::alias<K, V> => namespace::alias
+        if olua.typeinfo(alias:gsub('<.+>', ''), nil, true) then
+            -- rawtn: olua::ClickListener
+            -- alias: std::function<void (Object *)>
+            -- const olua::ClickListener & => const std::function<void (Object *)> &
             return string.gsub(tn, rawtn, alias)
         end
     end
+
     return tn
 end
 
@@ -250,7 +268,7 @@ function M:visit_method(cls, cur)
     local cbkind
 
     if cur:kind() ~= 'Constructor' then
-        local tn = self:typename(cur, cur:resultType())
+        local tn = self:typename(cur:resultType(), cur)
         if self:is_func_type(tn) then
             cbkind = 'RET'
             if callback.NULLABLE then
@@ -268,7 +286,7 @@ function M:visit_method(cls, cur)
     exps:push(fn .. '(')
     declexps:push(fn .. '(')
     for i, arg in ipairs(cur:arguments()) do
-        local tn = self:typename(arg, arg:type())
+        local tn = self:typename(arg:type(), arg)
         local DISPLAY_NAME = cur:displayName()
         local ARGN = 'ARG' .. i
         if i > 1 then
@@ -319,7 +337,7 @@ function M:visit_var(cls, cur)
 
     local exps = olua.newarray('')
     local attr = cls.ATTR[cur:name()] or cls.ATTR['*'] or {}
-    local tn = self:typename(cur, cur:type())
+    local tn = self:typename(cur:type(), cur)
     local cbkind
 
     local length = string.match(tn, '%[(%d+)%]$')
@@ -372,7 +390,7 @@ end
 
 function M:visit_class(cur, cppcls)
     local filter = {}
-    cppcls = cppcls or self:typename(cur, cur:type())
+    cppcls = cppcls or self:fullname(cur)
     local cls = self.module.CLASSES[cppcls]
     writer.visited_types[cppcls] = cls
     writer.ignored_types[cppcls] = false
@@ -447,8 +465,13 @@ end
 function M:visit(cur)
     local kind = cur:kind()
     local children = cur:children()
-    local cls = self:typename(cur, cur:type())
+    local cls = self:fullname(cur)
     local need_visit = self.module.CLASSES[cls] and not writer.visited_types[cls]
+    for _, c in ipairs(children) do
+        if c:kind() == 'UnexposedAttr' then
+            return
+        end
+    end
     if #children == 0 or string.find(cls, "^std::") then
         return
     elseif kind == 'Namespace' then
@@ -476,23 +499,17 @@ function M:visit(cur)
         end
     elseif kind == 'TypeAliasDecl' then
         local ut = cur:underlyingType()
-        if ut:declaration():kind() == 'EnumDecl' then
-            writer.alias_types[cls] = 'enum ' ..  self:typename(cur, ut)
-        else
-            writer.alias_types[cls] = self:typename(cur, ut)
-            if need_visit then
-                self:visit_alias_class(cls, writer.alias_types[cls])
-            end
+        local name = self:typename(ut, cur)
+        local isenum = ut:declaration():kind() == 'EnumDecl'
+        local alias = ((isenum and 'enum ' or '') .. name)
+        writer.alias_types[cls] = writer.alias_types[name] or alias
+        if need_visit then
+            self:visit_alias_class(cls, writer.alias_types[cls])
         end
     elseif kind == 'TypedefDecl' then
-        local c = children[1]
-        if c and c:kind() == 'UnexposedAttr' then
-            return
-        end
-
-        local alias = cur:type():name()
         local decl = cur:underlyingType():declaration()
         local utk = decl:kind()
+        local isenum = utk == 'EnumDecl'
         local name
         --[[
             namespace test {
@@ -502,38 +519,23 @@ function M:visit(cur)
             cur:underlyingType():name() => enum TAG_
             cur:type():canonicalType():name() => test::TAG_
         ]]
-        if utk == 'StructDecl' then
-            name = self:typename(decl, decl:type())
-            if need_visit then
-                self:visit_class(decl, cls)
-            end
-        elseif utk == 'EnumDecl' then
-            if need_visit then
-                self:visit_enum(decl, cls)
-            end
-            name = 'enum ' .. self:typename(decl, decl:type())
+        if utk == 'StructDecl' or utk == 'EnumDecl' then
+            name = self:typename(decl:type(), decl)
         else
-            name = self:typename(cur, cur:underlyingType())
+            name = self:typename(cur:underlyingType(), decl)
         end
-        local ftype = cur:underlyingType():templateArgumentAsType()[1]
-        if ftype and ftype:kind() == 'FunctionProto' then
-            local arr = olua.newarray('')
-            arr:push('std::function<')
-            arr:push(ftype:resultType():name())
-            arr:push(' (')
-            for i, v in ipairs(ftype:argTypes()) do
-                if i > 1 then
-                    arr:push(', ')
-                end
-                arr:push(v:name())
-            end
-            arr:push(')>')
-            name = tostring(arr)
-        end
-        writer.alias_types[alias] = writer.alias_types[name] or name
-        need_visit = self.module.CLASSES[alias] and not writer.visited_types[alias]
+
+        local alias = ((isenum and 'enum ' or '') .. name)
+        writer.alias_types[cls] = writer.alias_types[name] or alias
+
         if need_visit then
-            self:visit_alias_class(alias, writer.alias_types[alias])
+            if utk == 'StructDecl' then
+                self:visit_class(decl, cls)
+            elseif utk == 'EnumDecl' then
+                self:visit_enum(decl, cls)
+            else
+                self:visit_alias_class(cls, writer.alias_types[cls])
+            end
         end
     else
         for _, c in ipairs(children) do
