@@ -249,44 +249,28 @@ function olua.gen_conv_header(module, write)
 end
 
 local function gen_cb_is_func(cls, write)
-    local LUACLS = olua.luacls(cls.CPPCLS)
     write(format([[
         bool olua_is_${cls.CPP_SYM}(lua_State *L, int idx)
         {
-            if (olua_isfunction(L, idx)) {
-                return true;
-            }
-            if (olua_istable(L, idx)) {
-                const char *cls = olua_optfieldstring(L, idx, "classname", NULL);
-                return cls && strcmp(cls, "${LUACLS}") == 0;
-            }
-            return false;
+            return olua_is_callback<${cls.CPPCLS}>(L, idx);
         }
     ]]))
 end
 
 local function gen_cb_push_func(cls, write)
-    local LUACLS = olua.luacls(cls.CPPCLS)
     write(format([[
         int olua_push_${cls.CPP_SYM}(lua_State *L, const ${cls.CPPCLS} *value)
         {
-            if (!(olua_isfunction(L, -1) || olua_isnil(L, -1))) {
-                luaL_error(L, "execpt 'function' or 'nil'");
-            }
-            return 1;
+            return olua_push_callback<${cls.CPPCLS}>(L, value);
         }
     ]]))
 end
 
 local function gen_cb_check_func(cls, write)
-    local LUACLS = olua.luacls(cls.CPPCLS)
     write(format([[
         void olua_check_${cls.CPP_SYM}(lua_State *L, int idx, ${cls.CPPCLS} *value)
         {
-            if (olua_istable(L, idx)) {
-                olua_rawgetf(L, idx, "callback");
-                lua_replace(L, idx);
-            }
+            olua_check_callback<${cls.CPPCLS}>(L, idx, value);
         }
     ]]))
 end

@@ -40,12 +40,8 @@ local function check_meta_method(cls)
     if olua.is_func_type(cls) then
         cls.func('__call', format([[
             {
-                luaL_checktype(L, 2, LUA_TFUNCTION);
-                lua_createtable(L, 0, 2);
-                lua_pushvalue(L, 2);
-                olua_rawsetf(L, -2, "callback");
-                lua_pushstring(L, "${cls.LUACLS}");
-                olua_rawsetf(L, -2, "classname");
+                luaL_checktype(L, -1, LUA_TFUNCTION);
+                olua_push_callback<${cls.CPPCLS}>(L, nullptr);
                 return 1;
             }]]
         ))
