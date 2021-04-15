@@ -30,19 +30,15 @@ function M.init(path)
 end
 
 function M:parse(path)
-    self.module = dofile(path)
+    assert(not self.FILE_PATH)
+    assert(not self.TYPE_FILE_PATH)
+    local FILENAME = self.NAME:gsub('_', '-')
+    self.FILE_PATH = format('autobuild/${FILENAME}.lua')
+    self.TYPE_FILE_PATH = format('autobuild/${FILENAME}-types.lua')
 
-    assert(not self.module.FILENAME)
-    assert(not self.module.FILE_PATH)
-    assert(not self.module.TYPE_FILE_PATH)
+    writer.module_files:push(self)
 
-    self.module.FILENAME = self.module.NAME:gsub('_', '-')
-    self.module.FILE_PATH = format('autobuild/${self.module.FILENAME}.lua')
-    self.module.TYPE_FILE_PATH = format('autobuild/${self.module.FILENAME}-types.lua')
-
-    writer.module_files:push(self.module)
-
-    for cls in pairs(self.module.EXCLUDE_TYPE) do
+    for cls in pairs(self.EXCLUDE_TYPE) do
         writer.ignored_types[cls] = false
     end
 
@@ -50,18 +46,18 @@ function M:parse(path)
         return 'olua_$$_' .. string.gsub(cls.CPPCLS, '::', '_')
     end
 
-    for _, v in ipairs(self.module.TYPEDEFS) do
+    for _, v in ipairs(self.TYPEDEFS) do
         writer.type_convs[v.CPPCLS] = assert(v.CONV, 'no conv function: ' .. v.CPPCLS)
     end
 
-    for _, cls in pairs(self.module.CLASSES) do
+    for _, cls in pairs(self.CLASSES) do
         writer.type_convs[cls.CPPCLS] = cls.KIND == 'conv' and toconv(cls) or true
     end
 
     self:visit(clang_tu:cursor())
     self:check_class()
 
-    writer.write_module(self.module)
+    writer.write_module(self)
 end
 
 function M:has_define_class(cls)
@@ -70,7 +66,7 @@ function M:has_define_class(cls)
 end
 
 function M:check_class()
-    for _, cls in ipairs(self.module.CLASSES) do
+    for _, cls in ipairs(self.CLASSES) do
         if not writer.visited_types[cls.CPPCLS] then
             if #cls.FUNC > 0 or #cls.PROP > 0 then
                 cls.KIND = 'class'
@@ -85,7 +81,7 @@ function M:check_class()
             end
         end
     end
-    for _, cls in ipairs(self.module.CLASSES) do
+    for _, cls in ipairs(self.CLASSES) do
         if cls.SUPERCLS and not writer.visited_types[cls.SUPERCLS]then
             error(format('super class not found: ${cls.CPPCLS} -> ${cls.SUPERCLS}'))
         end
@@ -94,7 +90,7 @@ end
 
 function M:visit_enum(cur, cppcls)
     cppcls = cppcls or self:fullname(cur)
-    local cls = self.module.CLASSES[cppcls]
+    local cls = self.CLASSES[cppcls]
     writer.visited_types[cppcls] = cls
     writer.ignored_types[cppcls] = false
     if cur:kind() ~= 'TypeAliasDecl' then
@@ -114,7 +110,7 @@ function M:visit_enum(cur, cppcls)
 end
 
 function M:is_excluded_typeanme(name)
-    if self.module.EXCLUDE_TYPE[name] then
+    if self.EXCLUDE_TYPE[name] then
         return true
     elseif string.find(name, '<') then
         name = string.gsub(name, '<.*>', '')
@@ -226,6 +222,15 @@ function M:has_default_value(cur)
     end
 end
 
+function M:has_unexposed_attr(cur)
+    for _, c in ipairs(cur:children()) do
+        -- attribute(deprecated) ?
+        if c:kind() == 'UnexposedAttr' then
+            return true
+        end
+    end
+end
+
 function M:is_func_type(tn)
     local rawtn = tn:match('([%w:_]+) ?[&*]?$')
     local decl = writer.alias_types[rawtn] or ''
@@ -238,15 +243,9 @@ function M:visit_method(cls, cur)
             or cur:isCopyConstructor()
             or cur:isMoveConstructor()
             or cur:name():find('operator *[%-=+/*><!()]?')
-            or self:is_excluded_type(cur:resultType(), cur) then
+            or self:is_excluded_type(cur:resultType(), cur)
+            or self:has_unexposed_attr(cur) then
         return
-    end
-
-    for _, c in ipairs(cur:children()) do
-        -- attribute(deprecated) ?
-        if c:kind() == 'UnexposedAttr' then
-            return
-        end
     end
 
     local fn = cur:name()
@@ -293,11 +292,12 @@ function M:visit_method(cls, cur)
             exps:push(', ')
             declexps:push(', ')
         end
+        declexps:push(tn)
         if self:is_func_type(tn) then
             if cbkind then
                 error(format('has more than one std::function: ${cls.CPPCLS}::${DISPLAY_NAME}'))
             end
-            assert(not cbkind, cls.CPPCLS .. '::' .. cur:displayName())
+            assert(not cbkind, cls.CPPCLS .. '::' .. DISPLAY_NAME)
             cbkind = 'ARG'
             if callback.NULLABLE then
                 exps:push('@nullable ')
@@ -316,17 +316,30 @@ function M:visit_method(cls, cur)
         exps:push(tn)
         exps:push(olua.typespace(tn))
         exps:push(arg:name())
-
-        declexps:push(tn)
     end
     exps:push(')')
     declexps:push(')')
 
-    local decl = tostring(exps)
-    if self.module.EXCLUDE_PASS(cls.CPPCLS, fn, decl) then
+    local func = tostring(exps)
+    if self.EXCLUDE_PASS(cls.CPPCLS, fn, func) then
         return
     else
-        return decl, tostring(declexps), cbkind
+        local prototype =  tostring(declexps)
+        cls.EXCLUDE_FUNC:replace(cur:displayName(), true)
+        cls.EXCLUDE_FUNC:replace(prototype, true)
+        local static = cur:isStatic()
+        if cur:kind() == 'FunctionDecl' then
+            func = 'static ' .. func
+            static = true
+        end
+        cls.FUNC[prototype] = {
+            FUNC = func,
+            NAME = fn,
+            STATIC = static,
+            NUM_ARGS = #cur:arguments(),
+            CALLBACK_KIND = cbkind,
+            PROTOTYPE = prototype,
+        }
     end
 end
 
@@ -365,33 +378,36 @@ function M:visit_var(cls, cur)
     exps:push(cur:name())
 
     local decl = tostring(exps)
-    if self.module.EXCLUDE_PASS(cls.CPPCLS, cur:name(), decl) then
+    if self.EXCLUDE_PASS(cls.CPPCLS, cur:name(), decl) then
         return
     else
         local name = cls.MAKE_LUANAME(cur:name(), 'VAR')
-        cls.VAR[name] = {NAME = name, SNIPPET = decl, CALLBACK_KIND = cbkind}
+        cls.VAR[name] = {
+            NAME = name,
+            SNIPPET = decl,
+            CALLBACK_KIND = cbkind
+        }
     end
 end
 
 function M:visit_alias_class(cppcls, super)
-    local cls = self.module.CLASSES[cppcls]
+    local cls = self.CLASSES[cppcls]
     writer.visited_types[cppcls] = cls
     writer.ignored_types[cppcls] = false
     if self:is_func_type(super) then
         cls.KIND = 'classFunc'
         cls.DECLTYPE = super
-        cls.LUACLS = self.module.MAKE_LUACLS(cppcls)
+        cls.LUACLS = self.MAKE_LUACLS(cppcls)
     else
         cls.KIND = cls.KIND or 'classAlias'
         cls.SUPERCLS = super
-        cls.LUACLS = self.module.MAKE_LUACLS(super)
+        cls.LUACLS = self.MAKE_LUACLS(super)
     end
 end
 
 function M:visit_class(cur, cppcls)
-    local filter = {}
     cppcls = cppcls or self:fullname(cur)
-    local cls = self.module.CLASSES[cppcls]
+    local cls = self.CLASSES[cppcls]
     writer.visited_types[cppcls] = cls
     writer.ignored_types[cppcls] = false
     cls.KIND = cls.KIND or 'class'
@@ -430,30 +446,11 @@ function M:visit_class(cur, cppcls)
                 self:visit_var(cls, c)
             end
         elseif kind == 'Constructor' or kind == 'FunctionDecl' or kind == 'CXXMethod' then
-            local displayName = c:displayName()
-            local fn = c:name()
-            if (cls.EXCLUDE_FUNC['*'] or cls.EXCLUDE_FUNC[fn] or filter[displayName]) or
+            if (cls.EXCLUDE_FUNC['*'] or cls.EXCLUDE_FUNC[c:name()] or cls.EXCLUDE_FUNC[c:displayName()]) or
                 (kind == 'Constructor' and (cls.EXCLUDE_FUNC['new'] or cur:isAbstract())) then
                 goto continue
             end
-            local func, prototype, cbkind = self:visit_method(cls, c)
-            if func and not filter[prototype] then
-                filter[displayName] = true
-                filter[prototype] = true
-                local static = c:isStatic()
-                if kind == 'FunctionDecl' then
-                    func = 'static ' .. func
-                    static = true
-                end
-                cls.FUNC[prototype] = {
-                    FUNC = func,
-                    NAME = fn,
-                    STATIC = static,
-                    NUM_ARGS = #c:arguments(),
-                    CALLBACK_KIND = cbkind,
-                    PROTOTYPE = prototype,
-                }
-            end
+            self:visit_method(cls, c)
         else
             self:visit(c)
         end
@@ -466,13 +463,10 @@ function M:visit(cur)
     local kind = cur:kind()
     local children = cur:children()
     local cls = self:fullname(cur)
-    local need_visit = self.module.CLASSES[cls] and not writer.visited_types[cls]
-    for _, c in ipairs(children) do
-        if c:kind() == 'UnexposedAttr' then
-            return
-        end
-    end
-    if #children == 0 or string.find(cls, "^std::") then
+    local need_visit = self.CLASSES[cls] and not writer.visited_types[cls]
+    if self:has_unexposed_attr(cur) then
+        return
+    elseif #children == 0 or string.find(cls, "^std::") then
         return
     elseif kind == 'Namespace' then
         if need_visit then
@@ -486,7 +480,7 @@ function M:visit(cur)
         if need_visit then
             self:visit_class(cur)
         else
-            if not self.module.EXCLUDE_TYPE[cls] and writer.ignored_types[cls] == nil then
+            if not self.EXCLUDE_TYPE[cls] and writer.ignored_types[cls] == nil then
                 writer.ignored_types[cls] = true
             end
             for _, c in ipairs(cur:children()) do
@@ -545,8 +539,9 @@ function M:visit(cur)
 end
 
 function M.__call(_, path)
-    local inst = setmetatable({}, {__index = M})
-    inst:parse(path)
+    local module = dofile(path)
+    setmetatable(module, {__index = M})
+    module:parse(path)
 end
 
 -------------------------------------------------------------------------------

@@ -175,6 +175,21 @@ function olua.newhash()
         return ipairs(arr)
     end
 
+    function t:replace(key, value)
+        local old = map[key]
+        map[key] = value
+        if old then
+            for i, v in ipairs(arr) do
+                if v == old then
+                    arr[i] = value
+                    break
+                end
+            end
+        else
+            arr[#arr + 1] = value
+        end
+    end
+
     function t:take(key)
         local value = map[key]
         if value then
