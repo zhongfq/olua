@@ -3,22 +3,9 @@ local clang = require "clang"
 local writer = require 'autoconf-writer'
 
 local format = olua.format
-
-local ignored_type = {}
-local visited_type = {}
-local type_alias = {}
-local type_convs = {}
-local module_files = {}
 local clang_tu
 
 local M = {}
-
-local logfile = io.open('autobuild/autoconf.log', 'w')
-
-local function log(fmt, ...)
-    logfile:write(string.format(fmt, ...))
-    logfile:write('\n')
-end
 
 function M.init(path)
     local HEADER_PATH = 'autobuild/.autoconf.h'
@@ -53,10 +40,10 @@ function M:parse(path)
     self.module.FILE_PATH = format('autobuild/${self.module.FILENAME}.lua')
     self.module.TYPE_FILE_PATH = format('autobuild/${self.module.FILENAME}-types.lua')
 
-    module_files[#module_files + 1] = self.module
+    writer.module_files:push(self.module)
 
     for cls in pairs(self.module.EXCLUDE_TYPE) do
-        ignored_type[cls] = false
+        writer.ignored_types[cls] = false
     end
 
     local function toconv(cls)
@@ -64,21 +51,17 @@ function M:parse(path)
     end
 
     for _, v in ipairs(self.module.TYPEDEFS) do
-        type_convs[v.CPPCLS] = assert(v.CONV, 'no conv function: ' .. v.CPPCLS)
+        writer.type_convs[v.CPPCLS] = assert(v.CONV, 'no conv function: ' .. v.CPPCLS)
     end
 
     for _, cls in pairs(self.module.CLASSES) do
-        type_convs[cls.CPPCLS] = cls.KIND == 'conv' and toconv(cls) or true
+        writer.type_convs[cls.CPPCLS] = cls.KIND == 'conv' and toconv(cls) or true
     end
 
     self:visit(clang_tu:cursor())
     self:check_class()
 
-    writer.write_module(setmetatable({
-        visited_type = visited_type,
-        ignored_type = ignored_type,
-        log = log,
-    }, {__index = self.module}))
+    writer.write_module(self.module)
 end
 
 function M:has_define_class(cls)
@@ -88,12 +71,12 @@ end
 
 function M:check_class()
     for _, cls in ipairs(self.module.CLASSES) do
-        if not visited_type[cls.CPPCLS] then
+        if not writer.visited_types[cls.CPPCLS] then
             if #cls.FUNC > 0 or #cls.PROP > 0 then
                 cls.KIND = 'class'
                 cls.REG_LUATYPE = self:has_define_class(cls)
-                visited_type[cls.CPPCLS] = cls
-                ignored_type[cls.CPPCLS] = false
+                writer.visited_types[cls.CPPCLS] = cls
+                writer.ignored_types[cls.CPPCLS] = false
             else
                 error(format([[
                     class not found: ${cls.CPPCLS}
@@ -103,7 +86,7 @@ function M:check_class()
         end
     end
     for _, cls in ipairs(self.module.CLASSES) do
-        if cls.SUPERCLS and not visited_type[cls.SUPERCLS]then
+        if cls.SUPERCLS and not writer.visited_types[cls.SUPERCLS]then
             error(format('super class not found: ${cls.CPPCLS} -> ${cls.SUPERCLS}'))
         end
     end
@@ -112,8 +95,8 @@ end
 function M:visit_enum(cur, cppcls)
     cppcls = cppcls or self:typename(cur, cur:type())
     local cls = self.module.CLASSES[cppcls]
-    visited_type[cppcls] = cls
-    ignored_type[cppcls] = false
+    writer.visited_types[cppcls] = cls
+    writer.ignored_types[cppcls] = false
     if cur:kind() ~= 'TypeAliasDecl' then
         for _, c in ipairs(cur:children()) do
             local VALUE =  c:name()
@@ -124,7 +107,7 @@ function M:visit_enum(cur, cppcls)
             }
         end
         cls.KIND = 'enum'
-        type_alias[cls.CPPCLS] = nil
+        writer.alias_types[cls.CPPCLS] = nil
     else
         cls.KIND = 'enumAlias'
     end
@@ -190,8 +173,8 @@ function M:typename(cur, type)
         end
     end
 
-    local alias = type_alias[rawtn]
-    if alias and not type_convs[rawtn] then
+    local alias = writer.alias_types[rawtn]
+    if alias and not writer.type_convs[rawtn] then
         local rawalias = string.gsub(alias, '<.+>', '')
         if olua.typeinfo(rawalias, nil, true) then
             -- old: const olua::ClickListener &
@@ -227,7 +210,7 @@ end
 
 function M:is_func_type(tn)
     local rawtn = tn:match('([%w:_]+) ?[&*]?$')
-    local decl = type_alias[rawtn] or ''
+    local decl = writer.alias_types[rawtn] or ''
     return tn:find('std::function') or decl:find('std::function')
 end
 
@@ -374,9 +357,9 @@ end
 
 function M:visit_alias_class(cppcls, super)
     local cls = self.module.CLASSES[cppcls]
-    visited_type[cppcls] = cls
-    ignored_type[cppcls] = false
-    if M:is_func_type(super) then
+    writer.visited_types[cppcls] = cls
+    writer.ignored_types[cppcls] = false
+    if self:is_func_type(super) then
         cls.KIND = 'classFunc'
         cls.DECLTYPE = super
         cls.LUACLS = self.module.MAKE_LUACLS(cppcls)
@@ -391,8 +374,8 @@ function M:visit_class(cur, cppcls)
     local filter = {}
     cppcls = cppcls or self:typename(cur, cur:type())
     local cls = self.module.CLASSES[cppcls]
-    visited_type[cppcls] = cls
-    ignored_type[cppcls] = false
+    writer.visited_types[cppcls] = cls
+    writer.ignored_types[cppcls] = false
     cls.KIND = cls.KIND or 'class'
 
     if cur:kind() == 'Namespace' then
@@ -465,7 +448,7 @@ function M:visit(cur)
     local kind = cur:kind()
     local children = cur:children()
     local cls = self:typename(cur, cur:type())
-    local need_visit = self.module.CLASSES[cls] and not visited_type[cls]
+    local need_visit = self.module.CLASSES[cls] and not writer.visited_types[cls]
     if #children == 0 or string.find(cls, "^std::") then
         return
     elseif kind == 'Namespace' then
@@ -480,8 +463,8 @@ function M:visit(cur)
         if need_visit then
             self:visit_class(cur)
         else
-            if not self.module.EXCLUDE_TYPE[cls] and ignored_type[cls] == nil then
-                ignored_type[cls] = true
+            if not self.module.EXCLUDE_TYPE[cls] and writer.ignored_types[cls] == nil then
+                writer.ignored_types[cls] = true
             end
             for _, c in ipairs(cur:children()) do
                 self:visit(c)
@@ -494,11 +477,11 @@ function M:visit(cur)
     elseif kind == 'TypeAliasDecl' then
         local ut = cur:underlyingType()
         if ut:declaration():kind() == 'EnumDecl' then
-            type_alias[cls] = 'enum ' ..  self:typename(cur, ut)
+            writer.alias_types[cls] = 'enum ' ..  self:typename(cur, ut)
         else
-            type_alias[cls] = self:typename(cur, ut)
+            writer.alias_types[cls] = self:typename(cur, ut)
             if need_visit then
-                self:visit_alias_class(cls, type_alias[cls])
+                self:visit_alias_class(cls, writer.alias_types[cls])
             end
         end
     elseif kind == 'TypedefDecl' then
@@ -547,10 +530,10 @@ function M:visit(cur)
             arr:push(')>')
             name = tostring(arr)
         end
-        type_alias[alias] = type_alias[name] or name
-        need_visit = self.module.CLASSES[alias] and not visited_type[alias]
+        writer.alias_types[alias] = writer.alias_types[name] or name
+        need_visit = self.module.CLASSES[alias] and not writer.visited_types[alias]
         if need_visit then
-            self:visit_alias_class(alias, type_alias[alias])
+            self:visit_alias_class(alias, writer.alias_types[alias])
         end
     else
         for _, c in ipairs(children) do
@@ -562,22 +545,6 @@ end
 function M.__call(_, path)
     local inst = setmetatable({}, {__index = M})
     inst:parse(path)
-end
-
-function M.__gc()
-    xpcall(function ()
-        writer.write_alias_and_log({
-            visited_type = visited_type,
-            ignored_type = ignored_type,
-            type_alias = type_alias,
-            type_convs = type_convs,
-            module_files = module_files,
-            log = log,
-        })
-    end,
-    function (message)
-        print(debug.traceback(message))
-    end)
 end
 
 -------------------------------------------------------------------------------

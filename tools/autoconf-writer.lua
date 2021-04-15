@@ -2,6 +2,15 @@ local olua = require "olua"
 
 local format = olua.format
 
+local writer = {
+    ignored_types = {},
+    visited_types = {},
+    alias_types = {},
+    type_convs = {},
+    module_files = olua.newarray(),
+    logfile = io.open('autobuild/autoconf.log', 'w'),
+}
+
 local function write_metadata(module, append)
     append(format([[
         M.NAME = "${module.NAME}"
@@ -17,7 +26,7 @@ local function write_metadata(module, append)
             goto continue
         end
 
-        module.ignored_type[cls.CPPCLS] = false
+        writer.ignored_types[cls.CPPCLS] = false
 
         local IFDEF = (cls.IFDEF['*'] or {}).VALUE
         local EXPS = olua.newarray("\n")
@@ -54,7 +63,7 @@ local function write_typedef(module)
     writeLine('')
     for _, td in ipairs(module.TYPEDEFS) do
         local arr = {}
-        module.ignored_type[td.CPPCLS] = false
+        writer.ignored_types[td.CPPCLS] = false
         for k, v in pairs(td) do
             arr[#arr + 1] = {k, v}
         end
@@ -110,7 +119,7 @@ local function is_new_func(module, supercls, fn)
         return true
     end
 
-    local super = module.visited_type[supercls]
+    local super = writer.visited_types[supercls]
     if not super then
         error(format("not found super class '${supercls}'"))
     elseif super.FUNC[fn.PROTOTYPE] or super.EXCLUDE_FUNC[fn.NAME] then
@@ -143,7 +152,7 @@ end
 
 local function search_using_func(module, cls)
     local function search_parent(arr, name, supercls)
-        local super = module.visited_type[supercls]
+        local super = writer.visited_types[supercls]
         if super then
             for _, fn in ipairs(super.FUNC) do
                 if fn.NAME == name then
@@ -159,7 +168,7 @@ local function search_using_func(module, cls)
         local arr = {}
         local supercls = cls.SUPERCLS
         while supercls and supercls ~= where do
-            local super = module.visited_type[supercls]
+            local super = writer.visited_types[supercls]
             if super then
                 supercls = super.SUPERCLS
             end
@@ -307,7 +316,7 @@ local function write_cls_callback(module, cls, append)
                 TAG_SCOPE = '${TAG_SCOPE}',
             }
         ]]))
-        module.log(format([[
+        writer.log(format([[
             FUNC => NAME = '${v.NAME}'
                     FUNCS = {
                         ${FUNCS}
@@ -347,7 +356,7 @@ local function write_classes(module, append)
             goto continue
         end
 
-        module.log("[%s]", cls.CPPCLS)
+        writer.log("[%s]", cls.CPPCLS)
 
         append(format("cls = typecls '${cls.CPPCLS}'"))
         append(format('cls.SUPERCLS = ${cls.SUPERCLS?}'))
@@ -372,9 +381,12 @@ local function write_classes(module, append)
     end
 end
 
-local M = {}
+function writer.log(fmt, ...)
+    writer.logfile:write(string.format(fmt, ...))
+    writer.logfile:write('\n')
+end
 
-function M.write_module(module)
+function writer.write_module(module)
     local t = olua.newarray('\n')
 
     local function append(str)
@@ -403,10 +415,10 @@ function M.write_module(module)
     olua.write(module.FILE_PATH, tostring(t))
 end
 
-function M.write_alias_and_log(module)
+function writer.__gc()
     local file = io.open('autobuild/autoconf-ignore.log', 'w')
     local arr = {}
-    for cls, flag in pairs(module.ignored_type) do
+    for cls, flag in pairs(writer.ignored_types) do
         if flag then
             arr[#arr + 1] = cls
         end
@@ -417,8 +429,8 @@ function M.write_alias_and_log(module)
     end
 
     local types = olua.newarray('\n')
-    for cppcls, v in pairs(module.type_alias) do
-        if module.visited_type[cppcls] then
+    for cppcls, v in pairs(writer.alias_types) do
+        if writer.visited_types[cppcls] then
             goto continue
         end
         if v:find('^enum ') then
@@ -427,11 +439,11 @@ function M.write_alias_and_log(module)
                 DECLTYPE = 'lua_Unsigned',
                 CONV = 'olua_$$_uint',
             })
-        elseif type(module.type_convs[v]) == 'string' then
+        elseif type(writer.type_convs[v]) == 'string' then
             types:push({
                 CPPCLS = cppcls,
                 DECLTYPE = cppcls,
-                CONV = module.type_convs[v],
+                CONV = writer.type_convs[v],
             })
         end
         ::continue::
@@ -458,7 +470,7 @@ function M.write_alias_and_log(module)
     local files = olua.newarray('\n')
     local type_files = olua.newarray('\n')
     type_files:push('dofile "autobuild/alias-types.lua"')
-    for _, v in ipairs(module.module_files) do
+    for _, v in ipairs(writer.module_files) do
         files:pushf('export "${v.FILE_PATH}"')
         type_files:pushf('dofile "${v.TYPE_FILE_PATH}"')
     end
@@ -473,4 +485,4 @@ function M.write_alias_and_log(module)
     ]]))
 end
 
-return M
+return setmetatable(writer, writer)
