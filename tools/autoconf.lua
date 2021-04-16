@@ -71,8 +71,7 @@ function M:check_class()
             if #cls.FUNC > 0 or #cls.PROP > 0 then
                 cls.KIND = 'class'
                 cls.REG_LUATYPE = self:has_define_class(cls)
-                writer.visited_types[cls.CPPCLS] = cls
-                writer.ignored_types[cls.CPPCLS] = false
+                self:do_visit(cls)
             else
                 error(format([[
                     class not found: ${cls.CPPCLS}
@@ -85,27 +84,6 @@ function M:check_class()
         if cls.SUPERCLS and not writer.visited_types[cls.SUPERCLS]then
             error(format('super class not found: ${cls.CPPCLS} -> ${cls.SUPERCLS}'))
         end
-    end
-end
-
-function M:visit_enum(cur, cppcls)
-    cppcls = cppcls or self:fullname(cur)
-    local cls = self.CLASSES[cppcls]
-    writer.visited_types[cppcls] = cls
-    writer.ignored_types[cppcls] = false
-    if cur:kind() ~= 'TypeAliasDecl' then
-        for _, c in ipairs(cur:children()) do
-            local VALUE =  c:name()
-            local name = cls.MAKE_LUANAME(VALUE, 'ENUM')
-            cls.ENUM[name] = {
-                NAME = name,
-                VALUE = format('${cls.CPPCLS}::${VALUE}'),
-            }
-        end
-        cls.KIND = 'enum'
-        writer.alias_types[cls.CPPCLS] = nil
-    else
-        cls.KIND = 'enumAlias'
     end
 end
 
@@ -288,10 +266,8 @@ function M:visit_method(cls, cur)
         local tn = self:typename(arg:type(), arg)
         local DISPLAY_NAME = cur:displayName()
         local ARGN = 'ARG' .. i
-        if i > 1 then
-            exps:push(', ')
-            declexps:push(', ')
-        end
+        exps:push(i > 1 and ', ' or nil)
+        declexps:push(i > 1 and ', ' or nil)
         declexps:push(tn)
         if self:is_func_type(tn) then
             if cbkind then
@@ -390,10 +366,29 @@ function M:visit_var(cls, cur)
     end
 end
 
-function M:visit_alias_class(cppcls, super)
+function M:do_visit(cppcls)
     local cls = self.CLASSES[cppcls]
     writer.visited_types[cppcls] = cls
     writer.ignored_types[cppcls] = false
+    return cls
+end
+
+function M:visit_enum(cppcls, cur)
+    local cls = self:do_visit(cppcls)
+    for _, c in ipairs(cur:children()) do
+        local VALUE =  c:name()
+        local name = cls.MAKE_LUANAME(VALUE, 'ENUM')
+        cls.ENUM[name] = {
+            NAME = name,
+            VALUE = format('${cls.CPPCLS}::${VALUE}'),
+        }
+    end
+    cls.KIND = 'enum'
+    writer.alias_types[cls.CPPCLS] = nil
+end
+
+function M:visit_alias_class(cppcls, super)
+    local cls = self:do_visit(cppcls)
     if self:is_func_type(super) then
         cls.KIND = 'classFunc'
         cls.DECLTYPE = super
@@ -405,11 +400,8 @@ function M:visit_alias_class(cppcls, super)
     end
 end
 
-function M:visit_class(cur, cppcls)
-    cppcls = cppcls or self:fullname(cur)
-    local cls = self.CLASSES[cppcls]
-    writer.visited_types[cppcls] = cls
-    writer.ignored_types[cppcls] = false
+function M:visit_class(cppcls, cur)
+    local cls = self:do_visit(cppcls)
     cls.KIND = cls.KIND or 'class'
 
     if cur:kind() == 'Namespace' then
@@ -470,7 +462,7 @@ function M:visit(cur)
         return
     elseif kind == 'Namespace' then
         if need_visit then
-            self:visit_class(cur)
+            self:visit_class(cls, cur)
         else
             for _, c in ipairs(children) do
                 self:visit(c)
@@ -478,7 +470,7 @@ function M:visit(cur)
         end
     elseif kind == 'ClassDecl' or kind == 'StructDecl' then
         if need_visit then
-            self:visit_class(cur)
+            self:visit_class(cls, cur)
         else
             if not self.EXCLUDE_TYPE[cls] and writer.ignored_types[cls] == nil then
                 writer.ignored_types[cls] = true
@@ -489,7 +481,7 @@ function M:visit(cur)
         end
     elseif kind == 'EnumDecl' then
         if need_visit then
-            self:visit_enum(cur)
+            self:visit_enum(cls, cur)
         end
     elseif kind == 'TypeAliasDecl' then
         local ut = cur:underlyingType()
@@ -524,9 +516,9 @@ function M:visit(cur)
 
         if need_visit then
             if utk == 'StructDecl' then
-                self:visit_class(decl, cls)
+                self:visit_class(cls, decl)
             elseif utk == 'EnumDecl' then
-                self:visit_enum(decl, cls)
+                self:visit_enum(cls, decl)
             else
                 self:visit_alias_class(cls, writer.alias_types[cls])
             end

@@ -204,7 +204,7 @@ local function gen_class_open(cls, write)
 end
 
 local function gen_class_chunk(cls, write)
-    if cls.CHUNK then
+    if cls.CHUNK and #cls.CHUNK > 0 then
         write(format(cls.CHUNK))
         write('')
     end
