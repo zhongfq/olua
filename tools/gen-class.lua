@@ -243,7 +243,6 @@ function olua.gen_header(module)
 end
 
 local function gen_include(module, write)
-    local CHUNK = module.CHUNK
     write(format([[
         //
         // AUTO BUILD, DON'T MODIFY!
@@ -252,8 +251,8 @@ local function gen_include(module, write)
     ]]))
     write('')
 
-    if CHUNK then
-        write(format(CHUNK))
+    if module.CHUNK and #module.CHUNK > 0 then
+        write(format(module.CHUNK))
         write('')
     end
 

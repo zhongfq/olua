@@ -141,11 +141,7 @@ local function todecltype(cls, typename, isvariable)
     if ti.SUBTYPES then
         local arr = {}
         for i, v in ipairs(ti.SUBTYPES) do
-            if v.CONST then
-                arr[i] = 'const ' ..  v.CPPCLS
-            else
-                arr[i] = v.CPPCLS
-            end
+            arr[i] = (v.CONST and 'const ' or '') ..  v.CPPCLS
         end
         tn = string.format('%s<%s>', tn, table.concat(arr, ', '))
         if isvariable then
@@ -293,24 +289,13 @@ function parse_args(cls, declstr)
     olua.assert(declstr, 'malformed args string')
 
     while #declstr > 0 do
-        local tn, attr, varname, default, _, to
+        local tn, attr, varname, from, to
         tn, attr, declstr = parse_type(declstr)
         if tn == 'void' then
             return args, count
         end
 
-        -- match: x = Point(0, 0), bool b, ...)
-        _, to, varname, default = string.find(declstr, '^([^ ]+) *= *([%w_:]+%b())')
-
-        -- match: x = 3, bool b, ...)
-        if not varname then
-            _, to, varname, default = string.find(declstr, '^([^ ]+) *= *([^ ,]*)')
-        end
-
-        -- match: x, bool b, ...)
-        if not varname then
-            _, to, varname = string.find(declstr, '^([^ ,]+)')
-        end
+        from, to, varname = string.find(declstr, '^([^ ,]+)')
 
         if varname then
             declstr = string.sub(declstr, to + 1)
@@ -318,28 +303,12 @@ function parse_args(cls, declstr)
 
         declstr = string.gsub(declstr, '^[^,]*,? *', '') -- skip ','
 
-        if default and not string.find(default, '^"') and string.find(default, '[():]') then
-            -- match: Point(0, 2) => Point
-            local dtn = string.match(default, '^([^(]+)%(')
-            if not dtn then
-                -- match: Point::Zero => Point
-                dtn = string.match(default, '^(.*)::[%w_]+')
-            end
-            olua.assert(dtn, 'unknown default value format: %s', default)
-            local dti = olua.typeinfo(dtn, cls, true) or olua.typeinfo(dtn .. ' *', cls)
-            default = string.gsub(default, dtn, dti.CPPCLS)
-        end
-
         if attr.OUT then
             if string.find(tn, '%*$') then
                 attr.OUT = 'pointee'
                 tn = string.gsub(tn, '%*$', '')
                 tn = pretty_typename(tn)
             end
-        end
-
-        if default then
-            attr.OPTIONAL = true
         end
 
         -- is callback
@@ -393,6 +362,10 @@ local function gen_func_prototype(cls, fi)
     cls.PROTOTYPES[fi.PROTOTYPE] = true
 end
 
+local function copy(t)
+    return setmetatable({}, {__index = t})
+end
+
 local function gen_func_pack(cls, fi, funcs)
     local has_pack = false
     for i, arg in ipairs(fi.ARGS) do
@@ -404,14 +377,14 @@ local function gen_func_pack(cls, fi, funcs)
     -- has @pack? gen one more func
     if has_pack then
         local packarg
-        local newfi = olua.copy(fi)
-        newfi.RET = olua.copy(fi.RET)
-        newfi.RET.ATTR = olua.copy(fi.RET.ATTR)
+        local newfi = copy(fi)
+        newfi.RET = copy(fi.RET)
+        newfi.RET.ATTR = copy(fi.RET.ATTR)
         newfi.ARGS = {}
         newfi.FUNC_DESC = string.gsub(fi.FUNC_DESC, '@pack *', '')
         for i in ipairs(fi.ARGS) do
-            newfi.ARGS[i] = olua.copy(fi.ARGS[i])
-            newfi.ARGS[i].ATTR = olua.copy(fi.ARGS[i].ATTR)
+            newfi.ARGS[i] = copy(fi.ARGS[i])
+            newfi.ARGS[i].ATTR = copy(fi.ARGS[i].ATTR)
             if fi.ARGS[i].ATTR.PACK then
                 assert(not packarg, 'too many pack args')
                 packarg = fi.ARGS[i]
@@ -441,11 +414,11 @@ local function gen_func_overload(cls, fi, funcs)
         end
     end
     for i = min_args, #fi.ARGS - 1 do
-        local newfi = olua.copy(fi)
+        local newfi = copy(fi)
         newfi.ARGS = {}
         newfi.INSERT = {}
         for k = 1, i do
-            newfi.ARGS[k] = olua.copy(fi.ARGS[k])
+            newfi.ARGS[k] = copy(fi.ARGS[k])
         end
         gen_func_prototype(cls, newfi)
         newfi.MAX_ARGS = i

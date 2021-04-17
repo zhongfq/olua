@@ -51,20 +51,18 @@ function pairs(t)
     return (mt and mt.__pairs or _pairs)(t)
 end
 
-function olua.write(path, content, verbose)
+function olua.write(path, content)
     local f = io.open(path, 'r')
     if f then
         local flag = f:read("*a") == content
         f:close()
-        if flag and verbose ~= false then
+        if flag then
             print("up-to-date: " .. path)
             return
         end
     end
 
-    if verbose ~= false then
-        print("write: " .. path)
-    end
+    print("write: " .. path)
 
     f = io.open(path, "w")
     assert(f, path)
@@ -91,10 +89,6 @@ function olua.sort(arr, field)
         table.sort(arr)
     end
     return arr
-end
-
-function olua.copy(t)
-    return setmetatable({}, {__index = t})
 end
 
 function olua.newarray(sep, prefix, posfix)

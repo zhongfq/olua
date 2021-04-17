@@ -495,7 +495,6 @@ function M:visit(cur)
     elseif kind == 'TypedefDecl' then
         local decl = cur:underlyingType():declaration()
         local utk = decl:kind()
-        local isenum = utk == 'EnumDecl'
         local name
         --[[
             namespace test {
@@ -511,7 +510,7 @@ function M:visit(cur)
             name = self:typename(cur:underlyingType(), decl)
         end
 
-        local alias = ((isenum and 'enum ' or '') .. name)
+        local alias = ((utk == 'EnumDecl' and 'enum ' or '') .. name)
         writer.alias_types[cls] = writer.alias_types[name] or alias
 
         if need_visit then
