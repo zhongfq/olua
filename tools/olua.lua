@@ -22,7 +22,8 @@ package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
 
 -- unzip lib and header
 local vf = io.open(olua.HOMEDIR .. '/version')
-if not vf or vf:read('*a') ~= '2' then
+local LIB_VERSION = '3'
+if not vf or vf:read('*a') ~= LIB_VERSION then
     local dir = scrpath:gsub('olua.lua', '')
     local libzip = dir .. 'lib.zip'
     local includezip = dir .. 'include.zip'
@@ -36,7 +37,7 @@ if not vf or vf:read('*a') ~= '2' then
         os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.HOMEDIR)
         os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.HOMEDIR)
     end
-    io.open(olua.HOMEDIR .. '/version', 'w+'):write('2'):close()
+    io.open(olua.HOMEDIR .. '/version', 'w+'):write(LIB_VERSION):close()
 end
 
 local _ipairs = ipairs

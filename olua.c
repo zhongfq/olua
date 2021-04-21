@@ -623,7 +623,7 @@ OLUA_API int olua_getvariable(lua_State *L, int idx)
     olua_assert(olua_isuserdata(L, idx), "expect userdata");
     if (lua_getuservalue(L, idx) == LUA_TTABLE) {
         lua_insert(L, -2);                      // L: uv k
-        type = olua_rawget(L, -2);              // L: uv v
+        type = olua_gettable(L, -2);            // L: uv v
         lua_replace(L, -2);                     // L: v
     } else {
         lua_pop(L, 2);                          // L:       pop uv and key
@@ -637,7 +637,7 @@ OLUA_API void olua_setvariable(lua_State *L, int idx)
     olua_assert(olua_isuserdata(L, idx), "expect userdata");
     aux_getusertable(L, idx);                   // L: k v uv
     lua_insert(L, -3);                          // L: uv k v
-    lua_rawset(L, -3);                          // L: uv    idx.uservalue[k] = v
+    olua_settable(L, -3);                       // L: uv    idx.uservalue[k] = v
     lua_pop(L, 1);                              // L:
 }
 

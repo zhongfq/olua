@@ -97,50 +97,50 @@ function M:is_excluded_typeanme(name)
 end
 
 function M:is_excluded_type(type, cur)
-    if type:kind() == 'IncompleteArray' then
+    if type.kind == 'IncompleteArray' then
         return true
     end
 
-    local tn = cur and self:typename(type, cur) or type:name()
+    local tn = cur and self:typename(type, cur) or type.name
     -- remove const and &
     -- const T * => T *
     -- const T & => T
     local rawtn = tn:gsub('^const *', ''):gsub(' *&$', '')
     if self:is_excluded_typeanme(rawtn) then
         return true
-    elseif tn ~= type:canonicalType():name() then
-        return self:is_excluded_type(type:canonicalType())
+    elseif tn ~= type.canonicalType.name then
+        return self:is_excluded_type(type.canonicalType)
     end
 end
 
 function M:fullname(cur)
-    if cur:kind() == 'Namespace' then
+    if cur.kind == 'Namespace' then
         local ns = olua.newarray('::')
-        while cur and cur:kind() ~= 'TranslationUnit' do
-            ns:insert(cur:name())
-            cur = cur:parent()
+        while cur and cur.kind ~= 'TranslationUnit' do
+            ns:insert(cur.name)
+            cur = cur.parent
         end
         return tostring(ns)
     else
-        return (cur:type() or cur):name()
+        return (cur.type or cur).name
     end
 end
 
 function M:typename(type, cur)
-    local tn = type:name()
+    local tn = type.name
     -- remove const, & and *: const T * => T
     local rawtn = tn:match('([%w:_]+) ?[&*]?$')
     if not rawtn then
-        local ftype = type:templateArgumentAsType()[1]
-        if ftype and ftype:kind() == 'FunctionProto' then
+        local ftype = type.templateArgTypes[1]
+        if ftype and ftype.kind == 'FunctionProto' then
             local exps = olua.newarray('')
             exps:push(tn:find('^const') and 'const ' or nil)
             exps:push('std::function<')
-            exps:push(ftype:resultType():name())
+            exps:push(ftype.resultType.name)
             exps:push(' (')
-            for i, v in ipairs(ftype:argTypes()) do
+            for i, v in ipairs(ftype.argTypes) do
                 exps:push(i > 1 and ', ' or nil)
-                exps:push(v:name())
+                exps:push(v.name)
             end
             exps:push(')>')
             exps:push(tn:find('&$') and ' &' or nil)
@@ -152,9 +152,9 @@ function M:typename(type, cur)
 
     -- typedef std::function<void (Object *)> ClickListener
     -- const ClickListener & => const olua::ClickListener &
-    for _, cu in ipairs(cur:children()) do
-        if cu:kind() == 'TypeRef' then
-            local typeref = cu:name():match('([^ ]+)$')
+    for _, cu in ipairs(cur.children) do
+        if cu.kind == 'TypeRef' then
+            local typeref = cu.name:match('([^ ]+)$')
             if rawtn ~= typeref and string.find(typeref, rawtn .. '$') then
                 tn = tn:gsub(rawtn, typeref)
                 rawtn = typeref
@@ -191,8 +191,8 @@ local DEFAULT_ARG_TYPES = {
 }
 
 function M:has_default_value(cur)
-    for _, c in ipairs(cur:children()) do
-        if DEFAULT_ARG_TYPES[c:kind()] then
+    for _, c in ipairs(cur.children) do
+        if DEFAULT_ARG_TYPES[c.kind] then
             return true
         elseif self:has_default_value(c) then
             return true
@@ -201,9 +201,9 @@ function M:has_default_value(cur)
 end
 
 function M:has_unexposed_attr(cur)
-    for _, c in ipairs(cur:children()) do
+    for _, c in ipairs(cur.children) do
         -- attribute(deprecated) ?
-        if c:kind() == 'UnexposedAttr' then
+        if c.kind == 'UnexposedAttr' then
             return true
         end
     end
@@ -216,36 +216,36 @@ function M:is_func_type(tn)
 end
 
 function M:visit_method(cls, cur)
-    if cur:isVariadic()
-            or cur:name():find('^_')
-            or cur:isCopyConstructor()
-            or cur:isMoveConstructor()
-            or cur:name():find('operator *[%-=+/*><!()]?')
-            or self:is_excluded_type(cur:resultType(), cur)
+    if cur.isVariadic
+            or cur.name:find('^_')
+            or cur.isCopyConstructor
+            or cur.isMoveConstructor
+            or cur.name:find('operator *[%-=+/*><!()]?')
+            or self:is_excluded_type(cur.resultType, cur)
             or self:has_unexposed_attr(cur) then
         return
     end
 
-    local fn = cur:name()
+    local fn = cur.name
     local attr = cls.ATTR[fn] or cls.ATTR['*'] or {}
     local callback = cls.CALLBACK[fn] or {}
     local exps = olua.newarray('')
     local declexps = olua.newarray('')
 
-    for i, arg in ipairs(cur:arguments()) do
+    for i, arg in ipairs(cur.arguments) do
         local attrn = (attr['ARG' .. i]) or ''
-        if not attrn:find('@out') and self:is_excluded_type(arg:type(), arg) then
+        if not attrn:find('@out') and self:is_excluded_type(arg.type, arg) then
             return
         end
     end
 
     exps:push(attr.RET and (attr.RET .. ' ') or nil)
-    exps:push(cur:isStatic() and 'static ' or nil)
+    exps:push(cur.isStatic and 'static ' or nil)
 
     local cbkind
 
-    if cur:kind() ~= 'Constructor' then
-        local tn = self:typename(cur:resultType(), cur)
+    if cur.kind ~= 'Constructor' then
+        local tn = self:typename(cur.resultType, cur)
         if self:is_func_type(tn) then
             cbkind = 'RET'
             if callback.NULLABLE then
@@ -262,9 +262,9 @@ function M:visit_method(cls, cur)
     local optional = false
     exps:push(fn .. '(')
     declexps:push(fn .. '(')
-    for i, arg in ipairs(cur:arguments()) do
-        local tn = self:typename(arg:type(), arg)
-        local DISPLAY_NAME = cur:displayName()
+    for i, arg in ipairs(cur.arguments) do
+        local tn = self:typename(arg.type, arg)
+        local DISPLAY_NAME = cur.displayName
         local ARGN = 'ARG' .. i
         exps:push(i > 1 and ', ' or nil)
         declexps:push(i > 1 and ', ' or nil)
@@ -291,7 +291,7 @@ function M:visit_method(cls, cur)
         exps:push(attr[ARGN] and (attr[ARGN] .. ' ') or nil)
         exps:push(tn)
         exps:push(olua.typespace(tn))
-        exps:push(arg:name())
+        exps:push(arg.name)
     end
     exps:push(')')
     declexps:push(')')
@@ -301,10 +301,10 @@ function M:visit_method(cls, cur)
         return
     else
         local prototype =  tostring(declexps)
-        cls.EXCLUDE_FUNC:replace(cur:displayName(), true)
+        cls.EXCLUDE_FUNC:replace(cur.displayName, true)
         cls.EXCLUDE_FUNC:replace(prototype, true)
-        local static = cur:isStatic()
-        if cur:kind() == 'FunctionDecl' then
+        local static = cur.isStatic
+        if cur.kind == 'FunctionDecl' then
             func = 'static ' .. func
             static = true
         end
@@ -312,7 +312,7 @@ function M:visit_method(cls, cur)
             FUNC = func,
             NAME = fn,
             STATIC = static,
-            NUM_ARGS = #cur:arguments(),
+            NUM_ARGS = #cur.arguments,
             CALLBACK_KIND = cbkind,
             PROTOTYPE = prototype,
         }
@@ -320,13 +320,13 @@ function M:visit_method(cls, cur)
 end
 
 function M:visit_var(cls, cur)
-    if cur:type():isConst() or self:is_excluded_type(cur:type(), cur) then
+    if cur.type.isConst or self:is_excluded_type(cur.type, cur) then
         return
     end
 
     local exps = olua.newarray('')
-    local attr = cls.ATTR[cur:name()] or cls.ATTR['*'] or {}
-    local tn = self:typename(cur:type(), cur)
+    local attr = cls.ATTR[cur.name] or cls.ATTR['*'] or {}
+    local tn = self:typename(cur.type, cur)
     local cbkind
 
     local length = string.match(tn, '%[(%d+)%]$')
@@ -341,23 +341,23 @@ function M:visit_var(cls, cur)
     if self:is_func_type(tn) then
         cbkind = 'VAR'
         exps:push('@nullable ')
-        local callback = cls.CALLBACK:take(cur:name()) or {}
+        local callback = cls.CALLBACK:take(cur.name) or {}
         if callback.LOCAL ~= false then
             exps:push('@local ')
         end
     end
 
     exps:push(attr.RET and (attr.RET .. ' ') or nil)
-    exps:push(cur:kind() == 'VarDecl' and 'static ' or nil)
+    exps:push(cur.kind == 'VarDecl' and 'static ' or nil)
     exps:push(tn)
     exps:push(olua.typespace(tn))
-    exps:push(cur:name())
+    exps:push(cur.name)
 
     local decl = tostring(exps)
-    if self.EXCLUDE_PASS(cls.CPPCLS, cur:name(), decl) then
+    if self.EXCLUDE_PASS(cls.CPPCLS, cur.name, decl) then
         return
     else
-        local name = cls.MAKE_LUANAME(cur:name(), 'VAR')
+        local name = cls.MAKE_LUANAME(cur.name, 'VAR')
         cls.VAR[name] = {
             NAME = name,
             SNIPPET = decl,
@@ -375,8 +375,8 @@ end
 
 function M:visit_enum(cppcls, cur)
     local cls = self:do_visit(cppcls)
-    for _, c in ipairs(cur:children()) do
-        local VALUE =  c:name()
+    for _, c in ipairs(cur.children) do
+        local VALUE =  c.name
         local name = cls.MAKE_LUANAME(VALUE, 'ENUM')
         cls.ENUM[name] = {
             NAME = name,
@@ -404,42 +404,42 @@ function M:visit_class(cppcls, cur)
     local cls = self:do_visit(cppcls)
     cls.KIND = cls.KIND or 'class'
 
-    if cur:kind() == 'Namespace' then
+    if cur.kind == 'Namespace' then
         cls.REG_LUATYPE = false
     end
 
-    for _, c in ipairs(cur:children()) do
-        local kind = c:kind()
-        local access = c:access()
+    for _, c in ipairs(cur.children) do
+        local kind = c.kind
+        local access = c.access
         if access == 'private' or access == 'protected' then
             goto continue
         elseif kind == 'CXXBaseSpecifier' then
             if not cls.SUPERCLS then
-                cls.SUPERCLS = c:type():name()
+                cls.SUPERCLS = c.type.name
             end
         elseif kind == 'UsingDeclaration' then
-            for _, cc in ipairs(c:children()) do
-                if cc:kind() == 'TypeRef' then
-                    cls.USING[c:name()] = cc:name():match('([^ ]+)$')
+            for _, cc in ipairs(c.children) do
+                if cc.kind == 'TypeRef' then
+                    cls.USING[c.name] = cc.name:match('([^ ]+)$')
                     break
                 end
             end
         elseif kind == 'FieldDecl' or kind == 'VarDecl' then
-            local vn = c:name()
-            local ct = c:type()
+            local vn = c.name
+            local ct = c.type
             if cls.EXCLUDE_FUNC['*'] or cls.EXCLUDE_FUNC[vn] or vn:find('^_') then
                 goto continue
             end
-            if ct:isConst() and kind == 'VarDecl' then
+            if ct.isConst and kind == 'VarDecl' then
                 if not self:is_excluded_type(ct, c) then
-                    cls.CONST[vn] = {NAME = vn, TYPENAME = ct:name()}
+                    cls.CONST[vn] = {NAME = vn, TYPENAME = ct.name}
                 end
             else
                 self:visit_var(cls, c)
             end
         elseif kind == 'Constructor' or kind == 'FunctionDecl' or kind == 'CXXMethod' then
-            if (cls.EXCLUDE_FUNC['*'] or cls.EXCLUDE_FUNC[c:name()] or cls.EXCLUDE_FUNC[c:displayName()]) or
-                (kind == 'Constructor' and (cls.EXCLUDE_FUNC['new'] or cur:isAbstract())) then
+            if (cls.EXCLUDE_FUNC['*'] or cls.EXCLUDE_FUNC[c.name] or cls.EXCLUDE_FUNC[c.displayName]) or
+                (kind == 'Constructor' and (cls.EXCLUDE_FUNC['new'] or cur.isAbstract)) then
                 goto continue
             end
             self:visit_method(cls, c)
@@ -452,8 +452,8 @@ function M:visit_class(cppcls, cur)
 end
 
 function M:visit(cur)
-    local kind = cur:kind()
-    local children = cur:children()
+    local kind = cur.kind
+    local children = cur.children
     local cls = self:fullname(cur)
     local need_visit = self.CLASSES[cls] and not writer.visited_types[cls]
     if self:has_unexposed_attr(cur) then
@@ -475,7 +475,7 @@ function M:visit(cur)
             if not self.EXCLUDE_TYPE[cls] and writer.ignored_types[cls] == nil then
                 writer.ignored_types[cls] = true
             end
-            for _, c in ipairs(cur:children()) do
+            for _, c in ipairs(cur.children) do
                 self:visit(c)
             end
         end
@@ -484,30 +484,30 @@ function M:visit(cur)
             self:visit_enum(cls, cur)
         end
     elseif kind == 'TypeAliasDecl' then
-        local ut = cur:underlyingType()
+        local ut = cur.underlyingType
         local name = self:typename(ut, cur)
-        local isenum = ut:declaration():kind() == 'EnumDecl'
+        local isenum = ut.declaration.kind == 'EnumDecl'
         local alias = ((isenum and 'enum ' or '') .. name)
         writer.alias_types[cls] = writer.alias_types[name] or alias
         if need_visit then
             self:visit_alias_class(cls, writer.alias_types[cls])
         end
     elseif kind == 'TypedefDecl' then
-        local decl = cur:underlyingType():declaration()
-        local utk = decl:kind()
+        local decl = cur.underlyingType.declaration
+        local utk = decl.kind
         local name
         --[[
             namespace test {
                 typedef enum TAG_ {
                 } TAG
             }
-            cur:underlyingType():name() => enum TAG_
-            cur:type():canonicalType():name() => test::TAG_
+            cur.underlyingType.name => enum TAG_
+            cur.type.canonicalType.name => test::TAG_
         ]]
         if utk == 'StructDecl' or utk == 'EnumDecl' then
-            name = self:typename(decl:type(), decl)
+            name = self:typename(decl.type, decl)
         else
-            name = self:typename(cur:underlyingType(), decl)
+            name = self:typename(cur.underlyingType, decl)
         end
 
         local alias = ((utk == 'EnumDecl' and 'enum ' or '') .. name)
