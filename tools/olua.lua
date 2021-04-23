@@ -143,33 +143,6 @@ function olua.newhash()
     local arr = {}
     local map = {}
 
-    function t:__len()
-        return #arr
-    end
-
-    function t:__index(key)
-        if type(key) == 'number' then
-            return arr[key]
-        else
-            return map[key]
-        end
-    end
-
-    function t:__newindex(key, value)
-        assert(type(key) == 'string', 'only support string key')
-        assert(not map[key], 'key conflict: ' .. key)
-        map[key] = value
-        arr[#arr + 1] = value
-    end
-
-    function t:__pairs()
-        return pairs(map)
-    end
-
-    function t:__ipairs()
-        return ipairs(arr)
-    end
-
     function t:replace(key, value)
         local old = map[key]
         map[key] = value
@@ -199,7 +172,35 @@ function olua.newhash()
         return value
     end
 
-    return setmetatable(t, t)
+    local mt = {}
+    function mt:__len()
+        return #arr
+    end
+
+    function mt:__index(key)
+        if type(key) == 'number' then
+            return arr[key]
+        else
+            return map[key]
+        end
+    end
+
+    function mt:__newindex(key, value)
+        assert(type(key) == 'string', 'only support string key')
+        assert(not map[key], 'key conflict: ' .. key)
+        map[key] = value
+        arr[#arr + 1] = value
+    end
+
+    function mt:__pairs()
+        return pairs(map)
+    end
+
+    function mt:__ipairs()
+        return ipairs(arr)
+    end
+
+    return setmetatable(t, mt)
 end
 
 local function lookup(level, key)
