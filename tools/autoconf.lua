@@ -297,26 +297,22 @@ function M:visit_method(cls, cur)
     declexps:push(')')
 
     local func = tostring(exps)
-    if self.EXCLUDE_PASS(cls.CPPCLS, fn, func) then
-        return
-    else
-        local prototype =  tostring(declexps)
-        cls.EXCLUDE_FUNC:replace(cur.displayName, true)
-        cls.EXCLUDE_FUNC:replace(prototype, true)
-        local static = cur.isStatic
-        if cur.kind == 'FunctionDecl' then
-            func = 'static ' .. func
-            static = true
-        end
-        cls.FUNC[prototype] = {
-            FUNC = func,
-            NAME = fn,
-            STATIC = static,
-            NUM_ARGS = #cur.arguments,
-            CALLBACK_KIND = cbkind,
-            PROTOTYPE = prototype,
-        }
+    local prototype =  tostring(declexps)
+    cls.EXCLUDE_FUNC:replace(cur.displayName, true)
+    cls.EXCLUDE_FUNC:replace(prototype, true)
+    local static = cur.isStatic
+    if cur.kind == 'FunctionDecl' then
+        func = 'static ' .. func
+        static = true
     end
+    cls.FUNC[prototype] = {
+        FUNC = func,
+        NAME = fn,
+        STATIC = static,
+        NUM_ARGS = #cur.arguments,
+        CALLBACK_KIND = cbkind,
+        PROTOTYPE = prototype,
+    }
 end
 
 function M:visit_var(cls, cur)
@@ -354,16 +350,12 @@ function M:visit_var(cls, cur)
     exps:push(cur.name)
 
     local decl = tostring(exps)
-    if self.EXCLUDE_PASS(cls.CPPCLS, cur.name, decl) then
-        return
-    else
-        local name = cls.MAKE_LUANAME(cur.name, 'VAR')
-        cls.VAR[name] = {
-            NAME = name,
-            SNIPPET = decl,
-            CALLBACK_KIND = cbkind
-        }
-    end
+    local name = cls.MAKE_LUANAME(cur.name, 'VAR')
+    cls.VAR[name] = {
+        NAME = name,
+        SNIPPET = decl,
+        CALLBACK_KIND = cbkind
+    }
 end
 
 function M:do_visit(cppcls)
@@ -630,9 +622,6 @@ function M.typemod(name)
     modinst.EXCLUDE_TYPE = setmetatable({}, {__call = function (_, tn)
         modinst.EXCLUDE_TYPE[tn] = true
     end})
-
-    function modinst.EXCLUDE_PASS()
-    end
 
     function modinst.include(path)
         loadfile(path)(modinst)
