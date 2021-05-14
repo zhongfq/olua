@@ -228,7 +228,7 @@ function olua.gen_header(module)
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
-        ${module.INCLUDES}
+        ${module.HEADERS}
 
         int luaopen_${module.NAME}(lua_State *L);
     ]]))
