@@ -1056,7 +1056,7 @@ local function add_typeconf_command(cls)
     end
 
     function CMD.enum(name, value)
-        cls.enum[name] = {name = name, value = value}
+        cls.enums[name] = {name = name, value = value}
         return CMD
     end
 
