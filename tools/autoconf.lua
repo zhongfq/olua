@@ -1140,6 +1140,7 @@ end
 
 function M.__call(_, path)
     local index = 1
+    local ifdef = nil
     local m = {
         class_types = olua.newhash(),
         exclude_types = {},
@@ -1170,6 +1171,20 @@ function M.__call(_, path)
         assert(loadfile(path, nil, CMD))()
     end
 
+    function CMD.ifdef(cond)
+        if string.find(cond, '^defined%(') then
+            ifdef = '#if ' .. cond
+        elseif string.find(cond, '^#if') then
+            ifdef = cond
+        else
+            ifdef = '#ifdef ' .. cond
+        end
+    end
+
+    function CMD.endif(cond)
+        ifdef = nil
+    end
+
     function CMD.typeconf(classname)
         local cls = {
             cppcls = assert(classname, 'not specify classname'),
@@ -1193,6 +1208,9 @@ function M.__call(_, path)
         index = index + 1
         assert(not m.class_types[classname], 'class conflict: ' .. classname)
         m.class_types[classname] = cls
+        if ifdef then
+            cls.ifdefs['*'] = {name = '*', value = ifdef}
+        end
         return add_typeconf_command(cls)
     end
 
