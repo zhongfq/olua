@@ -358,13 +358,7 @@ function olua.format(expr, indent)
     return expr
 end
 
-function olua.export(path)
-    local module = dofile(path)
-    olua.gen_header(module)
-    olua.gen_source(module)
-end
-
-require "typecls"
+require "parser"
 require "basictype"
 require "gen-class"
 require "gen-func"

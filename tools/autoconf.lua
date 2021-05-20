@@ -536,14 +536,14 @@ setmetatable(writer, writer)
 
 function writer.write_metadata(module, append)
     append(format([[
-        M.NAME = "${module.name}"
-        M.PATH = "${module.path}"
+        NAME = "${module.name}"
+        PATH = "${module.path}"
     ]]))
 
-    append(format('M.HEADERS = ${module.headers?}'))
-    append(format('M.CHUNK = ${module.chunk?}'))
+    append(format('HEADERS = ${module.headers?}'))
+    append(format('CHUNK = ${module.chunk?}'))
+    append('')
 
-    append("\nM.CONVS = {")
     for _, cls in ipairs(module.class_types) do
         if cls.kind ~= "conv" then
             goto continue
@@ -552,24 +552,17 @@ function writer.write_metadata(module, append)
         ignored_types[cls.cppcls] = false
 
         local ifdef = (cls.ifdefs['*'] or {}).value
-        local exps = olua.newarray("\n")
-        for _, v in ipairs(cls.vars) do
-            exps:pushf('${v.snippet};')
+        append(format([[typeconv '${cls.cppcls}']]))
+        for _, v in ipairs(cls.ifdefs) do
+            append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
         end
-
-        append(format([=[
-            typeconv {
-                CPPCLS = '${cls.cppcls}',
-                IFDEF = ${ifdef?},
-                DEF = [[
-                    ${exps}
-                ]],
-            },
-        ]=], 4))
+        for _, v in ipairs(cls.vars) do
+            append(format('.var(${v.name?}, ${v.snippet?})', 4))
+        end
+        append('')
 
         ::continue::
     end
-    append("}\n")
 end
 
 function writer.write_typedef(module)
@@ -748,9 +741,9 @@ function writer.write_cls_func(module, cls, append)
         end
         if not has_callback then
             if #funcs > 0 then
-                append(format("cls.func(nil, ${funcs})"))
+                append(format(".func(nil, ${funcs})", 4))
             else
-                append(format("cls.func('${fn.name}', ${fn.snippet?})"))
+                append(format(".func('${fn.name}', ${fn.snippet?})", 4))
             end
         else
             local tag = fn.name:gsub('^set', ''):gsub('^get', '')
@@ -776,31 +769,31 @@ end
 
 function writer.write_cls_ifdef(module, cls, append)
     for _, v in ipairs(cls.ifdefs) do
-        append(format([[cls.ifdef('${v.name}', '${v.value}')]]))
+        append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
     end
 end
 
 function writer.write_cls_const(module, cls, append)
     for _, v in ipairs(cls.consts) do
-        append(format([[cls.const('${v.name}', '${cls.cppcls}::${v.name}', '${v.typename}')]]))
+        append(format([[.const('${v.name}', '${cls.cppcls}::${v.name}', '${v.typename}')]], 4))
     end
 end
 
 function writer.write_cls_enum(module, cls, append)
     for _, e in ipairs(cls.enums) do
-        append(format("cls.enum('${e.name}', '${e.value}')"))
+        append(format(".enum('${e.name}', '${e.value}')", 4))
     end
 end
 
 function writer.write_cls_var(module, cls, append)
     for _, fn in ipairs(cls.vars) do
-        append(format("cls.var('${fn.name}', ${fn.snippet?})"))
+        append(format(".var('${fn.name}', ${fn.snippet?})", 4))
     end
 end
 
 function writer.write_cls_prop(module, cls, append)
     for _, p in ipairs(cls.props) do
-        append(format([[cls.prop('${p.name}', ${p.get?}, ${p.set?})]]))
+        append(format([[.prop('${p.name}', ${p.get?}, ${p.set?})]], 4))
     end
 end
 
@@ -830,7 +823,7 @@ function writer.write_cls_callback(module, cls, append)
             tag_mode = format('{${tag_mode}}')
         end
         append(format([[
-            cls.callback {
+            .callback {
                 FUNCS =  {
                     ${funcs}
                 },
@@ -839,7 +832,7 @@ function writer.write_cls_callback(module, cls, append)
                 TAG_STORE = ${tag_store},
                 TAG_SCOPE = '${tag_scope}',
             }
-        ]]))
+        ]], 4))
         writer.log(format([[
             FUNC => NAME = '${v.name}'
                     FUNCS = {
@@ -856,24 +849,23 @@ end
 function writer.write_cls_insert(module, cls, append)
     for _, v in ipairs(cls.inserts) do
         append(format([[
-            cls.insert('${v.name}', {
+            .insert('${v.name}', {
                 BEFORE = ${v.codes.before?},
                 AFTER = ${v.codes.after?},
                 CALLBACK_BEFORE = ${v.codes.callback_before?},
                 CALLBACK_AFTER = ${v.codes.callback_after?},
             })
-        ]]))
+        ]], 4))
     end
 end
 
 function writer.write_cls_alias(module, cls, append)
     for _, v in ipairs(cls.aliases) do
-        append(format("cls.alias('${v.name}', '${v.alias}')"))
+        append(format(".alias('${v.name}', '${v.alias}')", 4))
     end
 end
 
 function writer.write_classes(module, append)
-    append('M.CLASSES = {}')
     append('')
     for _, cls in ipairs(module.class_types) do
         if cls.kind ~= 'class' and cls.kind ~= 'enum' and cls.kind ~= 'classFunc' then
@@ -881,12 +873,13 @@ function writer.write_classes(module, append)
         end
 
         writer.log("[%s]", cls.cppcls)
-
-        append(format("cls = typecls '${cls.cppcls}'"))
-        append(format('cls.SUPERCLS = ${cls.supercls?}'))
-        append(format('cls.REG_LUATYPE = ${cls.reg_luatype?}'))
-        append(format('cls.CHUNK = ${cls.chunk?}'))
-        append(format('cls.REQUIRE = ${cls.require?}'))
+        append(format([[
+            typecls '${cls.cppcls}'
+                .supercls(${cls.supercls?})
+                .reg_luatype(${cls.reg_luatype?})
+                .chunk(${cls.chunk?})
+                .require(${cls.require?})
+        ]]))
         
         writer.write_cls_ifdef(module, cls, append)
         writer.write_cls_const(module, cls, append)
@@ -898,7 +891,6 @@ function writer.write_classes(module, append)
         writer.write_cls_insert(module, cls, append)
         writer.write_cls_alias(module, cls, append)
 
-        append('M.CLASSES[#M.CLASSES + 1] = cls')
         append('')
 
         ::continue::
@@ -921,20 +913,12 @@ function writer.write_module(module)
         -- AUTO BUILD, DON'T MODIFY!
 
         dofile "${module.TYPE_FILE_PATH}"
-
-        local olua = require "olua"
-        local typeconv = olua.typeconv
-        local typecls = olua.typecls
-        local cls = nil
-        local M = {}
     ]]))
     append('')
 
     writer.write_metadata(module, append)
     writer.write_classes(module, append)
     writer.write_typedef(module, append)
-
-    append('return M\n')
 
     olua.write(module.FILE_PATH, tostring(t))
 end
@@ -1017,47 +1001,38 @@ local function add_typeconf_command(cls)
 
     function CMD.kind(kind)
         cls.kind = kind
-        return CMD
     end
 
     function CMD.chunk(chunk)
         cls.chunk = chunk
-        return CMD
     end
 
     function CMD.make_luaname(func)
         cls.make_luaname = func
-        return CMD
     end
 
     function CMD.supercls(supercls)
         cls.supercls = supercls
-        return CMD
     end
 
     function CMD.require(codes)
         cls.require = codes
-        return CMD
     end
 
     function CMD.exclude(name)
         cls.excludes[name] = true
-        return CMD
     end
 
     function CMD.ifdef(name, value)
         cls.ifdefs[name] = {name = name, value = value}
-        return CMD
     end
 
     function CMD.attr(name, attr)
         cls.attrs[name] = attr
-        return CMD
     end
 
     function CMD.enum(name, value)
         cls.enums[name] = {name = name, value = value}
-        return CMD
     end
 
     function CMD.const(name, value, typename)
@@ -1067,7 +1042,6 @@ local function add_typeconf_command(cls)
     function CMD.func(fn, snippet)
         cls.excludes[fn] = true
         cls.funcs[fn] = {name = fn, snippet = snippet}
-        return CMD
     end
 
     function CMD.callback(cb)
@@ -1077,12 +1051,10 @@ local function add_typeconf_command(cls)
         end
         assert(#cb.name > 0, 'no callback function name')
         cls.callbacks[cb.name] = cb
-        return CMD
     end
 
     function CMD.prop(name, get, set)
         cls.props[name] = {name = name, get = get, set = set}
-        return CMD
     end
 
     function CMD.var(name, snippet)
@@ -1090,12 +1062,10 @@ local function add_typeconf_command(cls)
         assert(#varname > 0, 'no variable name')
         cls.excludes[varname] = true
         cls.vars[name or varname] = {name = name, snippet = snippet}
-        return CMD
     end
     
     function CMD.alias(name, alias)
         cls.aliases[name] = {name = name, alias = alias}
-        return CMD
     end
 
     function CMD.insert(names, codes)
@@ -1103,18 +1073,9 @@ local function add_typeconf_command(cls)
         for _, n in ipairs(names) do
             cls.inserts[n] = {name = n, codes = codes}
         end
-        return CMD
     end
 
-    function CMD.__index(_, key)
-        error(string.format("index '%s' error", key))
-    end
-
-    function CMD.__newindex(_, key, value)
-        error(string.format("newindex '%s' error", key))
-    end
-
-    return setmetatable(CMD, CMD)
+    return olua.make_command(CMD)
 end
 
 local function add_typedef_command(cls)

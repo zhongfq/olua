@@ -549,7 +549,109 @@ local function parse_prop(cls, name, declget, declset)
     return pi
 end
 
-function olua.typecls(cppcls)
+function olua.make_command(t)
+    local CMD = {}
+    function CMD.__index(_, key)
+        local f = t[key]
+        if f then
+            return function (...)
+                f(...)
+                return CMD
+            end
+        else
+            assert(string.format("index '%s' error", key))
+        end
+    end
+
+    function CMD.__newindex(_, key, value)
+        error(string.format("newindex '%s' error", key))
+    end
+    return setmetatable(CMD, CMD)
+end
+
+function olua.luacls(cppcls)
+    local ti = typeinfo_map[cppcls .. ' *'] or typeinfo_map[cppcls]
+    assert(ti, 'type not found: ' .. cppcls)
+    return ti.LUACLS
+end
+
+function olua.is_func_type(tn, cls)
+    if type(tn) == 'table' then
+        tn = tn.CPPCLS
+    end
+    if string.find(tn, 'std::function') then
+        return true
+    else
+        local ti = olua.typeinfo(tn, cls)
+        return ti and ti.FUNC_DEF
+    end
+end
+
+function olua.is_pointer_type(ti)
+    if type(ti) == 'string' then
+        -- is 'T *'?
+        return string.find(ti, '[*]$')
+    else
+        return not ti.FUNC_DEF and ti.LUACLS and not olua.is_value_type(ti)
+    end
+end
+
+function olua.is_enum_type(cls)
+    local ti = typeinfo_map[cls.CPPCLS] or typeinfo_map[cls.CPPCLS .. ' *']
+    return cls.REG_LUATYPE and olua.is_value_type(ti)
+end
+
+local valuetype = {
+    ['bool'] = 'false',
+    ['const char *'] = 'nullptr',
+    ['std::string'] = '',
+    ['std::function'] = 'nullptr',
+    ['lua_Number'] = '0',
+    ['lua_Integer'] = '0',
+    ['lua_Unsigned'] = '0',
+}
+
+function olua.typespace(ti)
+    if type(ti) ~= 'string' then
+        ti = ti.DECLTYPE
+    end
+    return ti:find('[*&]$') and '' or ' '
+end
+
+function olua.initial_value(ti)
+    if olua.is_pointer_type(ti) then
+        return 'nullptr'
+    else
+        return valuetype[ti.DECLTYPE] or ''
+    end
+end
+
+-- enum has cpp cls, but declared as lua_Unsigned
+function olua.is_value_type(ti)
+    return valuetype[ti.DECLTYPE]
+end
+
+function olua.conv_func(ti, fn)
+    return string.gsub(ti.CONV, '[$]+', fn)
+end
+
+function olua.typedef(typeinfo)
+    for tn in string.gmatch(typeinfo.CPPCLS, '[^\n\r]+') do
+        local ti = setmetatable({}, {__index = typeinfo})
+        tn = pretty_typename(tn)
+        ti.CPPCLS = tn
+        if ti.DECLTYPE and string.find(ti.DECLTYPE, 'std::function') then
+            ti.FUNC_DEF = ti.DECLTYPE
+            ti.DECLTYPE = tn
+        else
+            ti.DECLTYPE = ti.DECLTYPE or tn
+        end
+        typeinfo_map[tn] = ti
+        typeinfo_map['const ' .. tn] = ti
+    end
+end
+
+local function typecls(cppcls)
     local cls = {
         CPPCLS = cppcls,
         CPP_SYM = string.gsub(cppcls, '[.:]+', '_'),
@@ -561,7 +663,24 @@ function olua.typecls(cppcls)
         IFDEFS = {},
         PROTOTYPES = {},
     }
+
     class_map[cls.CPPCLS] = cls
+
+    function cls.supercls(supercls)
+        cls.SUPERCLS = supercls
+    end
+
+    function cls.chunk(chunk)
+        cls.CHUNK = chunk
+    end
+
+    function cls.reg_luatype(reg_luatype)
+        cls.REG_LUATYPE = reg_luatype
+    end
+
+    function cls.require(require)
+        cls.REQUIRE = require
+    end
 
     function cls.ifdef(name, value)
         cls.IFDEFS[name] = value
@@ -787,105 +906,38 @@ function olua.typecls(cppcls)
     return cls
 end
 
-function olua.luacls(cppcls)
-    local ti = typeinfo_map[cppcls .. ' *'] or typeinfo_map[cppcls]
-    assert(ti, 'type not found: ' .. cppcls)
-    return ti.LUACLS
-end
+function olua.export(path)
+    local m = {
+        CLASSES = {},
+        CONVS = {},
+    }
 
-function olua.is_func_type(tn, cls)
-    if type(tn) == 'table' then
-        tn = tn.CPPCLS
+    local CMD = {}
+
+    function CMD.__index(_, k)
+        return olua[k] or _ENV[k]
     end
-    if string.find(tn, 'std::function') then
-        return true
-    else
-        local ti = olua.typeinfo(tn, cls)
-        return ti and ti.FUNC_DEF
+
+    function CMD.__newindex(_, k, v)
+        m[k] = v
     end
-end
 
-function olua.is_pointer_type(ti)
-    if type(ti) == 'string' then
-        -- is 'T *'?
-        return string.find(ti, '[*]$')
-    else
-        return not ti.FUNC_DEF and ti.LUACLS and not olua.is_value_type(ti)
+    function CMD.typeconv(cppcls)
+        local conv = typecls(cppcls)
+        m.CONVS[#m.CONVS + 1] = conv
+        return olua.make_command(conv)
     end
-end
 
-function olua.is_enum_type(cls)
-    local ti = typeinfo_map[cls.CPPCLS] or typeinfo_map[cls.CPPCLS .. ' *']
-    return cls.REG_LUATYPE and olua.is_value_type(ti)
-end
-
-local valuetype = {
-    ['bool'] = 'false',
-    ['const char *'] = 'nullptr',
-    ['std::string'] = '',
-    ['std::function'] = 'nullptr',
-    ['lua_Number'] = '0',
-    ['lua_Integer'] = '0',
-    ['lua_Unsigned'] = '0',
-}
-
-function olua.typespace(ti)
-    if type(ti) ~= 'string' then
-        ti = ti.DECLTYPE
+    function CMD.typecls(cppcls)
+        local cls = typecls(cppcls)
+        m.CLASSES[#m.CLASSES + 1] = cls
+        return olua.make_command(cls)
     end
-    return ti:find('[*&]$') and '' or ' '
-end
 
-function olua.initial_value(ti)
-    if olua.is_pointer_type(ti) then
-        return 'nullptr'
-    else
-        return valuetype[ti.DECLTYPE] or ''
-    end
-end
-
--- enum has cpp cls, but declared as lua_Unsigned
-function olua.is_value_type(ti)
-    return valuetype[ti.DECLTYPE]
-end
-
-function olua.conv_func(ti, fn)
-    return string.gsub(ti.CONV, '[$]+', fn)
-end
-
-function olua.typedef(typeinfo)
-    for tn in string.gmatch(typeinfo.CPPCLS, '[^\n\r]+') do
-        local ti = setmetatable({}, {__index = typeinfo})
-        tn = pretty_typename(tn)
-        ti.CPPCLS = tn
-        if ti.DECLTYPE and string.find(ti.DECLTYPE, 'std::function') then
-            ti.FUNC_DEF = ti.DECLTYPE
-            ti.DECLTYPE = tn
-        else
-            ti.DECLTYPE = ti.DECLTYPE or tn
-        end
-        typeinfo_map[tn] = ti
-        typeinfo_map['const ' .. tn] = ti
-    end
-end
-
-function olua.typeconv(ci)
-    ci.PROPS = {}
-    ci.CPP_SYM = string.gsub(ci.CPPCLS, '[.:]+', '_')
-    for line in string.gmatch(assert(ci.DEF, 'no DEF'), '[^\n\r]+') do
-        if line:find('^ *//') then
-            goto continue
-        end
-        olua.message(line)
-        line = line:gsub('^ *', ''):gsub('; *$', '')
-        local arg = parse_args(ci, '(' .. line .. ')')[1]
-        if arg then
-            arg.NAME = arg.VAR_NAME
-            ci.PROPS[#ci.PROPS + 1] = arg
-        end
-        ::continue::
-    end
-    return ci
+    setmetatable(CMD, CMD)
+    assert(loadfile(path, nil, CMD))()
+    olua.gen_header(m)
+    olua.gen_source(m)
 end
 
 return olua

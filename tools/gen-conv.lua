@@ -3,10 +3,11 @@ local olua = require "olua"
 local format = olua.format
 
 local function gen_push_func(cv, write)
-    local NUM_ARGS = #cv.PROPS
+    local NUM_ARGS = #cv.VARS
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
 
-    for i, pi in ipairs(cv.PROPS) do
+    for i, var in ipairs(cv.VARS) do
+        local pi = var.SET.ARGS[1]
         OUT.PUSH_ARGS:push(i > 1 and '' or nil)
         local LENGTH = (pi.ATTR.ARRAY or {})[1]
         if LENGTH then
@@ -15,16 +16,16 @@ local function gen_push_func(cv, write)
             OUT.PUSH_ARGS:pushf([[
                 lua_createtable(L, ${LENGTH}, 0);
                 for (int i = 0; i < ${LENGTH}; i++) {
-                    ${pi.TYPE.CPPCLS} obj = value->${pi.NAME}[i];
+                    ${pi.TYPE.CPPCLS} obj = value->${pi.VAR_NAME}[i];
                     ${SUBOUT.PUSH_ARGS}
                     olua_rawseti(L, -2, i + 1);
                 }
             ]])
         else
-            local ARG_NAME = format('value->${pi.NAME}')
+            local ARG_NAME = format('value->${pi.VAR_NAME}')
             olua.gen_push_exp(pi, ARG_NAME, OUT)
         end
-        OUT.PUSH_ARGS:pushf([[olua_setfield(L, -2, "${pi.NAME}");]])
+        OUT.PUSH_ARGS:pushf([[olua_setfield(L, -2, "${pi.VAR_NAME}");]])
     end
 
     write(format([[
@@ -47,15 +48,16 @@ local function gen_check_func(cv, write)
         DECL_ARGS = olua.newarray(),
         CHECK_ARGS = olua.newarray(),
     }
-    for i, pi in ipairs(cv.PROPS) do
+    for i, var in ipairs(cv.VARS) do
+        local pi = var.SET.ARGS[1]
         local LENGTH = (pi.ATTR.ARRAY or {})[1]
         if LENGTH then
             local SUBOUT = {DECL_ARGS = olua.newarray(), CHECK_ARGS = olua.newarray()}
             olua.gen_decl_exp(pi, "obj", SUBOUT)
             olua.gen_check_exp(pi, "obj", -1, SUBOUT)
             OUT.CHECK_ARGS:pushf([[
-                if (olua_getfield(L, idx, "${pi.NAME}") != LUA_TTABLE) {
-                    luaL_error(L, "field '${pi.NAME}' is not a table");
+                if (olua_getfield(L, idx, "${pi.VAR_NAME}") != LUA_TTABLE) {
+                    luaL_error(L, "field '${pi.VAR_NAME}' is not a table");
                 }
                 for (int i = 0; i < ${LENGTH}; i++) {
                     ${SUBOUT.DECL_ARGS}
@@ -63,7 +65,7 @@ local function gen_check_func(cv, write)
                     if (!olua_isnoneornil(L, -1)) {
                         ${SUBOUT.CHECK_ARGS}
                     }
-                    value->${pi.NAME}[i] = obj;
+                    value->${pi.VAR_NAME}[i] = obj;
                     lua_pop(L, 1);
                 }
                 lua_pop(L, 1);
@@ -71,21 +73,21 @@ local function gen_check_func(cv, write)
         else
             local ARG_NAME = 'arg' .. i
             olua.gen_decl_exp(pi, ARG_NAME, OUT)
-            OUT.CHECK_ARGS:pushf([[olua_getfield(L, idx, "${pi.NAME}");]])
+            OUT.CHECK_ARGS:pushf([[olua_getfield(L, idx, "${pi.VAR_NAME}");]])
             if pi.ATTR.OPTIONAL then
                 local SUBOUT = {CHECK_ARGS = olua.newarray()}
                 olua.gen_check_exp(pi, ARG_NAME, -1, SUBOUT)
                 OUT.CHECK_ARGS:pushf([[
                     if (!olua_isnoneornil(L, -1)) {
                         ${SUBOUT.CHECK_ARGS}
-                        value->${pi.NAME} = (${pi.DECLTYPE})${ARG_NAME};
+                        value->${pi.VAR_NAME} = (${pi.DECLTYPE})${ARG_NAME};
                     }
                     lua_pop(L, 1);
                 ]])
             else
                 olua.gen_check_exp(pi, ARG_NAME, -1, OUT)
                 OUT.CHECK_ARGS:pushf([[
-                    value->${pi.NAME} = (${pi.DECLTYPE})${ARG_NAME};
+                    value->${pi.VAR_NAME} = (${pi.DECLTYPE})${ARG_NAME};
                     lua_pop(L, 1);
                 ]])
             end
@@ -114,7 +116,8 @@ local function gen_pack_func(cv, write)
         DECL_ARGS = olua.newarray(),
         CHECK_ARGS = olua.newarray(),
     }
-    for i, pi in ipairs(cv.PROPS) do
+    for i, var in ipairs(cv.VARS) do
+        local pi = var.SET.ARGS[1]
         local LENGTH = (pi.ATTR.ARRAY or {})[1]
         if LENGTH then
             OUT.DECL_ARGS:clear()
@@ -127,7 +130,7 @@ local function gen_pack_func(cv, write)
         olua.gen_decl_exp(pi, ARG_NAME, OUT)
         olua.gen_check_exp(pi, ARG_NAME, 'idx + ' ..  (i - 1), OUT)
         OUT.CHECK_ARGS:pushf([[
-            value->${pi.NAME} = (${pi.DECLTYPE})${ARG_NAME};
+            value->${pi.VAR_NAME} = (${pi.DECLTYPE})${ARG_NAME};
         ]])
         OUT.CHECK_ARGS:push('')
     end
@@ -148,9 +151,10 @@ local function gen_pack_func(cv, write)
 end
 
 local function gen_unpack_func(cv, write)
-    local NUM_ARGS = #cv.PROPS
+    local NUM_ARGS = #cv.VARS
     local OUT = {PUSH_ARGS = olua.newarray():push('')}
-    for _, pi in ipairs(cv.PROPS) do
+    for _, var in ipairs(cv.VARS) do
+        local pi = var.SET.ARGS[1]
         local LENGTH = (pi.ATTR.ARRAY or {})[1]
         if LENGTH then
             OUT.PUSH_ARGS:clear()
@@ -158,7 +162,7 @@ local function gen_unpack_func(cv, write)
             break
         end
 
-        local ARG_NAME = format('value->${pi.NAME}')
+        local ARG_NAME = format('value->${pi.VAR_NAME}')
         olua.gen_push_exp(pi, ARG_NAME, OUT)
     end
 
@@ -181,10 +185,11 @@ end
 local function gen_is_func(cv, write)
     local EXPS = olua.newarray(' && ')
     EXPS:push('olua_istable(L, idx)')
-    for i = #cv.PROPS, 1, -1 do
-        local pi = cv.PROPS[i]
+    for i = #cv.VARS, 1, -1 do
+        local var = cv.VARS[i]
+        local pi = var.SET.ARGS[1]
         if not pi.ATTR.OPTIONAL then
-            EXPS:pushf('olua_hasfield(L, idx, "${pi.NAME}")')
+            EXPS:pushf('olua_hasfield(L, idx, "${pi.VAR_NAME}")')
         end
     end
     write(format([[
@@ -197,7 +202,8 @@ end
 
 local function gen_ispack_func(cv, write)
     local EXPS = olua.newarray(' && ')
-    for i, pi in ipairs(cv.PROPS) do
+    for i, var in ipairs(cv.VARS) do
+        local pi = var.SET.ARGS[1]
         local ISFUNC = olua.conv_func(pi.TYPE, 'is')
         local N = i - 1
         if olua.is_pointer_type(pi.TYPE) then
