@@ -14,28 +14,6 @@ local logfile = io.open('autobuild/autoconf.log', 'w')
 local writer = {}
 local M = {}
 
-function M.init(path)
-    local HEADER_PATH = 'autobuild/.autoconf.h'
-    local clang_args = dofile(path)
-    local header = io.open(HEADER_PATH, 'w')
-    header:write(format [[
-        #ifndef __AUTOCONF_H__
-        #define __AUTOCONF_H__
-
-        ${clang_args.HEADERS}
-
-        #endif
-    ]])
-    header:close()
-    local index = clang.createIndex(false, true)
-    for i, v in ipairs(clang_args.FLAGS) do
-        local HOMEDIR = olua.HOMEDIR
-        clang_args.FLAGS[i] = format(v)
-    end
-    clang_tu = index:parse(HEADER_PATH, clang_args.FLAGS)
-    os.remove(HEADER_PATH)
-end
-
 function M:parse(path)
     assert(not self.FILE_PATH)
     assert(not self.TYPE_FILE_PATH)
@@ -874,7 +852,7 @@ function writer.write_classes(module, append)
 
         writer.log("[%s]", cls.cppcls)
         append(format([[
-            typecls '${cls.cppcls}'
+            typeconf '${cls.cppcls}'
                 .supercls(${cls.supercls?})
                 .reg_luatype(${cls.reg_luatype?})
                 .chunk(${cls.chunk?})
@@ -1128,8 +1106,8 @@ function M.__call(_, path)
         m.exclude_types[tn] = true
     end
 
-    function CMD.include(path)
-        assert(loadfile(path, nil, CMD))()
+    function CMD.include(filepath)
+        assert(loadfile(filepath, nil, CMD))()
     end
 
     function CMD.ifdef(cond)
@@ -1193,11 +1171,35 @@ function M.__call(_, path)
         return cls
     end
 
+    function CMD.clang(clang_args)
+        local HEADER_PATH = 'autobuild/.autoconf.h'
+        local header = io.open(HEADER_PATH, 'w')
+        header:write(format [[
+            #ifndef __AUTOCONF_H__
+            #define __AUTOCONF_H__
+    
+            ${clang_args.headers}
+    
+            #endif
+        ]])
+        header:close()
+        for i, v in ipairs(clang_args.flags) do
+            local HOMEDIR = olua.HOMEDIR
+            clang_args.flags[i] = format(v)
+        end
+        clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, clang_args.flags)
+        os.remove(HEADER_PATH)
+
+        m = nil
+    end
+
     setmetatable(CMD, CMD)
     assert(loadfile(path, nil, CMD))()
-    setmetatable(m, {__index = M})
-    
-    m:parse(path)
+
+    if m then
+        setmetatable(m, {__index = M})
+        m:parse(path)
+    end
 end
 
 return setmetatable(M, M)

@@ -495,16 +495,16 @@ local function parse_prop(cls, name, declget, declset)
         return string.upper(s)
     end)
 
-    local function test(fi, name, op)
-        name = op .. string.gsub(name, '^%w', function (s)
+    local function test(fi, n, op)
+        n = op .. string.gsub(n, '^%w', function (s)
             return string.upper(s)
         end)
-        if name == fi.CPP_FUNC or name == fi.LUA_FUNC then
+        if n == fi.CPP_FUNC or n == fi.LUA_FUNC then
             return true
         else
             -- getXXXXS => getXXXXs?
-            name = name:sub(1, #name - 1) .. name:sub(#name):lower()
-            return name == fi.CPP_FUNC or name == fi.LUA_FUNC
+            n = n:sub(1, #n - 1) .. n:sub(#n):lower()
+            return n == fi.CPP_FUNC or n == fi.LUA_FUNC
         end
     end
 
@@ -651,7 +651,7 @@ function olua.typedef(typeinfo)
     end
 end
 
-local function typecls(cppcls)
+local function typeconf(cppcls)
     local cls = {
         CPPCLS = cppcls,
         CPP_SYM = string.gsub(cppcls, '[.:]+', '_'),
@@ -923,13 +923,13 @@ function olua.export(path)
     end
 
     function CMD.typeconv(cppcls)
-        local conv = typecls(cppcls)
+        local conv = typeconf(cppcls)
         m.CONVS[#m.CONVS + 1] = conv
         return olua.make_command(conv)
     end
 
-    function CMD.typecls(cppcls)
-        local cls = typecls(cppcls)
+    function CMD.typeconf(cppcls)
+        local cls = typeconf(cppcls)
         m.CLASSES[#m.CLASSES + 1] = cls
         return olua.make_command(cls)
     end
