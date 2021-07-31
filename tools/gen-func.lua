@@ -154,7 +154,7 @@ function olua.gen_addref_exp(fi, arg, i, name, out)
         return
     end
 
-    olua.assert(not fi.STATIC or fi.RET.TYPE.LUACLS)
+    olua.assert(not fi.STATIC or fi.RET.TYPE.LUACLS or arg.ATTR.ADDREF[3])
 
     local ARGN = i
     local ARG_NAME = name
@@ -218,7 +218,7 @@ function olua.gen_delref_exp(fi, arg, i, name, out)
         return
     end
 
-    olua.assert(not fi.STATIC or arg.TYPE.LUACLS)
+    olua.assert(not fi.STATIC or arg.TYPE.LUACLS or arg.ATTR.DELREF[3])
 
     local ARGN = i
     local ARG_NAME = name
