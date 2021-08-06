@@ -322,7 +322,7 @@ function olua.gen_callback(cls, fi, out)
             std::string cb_tag = ${CB_TAG};
             std::string cb_name;
             if (${IS_FUNC}(L, ${ARGN})) {
-                cb_name = olua_setcallback(L, cb_store, cb_tag.c_str(), ${ARGN}, ${TAG_MODE});
+                cb_name = olua_setcallback(L, cb_store,  ${ARGN}, cb_tag.c_str(), ${TAG_MODE});
                 ${CALLBACK_CHUNK}
             } else {
                 ${cbout.REMOVE_NORMAL_CALLBACK}
@@ -333,7 +333,7 @@ function olua.gen_callback(cls, fi, out)
         CALLBACK_CHUNK = format([[
             void *cb_store = (void *)${CB_STORE};
             std::string cb_tag = ${CB_TAG};
-            std::string cb_name = olua_setcallback(L, cb_store, cb_tag.c_str(), ${ARGN}, ${TAG_MODE});
+            std::string cb_name = olua_setcallback(L, cb_store,  ${ARGN}, cb_tag.c_str(), ${TAG_MODE});
             ${CALLBACK_CHUNK}
         ]])
     end
