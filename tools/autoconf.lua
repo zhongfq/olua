@@ -220,7 +220,7 @@ function M:visit_method(cls, cur)
 
     for i, arg in ipairs(cur.arguments) do
         local attrn = (attr['arg' .. i]) or ''
-        if not attrn:find('@out') and self:is_excluded_type(arg.type, arg) then
+        if not attrn:find('@ret') and self:is_excluded_type(arg.type, arg) then
             return
         end
     end
@@ -268,7 +268,7 @@ function M:visit_method(cls, cur)
                 exps:push('@local ')
             end
         end
-        if self:has_default_value(arg) and not string.find(attr[argn] or '', '@out') then
+        if self:has_default_value(arg) and not string.find(attr[argn] or '', '@ret') then
             exps:push('@optional ')
             optional = true
         else

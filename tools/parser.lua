@@ -303,9 +303,9 @@ function parse_args(cls, declstr)
 
         declstr = string.gsub(declstr, '^[^,]*,? *', '') -- skip ','
 
-        if attr.OUT then
+        if attr.RET then
             if string.find(tn, '%*$') then
-                attr.OUT = 'pointee'
+                attr.RET = 'pointee'
                 tn = string.gsub(tn, '%*$', '')
                 tn = pretty_typename(tn)
             end
@@ -770,7 +770,6 @@ local function typeconf(cppcls)
                             * once      remove after callback invoked
                             * function  remove after function invoked
                             * object    callback will exist until object die
-            REMOVE       -- remove function
         }
 
         TAG: .callback#[id++]@tag

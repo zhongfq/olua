@@ -33,8 +33,8 @@ function olua.gen_decl_exp(arg, name, out)
         out.DECL_ARGS:pushf('${arg.DECLTYPE}${TYPE_SPACE}${ARG_NAME};       ${VAR_NAME}')
     else
         local DECLTYPE = arg.TYPE.DECLTYPE
-        if arg.ATTR.OUT == 'pointee' then
-            -- (..., @out ssize_t *size)
+        if arg.ATTR.RET then
+            -- (..., @ret ssize_t *size) (.... @ret ssize_t &value)
             -- arg.TYPE.DECLTYPE = lua_Integer
             -- arg.TYPE.CPPCLS = ssize_t
             DECLTYPE = arg.TYPE.CPPCLS
@@ -58,8 +58,8 @@ function olua.gen_check_exp(arg, name, i, out)
     local ARGN = i
     local ARG_NAME = name
     local CHECK_FUNC = olua.conv_func(arg.TYPE, arg.ATTR.PACK and 'pack' or 'check')
-    if arg.ATTR.OUT then
-        out.CHECK_ARGS:pushf([[// no need to check '${ARG_NAME}' with mark '@out']])
+    if arg.ATTR.RET then
+        out.CHECK_ARGS:pushf([[// no need to check '${ARG_NAME}' with mark '@ret']])
         return
     elseif olua.is_pointer_type(arg.TYPE) then
         if arg.ATTR.NULLABLE then
@@ -184,7 +184,7 @@ function olua.gen_addref_exp(fi, arg, i, name, out)
 
     if ADDREF == '|' then
         if arg.TYPE.SUBTYPES then
-            if arg.ATTR.PACK or arg.ATTR.OUT then
+            if arg.ATTR.PACK or arg.ATTR.RET then
                 local SUBTYPE = arg.TYPE.SUBTYPES[1]
                 local PUSH_FUNC = olua.conv_func(arg.TYPE, 'push')
                 local SUBTYPE_PUSH_FUNC = olua.conv_func(SUBTYPE, 'push')
@@ -276,8 +276,9 @@ local function gen_func_args(cls, fi, out)
 
         -- function call args
         -- see 'basictype.lua'
-        if ai.ATTR.OUT == 'pointee' then
-            out.CALLER_ARGS:pushf('&${ARG_NAME}')
+        if ai.ATTR.RET then
+            local CAST = ai.ATTR.RET == 'pointee' and '&' or ''
+            out.CALLER_ARGS:pushf('${CAST}${ARG_NAME}')
         elseif ai.TYPE.DECLTYPE ~= ai.TYPE.CPPCLS and not ai.CALLBACK then
             out.CALLER_ARGS:pushf('(${ai.TYPE.CPPCLS})${ARG_NAME}')
         elseif ai.TYPE.VARIANT then
@@ -418,12 +419,12 @@ local function gen_one_func(cls, fi, write, funcidx)
     gen_func_ret(cls, fi, out)
 
     for i, ai in ipairs(fi.ARGS) do
-        if ai.ATTR.OUT then
-            local OUT = {PUSH_ARGS = olua.newarray()}
-            olua.gen_push_exp(ai, 'arg' .. i, OUT)
+        if ai.ATTR.RET then
+            local RET = {PUSH_ARGS = olua.newarray()}
+            olua.gen_push_exp(ai, 'arg' .. i, RET)
             out.PUSH_RET = format([[
                 ${out.PUSH_RET}
-                ${OUT.PUSH_ARGS}
+                ${RET.PUSH_ARGS}
             ]])
             out.NUM_RET = format([[${out.NUM_RET} + 1]])
         end
