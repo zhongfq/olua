@@ -1059,6 +1059,20 @@ end
 local function add_typedef_command(cls)
     local CMD = {}
 
+    local conv = {
+        ['bool'] = 'olua_$$_bool',
+        ['const char *'] = 'olua_$$_string',
+        ['lua_Integer'] = 'olua_$$_int',
+        ['lua_Number'] = 'olua_$$_number',
+        ['lua_Unsigned'] = 'olua_$$_uint',
+        ['std::map'] = 'olua_$$_std_map',
+        ['std::set'] = 'olua_$$_std_set',
+        ['std::string'] = 'olua_$$_std_string',
+        ['std::unordered_map'] = 'olua_$$_std_unordered_map',
+        ['std::vector'] = 'olua_$$_std_vector',
+        ['void *'] = 'olua_$$_obj',
+    }
+
     function CMD.vars(n)
         cls.num_vars = tonumber(n)
         return CMD
@@ -1066,6 +1080,7 @@ local function add_typedef_command(cls)
 
     function CMD.decltype(dt)
         cls.decltype = dt
+        cls.conv = conv[dt]
         return CMD
     end
 

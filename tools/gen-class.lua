@@ -24,7 +24,7 @@ local function check_meta_method(cls)
         if v[1].CTOR then
             has_ctor = true
         end
-        if v[1].LUA_FUNC == '__move' then
+        if v[1].LUA_FUNC == '__olua_move' then
             has_move = true
         end
     end
@@ -46,7 +46,7 @@ local function check_meta_method(cls)
             }]]
         ))
     elseif not olua.is_enum_type(cls) and cls.REG_LUATYPE and not has_move then
-        cls.func('__move', format([[
+        cls.func('__olua_move', format([[
             {
                 auto self = (${cls.CPPCLS} *)olua_toobj(L, 1, "${cls.LUACLS}");
                 olua_push_cppobj(L, self, "${cls.LUACLS}");
