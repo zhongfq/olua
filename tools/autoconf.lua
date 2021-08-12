@@ -1203,6 +1203,11 @@ function M.__call(_, path)
             clang_args.flags[i] = format(v)
         end
         clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, clang_args.flags)
+        for _, v in ipairs(clang_tu:diagnostics()) do
+            if v.text:find(' error:') then
+                error('parse header error')
+            end
+        end
         os.remove(HEADER_PATH)
 
         m = nil
