@@ -1,6 +1,8 @@
 local olua = require "olua"
 local clang = require "clang"
 
+os.execute('mkdir -p autobuild')
+
 local format = olua.format
 local clang_tu
 
@@ -510,8 +512,6 @@ end
 -------------------------------------------------------------------------------
 -- output config
 -------------------------------------------------------------------------------
-setmetatable(writer, writer)
-
 function writer.write_metadata(module, append)
     append(format([[
         NAME = "${module.name}"
@@ -970,6 +970,7 @@ function writer.__gc()
         ${files}
     ]]))
 end
+setmetatable(writer, writer)
 
 -------------------------------------------------------------------------------
 -- define config module
