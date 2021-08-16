@@ -59,7 +59,26 @@ function olua.gen_check_exp(arg, name, i, out)
     local ARG_NAME = name
     local CHECK_FUNC = olua.conv_func(arg.TYPE, arg.ATTR.PACK and 'pack' or 'check')
     if arg.ATTR.RET then
-        out.CHECK_ARGS:pushf([[// no need to check '${ARG_NAME}' with mark '@ret']])
+        local RET = arg.ATTR.RET
+        local CHECK_ARGS = out.CHECK_ARGS
+        arg.ATTR.RET = nil
+        out.CHECK_ARGS = olua.newarray()
+        if not arg.TYPE.SUBTYPES and arg.TYPE.DECLTYPE ~= arg.TYPE.CPPCLS then
+            out.CHECK_ARGS:pushf([[${arg.TYPE.DECLTYPE} value;]])
+            olua.gen_check_exp(arg, 'value', i, out)
+            out.CHECK_ARGS:pushf([[${ARG_NAME} = (${arg.TYPE.CPPCLS})value;]])
+        else
+            olua.gen_check_exp(arg, name, i, out)
+        end
+
+        CHECK_ARGS:pushf([[
+            //'${ARG_NAME}' with mark '@ret'
+            if (!olua_isnoneornil(L, ${ARGN})) {
+                ${out.CHECK_ARGS}
+            }
+        ]])
+        out.CHECK_ARGS = CHECK_ARGS
+        arg.ATTR.RET = RET
         return
     elseif olua.is_pointer_type(arg.TYPE) then
         if arg.ATTR.NULLABLE then
