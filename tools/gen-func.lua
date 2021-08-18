@@ -15,7 +15,7 @@ local function gen_func_snippet(cls, fi, write)
         ]]), nil
     end)
     write(format([[
-        static int _${cls.CPP_SYM}_${fi.CPP_FUNC}(lua_State *L)
+        static int _${{cls.CPPCLS}}_${fi.CPP_FUNC}(lua_State *L)
         ${SNIPPET}
     ]]))
 end
@@ -479,7 +479,7 @@ local function gen_one_func(cls, fi, write, funcidx)
     end
 
     write(format([[
-        static int _${cls.CPP_SYM}_${fi.CPP_FUNC}${FUNC_IDX}(lua_State *L)
+        static int _${{cls.CPPCLS}}_${fi.CPP_FUNC}${FUNC_IDX}(lua_State *L)
         {
             olua_startinvoke(L);
 
@@ -557,13 +557,13 @@ local function gen_test_and_call(cls, fns)
                 EXP1 = format([[
                     // if (${TEST_EXPS}) {
                         // ${fi.FUNC_DESC}
-                        return _${cls.CPP_SYM}_${fi.CPP_FUNC}${fi.INDEX}(L);
+                        return _${{cls.CPPCLS}}_${fi.CPP_FUNC}${fi.INDEX}(L);
                     // }
                 ]]),
                 EXP2 = format([[
                     if (${TEST_EXPS}) {
                         // ${fi.FUNC_DESC}
-                        return _${cls.CPP_SYM}_${fi.CPP_FUNC}${fi.INDEX}(L);
+                        return _${{cls.CPPCLS}}_${fi.CPP_FUNC}${fi.INDEX}(L);
                     }
                 ]]),
             }
@@ -578,7 +578,7 @@ local function gen_test_and_call(cls, fns)
                 MAX_VARS = 1,
                 EXP1 = format([[
                     // ${fi.FUNC_DESC}
-                    return _${cls.CPP_SYM}_${fi.CPP_FUNC}${fi.INDEX}(L);
+                    return _${{cls.CPPCLS}}_${fi.CPP_FUNC}${fi.INDEX}(L);
                 ]])
             }
         end
@@ -629,13 +629,13 @@ local function gen_multi_func(cls, fis, write)
         IF_CHUNK:pushf([[
             if (num_args > 0) {
                 // ${pack_fi.FUNC_DESC}
-                return _${cls.CPP_SYM}_${pack_fi.CPP_FUNC}${pack_fi.INDEX}(L);
+                return _${{cls.CPPCLS}}_${pack_fi.CPP_FUNC}${pack_fi.INDEX}(L);
             }
         ]])
     end
 
     write(format([[
-        static int _${cls.CPP_SYM}_${CPP_FUNC}(lua_State *L)
+        static int _${{cls.CPPCLS}}_${CPP_FUNC}(lua_State *L)
         {
             int num_args = lua_gettop(L)${SUBONE};
 

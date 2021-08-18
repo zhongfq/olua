@@ -230,7 +230,7 @@ local function lookup(level, key)
 end
 
 local function eval(line)
-    return string.gsub(line, '${[%w_.?]+}', function (str)
+    return string.gsub(line, '${{?[%w_.?]+}?}', function (str)
         -- search caller file path
         local level = 1
         local path
@@ -256,6 +256,7 @@ local function eval(line)
         local indent = string.match(line, ' *')
         local key = string.match(str, '[%w_]+')
         local opt = string.match(str, '%?+')
+        local fix = string.match(str, '{{')
         local value = lookup(level + 1, key) or _G[key]
         for field in string.gmatch(string.match(str, "[%w_.]+"), '[^.]+') do
             if not value then
@@ -297,6 +298,10 @@ local function eval(line)
             end
         else
             value = tostring(value)
+        end
+
+        if fix then
+            value = string.gsub(value, '[^%w_]+', '_')
         end
 
         return prefix .. string.gsub(value, '\n', '\n' .. indent) .. posfix

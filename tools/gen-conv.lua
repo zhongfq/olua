@@ -29,7 +29,7 @@ local function gen_push_func(cv, write)
     end
 
     write(format([[
-        int olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
+        int olua_push_${{cv.CPPCLS}}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 lua_createtable(L, 0, ${NUM_ARGS});
@@ -96,7 +96,7 @@ local function gen_check_func(cv, write)
     end
 
     write(format([[
-        void olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void olua_check_${{cv.CPPCLS}}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -136,7 +136,7 @@ local function gen_pack_func(cv, write)
     end
 
     write(format([[
-        void olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value)
+        void olua_pack_${{cv.CPPCLS}}(lua_State *L, int idx, ${cv.CPPCLS} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -167,7 +167,7 @@ local function gen_unpack_func(cv, write)
     end
 
     write(format([[
-        int olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value)
+        int olua_unpack_${{cv.CPPCLS}}(lua_State *L, const ${cv.CPPCLS} *value)
         {
             if (value) {
                 ${OUT.PUSH_ARGS}
@@ -193,7 +193,7 @@ local function gen_is_func(cv, write)
         end
     end
     write(format([[
-        bool olua_is_${cv.CPP_SYM}(lua_State *L, int idx)
+        bool olua_is_${{cv.CPPCLS}}(lua_State *L, int idx)
         {
             return ${EXPS};
         }
@@ -213,7 +213,7 @@ local function gen_ispack_func(cv, write)
         end
     end
     write(format([[
-        bool olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx)
+        bool olua_ispack_${{cv.CPPCLS}}(lua_State *L, int idx)
         {
             return ${EXPS};
         }
@@ -226,12 +226,12 @@ function olua.gen_conv_header(module, write)
         write(IFDEF)
         write(format([[
             // ${cv.CPPCLS}
-            int olua_push_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
-            void olua_check_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            bool olua_is_${cv.CPP_SYM}(lua_State *L, int idx);
-            void olua_pack_${cv.CPP_SYM}(lua_State *L, int idx, ${cv.CPPCLS} *value);
-            int olua_unpack_${cv.CPP_SYM}(lua_State *L, const ${cv.CPPCLS} *value);
-            bool olua_ispack_${cv.CPP_SYM}(lua_State *L, int idx);
+            int olua_push_${{cv.CPPCLS}}(lua_State *L, const ${cv.CPPCLS} *value);
+            void olua_check_${{cv.CPPCLS}}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            bool olua_is_${{cv.CPPCLS}}(lua_State *L, int idx);
+            void olua_pack_${{cv.CPPCLS}}(lua_State *L, int idx, ${cv.CPPCLS} *value);
+            int olua_unpack_${{cv.CPPCLS}}(lua_State *L, const ${cv.CPPCLS} *value);
+            bool olua_ispack_${{cv.CPPCLS}}(lua_State *L, int idx);
         ]]))
         write(IFDEF and '#endif' or nil)
         write("")
@@ -244,9 +244,9 @@ function olua.gen_conv_header(module, write)
             write(IFDEF)
             write(format([[
                 // ${cls.CPPCLS}
-                bool olua_is_${cls.CPP_SYM}(lua_State *L, int idx);
-                int olua_push_${cls.CPP_SYM}(lua_State *L, const ${cls.CPPCLS} *value);
-                void olua_check_${cls.CPP_SYM}(lua_State *L, int idx, ${cls.CPPCLS} *value);
+                bool olua_is_${{cls.CPPCLS}}(lua_State *L, int idx);
+                int olua_push_${{cls.CPPCLS}}(lua_State *L, const ${cls.CPPCLS} *value);
+                void olua_check_${{cls.CPPCLS}}(lua_State *L, int idx, ${cls.CPPCLS} *value);
             ]]))
             write(IFDEF and '#endif' or nil)
             write("")
@@ -256,7 +256,7 @@ end
 
 local function gen_cb_is_func(cls, write)
     write(format([[
-        bool olua_is_${cls.CPP_SYM}(lua_State *L, int idx)
+        bool olua_is_${{cls.CPPCLS}}(lua_State *L, int idx)
         {
             return olua_is_callback<${cls.CPPCLS}>(L, idx);
         }
@@ -265,7 +265,7 @@ end
 
 local function gen_cb_push_func(cls, write)
     write(format([[
-        int olua_push_${cls.CPP_SYM}(lua_State *L, const ${cls.CPPCLS} *value)
+        int olua_push_${{cls.CPPCLS}}(lua_State *L, const ${cls.CPPCLS} *value)
         {
             return olua_push_callback<${cls.CPPCLS}>(L, value);
         }
@@ -274,7 +274,7 @@ end
 
 local function gen_cb_check_func(cls, write)
     write(format([[
-        void olua_check_${cls.CPP_SYM}(lua_State *L, int idx, ${cls.CPPCLS} *value)
+        void olua_check_${{cls.CPPCLS}}(lua_State *L, int idx, ${cls.CPPCLS} *value)
         {
             olua_check_callback<${cls.CPPCLS}>(L, idx, value);
         }

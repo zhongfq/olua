@@ -62,7 +62,7 @@ local function check_gen_class_func(cls, fis, write)
     end
 
     local CPP_FUNC = fis[1].CPP_FUNC
-    local fn = format([[_${cls.CPP_SYM}_${CPP_FUNC}]])
+    local fn = format([[_${{cls.CPPCLS}}_${CPP_FUNC}]])
     if symbols[fn] then
         return
     end
@@ -132,7 +132,7 @@ local function gen_class_open(cls, write)
         local LUA_FUNC = fis[1].LUA_FUNC
         local IFDEF = cls.IFDEFS[CPP_FUNC]
         FUNCS:push(IFDEF)
-        FUNCS:pushf('oluacls_func(L, "${LUA_FUNC}", _${cls.CPP_SYM}_${CPP_FUNC});')
+        FUNCS:pushf('oluacls_func(L, "${LUA_FUNC}", _${{cls.CPPCLS}}_${CPP_FUNC});')
         FUNCS:push(IFDEF and '#endif' or nil)
     end
 
@@ -140,19 +140,19 @@ local function gen_class_open(cls, write)
         local FUNC_GET = "nullptr"
         local FUNC_SET = "nullptr"
         if pi.GET then
-            FUNC_GET = format('_${cls.CPP_SYM}_${pi.GET.CPP_FUNC}')
+            FUNC_GET = format('_${{cls.CPPCLS}}_${pi.GET.CPP_FUNC}')
         end
         if pi.SET then
-            FUNC_SET = format('_${cls.CPP_SYM}_${pi.SET.CPP_FUNC}')
+            FUNC_SET = format('_${{cls.CPPCLS}}_${pi.SET.CPP_FUNC}')
         end
         FUNCS:pushf('oluacls_prop(L, "${pi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
 
     for _, vi in ipairs(cls.VARS) do
-        local FUNC_GET = format('_${cls.CPP_SYM}_${vi.GET.CPP_FUNC}')
+        local FUNC_GET = format('_${{cls.CPPCLS}}_${vi.GET.CPP_FUNC}')
         local FUNC_SET = "nullptr"
         if vi.SET and vi.SET.CPP_FUNC then
-           FUNC_SET = format('_${cls.CPP_SYM}_${vi.SET.CPP_FUNC}')
+           FUNC_SET = format('_${{cls.CPPCLS}}_${vi.SET.CPP_FUNC}')
         end
         FUNCS:pushf('oluacls_prop(L, "${vi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
     end
@@ -190,7 +190,7 @@ local function gen_class_open(cls, write)
     end
 
     write(format([[
-        static int luaopen_${cls.CPP_SYM}(lua_State *L)
+        static int luaopen_${{cls.CPPCLS}}(lua_State *L)
         {
             oluacls_class(L, "${cls.LUACLS}", ${SUPRECLS});
             ${FUNCS}
@@ -279,7 +279,7 @@ local function gen_luaopen(module, write)
     for _, cls in ipairs(module.CLASSES) do
         local IFDEF = cls.IFDEFS['*']
         REQUIRES:push(IFDEF)
-        REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${cls.CPP_SYM});')
+        REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${{cls.CPPCLS}});')
         REQUIRES:push(IFDEF and '#endif' or nil)
     end
 

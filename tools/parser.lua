@@ -654,7 +654,6 @@ end
 local function typeconf(cppcls)
     local cls = {
         CPPCLS = cppcls,
-        CPP_SYM = string.gsub(cppcls, '[.:]+', '_'),
         FUNCS = {},
         CONSTS = {},
         ENUMS = {},
