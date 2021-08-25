@@ -230,7 +230,7 @@ local function lookup(level, key)
 end
 
 local function eval(line)
-    return string.gsub(line, '${{?[%w_.?]+}?}', function (str)
+    local function replace(str)
         -- search caller file path
         local level = 1
         local path
@@ -305,7 +305,10 @@ local function eval(line)
         end
 
         return prefix .. string.gsub(value, '\n', '\n' .. indent) .. posfix
-    end)
+    end
+    line = string.gsub(line, '${[%w_.?]+}', replace)
+    line = string.gsub(line, '${{[%w_.?]+}}', replace)
+    return line
 end
 
 local function doeval(expr)
