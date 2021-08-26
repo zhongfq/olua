@@ -248,6 +248,7 @@ function M:visit_method(cls, cur)
     end
 
     local optional = false
+    local min_args = 0
     exps:push(fn .. '(')
     declexps:push(fn .. '(')
     for i, arg in ipairs(cur.arguments) do
@@ -274,6 +275,7 @@ function M:visit_method(cls, cur)
             exps:push('@optional ')
             optional = true
         else
+            min_args = min_args + 1
             assert(not optional, cls.cppcls .. '::' .. DISPLAY_NAME)
         end
         exps:push(attr[argn] and (attr[argn] .. ' ') or nil)
@@ -298,6 +300,7 @@ function M:visit_method(cls, cur)
         name = fn,
         static = static,
         num_args = #cur.arguments,
+        min_args = min_args,
         cb_kind = cbkind,
         prototype = prototype,
     }
@@ -714,7 +717,21 @@ function writer.write_cls_func(module, cls, append)
         if #arr == 1 then
             local name = writer.to_prop_name(fn)
             if name then
-                cls.props[name] = {name = name}
+                local setname = 'set' .. name:lower()
+                local lessone, moreone
+                for _, f in ipairs(cls.funcs) do
+                    if f.name:lower() == setname then
+                        if f.min_args <= 1 then
+                            lessone = true
+                        end
+                        if f.min_args > 1 then
+                            moreone = true
+                        end
+                    end
+                end
+                if lessone or not moreone then
+                    cls.props[name] = {name = name}
+                end
             end
         end
         if not has_callback then
