@@ -1216,11 +1216,31 @@ function M.__call(_, path)
             #endif
         ]])
         header:close()
+        local has_target = false
+        local flags = olua.newarray()
         for i, v in ipairs(clang_args.flags) do
-            local HOMEDIR = olua.HOMEDIR
-            clang_args.flags[i] = format(v)
+            flags[#flags + 1] = v
+            if v:find('^-target') then
+                has_target = true
+            end
         end
-        clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, clang_args.flags)
+        if not has_target then
+            flags:merge({
+                '-x', 'c++', '-nostdinc', '-std=c++11',
+                '-U__SSE__',
+                '-DANDROID',
+                '-target', 'armv7-none-linux-androideabi',
+                '-idirafter', '${HOMEDIR}/include/c++',
+                '-idirafter', '${HOMEDIR}/include/c',
+                '-idirafter', '${HOMEDIR}/include/android-sysroot/x86_64-linux-android',
+                '-idirafter', '${HOMEDIR}/include/android-sysroot',
+            })
+        end
+        for i, v in ipairs(flags) do
+            local HOMEDIR = olua.HOMEDIR
+            flags[i] = format(v)
+        end
+        clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
         for _, v in ipairs(clang_tu:diagnostics()) do
             if v.text:find(' error:') then
                 error('parse header error')
