@@ -919,6 +919,9 @@ function writer.write_module(module)
 end
 
 function writer.__gc()
+    if not next(module_files) then
+        return
+    end
     local file = io.open('autobuild/autoconf-ignore.log', 'w')
     local arr = {}
     for cls, flag in pairs(ignored_types) do
@@ -1260,4 +1263,4 @@ function M.__call(_, path)
     end
 end
 
-return setmetatable(M, M)
+olua.autoconf = setmetatable({}, M)
