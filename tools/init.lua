@@ -12,7 +12,7 @@ else
 end
 
 -- lua search path
-package.path = scrpath:gsub('olua.lua', '?.lua;') .. package.path
+package.path = scrpath:gsub('[^/.]+%.lua$', '?.lua;') .. package.path
 
 -- lua c search path
 local suffix = osn == 'windows' and 'dll' or 'so'
@@ -24,7 +24,7 @@ package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
 local vf = io.open(olua.HOMEDIR .. '/version')
 local LIB_VERSION = '3'
 if not vf or vf:read('*a') ~= LIB_VERSION then
-    local dir = scrpath:gsub('olua.lua', '')
+    local dir = scrpath:gsub('[^/.]+%.lua$', '')
     local libzip = dir .. 'lib.zip'
     local includezip = dir .. 'include.zip'
     if osn == 'windows' then
