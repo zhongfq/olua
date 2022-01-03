@@ -22,7 +22,7 @@ package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
 
 -- unzip lib and header
 local vf = io.open(olua.HOMEDIR .. '/version')
-local LIB_VERSION = '3'
+local LIB_VERSION = '4'
 if not vf or vf:read('*a') ~= LIB_VERSION then
     local dir = scrpath:gsub('[^/.]+%.lua$', '')
     local libzip = dir .. 'lib.zip'
