@@ -1,0 +1,20 @@
+unused = false
+new_globals = {
+    "autoconf",
+    "chunk",
+    "clang",
+    "endif",
+    "exclude",
+    "export",
+    "headers",
+    "ifdef",
+    "include",
+    "ipairs",
+    "make_luacls",
+    "pairs",
+    "path",
+    "typeconf",
+    "typeconv",
+    "typedef",
+    "typeonly",
+}
