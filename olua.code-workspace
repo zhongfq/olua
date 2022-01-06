@@ -5,6 +5,18 @@
 		}
 	],
 	"settings": {
-		"editor.snippetSuggestions": "bottom"
+		"editor.snippetSuggestions": "bottom",
+		"files.associations": {
+			"*.manifest": "json",
+			"*.jsfl": "javascript",
+			"vector": "cpp",
+			"atomic": "cpp",
+			"bitset": "cpp",
+			"typeinfo": "cpp",
+			"iosfwd": "cpp",
+			"unordered_map": "cpp",
+			"functional": "cpp",
+			"thread": "cpp"
+		}
 	}
 }

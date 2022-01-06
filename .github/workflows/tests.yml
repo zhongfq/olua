@@ -1,0 +1,32 @@
+name: test
+
+on: [push]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    env:
+      ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory build
+
+    - name: Configure CMake
+      shell: bash
+      working-directory: build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+
+    - name: Build
+      working-directory: build
+      shell: bash
+      run: cmake --build .
+
+    - name: Test
+      working-directory: build
+      shell: bash
+      run: ctest .
+
