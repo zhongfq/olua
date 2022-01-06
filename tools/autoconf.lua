@@ -1126,16 +1126,24 @@ function M.__call(_, path)
     }
     local CMD = {}
 
-    function CMD.__index(_, k)
-        return _ENV[k]
+    function CMD.module(value)
+        m.name = value
     end
 
-    function CMD.__newindex(_, k, v)
-        m[k] = v
+    function CMD.path(value)
+        m.path = value
     end
 
-    function CMD.module(name)
-        m.name = name
+    function CMD.headers(value)
+        m.headers = value
+    end
+
+    function CMD.chunk(value)
+        m.chunk = value
+    end
+
+    function CMD.make_luacls(value)
+        m.make_luacls = value
     end
 
     function CMD.exclude(tn)
@@ -1254,8 +1262,14 @@ function M.__call(_, path)
         m = nil
     end
 
-    setmetatable(CMD, CMD)
-    assert(loadfile(path, nil, CMD))()
+    assert(loadfile(path, nil, setmetatable({}, {
+        __index = function (_, k)
+            return CMD[k] or _ENV[k]
+        end,
+        __newindex = function (_, k)
+            error('unknown command: ' .. k)
+        end
+    })))()
 
     if m then
         setmetatable(m, {__index = M})
