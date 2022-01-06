@@ -613,6 +613,7 @@ OLUA_API int olua_callback(lua_State *L, void *obj, const char *func, int argc)
         }
         status = lua_pcall(L, argc, 1, -(2 + argc));
     } else {
+        lua_pop(L, 1);
         if (olua_getrawobj(L, obj)) {
             lua_pop(L, 1);
             lua_pushfstring(L, "callback missed: %s", func);
