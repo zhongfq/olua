@@ -244,8 +244,7 @@ function olua.gen_callback(cls, fi, out)
         end
         CB_STORE = format 'olua_newobjstub(L, "${fi.RET.TYPE.LUACLS}")'
         out.PUSH_STUB = format [[
-            const char *cls = olua_getluatype(L, ret, "${fi.RET.TYPE.LUACLS}");
-            if (olua_pushobjstub(L, ret, cb_store, cls) == OLUA_OBJ_EXIST) {
+            if (olua_pushobjstub(L, ret, cb_store, "${fi.RET.TYPE.LUACLS}") == OLUA_OBJ_EXIST) {
                 ${REMOVE_CALLBACK}
                 lua_pushstring(L, cb_name.c_str());
                 lua_pushvalue(L, ${ARGN});

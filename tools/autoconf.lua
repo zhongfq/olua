@@ -1245,7 +1245,7 @@ function M.__call(_, path)
         end
         clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
         for _, v in ipairs(clang_tu:diagnostics()) do
-            if v.text:find(' error:') then
+            if v.severity == 'error' or v.severity == 'fatal' then
                 error('parse header error')
             end
         end
