@@ -202,7 +202,7 @@ OLUA_API int olua_pcall(lua_State *L, int nargs, int nresults)
     int status;
     int errfunc = lua_absindex(L, -(nargs + 1));
     olua_pusherrorfunc(L);
-    lua_insert(L, errfunc);
+    lua_insert(L, errfunc);     // insert error handle at func position
     status = lua_pcall(L, nargs, nresults, errfunc);
     lua_remove(L, errfunc);
     return status;
@@ -620,7 +620,7 @@ OLUA_API int olua_callback(lua_State *L, void *obj, const char *func, int argc)
         } else {
             lua_pushfstring(L, "object missed: %s", func);
         }
-        lua_pcall(L, 1, 0, 0);
+        lua_pcall(L, 1, 0, 0); // call error func
     }
     if (status != LUA_OK) {
         lua_pushnil(L);
@@ -1296,6 +1296,7 @@ static int l_move(lua_State *L)
         luaL_error(L, "method '__olua_move' not found in '%s'", olua_objstring(L, 1));
     }
     lua_insert(L, 1);
+    // maybe move object from object pool to the object table
     lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
     return lua_gettop(L);
 }
