@@ -8,6 +8,7 @@
 #include <string.h>
 #include <vector>
 #include <algorithm>
+#include <functional>
 
 extern bool assert_script_compatible(const char *msg);
 
