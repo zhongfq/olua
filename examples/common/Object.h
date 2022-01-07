@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <vector>
+#include <algorithm>
 
 extern bool assert_script_compatible(const char *msg);
 
