@@ -713,7 +713,7 @@ function writer.write_cls_func(module, cls, append)
             end
             funcs[#funcs + 1] = v.func
         end
-        
+
         if #arr == 1 then
             local name = writer.to_prop_name(fn)
             if name then
@@ -875,7 +875,7 @@ function writer.write_classes(module, append)
                 .chunk(${cls.chunk?})
                 .require(${cls.require?})
         ]]))
-        
+
         writer.write_cls_ifdef(module, cls, append)
         writer.write_cls_const(module, cls, append)
         writer.write_cls_func(module, cls, append)
@@ -981,12 +981,7 @@ function writer.__gc()
         type_files:pushf('dofile "${v.TYPE_FILE_PATH}"')
     end
     olua.write('autobuild/make.lua', format([[
-        local olua = require "olua"
-        local export = olua.export
-        local typedef = olua.typedef
-
         ${type_files}
-
         ${files}
     ]]))
 end
@@ -1037,7 +1032,7 @@ local function add_typeconf_command(cls)
     function CMD.const(name, value, typename)
         cls.consts[name] = {name = name, value = value, typename = typename}
     end
-    
+
     function CMD.func(fn, snippet)
         cls.excludes[fn] = true
         cls.funcs[fn] = {name = fn, snippet = snippet}
@@ -1062,7 +1057,7 @@ local function add_typeconf_command(cls)
         cls.excludes[varname] = true
         cls.vars[name or varname] = {name = name, snippet = snippet}
     end
-    
+
     function CMD.alias(name, alias)
         cls.aliases[name] = {name = name, alias = alias}
     end
@@ -1221,9 +1216,9 @@ function M.__call(_, path)
         header:write(format [[
             #ifndef __AUTOCONF_H__
             #define __AUTOCONF_H__
-    
+
             ${clang_args.headers}
-    
+
             #endif
         ]])
         header:close()
@@ -1275,6 +1270,16 @@ function M.__call(_, path)
         setmetatable(m, {__index = M})
         m:parse(path)
     end
+end
+
+local _dofile = dofile
+
+function dofile(path, ...)
+    if string.find(path, '/make.lua$') then
+        writer.__gc()
+        module_files = {}
+    end
+    _dofile(path, ...)
 end
 
 olua.autoconf = setmetatable({}, M)

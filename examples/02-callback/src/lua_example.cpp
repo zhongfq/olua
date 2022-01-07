@@ -1,7 +1,22 @@
 //
 // AUTO BUILD, DON'T MODIFY!
 //
-#include "lua_callback.h"
+#include "lua_example.h"
+
+bool olua_is_example_Callback_Listener(lua_State *L, int idx)
+{
+    return olua_is_callback<example::Callback::Listener>(L, idx);
+}
+
+int olua_push_example_Callback_Listener(lua_State *L, const example::Callback::Listener *value)
+{
+    return olua_push_callback<example::Callback::Listener>(L, value);
+}
+
+void olua_check_example_Callback_Listener(lua_State *L, int idx, example::Callback::Listener *value)
+{
+    olua_check_callback<example::Callback::Listener>(L, idx, value);
+}
 
 static int _example_Event___olua_move(lua_State *L)
 {
@@ -181,6 +196,28 @@ static int luaopen_example_Object(lua_State *L)
     return 1;
 }
 
+static int _example_Callback_Listener___call(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    luaL_checktype(L, -1, LUA_TFUNCTION);
+    olua_push_callback<example::Callback::Listener>(L, nullptr);
+
+    olua_endinvoke(L);
+
+    return 1;
+}
+
+static int luaopen_example_Callback_Listener(lua_State *L)
+{
+    oluacls_class(L, "example.Callback.Listener", nullptr);
+    oluacls_func(L, "__call", _example_Callback_Listener___call);
+
+    olua_registerluatype<example::Callback::Listener>(L, "example.Callback.Listener");
+
+    return 1;
+}
+
 static int _example_Callback___olua_move(lua_State *L)
 {
     olua_startinvoke(L);
@@ -256,7 +293,7 @@ static int _example_Callback_setEvent(lua_State *L)
         }
     };
 
-    // void setEvent(@local const std::function<void (const example::Event *)> &callback)
+    // void setEvent(@local const std::function<void (const Event *)> &callback)
     self->setEvent(arg1);
 
     olua_endinvoke(L);
@@ -269,10 +306,10 @@ static int _example_Callback_setOnceEvent(lua_State *L)
     olua_startinvoke(L);
 
     example::Callback *self = nullptr;
-    std::function<void(const example::Event *)> arg1;       /** callback */
+    example::Callback::Listener arg1;       /** callback */
 
     olua_to_cppobj(L, 1, (void **)&self, "example.Callback");
-    olua_check_std_function(L, 2, &arg1);
+    olua_check_example_Callback_Listener(L, 2, &arg1);
 
     void *cb_store = (void *)self;
     std::string cb_tag = "OnceEvent";
@@ -299,7 +336,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
         }
     };
 
-    // void setOnceEvent(@local const std::function<void (const example::Event *)> &callback)
+    // void setOnceEvent(@local const example::Callback::Listener &callback)
     self->setOnceEvent(arg1);
 
     olua_endinvoke(L);
@@ -321,10 +358,11 @@ static int luaopen_example_Callback(lua_State *L)
     return 1;
 }
 
-int luaopen_callback(lua_State *L)
+int luaopen_example(lua_State *L)
 {
     olua_require(L, "example.Event", luaopen_example_Event);
     olua_require(L, "example.Object", luaopen_example_Object);
+    olua_require(L, "example.Callback.Listener", luaopen_example_Callback_Listener);
     olua_require(L, "example.Callback", luaopen_example_Callback);
     return 0;
 }

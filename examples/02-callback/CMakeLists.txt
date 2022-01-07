@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.10)
 set(source
     src/Callback.h
     src/Callback.cpp
-    src/lua_callback.h
-    src/lua_callback.cpp
+    src/lua_example.h
+    src/lua_example.cpp
     src/main.cpp
 )
 

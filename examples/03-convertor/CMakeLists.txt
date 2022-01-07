@@ -1,20 +1,20 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(source
-    src/Hello.h
-    src/Hello.cpp
+    src/Convertor.h
+    src/Convertor.cpp
     src/lua_example.h
     src/lua_example.cpp
     src/main.cpp
 )
 
-add_executable(helloworld ${source})
-target_link_libraries(helloworld common)
+add_executable(convertor ${source})
+target_link_libraries(convertor common)
 add_custom_command(
   TARGET
-    helloworld
+    convertor
   PRE_BUILD
   COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/src/*.lua ${CMAKE_CURRENT_BINARY_DIR}
 )
-add_test(NAME test_helloworld COMMAND helloworld)
+add_test(NAME test_convertor COMMAND convertor)
