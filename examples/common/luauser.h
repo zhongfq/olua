@@ -12,6 +12,14 @@
 
 #ifdef __cplusplus
 
+#include "Object.h"
+
+template <class T>
+void olua_insert_array(example::vector<T> *array, T value);
+
+template <class T>
+void olua_foreach_array(const example::vector<T> *array, const std::function<void(T)> &callback);
+
 #endif // __cplusplus
 
 #endif

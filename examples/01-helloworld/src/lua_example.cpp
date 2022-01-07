@@ -1,7 +1,7 @@
 //
 // AUTO BUILD, DON'T MODIFY!
 //
-#include "lua_hello.h"
+#include "lua_example.h"
 
 static int _example_Object___gc(lua_State *L)
 {
@@ -179,7 +179,7 @@ static int luaopen_example_Hello(lua_State *L)
     return 1;
 }
 
-int luaopen_hello(lua_State *L)
+int luaopen_example(lua_State *L)
 {
     olua_require(L, "example.Object", luaopen_example_Object);
     olua_require(L, "example.Hello", luaopen_example_Hello);

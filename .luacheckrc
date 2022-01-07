@@ -3,6 +3,7 @@ new_globals = {
     "autoconf",
     "chunk",
     "clang",
+    "dofile",
     "endif",
     "exclude",
     "export",

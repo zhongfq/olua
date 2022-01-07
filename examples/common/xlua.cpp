@@ -11,7 +11,7 @@ static lua_State *GL = NULL;
 static std::unordered_map<std::string, std::string> _typemap;
 static std::thread::id _thread;
 
-bool throw_lua_error(const char *msg)
+extern bool assert_script_compatible(const char *msg)
 {
     if (xlua_invokingstate) {
         lua_State *L = xlua_invokingstate;

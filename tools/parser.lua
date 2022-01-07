@@ -537,7 +537,7 @@ local function parse_prop(cls, name, declget, declset)
     end
 
     if not pi.GET.SNIPPET then
-        assert(pi.GET.RET.TYPE.CPPCLS ~= 'void', declget)
+        assert(pi.GET.RET.TYPE.CPPCLS ~= 'void', pi.GET.FUNC_DESC)
     elseif declget then
         pi.GET.CPP_FUNC = 'get_' .. pi.GET.CPP_FUNC
     end

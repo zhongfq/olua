@@ -1,13 +1,11 @@
-module "callback"
+module "example"
 
 path "src"
 
 headers [[
-#include "Callback.h"
+#include "Hello.h"
 #include "xlua.h"
 ]]
-
-typeconf "example::Event"
 
 typeconf "example::Object"
     .exclude "retain"
@@ -16,8 +14,4 @@ typeconf "example::Object"
     {
         return xlua_objgc(L);
     }]])
-typeconf "example::Callback"
-    .callback({
-        name = 'setOnceEvent',
-        tag_scope = 'once',
-    })
+typeconf "example::Hello"

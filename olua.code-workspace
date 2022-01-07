@@ -16,7 +16,32 @@
 			"iosfwd": "cpp",
 			"unordered_map": "cpp",
 			"functional": "cpp",
-			"thread": "cpp"
+			"thread": "cpp",
+			"string": "cpp",
+			"__config": "cpp",
+			"__bit_reference": "cpp",
+			"__functional_base": "cpp",
+			"__node_handle": "cpp",
+			"algorithm": "cpp",
+			"chrono": "cpp",
+			"cstddef": "cpp",
+			"iterator": "cpp",
+			"limits": "cpp",
+			"optional": "cpp",
+			"ratio": "cpp",
+			"tuple": "cpp",
+			"type_traits": "cpp",
+			"__split_buffer": "cpp",
+			"__hash_table": "cpp",
+			"__tree": "cpp",
+			"initializer_list": "cpp",
+			"map": "cpp",
+			"set": "cpp",
+			"string_view": "cpp",
+			"utility": "cpp",
+			"memory": "cpp",
+			"__string": "cpp",
+			"__debug": "cpp"
 		}
 	}
 }
