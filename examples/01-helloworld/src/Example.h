@@ -1,5 +1,5 @@
-#ifndef __EXAMPLES_HELLO__
-#define __EXAMPLES_HELLO__
+#ifndef __EXAMPLE__
+#define __EXAMPLE__
 
 #include "Object.h"
 

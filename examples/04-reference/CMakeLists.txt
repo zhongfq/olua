@@ -8,15 +8,16 @@ set(source
     src/main.cpp
 )
 
-add_executable(helloworld ${source})
-target_link_libraries(helloworld common)
+add_executable(reference ${source})
+target_link_libraries(reference common)
 add_custom_command(
   TARGET
-    helloworld
+    reference
   PRE_BUILD
   COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/src/*.lua ${CMAKE_CURRENT_BINARY_DIR}
   COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/../common/*.lua ${CMAKE_CURRENT_BINARY_DIR}
+  
 )
-add_test(NAME test_helloworld COMMAND helloworld)
+add_test(NAME test_reference COMMAND reference)

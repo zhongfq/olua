@@ -16,3 +16,7 @@ obj:dispatch()
 print('----------------------------------')
 obj:dispatch()
 print('----------------------------------')
+
+obj:foreach(1, 3, function (value)
+    print('foreach', value)
+end)
