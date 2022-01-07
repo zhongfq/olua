@@ -83,7 +83,7 @@ function olua.gen_callback(cls, fi, out)
         out.CALLBACK = gen_ret_callback(cls, fi)
         return
     end
-    
+
     if fi.CALLBACK.TAG_MODE == 'OLUA_TAG_SUBEQUAL' or
             fi.CALLBACK.TAG_MODE == 'OLUA_TAG_SUBSTARTWITH' then
         out.CALLBACK = gen_remove_callback(cls, fi)

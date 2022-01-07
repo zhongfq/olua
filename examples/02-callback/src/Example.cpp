@@ -1,4 +1,4 @@
-#include "Callback.h"
+#include "Example.h"
 
 using namespace example;
 
@@ -24,4 +24,11 @@ void Callback::setOnceEvent(const Callback::Listener &callback)
 void Callback::setEvent(const Callback::Listener &callback)
 {
     _listener = callback;
+}
+
+void Callback::foreach(int start, int to, const std::function<void (int)> &callback)
+{
+    for (; start <= to; start++) {
+        callback(start);
+    }
 }

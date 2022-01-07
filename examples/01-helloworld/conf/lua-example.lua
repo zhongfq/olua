@@ -3,15 +3,10 @@ module "example"
 path "src"
 
 headers [[
-#include "Hello.h"
+#include "Example.h"
 #include "xlua.h"
 ]]
 
-typeconf "example::Object"
-    .exclude "retain"
-    .exclude "release"
-    .func('__gc', [[
-    {
-        return xlua_objgc(L);
-    }]])
+include "../common/lua-object.lua"
+
 typeconf "example::Hello"

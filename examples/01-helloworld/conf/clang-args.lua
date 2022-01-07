@@ -1,6 +1,6 @@
 clang {
     headers = [[
-        #include "Hello.h"
+        #include "Example.h"
     ]],
     flags = {
         '-DOLUA_DEBUG',

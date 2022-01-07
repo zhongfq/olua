@@ -41,7 +41,24 @@
 			"utility": "cpp",
 			"memory": "cpp",
 			"__string": "cpp",
-			"__debug": "cpp"
+			"__debug": "cpp",
+			"__bits": "cpp",
+			"__nullptr": "cpp",
+			"__threading_support": "cpp",
+			"__tuple": "cpp",
+			"bit": "cpp",
+			"cctype": "cpp",
+			"cmath": "cpp",
+			"cstdint": "cpp",
+			"cstdio": "cpp",
+			"cstdlib": "cpp",
+			"cstring": "cpp",
+			"ctime": "cpp",
+			"cwchar": "cpp",
+			"cwctype": "cpp",
+			"exception": "cpp",
+			"new": "cpp",
+			"stdexcept": "cpp"
 		}
 	}
 }

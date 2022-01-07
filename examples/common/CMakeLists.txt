@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 set(source
     AutoreleasePool.h
     AutoreleasePool.cpp
+    lua_conv.h
     luauser.h
     Object.h
     Object.cpp

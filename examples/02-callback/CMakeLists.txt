@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 
 set(source
-    src/Callback.h
-    src/Callback.cpp
+    src/Example.h
+    src/Example.cpp
     src/lua_example.h
     src/lua_example.cpp
     src/main.cpp
@@ -16,5 +16,7 @@ add_custom_command(
   PRE_BUILD
   COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/src/*.lua ${CMAKE_CURRENT_BINARY_DIR}
+  COMMAND
+    cp -v ${CMAKE_CURRENT_SOURCE_DIR}/../common/*.lua ${CMAKE_CURRENT_BINARY_DIR}
 )
 add_test(NAME test_callback COMMAND callback)
