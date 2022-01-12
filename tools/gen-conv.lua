@@ -176,7 +176,7 @@ local function gen_unpack_func(cv, write)
                     lua_pushnil(L);
                 }
             }
-            
+
             return ${NUM_ARGS};
         }
     ]]))
