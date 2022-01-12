@@ -78,7 +78,7 @@ int olua_unpack_example_Point(lua_State *L, const example::Point *value)
     return 2;
 }
 
-bool olua_ispack_example_Point(lua_State *L, int idx)
+bool olua_canpack_example_Point(lua_State *L, int idx)
 {
     return olua_is_int(L, idx + 0) && olua_is_int(L, idx + 1);
 }

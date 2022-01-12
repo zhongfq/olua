@@ -17,11 +17,11 @@ local writer = {}
 local M = {}
 
 function M:parse(path)
-    assert(not self.FILE_PATH)
-    assert(not self.TYPE_FILE_PATH)
-    local FILENAME = self.name:gsub('_', '-')
-    self.FILE_PATH = format('autobuild/${FILENAME}.lua')
-    self.TYPE_FILE_PATH = format('autobuild/${FILENAME}-types.lua')
+    assert(not self.clsFilePath)
+    assert(not self.typeFilePath)
+    local filename = self.name:gsub('_', '-')
+    self.clsFilePath = format('autobuild/${filename}.lua')
+    self.typeFilePath = format('autobuild/${filename}-types.lua')
 
     module_files:push(self)
 
@@ -34,7 +34,14 @@ function M:parse(path)
     end
 
     for _, cls in ipairs(self.typedef_types) do
-        cls.conv = cls.conv or toconv(cls)
+        if not cls.conv then
+            if cls.decltype then
+                local ti = olua.typeinfo(cls.decltype, nil, true)
+                cls.conv = ti and ti.CONV or toconv(cls)
+            else
+                cls.conv = toconv(cls)
+            end
+        end
         type_convs[cls.cppcls] = cls.conv
     end
 
@@ -341,7 +348,7 @@ function M:visit_var(cls, cur)
     exps:push(cur.name)
 
     local decl = tostring(exps)
-    local name = cls.make_luaname(cur.name, 'VAR')
+    local name = cls.luaname(cur.name, 'VAR')
     cls.vars[name] = {
         name = name,
         snippet = decl,
@@ -360,7 +367,7 @@ function M:visit_enum(cppcls, cur)
     local cls = self:do_visit(cppcls)
     for _, c in ipairs(cur.children) do
         local VALUE =  c.name
-        local name = cls.make_luaname(VALUE, 'ENUM')
+        local name = cls.luaname(VALUE, 'ENUM')
         cls.enums[name] = {
             name = name,
             value = format('${cls.cppcls}::${VALUE}'),
@@ -373,13 +380,13 @@ end
 function M:visit_alias_class(cppcls, super)
     local cls = self:do_visit(cppcls)
     if self:is_func_type(super) then
-        cls.kind = 'classFunc'
+        cls.kind = 'class func'
         cls.decltype = super
-        cls.luacls = self.make_luacls(cppcls)
+        cls.luacls = self.luacls(cppcls)
     else
-        cls.kind = cls.kind or 'classAlias'
+        cls.kind = cls.kind or 'class alias'
         cls.supercls = super
-        cls.luacls = self.make_luacls(super)
+        cls.luacls = self.luacls(super)
     end
 end
 
@@ -555,9 +562,6 @@ function writer.write_typedef(module)
 
     writeLine("-- AUTO BUILD, DON'T MODIFY!")
     writeLine('')
-    writeLine('local olua = require "olua"')
-    writeLine('local typedef = olua.typedef')
-    writeLine('')
     for _, td in ipairs(module.typedef_types) do
         local arr = {}
         ignored_types[td.cppcls] = false
@@ -585,11 +589,11 @@ function writer.write_typedef(module)
             conv = 'olua_$$_uint'
             luacls = olua.stringify(cls.luacls, "'")
             decltype = olua.stringify('lua_Unsigned')
-        elseif cls.kind == 'class' or cls.kind == 'classAlias' then
+        elseif cls.kind == 'class' or cls.kind == 'class alias' then
             cppcls = cppcls .. ' *'
             luacls = olua.stringify(cls.luacls, "'")
             conv = 'olua_$$_cppobj'
-        elseif cls.kind == 'classFunc' then
+        elseif cls.kind == 'class func' then
             luacls = olua.stringify(cls.luacls, "'")
             decltype = olua.stringify(cls.decltype, "'")
             conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
@@ -609,7 +613,7 @@ function writer.write_typedef(module)
         t:push('')
     end
     t:push('')
-    olua.write(module.TYPE_FILE_PATH, tostring(t))
+    olua.write(module.typeFilePath, tostring(t))
 end
 
 function writer.is_new_func(module, supercls, fn)
@@ -863,7 +867,7 @@ end
 function writer.write_classes(module, append)
     append('')
     for _, cls in ipairs(module.class_types) do
-        if cls.kind ~= 'class' and cls.kind ~= 'enum' and cls.kind ~= 'classFunc' then
+        if cls.kind ~= 'class' and cls.kind ~= 'enum' and cls.kind ~= 'class func' then
             goto continue
         end
 
@@ -907,7 +911,7 @@ function writer.write_module(module)
     append(format([[
         -- AUTO BUILD, DON'T MODIFY!
 
-        dofile "${module.TYPE_FILE_PATH}"
+        dofile "${module.typeFilePath}"
     ]]))
     append('')
 
@@ -915,7 +919,7 @@ function writer.write_module(module)
     writer.write_classes(module, append)
     writer.write_typedef(module, append)
 
-    olua.write(module.FILE_PATH, tostring(t))
+    olua.write(module.clsFilePath, tostring(t))
 end
 
 function writer.__gc()
@@ -967,9 +971,6 @@ function writer.__gc()
     end
 
     olua.write('autobuild/alias-types.lua', format([[
-        local olua = require "olua"
-        local typedef = olua.typedef
-
         ${TYPEDEFS}
     ]]))
 
@@ -977,8 +978,8 @@ function writer.__gc()
     local type_files = olua.newarray('\n')
     type_files:push('dofile "autobuild/alias-types.lua"')
     for _, v in ipairs(module_files) do
-        files:pushf('export "${v.FILE_PATH}"')
-        type_files:pushf('dofile "${v.TYPE_FILE_PATH}"')
+        files:pushf('export "${v.clsFilePath}"')
+        type_files:pushf('dofile "${v.typeFilePath}"')
     end
     olua.write('autobuild/make.lua', format([[
         ${type_files}
@@ -990,35 +991,64 @@ setmetatable(writer, writer)
 -------------------------------------------------------------------------------
 -- define config module
 -------------------------------------------------------------------------------
+local function keepvalue(v)
+    return v
+end
+
+local function tobool(v)
+    if v == 'true' then
+        return true
+    elseif v == 'false' then
+        return false
+    end
+end
+
+local function toany(...)
+    local funcs = {...}
+    return function (...)
+        for _, f in ipairs(funcs) do
+            local v = f(...)
+            if v ~= nil then
+                return v
+            end
+        end
+    end
+end
+
+local function add_value_command(CMD, key, store, field, tofunc)
+    tofunc = tofunc or keepvalue
+    field = field or key
+    CMD[key] = function (v)
+        store[field] = tofunc(v)
+    end
+end
+
 local function add_typeconf_command(cls)
     local CMD = {}
+    local ifdef = nil
 
-    function CMD.kind(kind)
-        cls.kind = kind
-    end
-
-    function CMD.chunk(chunk)
-        cls.chunk = chunk
-    end
-
-    function CMD.make_luaname(func)
-        cls.make_luaname = func
-    end
-
-    function CMD.supercls(supercls)
-        cls.supercls = supercls
-    end
-
-    function CMD.require(codes)
-        cls.require = codes
-    end
+    add_value_command(CMD, 'kind', cls)
+    add_value_command(CMD, 'chunk', cls)
+    add_value_command(CMD, 'luaname', cls)
+    add_value_command(CMD, 'supercls', cls)
+    add_value_command(CMD, 'require', cls)
 
     function CMD.exclude(name)
         cls.excludes[name] = true
     end
 
-    function CMD.ifdef(name, value)
-        cls.ifdefs[name] = {name = name, value = value}
+    function CMD.ifdef(cond)
+         if string.find(cond, '^defined%(') then
+            ifdef = '#if ' .. cond
+        elseif string.find(cond, '^#if') then
+            ifdef = cond
+        else
+            ifdef = '#ifdef ' .. cond
+        end
+    end
+
+    function CMD.endif(cond)
+        ifdef = nil
     end
 
     function CMD.attr(name, attr)
@@ -1036,10 +1066,14 @@ local function add_typeconf_command(cls)
     function CMD.func(fn, snippet)
         cls.excludes[fn] = true
         cls.funcs[fn] = {name = fn, snippet = snippet}
+        if ifdef then
+            cls.ifdefs[fn] = {name = fn, value = ifdef}
+        end
     end
 
     function CMD.callback(cb)
         if not cb.name then
+            error(cb.funcs[1])
             cb.name = olua.func_name(cb.funcs[1])
             cls.excludes[cb.name] = true
         end
@@ -1074,72 +1108,29 @@ end
 
 local function add_typedef_command(cls)
     local CMD = {}
-
-    local conv = {
-        ['bool'] = 'olua_$$_bool',
-        ['const char *'] = 'olua_$$_string',
-        ['lua_Integer'] = 'olua_$$_int',
-        ['lua_Number'] = 'olua_$$_number',
-        ['lua_Unsigned'] = 'olua_$$_uint',
-        ['std::map'] = 'olua_$$_std_map',
-        ['std::set'] = 'olua_$$_std_set',
-        ['std::string'] = 'olua_$$_std_string',
-        ['std::unordered_map'] = 'olua_$$_std_unordered_map',
-        ['std::vector'] = 'olua_$$_std_vector',
-        ['void *'] = 'olua_$$_obj',
-    }
-
-    function CMD.vars(n)
-        cls.num_vars = tonumber(n)
-        return CMD
-    end
-
-    function CMD.decltype(dt)
-        cls.decltype = dt
-        cls.conv = conv[dt]
-        return CMD
-    end
-
-    function CMD.conv(fn)
-        cls.conv = fn
-        return CMD
-    end
-
+    add_value_command(CMD, 'vars', cls, 'num_vars', tonumber)
+    add_value_command(CMD, 'decltype', cls)
+    add_value_command(CMD, 'conv', cls)
     return CMD
 end
 
 function M.__call(_, path)
-    local index = 1
     local ifdef = nil
     local m = {
         class_types = olua.newhash(),
         exclude_types = {},
         typedef_types = olua.newhash(),
-        make_luacls = function (cppname)
+        luacls = function (cppname)
             return string.gsub(cppname, "::", ".")
         end,
     }
     local CMD = {}
 
-    function CMD.module(value)
-        m.name = value
-    end
-
-    function CMD.path(value)
-        m.path = value
-    end
-
-    function CMD.headers(value)
-        m.headers = value
-    end
-
-    function CMD.chunk(value)
-        m.chunk = value
-    end
-
-    function CMD.make_luacls(value)
-        m.make_luacls = value
-    end
+    add_value_command(CMD, 'module', m, 'name')
+    add_value_command(CMD, 'path', m)
+    add_value_command(CMD, 'headers', m)
+    add_value_command(CMD, 'chunk', m)
+    add_value_command(CMD, 'luacls', m)
 
     function CMD.exclude(tn)
         m.exclude_types[tn] = true
@@ -1166,7 +1157,7 @@ function M.__call(_, path)
     function CMD.typeconf(classname)
         local cls = {
             cppcls = assert(classname, 'not specify classname'),
-            luacls = m.make_luacls(classname),
+            luacls = m.luacls(classname),
             excludes = olua.newhash(),
             usings = olua.newhash(),
             attrs = olua.newhash(),
@@ -1179,11 +1170,10 @@ function M.__call(_, path)
             aliases = olua.newhash(),
             inserts = olua.newhash(),
             ifdefs = olua.newhash(),
-            index = index,
+            index = #m.class_types + 1,
             reg_luatype = true,
-            make_luaname = function (n) return n end,
+            luaname = function (n) return n end,
         }
-        index = index + 1
         assert(not m.class_types[classname], 'class conflict: ' .. classname)
         m.class_types[classname] = cls
         if ifdef then
@@ -1267,6 +1257,14 @@ function M.__call(_, path)
     })))()
 
     if m then
+        for _, cls in ipairs(m.class_types) do
+            for fn, fi in pairs(cls.funcs) do
+                if not fi.snippet then
+                    cls.funcs:take(fn)
+                    cls.excludes:replace(fn, nil)
+                end
+            end
+        end
         setmetatable(m, {__index = M})
         m:parse(path)
     end

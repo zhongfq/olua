@@ -29,18 +29,3 @@ typeconf "example::Node"
             int parent = lua_gettop(L);
         ]]
     })
-
-
---[[
-Node *getParent() const { return _parent; }
-
-    void setComponent(Node *value) { _component = value; }
-    Node *getComponent() const { return _component; }
-
-    void addChild(Node *child);
-    void removeChild(Node *child);
-    void removeChildByName(const std::string &name);
-    void removeSelf();
-    Node *getChildByName(const std::string &name);
-    size_t getNumChildren() const { return _children.size(); }
-]]

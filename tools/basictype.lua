@@ -68,6 +68,7 @@ typedef {
         float
         double
         GLfloat
+        lua_Number
     ]],
     DECLTYPE = 'lua_Number',
     CONV = 'olua_$$_number',
@@ -88,6 +89,7 @@ typedef {
         int32_t
         int64_t
         std::int32_t
+        lua_Integer
     ]],
     DECLTYPE = 'lua_Integer',
     CONV = 'olua_$$_int',
@@ -110,6 +112,7 @@ typedef {
         unsigned int
         unsigned short
         unsigned long
+        lua_Unsigned
     ]],
     DECLTYPE = 'lua_Unsigned',
     CONV = 'olua_$$_uint',

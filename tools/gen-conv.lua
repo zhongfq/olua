@@ -200,7 +200,7 @@ local function gen_is_func(cv, write)
     ]]))
 end
 
-local function gen_ispack_func(cv, write)
+local function gen_canpack_func(cv, write)
     local EXPS = olua.newarray(' && ')
     for i, var in ipairs(cv.VARS) do
         local pi = var.SET.ARGS[1]
@@ -213,7 +213,7 @@ local function gen_ispack_func(cv, write)
         end
     end
     write(format([[
-        bool olua_ispack_${{cv.CPPCLS}}(lua_State *L, int idx)
+        bool olua_canpack_${{cv.CPPCLS}}(lua_State *L, int idx)
         {
             return ${EXPS};
         }
@@ -231,7 +231,7 @@ function olua.gen_conv_header(module, write)
             bool olua_is_${{cv.CPPCLS}}(lua_State *L, int idx);
             void olua_pack_${{cv.CPPCLS}}(lua_State *L, int idx, ${cv.CPPCLS} *value);
             int olua_unpack_${{cv.CPPCLS}}(lua_State *L, const ${cv.CPPCLS} *value);
-            bool olua_ispack_${{cv.CPPCLS}}(lua_State *L, int idx);
+            bool olua_canpack_${{cv.CPPCLS}}(lua_State *L, int idx);
         ]]))
         write(IFDEF and '#endif' or nil)
         write("")
@@ -295,7 +295,7 @@ function olua.gen_conv_source(module, write)
         write('')
         gen_unpack_func(cv, write)
         write('')
-        gen_ispack_func(cv, write)
+        gen_canpack_func(cv, write)
         write(IFDEF and '#endif' or nil)
         write('')
     end

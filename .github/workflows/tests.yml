@@ -13,6 +13,11 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: 'recursive'
+      
+    - name: Setup Lua
+      uses: xpol/setup-lua@v0.2
+      with:
+        lua-version: "5.3.5"
 
     - name: Create Build Environment
       run: cmake -E make_directory build
