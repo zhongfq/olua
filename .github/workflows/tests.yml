@@ -10,9 +10,13 @@ jobs:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout github repo (+ download lfs dependencies)
+      uses: actions/checkout@v2
       with:
+        lfs: true
         submodules: 'recursive'
+    - name: Checkout LFS objects
+      run: git lfs checkout
       
     - name: Setup Lua
       uses: xpol/setup-lua@v0.2
