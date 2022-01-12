@@ -15,6 +15,8 @@ add_custom_command(
     convertor
   PRE_BUILD
   COMMAND
+    cd ${CMAKE_CURRENT_SOURCE_DIR} && lua build.lua
+  COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/src/*.lua ${CMAKE_CURRENT_BINARY_DIR}
   COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/../common/*.lua ${CMAKE_CURRENT_BINARY_DIR}

@@ -161,10 +161,11 @@ function olua.gen_check_exp(arg, name, i, out)
             ]])
         end
     else
-        if arg.ATTR.PACK then
-            out.IDX = out.IDX + arg.TYPE.NUM_VARS - 1
-        end
         out.CHECK_ARGS:pushf('${CHECK_FUNC}(L, ${ARGN}, &${ARG_NAME});')
+    end
+
+    if arg.ATTR.PACK and arg.TYPE.NUM_VARS then
+        out.IDX = out.IDX + arg.TYPE.NUM_VARS - 1
     end
 end
 
@@ -525,7 +526,7 @@ local function gen_test_and_call(cls, fns)
             local MAX_VARS = 1
             local ARGN = (fi.STATIC and 0 or 1)
             for i, ai in ipairs(fi.ARGS) do
-                local IS_FUNC = olua.conv_func(ai.TYPE, ai.ATTR.PACK and 'ispack' or 'is')
+                local IS_FUNC = olua.conv_func(ai.TYPE, ai.ATTR.PACK and 'canpack' or 'is')
                 local TEST_NULL = ""
 
                 ARGN = ARGN + 1

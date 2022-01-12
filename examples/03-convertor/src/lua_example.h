@@ -15,6 +15,6 @@ void olua_check_example_Point(lua_State *L, int idx, example::Point *value);
 bool olua_is_example_Point(lua_State *L, int idx);
 void olua_pack_example_Point(lua_State *L, int idx, example::Point *value);
 int olua_unpack_example_Point(lua_State *L, const example::Point *value);
-bool olua_ispack_example_Point(lua_State *L, int idx);
+bool olua_canpack_example_Point(lua_State *L, int idx);
 
 #endif
