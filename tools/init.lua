@@ -25,7 +25,7 @@ local vf = io.open(olua.HOMEDIR .. '/version')
 local LIB_VERSION = '4'
 if not vf or vf:read('*a') ~= LIB_VERSION then
     local dir = scrpath:gsub('[^/.]+%.lua$', '')
-    local libzip = dir .. 'lib.zip'
+    local libzip = string.format('%slib-%s.zip', dir, osn)
     local includezip = dir .. 'include.zip'
     if osn == 'windows' then
         local unzip = dir .. 'unzip.exe'
@@ -39,13 +39,6 @@ if not vf or vf:read('*a') ~= LIB_VERSION then
     end
     io.open(olua.HOMEDIR .. '/version', 'w+'):write(LIB_VERSION):close()
 end
-
--- test clang
-xpcall(function ()
-    require "clang"
-end, function ()
-    print('tools/lib.zip is tracked with git-lfs(https://git-lfs.github.com)')
-end)
 
 local _ipairs = ipairs
 function ipairs(t)
