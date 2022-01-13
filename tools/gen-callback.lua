@@ -274,6 +274,7 @@ function olua.gen_callback(cls, fi, out)
         end
     else
         CB_STORE = 'arg' .. (TAG_STORE - 1)
+        check_callback_store(fi, TAG_STORE - 1)
     end
 
     cbout.ARGS = table.concat(cbout.ARGS, ", ")
