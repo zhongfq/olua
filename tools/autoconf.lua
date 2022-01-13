@@ -243,11 +243,8 @@ function M:visit_method(cls, cur)
         local tn = self:typename(cur.resultType, cur)
         if self:is_func_type(tn) then
             cbkind = 'RET'
-            if callback.nullable then
-                exps:push('@nullable ')
-            end
             if callback.localvar ~= false then
-                exps:push('@local ')
+                exps:push('@localvar ')
             end
         end
         exps:push(tn)
@@ -271,11 +268,8 @@ function M:visit_method(cls, cur)
             end
             assert(not cbkind, cls.cppcls .. '::' .. DISPLAY_NAME)
             cbkind = 'ARG'
-            if callback.nullable then
-                exps:push('@nullable ')
-            end
             if callback.localvar ~= false then
-                exps:push('@local ')
+                exps:push('@localvar ')
             end
         end
         if self:has_default_value(arg) and not string.find(attr[argn] or '', '@ret') then
@@ -319,7 +313,7 @@ function M:visit_var(cls, cur)
     end
 
     local exps = olua.newarray('')
-    local attr = cls.attrs[cur.name] or cls.attrs['*'] or {}
+    local attr = cls.attrs[cur.name] or cls.attrs['var*'] or {}
     local tn = self:typename(cur.type, cur)
     local cbkind
 
@@ -337,7 +331,7 @@ function M:visit_var(cls, cur)
         exps:push('@nullable ')
         local callback = cls.callbacks:take(cur.name) or {}
         if callback.localvar ~= false then
-            exps:push('@local ')
+            exps:push('@localvar ')
         end
     end
 
@@ -746,7 +740,7 @@ function writer.write_cls_func(module, cls, append)
             end
         else
             local tag = fn.name:gsub('^set', ''):gsub('^get', '')
-            local mode = fn.cb_kind == 'RET' and 'OLUA_TAG_SUBEQUAL' or 'OLUA_TAG_REPLACE'
+            local mode = fn.cb_kind == 'RET' and 'subequal' or 'replace'
             local callback = cls.callbacks[fn.name]
             if callback then
                 callback.funcs = funcs
@@ -849,10 +843,10 @@ function writer.write_cls_insert(module, cls, append)
     for _, v in ipairs(cls.inserts) do
         append(format([[
             .insert('${v.name}', {
-                BEFORE = ${v.codes.before?},
-                AFTER = ${v.codes.after?},
-                CALLBACK_BEFORE = ${v.codes.callback_before?},
-                CALLBACK_AFTER = ${v.codes.callback_after?},
+                BEFORE = ${v.before?},
+                AFTER = ${v.after?},
+                CALLBACK_BEFORE = ${v.cbefore?},
+                CALLBACK_AFTER = ${v.cafter?},
             })
         ]], 4))
     end
@@ -991,11 +985,29 @@ setmetatable(writer, writer)
 -------------------------------------------------------------------------------
 -- define config module
 -------------------------------------------------------------------------------
-local function keepvalue(v)
+local function checkstr(key, v)
+    if type(v) ~= 'string' then
+        error(string.format("command '%s' expect 'string', got '%s'", key, type(v)))
+    end
     return v
 end
 
-local function tobool(v)
+local function tonum(key, v)
+    return tonumber(v)
+end
+
+local function checkfunc(key, v)
+    if type(v) ~= 'function' then
+        error(string.format("command '%s' expect 'function', got '%s'", key, type(v)))
+    end
+    return v
+end
+
+local function totable(key, v)
+    return type(v) == 'table' and v or nil
+end
+
+local function tobool(key, v)
     if v == 'true' then
         return true
     elseif v == 'false' then
@@ -1005,39 +1017,52 @@ end
 
 local function toany(...)
     local funcs = {...}
-    return function (...)
+    return function (key, ...)
         for _, f in ipairs(funcs) do
-            local v = f(...)
+            local v = f(key, ...)
             if v ~= nil then
                 return v
             end
         end
+        return checkstr(key, ...)
     end
 end
 
 local function add_value_command(CMD, key, store, field, tofunc)
-    tofunc = tofunc or keepvalue
+    tofunc = tofunc or checkstr
     field = field or key
     CMD[key] = function (v)
-        store[field] = tofunc(v)
+        store[field] = tofunc(key, v)
     end
 end
 
-local function add_typeconf_command(cls)
+local function make_typeconf_command(cls)
     local CMD = {}
     local ifdef = nil
 
+    local function add_attr_command(cmd, name)
+        local entry = {}
+        cls.attrs[name] = entry
+        add_value_command(cmd, 'optional', entry, nil, tobool)
+        add_value_command(cmd, 'ret', entry)
+        for i = 1, 25 do
+            add_value_command(cmd, 'arg' .. i, entry)
+        end
+    end
+
     add_value_command(CMD, 'kind', cls)
     add_value_command(CMD, 'chunk', cls)
-    add_value_command(CMD, 'luaname', cls)
+    add_value_command(CMD, 'luaname', cls, nil, checkfunc)
     add_value_command(CMD, 'supercls', cls)
     add_value_command(CMD, 'require', cls)
 
     function CMD.exclude(name)
+        name = checkstr('exclude', name)
         cls.excludes[name] = true
     end
 
     function CMD.ifdef(cond)
+        cond = checkstr('ifdef', cond)
          if string.find(cond, '^defined%(') then
             ifdef = '#if ' .. cond
         elseif string.find(cond, '^#if') then
@@ -1047,73 +1072,118 @@ local function add_typeconf_command(cls)
         end
     end
 
-    function CMD.endif(cond)
+    function CMD.endif()
         ifdef = nil
     end
 
-    function CMD.attr(name, attr)
-        cls.attrs[name] = attr
+    function CMD.enum(name)
+        local entry = {name = name}
+        local SubCMD = {}
+        name = checkstr('enum', name)
+        cls.enums[name] = entry
+        add_value_command(SubCMD, 'value', entry)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
-    function CMD.enum(name, value)
-        cls.enums[name] = {name = name, value = value}
+    function CMD.const(name)
+        local entry = {name = name}
+        local SubCMD = {}
+        name = checkstr('const', name)
+        cls.consts[name] = entry
+        add_value_command(SubCMD, 'value', entry)
+        add_value_command(SubCMD, 'typename', entry)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
-    function CMD.const(name, value, typename)
-        cls.consts[name] = {name = name, value = value, typename = typename}
-    end
-
-    function CMD.func(fn, snippet)
-        cls.excludes[fn] = true
-        cls.funcs[fn] = {name = fn, snippet = snippet}
+    function CMD.func(name)
+        local entry = {name = name}
+        local SubCMD = {}
+        name = checkstr('func', name)
+        cls.excludes[name] = true
         if ifdef then
-            cls.ifdefs[fn] = {name = fn, value = ifdef}
+            cls.ifdefs[name] = {name = name, value = ifdef}
         end
+        cls.funcs[name] = entry
+        add_value_command(SubCMD, 'snippet', entry)
+        add_attr_command(SubCMD, name)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
-    function CMD.callback(cb)
-        if not cb.name then
-            error(cb.funcs[1])
-            cb.name = olua.func_name(cb.funcs[1])
-            cls.excludes[cb.name] = true
-        end
-        assert(#cb.name > 0, 'no callback function name')
-        cls.callbacks[cb.name] = cb
+    function CMD.callback(name)
+        local entry = {name = name}
+        local SubCMD = {}
+        name = checkstr('callback', name)
+        cls.callbacks[name] = entry
+        add_value_command(SubCMD, 'localvar', entry, nil, tobool)
+        add_value_command(SubCMD, 'tag_maker', entry, nil, toany(totable))
+        add_value_command(SubCMD, 'tag_mode', entry, nil, toany(totable))
+        add_value_command(SubCMD, 'tag_store', entry, nil, toany(tonum))
+        add_value_command(SubCMD, 'tag_scope', entry, nil)
+        add_attr_command(SubCMD, name)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
-    function CMD.prop(name, get, set)
-        cls.props[name] = {name = name, get = get, set = set}
+    function CMD.prop(name)
+        local entry = {name = name}
+        local SubCMD = {}
+        name = checkstr('prop', name)
+        cls.props[name] = entry
+        add_value_command(SubCMD, 'get', entry)
+        add_value_command(SubCMD, 'set', entry)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
     function CMD.var(name, snippet)
-        local varname = olua.func_name(snippet)
-        assert(#varname > 0, 'no variable name')
-        cls.excludes[varname] = true
-        cls.vars[name or varname] = {name = name, snippet = snippet}
+        local entry = {name = name}
+        local SubCMD = {}
+        name = checkstr('var', name)
+        if name ~= '*' then
+            cls.excludes[name] = true
+            cls.vars[name] = entry
+            add_value_command(SubCMD, 'snippet', entry)
+        else
+            name = 'var*'
+        end
+        add_attr_command(SubCMD, name)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
-    function CMD.alias(name, alias)
+    function CMD.alias(value)
+        local name, alias = string.match(value, '([^ ]+) *-> *([^ ]+)')
+        assert(name, value)
         cls.aliases[name] = {name = name, alias = alias}
     end
 
-    function CMD.insert(names, codes)
+    function CMD.insert(names)
+        local entry = {}
+        local SubCMD = {}
         names = type(names) == 'string' and {names} or names
         for _, n in ipairs(names) do
-            cls.inserts[n] = {name = n, codes = codes}
+            n = checkstr('insert', n)
+            cls.inserts[n] = setmetatable({name = n}, {__index = entry})
         end
+        add_value_command(SubCMD, 'before', entry)
+        add_value_command(SubCMD, 'after', entry)
+        add_value_command(SubCMD, 'cbefore', entry)
+        add_value_command(SubCMD, 'cafter', entry)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
-    return olua.make_command(CMD)
+    return olua.command_proxy(CMD)
 end
 
-local function add_typedef_command(cls)
+local function make_typedef_command(cls)
     local CMD = {}
-    add_value_command(CMD, 'vars', cls, 'num_vars', tonumber)
+    add_value_command(CMD, 'vars', cls, 'num_vars', tonum)
     add_value_command(CMD, 'decltype', cls)
     add_value_command(CMD, 'conv', cls)
-    return CMD
+    return olua.command_proxy(CMD)
 end
 
+--
+-- module conf
+-- autoconf 'conf/lua-exmpale.lua'
+--
 function M.__call(_, path)
     local ifdef = nil
     local m = {
@@ -1130,7 +1200,7 @@ function M.__call(_, path)
     add_value_command(CMD, 'path', m)
     add_value_command(CMD, 'headers', m)
     add_value_command(CMD, 'chunk', m)
-    add_value_command(CMD, 'luacls', m)
+    add_value_command(CMD, 'luacls', m, nil, checkfunc)
 
     function CMD.exclude(tn)
         m.exclude_types[tn] = true
@@ -1179,7 +1249,7 @@ function M.__call(_, path)
         if ifdef then
             cls.ifdefs['*'] = {name = '*', value = ifdef}
         end
-        return add_typeconf_command(cls)
+        return make_typeconf_command(cls)
     end
 
     function CMD.typeonly(classname)
@@ -1191,7 +1261,7 @@ function M.__call(_, path)
     function CMD.typedef(classname)
         local cls = {cppcls = classname}
         m.typedef_types[classname] = cls
-        return add_typedef_command(cls)
+        return make_typedef_command(cls)
     end
 
     function CMD.typeconv(classname)

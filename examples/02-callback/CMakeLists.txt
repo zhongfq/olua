@@ -15,10 +15,15 @@ add_custom_command(
     callback
   PRE_BUILD
   COMMAND
-    cd ${CMAKE_CURRENT_SOURCE_DIR} && lua build.lua
-  COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/src/*.lua ${CMAKE_CURRENT_BINARY_DIR}
   COMMAND
     cp -v ${CMAKE_CURRENT_SOURCE_DIR}/../common/*.lua ${CMAKE_CURRENT_BINARY_DIR}
 )
 add_test(NAME test_callback COMMAND callback)
+
+execute_process(
+  WORKING_DIRECTORY
+    ${CMAKE_CURRENT_SOURCE_DIR}
+  COMMAND
+    lua build.lua
+)

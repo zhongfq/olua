@@ -19,13 +19,9 @@ include "../common/lua-object.lua"
 typeconf "example::Event"
 typeconf "example::Callback::Listener"
 typeconf "example::Callback"
-    .callback({
-        name = 'setOnceEvent',
-        tag_scope = 'once',
-    })
-    .callback({
-        name = 'foreach',
-        tag_scope = 'function',
-        tag_mode= 'OLUA_TAG_NEW',
-        tag_maker = 'makeForeachTag(#1)',
-    })
+    .callback 'setOnceEvent'
+        .tag_scope 'once'
+    .callback 'foreach'
+        .tag_mode 'new'
+        .tag_scope 'function'
+        .tag_maker 'makeForeachTag(#1)'
