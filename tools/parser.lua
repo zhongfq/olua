@@ -549,26 +549,6 @@ local function parse_prop(cls, name, declget, declset)
     return pi
 end
 
-function olua.make_command(t)
-    local CMD = {}
-    function CMD.__index(_, key)
-        local f = t[key]
-        if f then
-            return function (...)
-                f(...)
-                return CMD
-            end
-        else
-            assert(string.format("index '%s' error", key))
-        end
-    end
-
-    function CMD.__newindex(_, key, value)
-        error(string.format("newindex '%s' error", key))
-    end
-    return setmetatable(CMD, CMD)
-end
-
 function olua.luacls(cppcls)
     local ti = typeinfo_map[cppcls .. ' *'] or typeinfo_map[cppcls]
     assert(ti, 'type not found: ' .. cppcls)
@@ -780,16 +760,16 @@ local function typeconf(cppcls)
         }
 
         remove all callback:
-            {TAG_MAKER = "", TAG_MODE = "OLUA_TAG_SUBSTARTWITH", REMOVE = true}
+            {TAG_MAKER = "", TAG_MODE = "substartwith", REMOVE = true}
 
         remove click callback:
-            {TAG_MAKER = "click", TAG_MODE = "OLUA_TAG_SUBEQUAL", REMOVE = true}
+            {TAG_MAKER = "click", TAG_MODE = "subequal", REMOVE = true}
 
         add new callback:
-            {TAG_MAKER = 'click', TAG_MODE = "OLUA_TAG_NEW"}
+            {TAG_MAKER = 'click', TAG_MODE = "new"}
 
         replace previous callback:
-            {TAG_MAKER = 'click', TAG_MODE = "OLUA_TAG_REPLACE"}
+            {TAG_MAKER = 'click', TAG_MODE = "replace"}
     ]]
     function cls.callback(opt)
         cls.FUNCS[#cls.FUNCS + 1] = parse_func(cls, nil, table.unpack(opt.FUNCS))
@@ -827,11 +807,11 @@ local function typeconf(cppcls)
         if ARGS[1].CALLBACK then
             CALLBACK_SET = {
                 TAG_MAKER =  name,
-                TAG_MODE = 'OLUA_TAG_REPLACE',
+                TAG_MODE = 'replace',
             }
             CALLBACK_GET = {
                 TAG_MAKER = name,
-                TAG_MODE = 'OLUA_TAG_SUBEQUAL',
+                TAG_MODE = 'subequal',
             }
         end
 
@@ -923,13 +903,13 @@ function olua.export(path)
     function CMD.typeconv(cppcls)
         local conv = typeconf(cppcls)
         m.CONVS[#m.CONVS + 1] = conv
-        return olua.make_command(conv)
+        return olua.command_proxy(conv)
     end
 
     function CMD.typeconf(cppcls)
         local cls = typeconf(cppcls)
         m.CLASSES[#m.CLASSES + 1] = cls
-        return olua.make_command(cls)
+        return olua.command_proxy(cls)
     end
 
     setmetatable(CMD, CMD)

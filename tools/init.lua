@@ -40,6 +40,13 @@ if not vf or vf:read('*a') ~= LIB_VERSION then
     io.open(olua.HOMEDIR .. '/version', 'w+'):write(LIB_VERSION):close()
 end
 
+-- test clang
+xpcall(function ()
+    require "clang"
+end, function ()
+    print('tools/lib.zip is tracked with git-lfs(https://git-lfs.github.com)')
+end)
+
 local _ipairs = ipairs
 function ipairs(t)
     local mt = getmetatable(t)
@@ -364,6 +371,30 @@ function olua.format(expr, indent)
     expr = string.gsub(expr, '\n\n}', '\n}')
 
     return expr
+end
+
+function olua.command_proxy(cmd, parent)
+    local proxy = {}
+    assert(cmd.__proxy == nil, "already add command proxy")
+    cmd.__proxy = proxy
+    function proxy.__index(_, key)
+        local f = cmd[key]
+        if f then
+            return function (...)
+                return f(...) or proxy
+            end
+        elseif parent and parent.__proxy then
+            return parent.__proxy[key]
+        else
+            error(string.format("command '%s' not found", key))
+        end
+    end
+
+    function proxy.__newindex(_, key, value)
+        error(string.format("create command '%s' is not allowed", key))
+    end
+
+    return setmetatable(proxy, proxy)
 end
 
 require "parser"

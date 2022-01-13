@@ -283,7 +283,7 @@ static int _example_Callback_foreach(lua_State *L)
         }
     };
 
-    // void foreach(int start, int to, @local const std::function<void (int)> &callback)
+    // void foreach(int start, int to, @localvar const std::function<void (int)> &callback)
     self->foreach((int)arg1, (int)arg2, arg3);
 
     olua_removecallback(L, cb_store, cb_name.c_str(), OLUA_TAG_WHOLE);
@@ -340,7 +340,7 @@ static int _example_Callback_setEvent(lua_State *L)
         }
     };
 
-    // void setEvent(@local const std::function<void (const Event *)> &callback)
+    // void setEvent(@localvar const std::function<void (const Event *)> &callback)
     self->setEvent(arg1);
 
     olua_endinvoke(L);
@@ -383,7 +383,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
         }
     };
 
-    // void setOnceEvent(@local const example::Callback::Listener &callback)
+    // void setOnceEvent(@localvar const example::Callback::Listener &callback)
     self->setOnceEvent(arg1);
 
     olua_endinvoke(L);

@@ -2,6 +2,19 @@ local olua = require "olua"
 
 local format = olua.format
 
+local tag_mode_map = {
+    new = 'OLUA_TAG_NEW',
+    replace = 'OLUA_TAG_REPLACE',
+    substartwith = 'OLUA_TAG_SUBSTARTWITH',
+    subequal = 'OLUA_TAG_SUBEQUAL',
+}
+
+local function get_callback_tag_mode(fi)
+    local tag_mode = tag_mode_map[fi.CALLBACK.TAG_MODE]
+    olua.assert(tag_mode, "unknown tag mode: %s", fi.CALLBACK.TAG_MODE)
+    return tag_mode
+end
+
 local function get_callback_store(fi, idx)
     if not idx and fi.CALLBACK.TAG_STORE == 'return' then
         return -1
@@ -39,6 +52,7 @@ end
 
 local function gen_remove_callback(cls, fi)
     local tag_store = get_callback_store(fi)
+    local TAG_MODE = get_callback_tag_mode(fi)
     local CB_TAG = gen_callback_tag(cls, fi)
     local CB_STORE
 
@@ -54,12 +68,12 @@ local function gen_remove_callback(cls, fi)
     return format([[
         std::string cb_tag = ${CB_TAG};
         void *cb_store = (void *)${CB_STORE};
-        olua_removecallback(L, cb_store, cb_tag.c_str(), ${fi.CALLBACK.TAG_MODE});
+        olua_removecallback(L, cb_store, cb_tag.c_str(), ${TAG_MODE});
     ]]), nil
 end
 
 local function gen_ret_callback(cls, fi)
-    local TAG_MODE = fi.CALLBACK.TAG_MODE
+    local TAG_MODE = get_callback_tag_mode(fi)
     local TAG_STORE = get_callback_store(fi)
     local CB_TAG = gen_callback_tag(cls, fi)
     local CB_STORE
@@ -84,8 +98,8 @@ function olua.gen_callback(cls, fi, out)
         return
     end
 
-    if fi.CALLBACK.TAG_MODE == 'OLUA_TAG_SUBEQUAL' or
-            fi.CALLBACK.TAG_MODE == 'OLUA_TAG_SUBSTARTWITH' then
+    if fi.CALLBACK.TAG_MODE == 'subequal' or
+            fi.CALLBACK.TAG_MODE == 'substartwith' then
         out.CALLBACK = gen_remove_callback(cls, fi)
         return
     end
@@ -107,7 +121,7 @@ function olua.gen_callback(cls, fi, out)
         return ''
     end
 
-    local TAG_MODE = assert(fi.CALLBACK.TAG_MODE, 'no tag mode')
+    local TAG_MODE = get_callback_tag_mode(fi)
     local TAG_SCOPE = fi.CALLBACK.TAG_SCOPE
     local CB_TAG = gen_callback_tag(cls, fi)
     local CB_STORE
@@ -132,7 +146,7 @@ function olua.gen_callback(cls, fi, out)
 
     local localBlock = false
 
-    if cbarg.ATTR.LOCAL then
+    if cbarg.ATTR.LOCALVAR then
         for _, arg in ipairs(cbarg.CALLBACK.ARGS) do
             if not olua.is_value_type(arg.TYPE) then
                 localBlock = true
@@ -153,7 +167,7 @@ function olua.gen_callback(cls, fi, out)
         ]])
     else
         for _, arg in ipairs(cbarg.CALLBACK.ARGS) do
-            if arg.ATTR.LOCAL then
+            if arg.ATTR.LOCALVAR then
                 cbout.PUSH_ARGS:push( "size_t last = olua_push_objpool(L);")
                 cbout.POP_OBJPOOL = format([[
                     //pop stack value
@@ -168,7 +182,7 @@ function olua.gen_callback(cls, fi, out)
         local CB_ARG_NAME = 'arg' .. i
 
         if not localBlock then
-            if arg.ATTR.LOCAL then
+            if arg.ATTR.LOCALVAR then
                 if not enablepool then
                     enablepool = true
                     cbout.PUSH_ARGS:push("olua_enable_objpool(L);")
@@ -279,7 +293,7 @@ function olua.gen_callback(cls, fi, out)
     end
 
     olua.assert(TAG_MODE == 'OLUA_TAG_REPLACE' or TAG_MODE == 'OLUA_TAG_NEW',
-        "expect 'OLUA_TAG_REPLACE' or 'OLUA_TAG_NEW', got '%s'",TAG_MODE
+        "expect 'replace' or 'new', got '%s'", fi.CALLBACK.TAG_MODE
     )
 
     local CALLBACK_CHUNK = format([[
