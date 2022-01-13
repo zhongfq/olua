@@ -657,8 +657,8 @@ local function typeconf(cppcls)
         cls.REG_LUATYPE = reg_luatype
     end
 
-    function cls.require(require)
-        cls.REQUIRE = require
+    function cls.luaopen(luaopen)
+        cls.LUAOPEN = luaopen
     end
 
     function cls.ifdef(name, value)

@@ -121,7 +121,7 @@ local function gen_class_open(cls, write)
     local FUNCS = olua.newarray('\n')
     local REG_LUATYPE = ''
     local SUPRECLS = "nullptr"
-    local REQUIRE = cls.REQUIRE or ''
+    local LUAOPEN = cls.LUAOPEN or ''
 
     if cls.SUPERCLS then
         SUPRECLS = olua.stringify(olua.luacls(cls.SUPERCLS))
@@ -196,7 +196,7 @@ local function gen_class_open(cls, write)
             ${FUNCS}
 
             ${REG_LUATYPE}
-            ${REQUIRE}
+            ${LUAOPEN}
 
             return 1;
         }
