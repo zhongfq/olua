@@ -317,6 +317,10 @@ function M:visit_var(cls, cur)
     local tn = self:typename(cur.type, cur)
     local cbkind
 
+    if attr.readonly then
+        exps:push('@readonly ')
+    end
+
     local length = string.match(tn, '%[(%d+)%]$')
     if length then
         exps:pushf('@array(${length})')
@@ -1044,6 +1048,7 @@ local function make_typeconf_command(cls)
         local entry = {}
         cls.attrs[name] = entry
         add_value_command(cmd, 'optional', entry, nil, tobool)
+        add_value_command(cmd, 'readonly', entry, nil, tobool)
         add_value_command(cmd, 'ret', entry)
         for i = 1, 25 do
             add_value_command(cmd, 'arg' .. i, entry)
@@ -1332,6 +1337,14 @@ function M.__call(_, path)
                 if not fi.snippet then
                     cls.funcs:take(fn)
                     cls.excludes:replace(fn, nil)
+                end
+            end
+        end
+        for _, cls in ipairs(m.class_types) do
+            for vn, vi in pairs(cls.vars) do
+                if not vi.snippet then
+                    cls.vars:take(vn)
+                    cls.excludes:replace(vn, nil)
                 end
             end
         end
