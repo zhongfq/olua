@@ -2,26 +2,26 @@ local olua = require "olua"
 local typedef = olua.typedef
 
 typedef {
-    CPPCLS = 'void',
-    CONV = '<NONE>',
+    cppcls = 'void',
+    conv = '<NONE>',
 }
 
 typedef {
-    CPPCLS = [[
+    cppcls = [[
         void *
         GLvoid *
     ]],
-    LUACLS = 'void *',
-    CONV = 'olua_$$_obj',
+    luacls = 'void *',
+    conv = 'olua_$$_obj',
 }
 
 typedef {
-    CPPCLS = 'bool',
-    CONV = 'olua_$$_bool',
+    cppcls = 'bool',
+    conv = 'olua_$$_bool',
 }
 
 typedef {
-    CPPCLS = [[
+    cppcls = [[
         uint8_t *
         char *
         const char *
@@ -29,74 +29,91 @@ typedef {
         const unsigned char *
         const GLchar *
     ]],
-    DECLTYPE = 'const char *',
-    CONV = 'olua_$$_string',
+    decltype = 'const char *',
+    conv = 'olua_$$_string',
 }
 
 typedef {
-    CPPCLS = 'std::string',
-    CONV = 'olua_$$_std_string',
+    cppcls = 'std::string',
+    conv = 'olua_$$_std_string',
 }
 
 typedef {
-    CPPCLS = 'std::function',
-    CONV = 'olua_$$_std_function',
+    cppcls = 'std::function',
+    conv = 'olua_$$_std_function',
 }
 
 typedef {
-    CPPCLS = 'std::unordered_map',
-    CONV = 'olua_$$_std_unordered_map',
+    cppcls = 'std::unordered_map',
+    conv = 'olua_$$_std_unordered_map',
 }
 
 typedef {
-    CPPCLS = 'std::map',
-    CONV = 'olua_$$_std_map',
+    cppcls = 'std::map',
+    conv = 'olua_$$_std_map',
 }
 
 typedef {
-    CPPCLS = 'std::set',
-    CONV = 'olua_$$_std_set',
+    cppcls = 'std::set',
+    conv = 'olua_$$_std_set',
 }
 
 typedef {
-    CPPCLS = 'std::vector',
-    CONV = 'olua_$$_std_vector',
+    cppcls = 'std::vector',
+    conv = 'olua_$$_std_vector',
 }
 
 typedef {
-    CPPCLS = [[
+    cppcls = [[
         float
         double
         GLfloat
         lua_Number
     ]],
-    DECLTYPE = 'lua_Number',
-    CONV = 'olua_$$_number',
+    decltype = 'lua_Number',
+    conv = 'olua_$$_number',
 }
 
 typedef {
-    CPPCLS = [[
-        char
+    cppcls = [[
+        byte
         GLint
         GLshort
         GLsizei
-        int
-        long
-        short
         ssize_t
         int8_t
         int16_t
         int32_t
         int64_t
+        std::int8_t
+        std::int16_t
         std::int32_t
+        std::int64_t
+        char
+        signed char
+        short
+        short int
+        signed short
+        signed short int
+        int
+        signed
+        signed int
+        long
+        long int
+        signed long
+        signed long int
+        long long
+        long long int
+        signed long long
+        signed long long int
         lua_Integer
     ]],
-    DECLTYPE = 'lua_Integer',
-    CONV = 'olua_$$_int',
+    decltype = 'lua_Integer',
+    conv = 'olua_$$_int',
 }
 
 typedef {
-    CPPCLS = [[
+    cppcls = [[
         GLboolean
         GLenum
         GLubyte
@@ -108,12 +125,21 @@ typedef {
         uint16_t
         uint32_t
         uint64_t
+        std::uint8_t
+        std::uint16_t
+        std::uint32_t
+        std::uint64_t
         unsigned char
-        unsigned int
         unsigned short
+        unsigned short int
+        unsigned
+        unsigned int
         unsigned long
+        unsigned long int
+        unsigned long long
+        unsigned long long int
         lua_Unsigned
     ]],
-    DECLTYPE = 'lua_Unsigned',
-    CONV = 'olua_$$_uint',
+    decltype = 'lua_Unsigned',
+    conv = 'olua_$$_uint',
 }
