@@ -17,11 +17,11 @@ local writer = {}
 local M = {}
 
 function M:parse(path)
-    assert(not self.clsFilePath)
-    assert(not self.typeFilePath)
+    assert(not self.class_file)
+    assert(not self.type_file)
     local filename = self.name:gsub('_', '-')
-    self.clsFilePath = format('autobuild/${filename}.lua')
-    self.typeFilePath = format('autobuild/${filename}-types.lua')
+    self.class_file = format('autobuild/${filename}.lua')
+    self.type_file = format('autobuild/${filename}-types.lua')
 
     module_files:push(self)
 
@@ -37,7 +37,7 @@ function M:parse(path)
         if not cls.conv then
             if cls.decltype then
                 local ti = olua.typeinfo(cls.decltype, nil, true)
-                cls.conv = ti and ti.CONV or toconv(cls)
+                cls.conv = ti and ti.conv or toconv(cls)
             else
                 cls.conv = toconv(cls)
             end
@@ -237,12 +237,12 @@ function M:visit_method(cls, cur)
     exps:push(attr.ret and (attr.ret .. ' ') or nil)
     exps:push(cur.isStatic and 'static ' or nil)
 
-    local cbkind
+    local cb_kind
 
     if cur.kind ~= 'Constructor' then
         local tn = self:typename(cur.resultType, cur)
         if self:is_func_type(tn) then
-            cbkind = 'RET'
+            cb_kind = 'ret'
             if callback.localvar ~= false then
                 exps:push('@localvar ')
             end
@@ -257,17 +257,17 @@ function M:visit_method(cls, cur)
     declexps:push(fn .. '(')
     for i, arg in ipairs(cur.arguments) do
         local tn = self:typename(arg.type, arg)
-        local DISPLAY_NAME = cur.displayName
+        local displayName = cur.displayName
         local argn = 'arg' .. i
         exps:push(i > 1 and ', ' or nil)
         declexps:push(i > 1 and ', ' or nil)
         declexps:push(tn)
         if self:is_func_type(tn) then
-            if cbkind then
-                error(format('has more than one std::function: ${cls.cppcls}::${DISPLAY_NAME}'))
+            if cb_kind then
+                error(format('has more than one std::function: ${cls.cppcls}::${displayName}'))
             end
-            assert(not cbkind, cls.cppcls .. '::' .. DISPLAY_NAME)
-            cbkind = 'ARG'
+            assert(not cb_kind, cls.cppcls .. '::' .. displayName)
+            cb_kind = 'arg'
             if callback.localvar ~= false then
                 exps:push('@localvar ')
             end
@@ -277,7 +277,7 @@ function M:visit_method(cls, cur)
             optional = true
         else
             min_args = min_args + 1
-            assert(not optional, cls.cppcls .. '::' .. DISPLAY_NAME)
+            assert(not optional, cls.cppcls .. '::' .. displayName)
         end
         exps:push(attr[argn] and (attr[argn] .. ' ') or nil)
         exps:push(tn)
@@ -302,7 +302,7 @@ function M:visit_method(cls, cur)
         static = static,
         num_args = #cur.arguments,
         min_args = min_args,
-        cb_kind = cbkind,
+        cb_kind = cb_kind,
         prototype = prototype,
     }
 end
@@ -315,7 +315,7 @@ function M:visit_var(cls, cur)
     local exps = olua.newarray('')
     local attr = cls.attrs[cur.name] or cls.attrs['var*'] or {}
     local tn = self:typename(cur.type, cur)
-    local cbkind
+    local cb_kind
 
     if attr.readonly then
         exps:push('@readonly ')
@@ -331,7 +331,7 @@ function M:visit_var(cls, cur)
     end
 
     if self:is_func_type(tn) then
-        cbkind = 'VAR'
+        cb_kind = 'var'
         exps:push('@nullable ')
         local callback = cls.callbacks:take(cur.name) or {}
         if callback.localvar ~= false then
@@ -346,11 +346,11 @@ function M:visit_var(cls, cur)
     exps:push(cur.name)
 
     local decl = tostring(exps)
-    local name = cls.luaname(cur.name, 'VAR')
+    local name = cls.luaname(cur.name, 'var')
     cls.vars[name] = {
         name = name,
         snippet = decl,
-        cb_kind = cbkind
+        cb_kind = cb_kind
     }
 end
 
@@ -364,11 +364,11 @@ end
 function M:visit_enum(cppcls, cur)
     local cls = self:do_visit(cppcls)
     for _, c in ipairs(cur.children) do
-        local VALUE =  c.name
-        local name = cls.luaname(VALUE, 'ENUM')
+        local value =  c.name
+        local name = cls.luaname(value, 'enum')
         cls.enums[name] = {
             name = name,
-            value = format('${cls.cppcls}::${VALUE}'),
+            value = format('${cls.cppcls}::${value}'),
         }
     end
     cls.kind = 'enum'
@@ -390,7 +390,10 @@ end
 
 function M:visit_class(cppcls, cur)
     local cls = self:do_visit(cppcls)
-    cls.kind = cls.kind or 'class'
+
+    if not cls.kind then
+        cls.kind = cur.kind == 'StructDecl' and 'class struct' or 'class'
+    end
 
     if cur.kind == 'Namespace' then
         cls.reg_luatype = false
@@ -522,12 +525,12 @@ end
 -------------------------------------------------------------------------------
 function writer.write_metadata(module, append)
     append(format([[
-        NAME = "${module.name}"
-        PATH = "${module.path}"
+        name = "${module.name}"
+        path = "${module.path}"
     ]]))
 
-    append(format('HEADERS = ${module.headers?}'))
-    append(format('CHUNK = ${module.chunk?}'))
+    append(format('headers = ${module.headers?}'))
+    append(format('chunk = ${module.chunk?}'))
     append('')
 
     for _, cls in ipairs(module.class_types) do
@@ -570,7 +573,6 @@ function writer.write_typedef(module)
         writeLine("typedef {")
         for _, p in ipairs(arr) do
             local key, value = p[1], p[2]
-            key = string.upper(key)
             writeLine(format('${key} = ${value?},', 4))
         end
         writeLine("}")
@@ -587,8 +589,14 @@ function writer.write_typedef(module)
             conv = 'olua_$$_uint'
             luacls = olua.stringify(cls.luacls, "'")
             decltype = olua.stringify('lua_Unsigned')
-        elseif cls.kind == 'class' or cls.kind == 'class alias' then
-            cppcls = cppcls .. ' *'
+        elseif cls.kind == 'class'
+                or cls.kind == 'class alias'
+                or cls.kind == 'class struct' then
+            if cls.kind == 'class struct' then
+                cppcls = format('${cppcls} *; struct ${cppcls} *')
+            else
+                cppcls = cppcls .. ' *'
+            end
             luacls = olua.stringify(cls.luacls, "'")
             conv = 'olua_$$_cppobj'
         elseif cls.kind == 'class func' then
@@ -601,17 +609,17 @@ function writer.write_typedef(module)
 
         t:pushf([[
             typedef {
-                CPPCLS = '${cppcls}',
-                LUACLS = ${luacls},
-                DECLTYPE = ${decltype},
-                CONV = '${conv}',
-                NUM_VARS = ${num_vars},
+                cppcls = '${cppcls}',
+                luacls = ${luacls},
+                decltype = ${decltype},
+                conv = '${conv}',
+                num_vars = ${num_vars},
             }
         ]])
         t:push('')
     end
     t:push('')
-    olua.write(module.typeFilePath, tostring(t))
+    olua.write(module.type_file, tostring(t))
 end
 
 function writer.is_new_func(module, supercls, fn)
@@ -743,18 +751,18 @@ function writer.write_cls_func(module, cls, append)
                 append(format(".func('${fn.name}', ${fn.snippet?})", 4))
             end
         else
-            local tag = fn.name:gsub('^set', ''):gsub('^get', '')
-            local mode = fn.cb_kind == 'RET' and 'subequal' or 'replace'
+            local tag_maker = fn.name:gsub('^set', ''):gsub('^get', '')
+            local mode = fn.cb_kind == 'ret' and 'subequal' or 'replace'
             local callback = cls.callbacks[fn.name]
             if callback then
                 callback.funcs = funcs
-                callback.tag_maker = callback.tag_maker or format('${tag}')
+                callback.tag_maker = callback.tag_maker or format('${tag_maker}')
                 callback.tag_mode = callback.tag_mode or mode
             else
                 cls.callbacks[fn.name] = {
                     name = fn.name,
                     funcs = funcs,
-                    tag_maker = olua.format '${tag}',
+                    tag_maker = olua.format '${tag_maker}',
                     tag_mode = mode,
                 }
             end
@@ -800,7 +808,7 @@ function writer.write_cls_callback(module, cls, append)
         local funcs = olua.newarray("',\n'", "'", "'"):merge(v.funcs)
         local tag_maker = olua.newarray("', '", "'", "'")
         local tag_mode = olua.newarray("', '", "'", "'")
-        local tag_store = v.tag_store or 'nil'
+        local tag_store = v.tag_store or '0'
         local tag_scope = v.tag_scope or 'object'
         if type(v.tag_store) == 'string' then
             tag_store = olua.stringify(v.tag_store)
@@ -821,24 +829,24 @@ function writer.write_cls_callback(module, cls, append)
         end
         append(format([[
             .callback {
-                FUNCS =  {
+                funcs =  {
                     ${funcs}
                 },
-                TAG_MAKER = ${tag_maker},
-                TAG_MODE = ${tag_mode},
-                TAG_STORE = ${tag_store},
-                TAG_SCOPE = '${tag_scope}',
+                tag_maker = ${tag_maker},
+                tag_mode = ${tag_mode},
+                tag_store = ${tag_store},
+                tag_scope = '${tag_scope}',
             }
         ]], 4))
         writer.log(format([[
-            FUNC => NAME = '${v.name}'
-                    FUNCS = {
+            funcs => name = '${v.name}'
+                    funcs = {
                         ${funcs}
                     }
-                    TAG_MAKER = ${tag_maker}
-                    TAG_MODE = ${tag_mode}
-                    TAG_STORE = ${tag_store}
-                    TAG_SCOPE = ${tag_scope}
+                    tag_maker = ${tag_maker}
+                    tag_mode = ${tag_mode}
+                    tag_store = ${tag_store}
+                    tag_scope = ${tag_scope}
         ]], 4))
     end
 end
@@ -847,10 +855,10 @@ function writer.write_cls_insert(module, cls, append)
     for _, v in ipairs(cls.inserts) do
         append(format([[
             .insert('${v.name}', {
-                BEFORE = ${v.before?},
-                AFTER = ${v.after?},
-                CALLBACK_BEFORE = ${v.cbefore?},
-                CALLBACK_AFTER = ${v.cafter?},
+                before = ${v.before?},
+                after = ${v.after?},
+                cbefore = ${v.cbefore?},
+                cafter = ${v.cafter?},
             })
         ]], 4))
     end
@@ -865,7 +873,7 @@ end
 function writer.write_classes(module, append)
     append('')
     for _, cls in ipairs(module.class_types) do
-        if cls.kind ~= 'class' and cls.kind ~= 'enum' and cls.kind ~= 'class func' then
+        if cls.kind == 'conv' or cls.kind == 'class alias' then
             goto continue
         end
 
@@ -909,7 +917,7 @@ function writer.write_module(module)
     append(format([[
         -- AUTO BUILD, DON'T MODIFY!
 
-        dofile "${module.typeFilePath}"
+        dofile "${module.type_file}"
     ]]))
     append('')
 
@@ -917,7 +925,7 @@ function writer.write_module(module)
     writer.write_classes(module, append)
     writer.write_typedef(module, append)
 
-    olua.write(module.clsFilePath, tostring(t))
+    olua.write(module.class_file, tostring(t))
 end
 
 function writer.__gc()
@@ -956,28 +964,28 @@ function writer.__gc()
         end
         ::continue::
     end
-    local TYPEDEFS = olua.newarray('\n')
+    local typedefs = olua.newarray('\n')
     for i, v in ipairs(olua.sort(types, 'cppcls')) do
-        TYPEDEFS:pushf([[
+        typedefs:pushf([[
             typedef {
-                CPPCLS = '${v.cppcls}',
-                DECLTYPE = '${v.decltype}',
-                CONV = '${v.conv}',
+                cppcls = '${v.cppcls}',
+                decltype = '${v.decltype}',
+                conv = '${v.conv}',
             }
         ]])
-        TYPEDEFS:push('')
+        typedefs:push('')
     end
 
     olua.write('autobuild/alias-types.lua', format([[
-        ${TYPEDEFS}
+        ${typedefs}
     ]]))
 
     local files = olua.newarray('\n')
     local type_files = olua.newarray('\n')
     type_files:push('dofile "autobuild/alias-types.lua"')
     for _, v in ipairs(module_files) do
-        files:pushf('export "${v.clsFilePath}"')
-        type_files:pushf('dofile "${v.typeFilePath}"')
+        files:pushf('export "${v.class_file}"')
+        type_files:pushf('dofile "${v.type_file}"')
     end
     olua.write('autobuild/make.lua', format([[
         ${type_files}
@@ -1122,7 +1130,7 @@ local function make_typeconf_command(cls)
         add_value_command(SubCMD, 'localvar', entry, nil, tobool)
         add_value_command(SubCMD, 'tag_maker', entry, nil, toany(totable))
         add_value_command(SubCMD, 'tag_mode', entry, nil, toany(totable))
-        add_value_command(SubCMD, 'tag_store', entry, nil, toany(tonum))
+        add_value_command(SubCMD, 'tag_store', entry, nil, tonum)
         add_value_command(SubCMD, 'tag_scope', entry, nil)
         add_attr_command(SubCMD, name)
         return olua.command_proxy(SubCMD, CMD)

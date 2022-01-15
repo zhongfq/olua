@@ -5,54 +5,54 @@ local prototypes = {}
 local symbols = {}
 
 local function has_gc_method(cls)
-    for _, v in ipairs(cls.FUNCS) do
-        if v[1].LUA_FUNC == '__gc' then
+    for _, v in ipairs(cls.funcs) do
+        if v[1].luafunc == '__gc' then
             return true
         end
     end
 
-    if cls.SUPERCLS then
-        return has_gc_method(olua.get_class(cls.SUPERCLS))
+    if cls.supercls then
+        return has_gc_method(olua.get_class(cls.supercls))
     end
 end
 
 local function check_meta_method(cls)
     local has_ctor = false
     local has_move = false
-    local ti = olua.typeinfo(cls.CPPCLS, cls, true)
-    for _, v in ipairs(cls.FUNCS) do
-        if v[1].CTOR then
+    local ti = olua.typeinfo(cls.cppcls, cls, true)
+    for _, v in ipairs(cls.funcs) do
+        if v[1].ctor then
             has_ctor = true
         end
-        if v[1].LUA_FUNC == '__olua_move' then
+        if v[1].luafunc == '__olua_move' then
             has_move = true
         end
     end
     if has_ctor then
         if not has_gc_method(cls) then
-            cls.func('__gc', format([[
+            cls.funcs:push(olua.parse_func(cls, '__gc', format([[
             {
-                olua_postgc<${cls.CPPCLS}>(L, 1);
+                olua_postgc<${cls.cppcls}>(L, 1);
                 return 0;
-            }]]))
+            }]])))
         end
     end
     if olua.is_func_type(cls) then
-        cls.func('__call', format([[
+        cls.funcs:push(olua.parse_func(cls, '__call', format([[
             {
                 luaL_checktype(L, -1, LUA_TFUNCTION);
-                olua_push_callback<${cls.CPPCLS}>(L, nullptr);
+                olua_push_callback<${cls.cppcls}>(L, nullptr);
                 return 1;
             }]]
-        ))
-    elseif not olua.is_enum_type(cls) and cls.REG_LUATYPE and not has_move then
-        cls.func('__olua_move', format([[
+        )))
+    elseif not olua.is_enum_type(cls) and cls.reg_luatype and not has_move then
+        cls.funcs:push(olua.parse_func(cls, '__olua_move', format([[
             {
-                auto self = (${cls.CPPCLS} *)olua_toobj(L, 1, "${cls.LUACLS}");
-                olua_push_cppobj(L, self, "${cls.LUACLS}");
+                auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
+                olua_push_cppobj(L, self, "${cls.luacls}");
                 return 1;
             }
-        ]]))
+        ]])))
     end
 end
 
@@ -61,142 +61,142 @@ local function check_gen_class_func(cls, fis, write)
         return
     end
 
-    local CPP_FUNC = fis[1].CPP_FUNC
-    local fn = format([[_${{cls.CPPCLS}}_${CPP_FUNC}]])
+    local cppfunc = fis[1].cppfunc
+    local fn = format([[_${{cls.cppcls}}_${cppfunc}]])
     if symbols[fn] then
         return
     end
     symbols[fn] = true
 
-    local pts = assert(prototypes[cls.CPPCLS], cls.CPPCLS)
+    local pts = assert(prototypes[cls.cppcls], cls.cppcls)
     if pts and getmetatable(pts) then
         local supermeta = getmetatable(pts).__index
         for _, f in ipairs(fis) do
-            if not f.STATIC and f.PROTOTYPE and rawget(pts, f.PROTOTYPE)
-                    and supermeta[f.PROTOTYPE]
-                    and not f.RET.ATTR.USING then
-                print(format("${cls.CPPCLS}: super class already export ${f.FUNC_DESC}"))
+            if not f.static and f.prototype and rawget(pts, f.prototype)
+                    and supermeta[f.prototype]
+                    and not f.ret.attr.using then
+                print(format("${cls.cppcls}: super class already export ${f.funcdesc}"))
             end
         end
     end
-    local IFDEF = cls.IFDEFS[CPP_FUNC]
-    write(IFDEF)
+    local ifdef = cls.ifdefs[cppfunc]
+    write(ifdef)
     olua.gen_class_func(cls, fis, write)
-    write(IFDEF and '#endif' or nil)
+    write(ifdef and '#endif' or nil)
     write('')
 end
 
 local function gen_class_funcs(cls, write)
-    local pts = cls.PROTOTYPES
+    local pts = cls.prototypes
 
-    if cls.SUPERCLS then
-        if not prototypes[cls.SUPERCLS] then
-            error(format("super class '${cls.SUPERCLS}' must be exported befor '${cls.CPPCLS}'"))
+    if cls.supercls then
+        if not prototypes[cls.supercls] then
+            error(format("super class '${cls.supercls}' must be exported befor '${cls.cppcls}'"))
         end
-        pts = setmetatable(pts, {__index = prototypes[cls.SUPERCLS]})
+        pts = setmetatable(pts, {__index = prototypes[cls.supercls]})
     end
-    prototypes[cls.CPPCLS] = pts
+    prototypes[cls.cppcls] = pts
 
-    table.sort(cls.FUNCS, function (a, b)
-        return a[1].LUA_FUNC < b[1].LUA_FUNC
+    table.sort(cls.funcs, function (a, b)
+        return a[1].luafunc < b[1].luafunc
     end)
-    for _, fi in ipairs(cls.FUNCS) do
+    for _, fi in ipairs(cls.funcs) do
         check_gen_class_func(cls, fi, write)
     end
 
-    olua.sort(cls.PROPS, 'NAME')
-    for _, pi in ipairs(cls.PROPS) do
-        check_gen_class_func(cls, {pi.GET}, write)
-        check_gen_class_func(cls, {pi.SET}, write)
+    olua.sort(cls.props, 'name')
+    for _, pi in ipairs(cls.props) do
+        check_gen_class_func(cls, {pi.get}, write)
+        check_gen_class_func(cls, {pi.set}, write)
     end
 
-    olua.sort(cls.VARS, 'NAME')
-    for _, ai in ipairs(cls.VARS) do
-        check_gen_class_func(cls, {ai.GET}, write)
-        check_gen_class_func(cls, {ai.SET}, write)
+    olua.sort(cls.vars, 'name')
+    for _, ai in ipairs(cls.vars) do
+        check_gen_class_func(cls, {ai.get}, write)
+        check_gen_class_func(cls, {ai.set}, write)
     end
 end
 
 local function gen_class_open(cls, write)
-    local FUNCS = olua.newarray('\n')
-    local REG_LUATYPE = ''
-    local SUPRECLS = "nullptr"
-    local LUAOPEN = cls.LUAOPEN or ''
+    local funcs = olua.newarray('\n')
+    local reg_luatype = ''
+    local supercls = "nullptr"
+    local luaopen = cls.luaopen or ''
 
-    if cls.SUPERCLS then
-        SUPRECLS = olua.stringify(olua.luacls(cls.SUPERCLS))
+    if cls.supercls then
+        supercls = olua.stringify(olua.luacls(cls.supercls))
     end
 
-    for _, fis in ipairs(cls.FUNCS) do
-        local CPP_FUNC = fis[1].CPP_FUNC
-        local LUA_FUNC = fis[1].LUA_FUNC
-        local IFDEF = cls.IFDEFS[CPP_FUNC]
-        FUNCS:push(IFDEF)
-        FUNCS:pushf('oluacls_func(L, "${LUA_FUNC}", _${{cls.CPPCLS}}_${CPP_FUNC});')
-        FUNCS:push(IFDEF and '#endif' or nil)
+    for _, fis in ipairs(cls.funcs) do
+        local cppfunc = fis[1].cppfunc
+        local luafunc = fis[1].luafunc
+        local ifdef = cls.ifdefs[cppfunc]
+        funcs:push(ifdef)
+        funcs:pushf('oluacls_func(L, "${luafunc}", _${{cls.cppcls}}_${cppfunc});')
+        funcs:push(ifdef and '#endif' or nil)
     end
 
-    for _, pi in ipairs(cls.PROPS) do
-        local FUNC_GET = "nullptr"
-        local FUNC_SET = "nullptr"
-        if pi.GET then
-            FUNC_GET = format('_${{cls.CPPCLS}}_${pi.GET.CPP_FUNC}')
+    for _, pi in ipairs(cls.props) do
+        local func_get = "nullptr"
+        local func_set = "nullptr"
+        if pi.get then
+            func_get = format('_${{cls.cppcls}}_${pi.get.cppfunc}')
         end
-        if pi.SET then
-            FUNC_SET = format('_${{cls.CPPCLS}}_${pi.SET.CPP_FUNC}')
+        if pi.set then
+            func_set = format('_${{cls.cppcls}}_${pi.set.cppfunc}')
         end
-        FUNCS:pushf('oluacls_prop(L, "${pi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
+        funcs:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
     end
 
-    for _, vi in ipairs(cls.VARS) do
-        local FUNC_GET = format('_${{cls.CPPCLS}}_${vi.GET.CPP_FUNC}')
-        local FUNC_SET = "nullptr"
-        if vi.SET and vi.SET.CPP_FUNC then
-           FUNC_SET = format('_${{cls.CPPCLS}}_${vi.SET.CPP_FUNC}')
+    for _, vi in ipairs(cls.vars) do
+        local func_get = format('_${{cls.cppcls}}_${vi.get.cppfunc}')
+        local func_set = "nullptr"
+        if vi.set and vi.set.cppfunc then
+           func_set = format('_${{cls.cppcls}}_${vi.set.cppfunc}')
         end
-        FUNCS:pushf('oluacls_prop(L, "${vi.NAME}", ${FUNC_GET}, ${FUNC_SET});')
+        funcs:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
     end
 
-    olua.sort(cls.CONSTS, 'NAME')
-    for _, ci in ipairs(cls.CONSTS) do
-        local DECLTYPE = ci.TYPE.DECLTYPE
-        local VALUE = ci.VALUE
-        local FUNC
-        if DECLTYPE == 'bool' then
-            FUNC = 'oluacls_const_bool'
-        elseif DECLTYPE == 'lua_Integer' then
-            FUNC = 'oluacls_const_integer'
-        elseif DECLTYPE == 'lua_Number' then
-            FUNC = 'oluacls_const_number'
-        elseif DECLTYPE == 'const char *' then
-            FUNC = 'oluacls_const_string'
-        elseif DECLTYPE == 'std::string' then
-            FUNC = 'oluacls_const_string'
-            DECLTYPE = 'const char *'
-            VALUE = VALUE .. '.c_str()'
+    olua.sort(cls.consts, 'name')
+    for _, ci in ipairs(cls.consts) do
+        local decltype = ci.type.decltype
+        local value = ci.value
+        local const_func
+        if decltype == 'bool' then
+            const_func = 'oluacls_const_bool'
+        elseif decltype == 'lua_Integer' then
+            const_func = 'oluacls_const_integer'
+        elseif decltype == 'lua_Number' then
+            const_func = 'oluacls_const_number'
+        elseif decltype == 'const char *' then
+            const_func = 'oluacls_const_string'
+        elseif decltype == 'std::string' then
+            const_func = 'oluacls_const_string'
+            decltype = 'const char *'
+            value = value .. '.c_str()'
         else
-            error(ci.TYPE.DECLTYPE)
+            error(ci.type.decltype)
         end
-        FUNCS:pushf('${FUNC}(L, "${ci.NAME}", (${DECLTYPE})${VALUE});')
+        funcs:pushf('${const_func}(L, "${ci.name}", (${decltype})${value});')
     end
 
-    olua.sort(cls.ENUMS, 'NAME')
-    for _, ei in ipairs(cls.ENUMS) do
-        FUNCS:pushf('oluacls_const_integer(L, "${ei.NAME}", (lua_Integer)${ei.VALUE});')
+    olua.sort(cls.enums, 'name')
+    for _, ei in ipairs(cls.enums) do
+        funcs:pushf('oluacls_const_integer(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
-    if cls.REG_LUATYPE then
-        REG_LUATYPE = format('olua_registerluatype<${cls.CPPCLS}>(L, "${cls.LUACLS}");')
+    if cls.reg_luatype then
+        reg_luatype = format('olua_registerluatype<${cls.cppcls}>(L, "${cls.luacls}");')
     end
 
     write(format([[
-        static int luaopen_${{cls.CPPCLS}}(lua_State *L)
+        static int luaopen_${{cls.cppcls}}(lua_State *L)
         {
-            oluacls_class(L, "${cls.LUACLS}", ${SUPRECLS});
-            ${FUNCS}
+            oluacls_class(L, "${cls.luacls}", ${supercls});
+            ${funcs}
 
-            ${REG_LUATYPE}
-            ${LUAOPEN}
+            ${reg_luatype}
+            ${luaopen}
 
             return 1;
         }
@@ -204,8 +204,8 @@ local function gen_class_open(cls, write)
 end
 
 local function gen_class_chunk(cls, write)
-    if cls.CHUNK and #cls.CHUNK > 0 then
-        write(format(cls.CHUNK))
+    if cls.chunk and #cls.chunk > 0 then
+        write(format(cls.chunk))
         write('')
     end
 end
@@ -219,7 +219,7 @@ function olua.gen_header(module)
         end
     end
 
-    local HEADER = string.upper(module.NAME)
+    local HEADER = string.upper(module.name)
 
     write(format([[
         //
@@ -228,9 +228,9 @@ function olua.gen_header(module)
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
-        ${module.HEADERS}
+        ${module.headers}
 
-        int luaopen_${module.NAME}(lua_State *L);
+        int luaopen_${module.name}(lua_State *L);
     ]]))
     write('')
 
@@ -238,8 +238,8 @@ function olua.gen_header(module)
 
     write('#endif')
 
-    local PATH = format('${module.PATH}/lua_${module.NAME}.h')
-    olua.write(PATH, tostring(arr))
+    local path = format('${module.path}/lua_${module.name}.h')
+    olua.write(path, tostring(arr))
 end
 
 local function gen_include(module, write)
@@ -247,12 +247,12 @@ local function gen_include(module, write)
         //
         // AUTO BUILD, DON'T MODIFY!
         //
-        #include "lua_${module.NAME}.h"
+        #include "lua_${module.name}.h"
     ]]))
     write('')
 
-    if module.CHUNK and #module.CHUNK > 0 then
-        write(format(module.CHUNK))
+    if module.chunk and #module.chunk > 0 then
+        write(format(module.chunk))
         write('')
     end
 
@@ -260,33 +260,33 @@ local function gen_include(module, write)
 end
 
 local function gen_classes(module, write)
-    for _, cls in ipairs(module.CLASSES) do
-        cls.LUACLS = olua.luacls(cls.CPPCLS)
-        local IFDEF = cls.IFDEFS['*']
-        write(IFDEF)
+    for _, cls in ipairs(module.class_types) do
+        cls.luacls = olua.luacls(cls.cppcls)
+        local ifdef = cls.ifdefs['*']
+        write(ifdef)
         check_meta_method(cls)
         gen_class_chunk(cls, write)
         gen_class_funcs(cls, write)
         gen_class_open(cls, write)
-        write(IFDEF and '#endif' or nil)
+        write(ifdef and '#endif' or nil)
         write('')
     end
 end
 
 local function gen_luaopen(module, write)
-    local REQUIRES = olua.newarray('\n')
+    local requires = olua.newarray('\n')
 
-    for _, cls in ipairs(module.CLASSES) do
-        local IFDEF = cls.IFDEFS['*']
-        REQUIRES:push(IFDEF)
-        REQUIRES:pushf('olua_require(L, "${cls.LUACLS}", luaopen_${{cls.CPPCLS}});')
-        REQUIRES:push(IFDEF and '#endif' or nil)
+    for _, cls in ipairs(module.class_types) do
+        local ifdef = cls.ifdefs['*']
+        requires:push(ifdef)
+        requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${{cls.cppcls}});')
+        requires:push(ifdef and '#endif' or nil)
     end
 
     write(format([[
-        int luaopen_${module.NAME}(lua_State *L)
+        int luaopen_${module.name}(lua_State *L)
         {
-            ${REQUIRES}
+            ${requires}
             return 0;
         }
     ]]))
@@ -306,6 +306,6 @@ function olua.gen_source(module)
     gen_classes(module, append)
     gen_luaopen(module, append)
 
-    local PATH = format('${module.PATH}/lua_${module.NAME}.cpp')
-    olua.write(PATH, tostring(arr))
+    local path = format('${module.path}/lua_${module.name}.cpp')
+    olua.write(path, tostring(arr))
 end
