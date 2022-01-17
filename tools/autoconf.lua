@@ -212,12 +212,13 @@ end
 
 function M:visit_method(cls, cur)
     if cur.isVariadic
-            or cur.name:find('^_')
-            or cur.isCopyConstructor
-            or cur.isMoveConstructor
-            or cur.name:find('operator *[%-=+/*><!()]?')
-            or self:is_excluded_type(cur.resultType, cur)
-            or self:has_unexposed_attr(cur) then
+        or cur.name:find('^_')
+        or cur.isCopyConstructor
+        or cur.isMoveConstructor
+        or cur.name:find('operator *[%-=+/*><!()]?')
+        or self:is_excluded_type(cur.resultType, cur)
+        or self:has_unexposed_attr(cur)
+    then
         return
     end
 
@@ -429,8 +430,9 @@ function M:visit_class(cppcls, cur)
                 self:visit_var(cls, c)
             end
         elseif kind == 'Constructor' or kind == 'FunctionDecl' or kind == 'CXXMethod' then
-            if (cls.excludes['*'] or cls.excludes[c.name] or cls.excludes[c.displayName]) or
-                (kind == 'Constructor' and (cls.excludes['new'] or cur.isAbstract)) then
+            if (cls.excludes['*'] or cls.excludes[c.name] or cls.excludes[c.displayName])
+                or (kind == 'Constructor' and (cls.excludes['new'] or cur.isAbstract))
+            then
                 goto continue
             end
             self:visit_method(cls, c)
@@ -1364,7 +1366,7 @@ end
 local _dofile = dofile
 
 function dofile(path, ...)
-    if string.find(path, '/make.lua$') then
+    if string.find(path, 'autobuild/make.lua$') then
         writer.__gc()
         module_files = {}
     end

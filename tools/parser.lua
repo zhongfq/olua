@@ -461,7 +461,7 @@ function olua.parse_func(cls, name, ...)
         else
             local tn, attr, str = parse_type(declfunc)
             local ctor = strmatch(cls.cppcls, '[^:]+$')
-            if tn == ctor and strfind(str, '^%(') then
+            if tn == ctor and strfind(str, '^ *%(') then
                 tn = tn .. ' *'
                 str = 'new' .. str
                 fi.ctor = true
