@@ -87,8 +87,9 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     if olua.is_func_type(fi.ret.type) then
         codeset.callback = gen_ret_callback(cls, fi)
         return
-    elseif fi.callback.tag_mode == 'subequal' or
-            fi.callback.tag_mode == 'substartwith' then
+    elseif fi.callback.tag_mode == 'subequal'
+        or fi.callback.tag_mode == 'substartwith'
+    then
         codeset.callback = gen_remove_callback(cls, fi)
         return
     elseif not arg then
