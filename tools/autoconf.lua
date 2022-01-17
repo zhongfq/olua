@@ -1335,7 +1335,7 @@ function M.__call(_, path)
             return CMD[k] or _ENV[k]
         end,
         __newindex = function (_, k)
-            error('unknown command: ' .. k)
+            error(string.format("create command '%s' is not available", k))
         end
     })))()
 
@@ -1344,7 +1344,7 @@ function M.__call(_, path)
             for fn, fi in pairs(cls.funcs) do
                 if not fi.snippet then
                     cls.funcs:take(fn)
-                    cls.excludes:replace(fn, nil)
+                    cls.excludes:take(fn)
                 end
             end
         end
@@ -1352,7 +1352,7 @@ function M.__call(_, path)
             for vn, vi in pairs(cls.vars) do
                 if not vi.snippet then
                     cls.vars:take(vn)
-                    cls.excludes:replace(vn, nil)
+                    cls.excludes:take(vn)
                 end
             end
         end
