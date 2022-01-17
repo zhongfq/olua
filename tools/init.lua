@@ -145,7 +145,7 @@ function olua.newhash()
 
     function t:replace(key, value)
         local old = map[key]
-        map[key] = value
+        map[key] = assert(value ~= nil, 'value is nil')
         if old then
             for i, v in ipairs(arr) do
                 if v == old then
@@ -236,19 +236,17 @@ local function eval(line)
         local path
         while true do
             local info = debug.getinfo(level, 'Sn')
-            if info then
-                if info.source == "=[C]" then
-                    level = level + 1
-                else
-                    path = path or info.source
-                    if path ~= info.source then
-                        break
-                    else
-                        level = level + 1
-                    end
-                end
-            else
+            if not info then
                 break
+            elseif info.source == "=[C]" then
+                level = level + 1
+            else
+                path = path or info.source
+                if path ~= info.source then
+                    break
+                else
+                    level = level + 1
+                end
             end
         end
 
