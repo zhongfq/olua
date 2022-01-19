@@ -4,32 +4,28 @@ local format = olua.format
 local prototypes = {}
 local symbols = {}
 
-local function has_gc_method(cls)
+local function has_method(cls, fn, check_super)
     for _, v in ipairs(cls.funcs) do
-        if v[1].luafunc == '__gc' then
+        if v[1].luafunc == fn then
             return true
         end
     end
 
-    if cls.supercls then
-        return has_gc_method(olua.get_class(cls.supercls))
+    if cls.supercls and check_super then
+        return has_method(olua.get_class(cls.supercls), fn, check_super)
     end
 end
 
 local function check_meta_method(cls)
     local has_ctor = false
-    local has_move = false
     local ti = olua.typeinfo(cls.cppcls, cls, true)
     for _, v in ipairs(cls.funcs) do
         if v[1].ctor then
             has_ctor = true
         end
-        if v[1].luafunc == '__olua_move' then
-            has_move = true
-        end
     end
     if has_ctor then
-        if not has_gc_method(cls) then
+        if not has_method(cls, '__gc', true) then
             cls.funcs:push(olua.parse_func(cls, '__gc', format([[
             {
                 olua_postgc<${cls.cppcls}>(L, 1);
@@ -39,20 +35,29 @@ local function check_meta_method(cls)
     end
     if olua.is_func_type(cls) then
         cls.funcs:push(olua.parse_func(cls, '__call', format([[
-            {
-                luaL_checktype(L, -1, LUA_TFUNCTION);
-                olua_push_callback<${cls.cppcls}>(L, nullptr);
-                return 1;
-            }]]
-        )))
-    elseif not olua.is_enum_type(cls) and cls.reg_luatype and not has_move then
+        {
+            luaL_checktype(L, -1, LUA_TFUNCTION);
+            olua_push_callback<${cls.cppcls}>(L, nullptr);
+            return 1;
+        }]])))
+    elseif not olua.is_enum_type(cls) and cls.reg_luatype
+        and not has_method(cls, '__olua_move', false)
+    then
         cls.funcs:push(olua.parse_func(cls, '__olua_move', format([[
-            {
-                auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
-                olua_push_cppobj(L, self, "${cls.luacls}");
-                return 1;
-            }
-        ]])))
+        {
+            auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
+            olua_push_cppobj(L, self, "${cls.luacls}");
+            return 1;
+        }]])))
+    end
+    if olua.is_enum_type(cls) and not has_method(cls, '__index', true) then
+        cls.funcs:push(olua.parse_func(cls, '__index', format([[
+        {
+            const char *cls = olua_checkfieldstring(L, 1, "classname");
+            const char *key = olua_tostring(L, 2);
+            luaL_error(L, "enum '%s.%s' not found", cls, key);
+            return 0;
+        }]])))
     end
 end
 
