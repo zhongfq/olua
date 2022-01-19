@@ -476,40 +476,22 @@ function M:visit(cur)
         if need_visit then
             self:visit_enum(cls, cur)
         end
-    elseif kind == 'TypeAliasDecl' then
-        local ut = cur.underlyingType
-        local name = self:typename(ut, cur)
-        local isenum = ut.declaration.kind == 'EnumDecl'
-        local alias = ((isenum and 'enum ' or '') .. name)
-        alias_types[cls] = alias_types[name] or alias
-        if need_visit then
-            self:visit_alias_class(cls, alias_types[cls])
-        end
-    elseif kind == 'TypedefDecl' then
+    elseif kind == 'TypeAliasDecl' or kind == 'TypedefDecl' then
         local decl = cur.underlyingType.declaration
-        local utk = decl.kind
-        local name
-        --[[
-            namespace test {
-                typedef enum TAG_ {
-                } TAG
-            }
-            cur.underlyingType.name => enum TAG_
-            cur.type.canonicalType.name => test::TAG_
-        ]]
-        if utk == 'StructDecl' or utk == 'EnumDecl' then
-            name = self:typename(decl.type, decl)
-        else
-            name = self:typename(cur.underlyingType, decl)
+        local decl_kind = decl.kind
+        if decl.kind == 'NoDeclFound' then
+            return
         end
-
-        local alias = ((utk == 'EnumDecl' and 'enum ' or '') .. name)
+        local name = self:typename(cur.underlyingType, cur)
+        if name:find('^enum ') or name:find('^struct ')  then
+            name = self:typename(decl.type, decl)
+        end
+        local alias = ((decl_kind == 'EnumDecl' and 'enum ' or '') .. name)
         alias_types[cls] = alias_types[name] or alias
-
         if need_visit then
-            if utk == 'StructDecl' then
+            if decl_kind == 'StructDecl' then
                 self:visit_class(cls, decl)
-            elseif utk == 'EnumDecl' then
+            elseif decl_kind == 'EnumDecl' then
                 self:visit_enum(cls, decl)
             else
                 self:visit_alias_class(cls, alias_types[cls])
