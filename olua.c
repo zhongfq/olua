@@ -893,19 +893,17 @@ static int cls_index(lua_State *L)
         return 1;
     }
     
-    if (olua_likely(olua_isuserdata(L, 1))) {
-        if (lookup_user_index_func(L, "__index")) {
-            // try user's index
-            lua_pushvalue(L, 1);
-            lua_pushvalue(L, 2);
-            lua_call(L, 2, 1);
-            return 1;
-        } else {
-            // try variable
-            lua_pushvalue(L, 2);
-            olua_getvariable(L, 1);
-            return 1;
-        }
+    if (olua_unlikely(lookup_user_index_func(L, "__index"))) {
+        // try user's index
+        lua_pushvalue(L, 1);
+        lua_pushvalue(L, 2);
+        lua_call(L, 2, 1);
+        return 1;
+    } else if (olua_likely(olua_isuserdata(L, 1))) {
+        // try variable
+        lua_pushvalue(L, 2);
+        olua_getvariable(L, 1);
+        return 1;
     }
     return 0;
 }
@@ -935,20 +933,18 @@ static int cls_newindex(lua_State *L)
         return 0;
     }
     
-    if (olua_likely(type == LUA_TUSERDATA)) {
-        if (lookup_user_index_func(L, "__newindex")) {
-            // try user's newindex
-            lua_pushvalue(L, 1);
-            lua_pushvalue(L, 2);
-            lua_pushvalue(L, 3);
-            lua_call(L, 3, 0);
-            return 0;
-        } else {
-            // try variable
-            lua_settop(L, 3);
-            olua_setvariable(L, 1);
-            return 0;
-        }
+    if (olua_unlikely(lookup_user_index_func(L, "__newindex"))) {
+        // try user's newindex
+        lua_pushvalue(L, 1);
+        lua_pushvalue(L, 2);
+        lua_pushvalue(L, 3);
+        lua_call(L, 3, 0);
+        return 0;
+    } else if (olua_likely(type == LUA_TUSERDATA)) {
+        // try variable
+        lua_settop(L, 3);
+        olua_setvariable(L, 1);
+        return 0;
     }
     return 0;
 }
