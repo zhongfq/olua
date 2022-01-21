@@ -37,7 +37,7 @@ local function check_meta_method(cls)
         cls.funcs:push(olua.parse_func(cls, '__call', format([[
         {
             luaL_checktype(L, -1, LUA_TFUNCTION);
-            olua_push_callback<${cls.cppcls}>(L, nullptr);
+            olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.luacls}");
             return 1;
         }]])))
     elseif not olua.is_enum_type(cls) and cls.reg_luatype

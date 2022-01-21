@@ -284,7 +284,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
             void *cb_store = (void *)${cb_store};
             std::string cb_tag = ${cb_tag};
             std::string cb_name;
-            if (${func_is}(L, ${argn})) {
+            if (${func_is}(L, ${argn}, "${arg.type.luacls}")) {
                 cb_name = olua_setcallback(L, cb_store,  ${argn}, cb_tag.c_str(), ${tag_mode});
                 ${callback_block}
             } else {

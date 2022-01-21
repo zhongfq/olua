@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2019-2021 codetypes@gmail.com
+ * Copyright (c) 2019-2022 codetypes@gmail.com
  *
  * https://github.com/zhongfq/olua
  *
@@ -80,7 +80,6 @@ extern "C" {
 #define olua_unlikely(x)    (x)
 #endif
 #endif // luai_likely
-
 
 // stat api
 OLUA_API size_t olua_objcount(lua_State *L);
@@ -204,7 +203,7 @@ OLUA_API void olua_getref(lua_State *L, int ref);
  * ref layout:
  * obj.uservalue {
  *     .olua.ref.component = obj_component  -- OLUA_MODE_SINGLE
- *     .olua.ref.children = {                               -- OLUA_MODE_MULTIPLE
+ *     .olua.ref.children = {               -- OLUA_MODE_MULTIPLE
  *         obj_child1 = true
  *         obj_child2 = true
  *         ...

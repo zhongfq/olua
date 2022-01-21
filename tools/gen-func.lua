@@ -58,11 +58,12 @@ function olua.gen_check_exp(arg, name, i, codeset)
     local argn = i
     local argname = name
     local func_check = olua.conv_func(arg.type, arg.attr.pack and 'pack' or 'check')
+    local check_args = codeset.check_args
+    codeset.check_args = olua.newarray()
     if arg.attr.ret then
         local attr_ret = arg.attr.ret
-        local check_args = codeset.check_args
         arg.attr.ret = nil
-        codeset.check_args = olua.newarray()
+        codeset.check_args:pushf([[//'${argname}' with mark '@ret']])
         if not arg.type.subtypes and arg.type.decltype ~= arg.type.cppcls then
             codeset.check_args:pushf([[${arg.type.decltype} value;]])
             olua.gen_check_exp(arg, 'value', i, codeset)
@@ -70,28 +71,15 @@ function olua.gen_check_exp(arg, name, i, codeset)
         else
             olua.gen_check_exp(arg, name, i, codeset)
         end
-
-        check_args:pushf([[
-            //'${argname}' with mark '@ret'
-            if (!olua_isnoneornil(L, ${argn})) {
-                ${codeset.check_args}
-            }
-        ]])
-        codeset.check_args = check_args
         arg.attr.ret = attr_ret
-        return
     elseif olua.is_pointer_type(arg.type) then
-        if arg.attr.nullable then
-            codeset.check_args:pushf([[
-                if (!olua_isnoneornil(L, ${argn})) {
-                    ${func_check}(L, ${argn}, (void **)&${argname}, "${arg.type.luacls}");
-                }
-            ]])
-        else
-            codeset.check_args:pushf([[
-                ${func_check}(L, ${argn}, (void **)&${argname}, "${arg.type.luacls}");
-            ]])
-        end
+        codeset.check_args:pushf([[
+            ${func_check}(L, ${argn}, (void **)&${argname}, "${arg.type.luacls}");
+        ]])
+    elseif olua.is_func_type(arg.type) then
+        codeset.check_args:pushf([[
+            ${func_check}(L, ${argn}, &${argname}, "${arg.type.luacls}");
+        ]])
     elseif arg.type.subtypes then
         if #arg.type.subtypes == 1 then
             local subtype = arg.type.subtypes[1]
@@ -163,6 +151,18 @@ function olua.gen_check_exp(arg, name, i, codeset)
     else
         codeset.check_args:pushf('${func_check}(L, ${argn}, &${argname});')
     end
+
+    if arg.attr.nullable or arg.attr.ret then
+        check_args:pushf([[
+            if (!olua_isnoneornil(L, ${argn})) {
+                ${codeset.check_args}
+            }
+        ]])
+    else
+        check_args:pushf([[${codeset.check_args}]])
+    end
+
+    codeset.check_args = check_args
 
     if arg.attr.pack and arg.type.num_vars then
         codeset.idx = codeset.idx + arg.type.num_vars - 1
@@ -322,6 +322,8 @@ function olua.gen_push_exp(arg, name, codeset)
     if olua.is_pointer_type(arg.type) then
         local type_cast = arg.type.variant and '&' or ''
         codeset.push_args:pushf('${func_push}(L, ${type_cast}${argname}, "${arg.type.luacls}");')
+    elseif olua.is_func_type(arg.type) then
+        codeset.push_args:pushf('${func_push}(L, &${argname}, "${arg.type.luacls}");')
     elseif arg.type.subtypes then
         if #arg.type.subtypes == 1 then
             local subtype = arg.type.subtypes[1]
@@ -542,7 +544,7 @@ local function gen_test_and_call(cls, fns)
                     test_nil = ' ' .. format('|| olua_isnil(L, ${argn})')
                 end
 
-                if olua.is_pointer_type(ai.type) then
+                if olua.is_pointer_type(ai.type) or olua.is_func_type(ai.type) then
                     test_exps[#test_exps + 1] = format([[
                         (${func_is}(L, ${argn}, "${ai.type.luacls}")${test_nil})
                     ]])

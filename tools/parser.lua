@@ -587,7 +587,7 @@ function olua.is_pointer_type(ti)
         -- is 'T *'?
         return strfind(ti, '[*]$')
     else
-        return not ti.declfunc and ti.luacls and not olua.is_value_type(ti)
+        return ti.luacls and not olua.is_value_type(ti) and not olua.is_func_type(ti)
     end
 end
 

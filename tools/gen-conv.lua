@@ -236,22 +236,6 @@ function olua.gen_conv_header(module, write)
         write(ifdef and '#endif' or nil)
         write("")
     end
-
-    for _, cls in ipairs(module.class_types) do
-        local ti = olua.typeinfo(cls.cppcls, nil, true)
-        if olua.is_func_type(cls) then
-            local ifdef = cls.ifdefs['*']
-            write(ifdef)
-            write(format([[
-                // ${cls.cppcls}
-                bool olua_is_${{cls.cppcls}}(lua_State *L, int idx);
-                int olua_push_${{cls.cppcls}}(lua_State *L, const ${cls.cppcls} *value);
-                void olua_check_${{cls.cppcls}}(lua_State *L, int idx, ${cls.cppcls} *value);
-            ]]))
-            write(ifdef and '#endif' or nil)
-            write("")
-        end
-    end
 end
 
 local function gen_cb_is_func(cls, write)
@@ -298,20 +282,5 @@ function olua.gen_conv_source(module, write)
         gen_canpack_func(cv, write)
         write(ifdef and '#endif' or nil)
         write('')
-    end
-
-    for _, cls in ipairs(module.class_types) do
-        local ti = olua.typeinfo(cls.cppcls, nil, true)
-        if olua.is_func_type(cls) then
-            local ifdef = cls.ifdefs['*']
-            write(ifdef)
-            gen_cb_is_func(cls, write)
-            write('')
-            gen_cb_push_func(cls, write)
-            write('')
-            gen_cb_check_func(cls, write)
-            write(ifdef and '#endif' or nil)
-            write('')
-        end
     end
 end

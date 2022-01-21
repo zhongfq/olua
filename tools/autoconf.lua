@@ -586,7 +586,7 @@ function writer.write_typedef(module)
         elseif cls.kind == 'class func' then
             luacls = olua.stringify(cls.luacls, "'")
             decltype = olua.stringify(cls.decltype, "'")
-            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
+            conv = 'olua_$$_callback'
         else
             error(cls.cppcls .. ' ' .. cls.kind)
         end
