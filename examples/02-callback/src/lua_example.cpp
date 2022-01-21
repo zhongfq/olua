@@ -8,21 +8,6 @@ static std::string makeForeachTag(int value)
     return "foreach" + std::to_string(value);
 }
 
-bool olua_is_example_Callback_Listener(lua_State *L, int idx)
-{
-    return olua_is_callback<example::Callback::Listener>(L, idx);
-}
-
-int olua_push_example_Callback_Listener(lua_State *L, const example::Callback::Listener *value)
-{
-    return olua_push_callback<example::Callback::Listener>(L, value);
-}
-
-void olua_check_example_Callback_Listener(lua_State *L, int idx, example::Callback::Listener *value)
-{
-    olua_check_callback<example::Callback::Listener>(L, idx, value);
-}
-
 static int _example_Object___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -206,7 +191,7 @@ static int _example_Callback_Listener___call(lua_State *L)
     olua_startinvoke(L);
 
     luaL_checktype(L, -1, LUA_TFUNCTION);
-    olua_push_callback<example::Callback::Listener>(L, nullptr);
+    olua_push_callback(L, (example::Callback::Listener *)nullptr, "example.Callback.Listener");
 
     olua_endinvoke(L);
 
@@ -263,7 +248,7 @@ static int _example_Callback_foreach(lua_State *L)
     olua_to_cppobj(L, 1, (void **)&self, "example.Callback");
     olua_check_int(L, 2, &arg1);
     olua_check_int(L, 3, &arg2);
-    olua_check_std_function(L, 4, &arg3);
+    olua_check_callback(L, 4, &arg3, "std.function");
 
     void *cb_store = (void *)olua_pushclassobj(L, "example.Callback");
     std::string cb_tag = makeForeachTag(arg1);
@@ -315,7 +300,7 @@ static int _example_Callback_setEvent(lua_State *L)
     std::function<void(const example::Event *)> arg1;       /** callback */
 
     olua_to_cppobj(L, 1, (void **)&self, "example.Callback");
-    olua_check_std_function(L, 2, &arg1);
+    olua_check_callback(L, 2, &arg1, "std.function");
 
     void *cb_store = (void *)self;
     std::string cb_tag = "Event";
@@ -356,7 +341,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
     example::Callback::Listener arg1;       /** callback */
 
     olua_to_cppobj(L, 1, (void **)&self, "example.Callback");
-    olua_check_example_Callback_Listener(L, 2, &arg1);
+    olua_check_callback(L, 2, &arg1, "example.Callback.Listener");
 
     void *cb_store = (void *)self;
     std::string cb_tag = "OnceEvent";

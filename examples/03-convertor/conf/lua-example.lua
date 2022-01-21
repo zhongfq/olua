@@ -13,6 +13,7 @@ typedef "example::Identifier"
     .decltype "std::string"
 typedef "example::Color"
 typedef "example::vector"
+    .conv "olua_$$_array"
 
 typeconv "example::Point"
 

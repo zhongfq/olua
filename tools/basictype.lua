@@ -40,27 +40,24 @@ typedef {
 
 typedef {
     cppcls = 'std::function',
-    conv = 'olua_$$_std_function',
+    luacls = 'std.function',
+    conv = 'olua_$$_callback',
 }
 
 typedef {
-    cppcls = 'std::unordered_map',
-    conv = 'olua_$$_std_unordered_map',
+    cppcls = [[
+        std::unordered_map
+        std::map
+    ]],
+    conv = 'olua_$$_map',
 }
 
 typedef {
-    cppcls = 'std::map',
-    conv = 'olua_$$_std_map',
-}
-
-typedef {
-    cppcls = 'std::set',
-    conv = 'olua_$$_std_set',
-}
-
-typedef {
-    cppcls = 'std::vector',
-    conv = 'olua_$$_std_vector',
+    cppcls = [[
+        std::set
+        std::vector
+    ]],
+    conv = 'olua_$$_array',
 }
 
 typedef {
