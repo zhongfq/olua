@@ -72,7 +72,8 @@ static int _example_Object_new(lua_State *L)
     return num_ret;
 }
 
-static int luaopen_example_Object(lua_State *L)
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
     oluacls_class(L, "example.Object", nullptr);
     oluacls_func(L, "__gc", _example_Object___gc);
@@ -86,6 +87,7 @@ static int luaopen_example_Object(lua_State *L)
 
     return 1;
 }
+OLUA_END_DECLS
 
 static int _example_Hello___olua_move(lua_State *L)
 {
@@ -164,7 +166,8 @@ static int _example_Hello_setName(lua_State *L)
     return 0;
 }
 
-static int luaopen_example_Hello(lua_State *L)
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
     oluacls_class(L, "example.Hello", "example.Object");
     oluacls_func(L, "__olua_move", _example_Hello___olua_move);
@@ -178,10 +181,14 @@ static int luaopen_example_Hello(lua_State *L)
 
     return 1;
 }
+OLUA_END_DECLS
 
-int luaopen_example(lua_State *L)
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example(lua_State *L)
 {
     olua_require(L, "example.Object", luaopen_example_Object);
     olua_require(L, "example.Hello", luaopen_example_Hello);
+
     return 0;
 }
+OLUA_END_DECLS

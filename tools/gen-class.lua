@@ -195,7 +195,8 @@ local function gen_class_open(cls, write)
     end
 
     write(format([[
-        static int luaopen_${{cls.cppcls}}(lua_State *L)
+        OLUA_BEGIN_DECLS
+        OLUA_LIB int luaopen_${{cls.cppcls}}(lua_State *L)
         {
             oluacls_class(L, "${cls.luacls}", ${supercls});
             ${funcs}
@@ -205,6 +206,7 @@ local function gen_class_open(cls, write)
 
             return 1;
         }
+        OLUA_END_DECLS
     ]]))
 end
 
@@ -235,7 +237,9 @@ function olua.gen_header(module)
 
         ${module.headers}
 
-        int luaopen_${module.name}(lua_State *L);
+        OLUA_BEGIN_DECLS
+        OLUA_LIB int luaopen_${module.name}(lua_State *L);
+        OLUA_END_DECLS
     ]]))
     write('')
 
@@ -288,12 +292,19 @@ local function gen_luaopen(module, write)
         requires:push(ifdef and '#endif' or nil)
     end
 
+    local luaopen = module.luaopen or ''
+
     write(format([[
-        int luaopen_${module.name}(lua_State *L)
+        OLUA_BEGIN_DECLS
+        OLUA_LIB int luaopen_${module.name}(lua_State *L)
         {
             ${requires}
+
+            ${luaopen}
+            
             return 0;
         }
+        OLUA_END_DECLS
     ]]))
     write('')
 end
