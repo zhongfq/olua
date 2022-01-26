@@ -515,6 +515,7 @@ function writer.write_metadata(module, append)
 
     append(format('headers = ${module.headers?}'))
     append(format('chunk = ${module.chunk?}'))
+    append(format('luaopen = ${module.luaopen?}'))
     append('')
 
     for _, cls in ipairs(module.class_types) do
@@ -1195,6 +1196,7 @@ function M.__call(_, path)
 
     add_value_command(CMD, 'module', m, 'name')
     add_value_command(CMD, 'path', m)
+    add_value_command(CMD, 'luaopen', m)
     add_value_command(CMD, 'headers', m)
     add_value_command(CMD, 'chunk', m)
     add_value_command(CMD, 'luacls', m, nil, checkfunc)

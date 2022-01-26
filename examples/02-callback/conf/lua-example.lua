@@ -14,6 +14,10 @@ static std::string makeForeachTag(int value)
 }
 ]]
 
+luaopen [[
+    printf("insert code in luaopen\n");
+]]
+
 include "../common/lua-object.lua"
 
 typeconf "example::Event"

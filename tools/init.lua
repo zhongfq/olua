@@ -399,5 +399,6 @@ require "autoconf"
 _G.export = olua.export
 _G.typedef = olua.typedef
 _G.autoconf = olua.autoconf
+_G.olua = olua
 
 return olua

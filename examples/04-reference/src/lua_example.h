@@ -7,6 +7,8 @@
 #include "Example.h"
 #include "xlua.h"
 
-int luaopen_example(lua_State *L);
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example(lua_State *L);
+OLUA_END_DECLS
 
 #endif
