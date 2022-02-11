@@ -15,11 +15,11 @@ int xlua_objgc(lua_State *L);
 // implement olua api
 //
 #ifdef OLUA_HAVE_MAINTHREAD
-lua_State *olua_mainthread(lua_State *L);
+OLUA_API lua_State *olua_mainthread(lua_State *L);
 #endif
 
 #ifdef OLUA_HAVE_CHECKHOSTTHREAD
-void olua_checkhostthread();
+OLUA_API void olua_checkhostthread();
 #endif
 
 #ifdef OLUA_HAVE_TRACEINVOKING
@@ -28,13 +28,13 @@ void olua_checkhostthread();
 #endif
 
 #ifdef OLUA_HAVE_CMPREF
-void olua_startcmpref(lua_State *L, int idx, const char *refname);
-void olua_endcmpref(lua_State *L, int idx, const char *refname);
+OLUA_API void olua_startcmpref(lua_State *L, int idx, const char *refname);
+OLUA_API void olua_endcmpref(lua_State *L, int idx, const char *refname);
 #endif
 
 #ifdef OLUA_HAVE_LUATYPE
-void olua_registerluatype(lua_State *L, const char *type, const char *cls);
-const char *olua_getluatype(lua_State *L, const char *type);
+OLUA_API void olua_registerluatype(lua_State *L, const char *type, const char *cls);
+OLUA_API const char *olua_getluatype(lua_State *L, const char *type);
 #endif
 
 #ifdef OLUA_HAVE_POSTPUSH
