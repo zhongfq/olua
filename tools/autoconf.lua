@@ -318,6 +318,10 @@ function M:visit_var(cls, cur)
     local tn = self:typename(cur.type, cur)
     local cb_kind
 
+    if tn:find('%[') then
+        return
+    end
+
     if attr.readonly then
         exps:push('@readonly ')
     end
