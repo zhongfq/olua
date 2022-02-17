@@ -122,6 +122,7 @@ typedef {
         uint16_t
         uint32_t
         uint64_t
+        uintptr_t
         std::uint8_t
         std::uint16_t
         std::uint32_t
