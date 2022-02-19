@@ -510,16 +510,18 @@ local function parse_prop(cls, name, declget, declset)
         return string.upper(s)
     end)
 
-    local function test(fi, n, op)
-        n = op .. strgsub(n, '^%w', function (s)
+    local function has_func(fi, pn, op)
+        pn = strgsub(pn, '^%w', function (s)
             return string.upper(s)
         end)
-        if n == fi.cppfunc or n == fi.luafunc then
+        local pattern = '^' .. op .. pn .. '$'
+        if fi.cppfunc:find(pattern) or fi.luafunc:find(pattern) then
             return true
         else
             -- getXXXXS => getXXXXs?
-            n = n:sub(1, #n - 1) .. n:sub(#n):lower()
-            return n == fi.cppfunc or n == fi.luafunc
+            pn = pn:sub(1, #pn - 1) .. pn:sub(#pn):lower()
+            pattern = '^' .. op .. pn .. '$'
+            return fi.cppfunc:find(pattern) or fi.luafunc:find(pattern)
         end
     end
 
@@ -528,8 +530,9 @@ local function parse_prop(cls, name, declget, declset)
     else
         for _, v in ipairs(cls.funcs) do
             local fi = v[1]
-            if test(fi, name, 'get') or test(fi, name, 'is') or
-                test(fi, name2, 'get') or test(fi, name2, 'is') then
+            if has_func(fi, name, '[gG]et') or has_func(fi, name, '[iI]s') or
+                has_func(fi, name2, '[gG]et') or has_func(fi, name2, '[iI]s')
+            then
                 olua.message(cls.cppcls .. ': ' .. fi.funcdesc)
                 olua.assert(#fi.args == 0, "function '%s::%s' has arguments", cls.cppcls, fi.cppfunc)
                 pi.get = fi
@@ -544,7 +547,7 @@ local function parse_prop(cls, name, declget, declset)
     else
         for _, v in ipairs(cls.funcs) do
             local fi = v[1]
-            if test(fi, name, 'set') or test(fi, name2, 'set') then
+            if has_func(fi, name, '[sS]et') or has_func(fi, name2, '[sS]et') then
                 pi.set = fi
                 break
             end
