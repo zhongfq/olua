@@ -16,6 +16,21 @@ local logfile = io.open('autobuild/autoconf.log', 'w')
 local writer = {}
 local M = {}
 
+local kFLAG_POINTEE = 1 << 1     -- pointee type
+local kFLAG_ENUM = 1 << 2        -- enum type
+local kFLAG_ALIAS = 1 << 3       -- alias type
+local kFLAG_CONV = 1 << 4        -- conv type
+local kFLAG_FUNC = 1 << 5        -- function type
+local kFLAG_STRUCT = 1 << 6      -- struct type
+
+local function has_kflag(cls, kind)
+    return ((cls.kind or 0) & kind) ~= 0
+end
+
+local function conv_func(cls)
+    return 'olua_$$_' .. string.gsub(cls.cppcls, '::', '_')
+end
+
 function M:parse(path)
     assert(not self.class_file)
     assert(not self.type_file)
@@ -29,24 +44,24 @@ function M:parse(path)
         ignored_types[cls] = false
     end
 
-    local function toconv(cls)
-        return 'olua_$$_' .. string.gsub(cls.cppcls, '::', '_')
-    end
-
     for _, cls in ipairs(self.typedef_types) do
         if not cls.conv then
             if cls.decltype then
                 local ti = olua.typeinfo(cls.decltype, nil, true)
-                cls.conv = ti and ti.conv or toconv(cls)
+                cls.conv = ti and ti.conv or conv_func(cls)
             else
-                cls.conv = toconv(cls)
+                cls.conv = conv_func(cls)
             end
         end
         type_convs[cls.cppcls] = cls.conv
     end
 
     for _, cls in pairs(self.class_types) do
-        type_convs[cls.cppcls] = cls.kind == 'conv' and toconv(cls) or true
+        if has_kflag(cls, kFLAG_CONV) then
+            type_convs[cls.cppcls] = conv_func(cls)
+        else
+            type_convs[cls.cppcls] = true
+        end
     end
 
     self:visit(clang_tu:cursor())
@@ -64,7 +79,7 @@ function M:check_class()
     for _, cls in ipairs(self.class_types) do
         if not visited_types[cls.cppcls] then
             if #cls.funcs > 0 or #cls.props > 0 then
-                cls.kind = 'class'
+                cls.kind = cls.kind or kFLAG_POINTEE
                 cls.reg_luatype = self:has_define_class(cls)
                 self:do_visit(cls)
             else
@@ -376,28 +391,31 @@ function M:visit_enum(cppcls, cur)
             value = format('${cls.cppcls}::${value}'),
         }
     end
-    cls.kind = 'enum'
+    cls.kind = cls.kind or kFLAG_ENUM
     alias_types[cls.cppcls] = nil
 end
 
-function M:visit_alias_class(cppcls, super)
-    local cls = self:do_visit(cppcls)
-    if self:is_func_type(super) then
-        cls.kind = 'class func'
-        cls.decltype = super
-        cls.luacls = self.luacls(cppcls)
+function M:visit_alias_class(alias, cppcls)
+    local cls = self:do_visit(alias)
+    cls.kind = cls.kind or kFLAG_POINTEE
+    if self:is_func_type(cppcls) then
+        cls.kind = cls.kind | kFLAG_FUNC
+        cls.decltype = cppcls
+        cls.luacls = self.luacls(alias)
     else
-        cls.kind = cls.kind or 'class alias'
-        cls.supercls = super
-        cls.luacls = self.luacls(super)
+        cls.kind = cls.kind | kFLAG_ALIAS
+        cls.supercls = cppcls
+        cls.luacls = self.luacls(cppcls)
     end
 end
 
 function M:visit_class(cppcls, cur)
     local cls = self:do_visit(cppcls)
 
-    if not cls.kind then
-        cls.kind = cur.kind == 'StructDecl' and 'class struct' or 'class'
+    cls.kind = cls.kind or kFLAG_POINTEE
+
+    if cur.kind == 'StructDecl' then
+        cls.kind = cls.kind | kFLAG_STRUCT
     end
 
     if cur.kind == 'Namespace' then
@@ -465,7 +483,7 @@ function M:visit(cur)
                 self:visit(c)
             end
         end
-    elseif kind == 'ClassDecl' or kind == 'StructDecl' then
+    elseif kind == 'ClassDecl' or kind == 'StructDecl' or kind == 'UnionDecl' then
         if need_visit then
             self:visit_class(cls, cur)
         else
@@ -523,7 +541,7 @@ function writer.write_metadata(module, append)
     append('')
 
     for _, cls in ipairs(module.class_types) do
-        if cls.kind ~= "conv" then
+        if not has_kflag(cls, kFLAG_CONV) then
             goto continue
         end
 
@@ -567,35 +585,8 @@ function writer.write_typedef(module)
         writeLine("}")
         writeLine("")
     end
-    for _, cls in ipairs(module.class_types) do
-        local conv
-        local cppcls = cls.cppcls
-        local decltype, luacls, num_vars = 'nil', 'nil', 'nil'
-        if cls.kind == 'conv' then
-            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
-            num_vars = #cls.vars
-        elseif cls.kind == 'enum' then
-            conv = 'olua_$$_uint'
-            luacls = olua.stringify(cls.luacls, "'")
-            decltype = olua.stringify('lua_Unsigned')
-        elseif cls.kind == 'class'
-                or cls.kind == 'class alias'
-                or cls.kind == 'class struct' then
-            if cls.kind == 'class struct' then
-                cppcls = format('${cppcls} *; struct ${cppcls} *')
-            else
-                cppcls = cppcls .. ' *'
-            end
-            luacls = olua.stringify(cls.luacls, "'")
-            conv = 'olua_$$_cppobj'
-        elseif cls.kind == 'class func' then
-            luacls = olua.stringify(cls.luacls, "'")
-            decltype = olua.stringify(cls.decltype, "'")
-            conv = 'olua_$$_callback'
-        else
-            error(cls.cppcls .. ' ' .. cls.kind)
-        end
 
+    local function write_class_typedef(cppcls, luacls, decltype, conv, num_vars)
         t:pushf([[
             typedef {
                 cppcls = '${cppcls}',
@@ -606,6 +597,45 @@ function writer.write_typedef(module)
             }
         ]])
         t:push('')
+    end
+
+    for _, cls in ipairs(module.class_types) do
+        local conv
+        local cppcls = cls.cppcls
+        local decltype, luacls, num_vars = 'nil', 'nil', 'nil'
+
+        if has_kflag(cls, kFLAG_FUNC) then
+            luacls = olua.stringify(cls.luacls, "'")
+            decltype = olua.stringify(cls.decltype, "'")
+            conv = 'olua_$$_callback'
+        elseif has_kflag(cls, kFLAG_ENUM) then
+            conv = 'olua_$$_uint'
+            luacls = olua.stringify(cls.luacls, "'")
+            decltype = olua.stringify('lua_Unsigned')
+        elseif has_kflag(cls, kFLAG_POINTEE) then
+            if has_kflag(cls, kFLAG_STRUCT) then
+                cppcls = format('${cppcls} *; struct ${cppcls} *')
+            else
+                cppcls = cppcls .. ' *'
+            end
+            luacls = olua.stringify(cls.luacls, "'")
+            conv = 'olua_$$_cppobj'
+        elseif has_kflag(cls, kFLAG_CONV) then
+            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
+            num_vars = #cls.vars
+        else
+            error(cls.cppcls .. ' ' .. cls.kind)
+        end
+
+        write_class_typedef(cppcls, luacls, decltype, conv, num_vars)
+
+        if has_kflag(cls, kFLAG_POINTEE) and has_kflag(cls, kFLAG_CONV) then
+            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
+            num_vars = #cls.vars
+            luacls = 'nil'
+            cppcls = cppcls:gsub('[ *]+', '')
+            write_class_typedef(cppcls, luacls, decltype, conv, num_vars)
+        end
     end
     t:push('')
     olua.write(module.type_file, tostring(t))
@@ -627,9 +657,11 @@ function writer.is_new_func(module, supercls, fn)
 end
 
 function writer.to_prop_name(fn, filter, props)
-    if (string.find(fn.name, '^get') or string.find(fn.name, '^is')) and fn.num_args == 0 then
+    if (fn.name:find('^[gG]et') or fn.name:find('^[iI]s')) and fn.num_args == 0
+    then
         -- getABCd isAbc => ABCd Abc
-        local name = string.gsub(fn.name, '^%l+', '')
+        local name = fn.name:gsub('^[gG]et', '')
+        name = name:gsub('^[iI]s', '')
         return string.gsub(name, '^%u+', function (str)
             if #str > 1 and #str ~= #name then
                 if #str == #name - 1 then
@@ -862,7 +894,9 @@ end
 function writer.write_classes(module, append)
     append('')
     for _, cls in ipairs(module.class_types) do
-        if cls.kind == 'conv' or cls.kind == 'class alias' then
+        if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
+            or has_kflag(cls, kFLAG_ALIAS)
+        then
             goto continue
         end
 
@@ -1052,7 +1086,6 @@ local function make_typeconf_command(cls)
         end
     end
 
-    add_value_command(CMD, 'kind', cls)
     add_value_command(CMD, 'chunk', cls)
     add_value_command(CMD, 'luaname', cls, nil, checkfunc)
     add_value_command(CMD, 'supercls', cls)
@@ -1227,7 +1260,7 @@ function M.__call(_, path)
         ifdef = nil
     end
 
-    function CMD.typeconf(classname)
+    function CMD.typeconf(classname, kind)
         local cls = {
             cppcls = assert(classname, 'not specify classname'),
             luacls = m.luacls(classname),
@@ -1244,10 +1277,25 @@ function M.__call(_, path)
             inserts = olua.newhash(),
             ifdefs = olua.newhash(),
             index = #m.class_types + 1,
+            kind = kind,
             reg_luatype = true,
             luaname = function (n) return n end,
         }
-        assert(not m.class_types[classname], 'class conflict: ' .. classname)
+        local last = m.class_types[classname]
+        if last then
+            if last.kind == kind then
+                assert(not m.class_types[classname], 'class conflict: ' .. classname)
+            else
+                if kind == kFLAG_CONV then
+                    cls = last
+                end
+                if not cls.kind then
+                    cls.kind = kFLAG_POINTEE
+                end
+                cls.kind = cls.kind | kFLAG_CONV
+                m.class_types:take(classname)
+            end
+        end
         m.class_types[classname] = cls
         if ifdef then
             cls.ifdefs['*'] = {name = '*', value = ifdef}
@@ -1268,9 +1316,7 @@ function M.__call(_, path)
     end
 
     function CMD.typeconv(classname)
-        local cls = CMD.typeconf(classname)
-        cls.kind 'conv'
-        return cls
+        return CMD.typeconf(classname, kFLAG_CONV)
     end
 
     function CMD.clang(clang_args)
