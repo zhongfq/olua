@@ -169,7 +169,7 @@ local function gen_class_open(cls, write)
         local const_func
         if decltype == 'bool' then
             const_func = 'oluacls_const_bool'
-        elseif decltype == 'lua_Integer' then
+        elseif decltype == 'lua_Integer' or decltype == 'lua_Unsigned' then
             const_func = 'oluacls_const_integer'
         elseif decltype == 'lua_Number' then
             const_func = 'oluacls_const_number'

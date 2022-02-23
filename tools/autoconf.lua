@@ -48,7 +48,10 @@ function M:parse(path)
         if not cls.conv then
             if cls.decltype then
                 local ti = olua.typeinfo(cls.decltype, nil, true)
-                cls.conv = ti and ti.conv or conv_func(cls)
+                if not ti then
+                    error(string.format("decltype '%s' for '%s' is not found", cls.decltype, cls.cppcls))
+                end
+                cls.conv = ti.conv
             else
                 cls.conv = conv_func(cls)
             end
