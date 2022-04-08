@@ -1,7 +1,9 @@
 local olua = require "olua"
 local clang = require "clang"
 
-os.execute('mkdir -p autobuild')
+if not olua.isdir('autobuild') then
+    olua.mkdir('autobuild')
+end
 
 local format = olua.format
 local clang_tu
