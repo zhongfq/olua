@@ -11,8 +11,31 @@ else
     olua.HOMEDIR = os.getenv('HOME') .. '/.olua'
 end
 
+function olua.isdir(path)
+    if not string.find(path, '[/\\]$') then
+        path = path .. '/'
+    end
+    local ok, err, code = os.rename(path, path)
+    if not ok then
+        if code == 13 then
+            return true
+        end
+    end
+    return ok, err
+end
+
+function olua.mkdir(dir)
+    if not olua.isdir(dir) then
+        if osn == 'windows' then
+            os.execute('mkdir ' .. dir:gsub('/', '\\'))
+        else
+            os.execute('mkdir -p ' .. dir)
+        end
+    end
+end
+
 -- lua search path
-package.path = scrpath:gsub('[^/.]+%.lua$', '?.lua;') .. package.path
+package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
 
 -- lua c search path
 local suffix = osn == 'windows' and 'dll' or 'so'
@@ -23,17 +46,19 @@ package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
 -- unzip lib and header
 local vf = io.open(olua.HOMEDIR .. '/version')
 local LIB_VERSION = '4'
-if not vf or vf:read('*a') ~= LIB_VERSION then
-    local dir = scrpath:gsub('[^/.]+%.lua$', '')
+if not vf or vf:read('*a') ~= LIB_VERSION
+    or not olua.isdir(olua.HOMEDIR .. '/lib')
+    or not olua.isdir(olua.HOMEDIR .. '/include')
+then
+    local dir = scrpath:gsub('[^/.\\]+%.lua$', '')
     local libzip = string.format('%slib-%s.zip', dir, osn)
     local includezip = dir .. 'include.zip'
+    olua.mkdir(olua.HOMEDIR)
     if osn == 'windows' then
         local unzip = dir .. 'unzip.exe'
-        os.execute('mkdir ' .. olua.HOMEDIR:gsub('/', '\\'))
         os.execute(unzip .. ' -f ' .. libzip .. ' -o ' .. olua.HOMEDIR)
         os.execute(unzip .. ' -f ' .. includezip .. ' -o ' .. olua.HOMEDIR)
     else
-        os.execute('mkdir -p ' .. olua.HOMEDIR)
         os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.HOMEDIR)
         os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.HOMEDIR)
     end
