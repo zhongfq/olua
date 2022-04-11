@@ -5,12 +5,6 @@ local scrpath = select(2, ...)
 local osn = package.cpath:find('?.dll') and 'windows' or
     ((io.popen('uname'):read("*l"):find('Darwin')) and 'macosx' or 'linux')
 
-if osn == 'windows' then
-    olua.HOMEDIR = os.getenv('TMP'):gsub('\\', '/') .. '/olua'
-else
-    olua.HOMEDIR = os.getenv('HOME') .. '/.olua'
-end
-
 function olua.isdir(path)
     if not string.find(path, '[/\\]$') then
         path = path .. '/'
@@ -34,6 +28,22 @@ function olua.mkdir(dir)
     end
 end
 
+if osn == 'windows' then
+    olua.OLUA_HOME = os.getenv('USERPROFILE')
+    if not olua.OLUA_HOME then
+        olua.OLUA_HOME = os.getenv('TMP'):gsub('\\', '/')
+        if olua.OLUA_HOME:find('^C:/Users/') then
+            olua.OLUA_HOME = olua.OLUA_HOME:match('^C:/Users/[^/]+')
+        end
+    end
+    olua.OLUA_HOME = olua.OLUA_HOME .. '/.olua'
+else
+    olua.OLUA_HOME = os.getenv('HOME') .. '/.olua'
+end
+
+-- version
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v4'
+
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
 
@@ -41,28 +51,25 @@ package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
 local suffix = osn == 'windows' and 'dll' or 'so'
 local version = string.match(_VERSION, '%d.%d'):gsub('%.', '')
 package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
-    olua.HOMEDIR, version, osn, suffix, package.cpath)
+    olua.OLUA_HOME, version, osn, suffix, package.cpath)
 
 -- unzip lib and header
-local vf = io.open(olua.HOMEDIR .. '/version')
-local LIB_VERSION = '4'
-if not vf or vf:read('*a') ~= LIB_VERSION
-    or not olua.isdir(olua.HOMEDIR .. '/lib')
-    or not olua.isdir(olua.HOMEDIR .. '/include')
+if not not olua.isdir(olua.OLUA_HOME)
+    or not olua.isdir(olua.OLUA_HOME .. '/lib')
+    or not olua.isdir(olua.OLUA_HOME .. '/include')
 then
     local dir = scrpath:gsub('[^/.\\]+%.lua$', '')
     local libzip = string.format('%slib-%s.zip', dir, osn)
     local includezip = dir .. 'include.zip'
-    olua.mkdir(olua.HOMEDIR)
+    olua.mkdir(olua.OLUA_HOME)
     if osn == 'windows' then
         local unzip = dir .. 'unzip.exe'
-        os.execute(unzip .. ' -f ' .. libzip .. ' -o ' .. olua.HOMEDIR)
-        os.execute(unzip .. ' -f ' .. includezip .. ' -o ' .. olua.HOMEDIR)
+        os.execute(unzip .. ' -f ' .. libzip .. ' -o ' .. olua.OLUA_HOME)
+        os.execute(unzip .. ' -f ' .. includezip .. ' -o ' .. olua.OLUA_HOME)
     else
-        os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.HOMEDIR)
-        os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.HOMEDIR)
+        os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.OLUA_HOME)
+        os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.OLUA_HOME)
     end
-    io.open(olua.HOMEDIR .. '/version', 'w+'):write(LIB_VERSION):close()
 end
 
 local _ipairs = ipairs

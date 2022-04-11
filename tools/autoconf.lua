@@ -1350,14 +1350,14 @@ function M.__call(_, path)
                 '-U__SSE__',
                 '-DANDROID',
                 '-target', 'armv7-none-linux-androideabi',
-                '-idirafter', '${HOMEDIR}/include/c++',
-                '-idirafter', '${HOMEDIR}/include/c',
-                '-idirafter', '${HOMEDIR}/include/android-sysroot/x86_64-linux-android',
-                '-idirafter', '${HOMEDIR}/include/android-sysroot',
+                '-idirafter', '${OLUA_HOME}/include/c++',
+                '-idirafter', '${OLUA_HOME}/include/c',
+                '-idirafter', '${OLUA_HOME}/include/android-sysroot/x86_64-linux-android',
+                '-idirafter', '${OLUA_HOME}/include/android-sysroot',
             })
         end
         for i, v in ipairs(flags) do
-            local HOMEDIR = olua.HOMEDIR
+            local OLUA_HOME = olua.OLUA_HOME
             flags[i] = format(v)
         end
         clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
