@@ -54,7 +54,7 @@ package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
     olua.OLUA_HOME, version, osn, suffix, package.cpath)
 
 -- unzip lib and header
-if not not olua.isdir(olua.OLUA_HOME)
+if not olua.isdir(olua.OLUA_HOME)
     or not olua.isdir(olua.OLUA_HOME .. '/lib')
     or not olua.isdir(olua.OLUA_HOME .. '/include')
 then
