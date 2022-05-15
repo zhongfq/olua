@@ -115,7 +115,7 @@ static int _example_Node_addChild1(lua_State *L)
     self->addChild(arg1);
 
     // insert code after call
-    olua_addref(L, 1, "children", 2, OLUA_MODE_MULTIPLE);
+    olua_addref(L, 1, "children", 2, OLUA_FLAG_MULTIPLE);
 
     olua_endinvoke(L);
 
@@ -138,7 +138,7 @@ static int _example_Node_addChild2(lua_State *L)
     self->addChild(arg1, arg2);
 
     // insert code after call
-    olua_addref(L, 1, "children", 2, OLUA_MODE_MULTIPLE);
+    olua_addref(L, 1, "children", 2, OLUA_FLAG_MULTIPLE);
 
     olua_endinvoke(L);
 
@@ -183,7 +183,7 @@ static int _example_Node_getChildByName(lua_State *L)
     int num_ret = olua_push_cppobj(L, ret, "example.Node");
 
     // insert code after call
-    olua_addref(L, 1, "children", -1, OLUA_MODE_MULTIPLE);
+    olua_addref(L, 1, "children", -1, OLUA_FLAG_MULTIPLE);
 
     olua_endinvoke(L);
 
@@ -203,7 +203,7 @@ static int _example_Node_getComponent(lua_State *L)
     int num_ret = olua_push_cppobj(L, ret, "example.Node");
 
     // insert code after call
-    olua_addref(L, 1, "component", -1, OLUA_MODE_SINGLE);
+    olua_addref(L, 1, "component", -1, OLUA_FLAG_SINGLE);
 
     olua_endinvoke(L);
 
@@ -308,7 +308,7 @@ static int _example_Node_removeChild(lua_State *L)
     self->removeChild(arg1);
 
     // insert code after call
-    olua_delref(L, 1, "children", 2, OLUA_MODE_MULTIPLE);
+    olua_delref(L, 1, "children", 2, OLUA_FLAG_MULTIPLE);
 
     olua_endinvoke(L);
 
@@ -358,7 +358,7 @@ static int _example_Node_removeSelf(lua_State *L)
     self->removeSelf();
 
     // insert code after call
-    olua_delref(L, parent, "children", 1, OLUA_MODE_MULTIPLE);
+    olua_delref(L, parent, "children", 1, OLUA_FLAG_MULTIPLE);
 
     olua_endinvoke(L);
 
@@ -379,7 +379,7 @@ static int _example_Node_setComponent(lua_State *L)
     self->setComponent(arg1);
 
     // insert code after call
-    olua_addref(L, 1, "component", 2, OLUA_MODE_SINGLE);
+    olua_addref(L, 1, "component", 2, OLUA_FLAG_SINGLE);
 
     olua_endinvoke(L);
 
