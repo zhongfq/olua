@@ -212,20 +212,20 @@ function olua.gen_addref_exp(fi, arg, i, name, codeset)
                     ${func_push}<${subtype.cppcls}>(L, &${argname}, [L](${subtype.cppcls}value) {
                         ${subtype_func_push}(L, value, "${subtype.luacls}");
                     });
-                    olua_addref(L, ref_store, "${ref_name}", -1, OLUA_MODE_MULTIPLE | OLUA_FLAG_TABLE);
+                    olua_addref(L, ref_store, "${ref_name}", -1, OLUA_FLAG_MULTIPLE | OLUA_FLAG_TABLE);
                     lua_pop(L, 1);
                 ]])
             else
                 if fi.variable then
                     codeset.insert_after:pushf('olua_delallrefs(L, ${ref_store}, "${ref_name}");')
                 end
-                codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_MODE_MULTIPLE | OLUA_FLAG_TABLE);')
+                codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_MULTIPLE | OLUA_FLAG_TABLE);')
             end
         else
-            codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_MODE_MULTIPLE);')
+            codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_MULTIPLE);')
         end
     elseif ref_mode == "^" then
-        codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_MODE_SINGLE);')
+        codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_SINGLE);')
     else
         error('no support addref flag: ' .. ref_mode)
     end
@@ -262,12 +262,12 @@ function olua.gen_delref_exp(fi, arg, i, name, codeset)
         codeset.insert_after:pushf('olua_delallrefs(L, ${ref_store}, "${ref_name}");')
     elseif ref_mode == '|' then
         if arg.type.subtypes then
-            codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_MODE_MULTIPLE | OLUA_FLAG_TABLE);')
+            codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_MULTIPLE | OLUA_FLAG_TABLE);')
         else
-            codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_MODE_MULTIPLE);')
+            codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_MULTIPLE);')
         end
     elseif ref_mode == "^" then
-        codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_MODE_SINGLE);')
+        codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_SINGLE);')
     else
         error('no support delref flag: ' .. ref_mode)
     end
