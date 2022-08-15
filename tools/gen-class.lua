@@ -50,15 +50,6 @@ local function check_meta_method(cls)
             return 1;
         }]])))
     end
-    if olua.is_enum_type(cls) and not has_method(cls, '__index', true) then
-        cls.funcs:push(olua.parse_func(cls, '__index', format([[
-        {
-            const char *cls = olua_checkfieldstring(L, 1, "classname");
-            const char *key = olua_tostring(L, 2);
-            luaL_error(L, "enum '%s.%s' not found", cls, key);
-            return 0;
-        }]])))
-    end
 end
 
 local function check_gen_class_func(cls, fis, write)
@@ -130,6 +121,15 @@ local function gen_class_open(cls, write)
 
     if cls.supercls then
         supercls = olua.stringify(olua.luacls(cls.supercls))
+    end
+
+    if cls.indexerror then
+        if cls.indexerror:find('r') then
+            funcs:pushf('oluacls_func(L, "__index", olua_indexerror);')
+        end
+        if cls.indexerror:find('w') then
+            funcs:pushf('oluacls_func(L, "__newindex", olua_newindexerror);')
+        end
     end
 
     for _, fis in ipairs(cls.funcs) do
@@ -301,7 +301,7 @@ local function gen_luaopen(module, write)
             ${requires}
 
             ${luaopen}
-            
+
             return 0;
         }
         OLUA_END_DECLS

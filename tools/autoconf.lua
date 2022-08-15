@@ -396,6 +396,7 @@ function M:visit_enum(cppcls, cur)
             value = format('${cls.cppcls}::${value}'),
         }
     end
+    cls.indexerror = 'rw'
     cls.kind = cls.kind or kFLAG_ENUM
     alias_types[cls.cppcls] = nil
 end
@@ -519,6 +520,12 @@ function M:visit(cur)
             if decl_kind == 'StructDecl' then
                 self:visit_class(cls, decl)
             elseif decl_kind == 'EnumDecl' then
+                self:visit_enum(cls, decl)
+            elseif alias_types[cls]:find('^enum ') then
+                if decl_kind == 'TypedefDecl' then
+                    decl = decl.underlyingType.declaration
+                end
+                assert(decl.kind == 'EnumDecl', cls)
                 self:visit_enum(cls, decl)
             else
                 self:visit_alias_class(cls, alias_types[cls])
@@ -912,6 +919,7 @@ function writer.write_classes(module, append)
                 .reg_luatype(${cls.reg_luatype?})
                 .chunk(${cls.chunk?})
                 .luaopen(${cls.luaopen?})
+                .indexerror(${cls.indexerror?})
         ]]))
 
         writer.write_cls_ifdef(module, cls, append)
@@ -1095,6 +1103,7 @@ local function make_typeconf_command(cls)
     add_value_command(CMD, 'luaname', cls, nil, checkfunc)
     add_value_command(CMD, 'supercls', cls)
     add_value_command(CMD, 'luaopen', cls)
+    add_value_command(CMD, 'indexerror', cls)
 
     function CMD.exclude(name)
         name = checkstr('exclude', name)
