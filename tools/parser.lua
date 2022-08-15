@@ -680,6 +680,10 @@ local function typeconf(cppcls)
         cls.luaopen = luaopen
     end
 
+    function CMD.indexerror(indexerror)
+        cls.indexerror = indexerror
+    end
+
     function CMD.ifdef(name, value)
         cls.ifdefs[name] = value
     end
