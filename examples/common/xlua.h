@@ -2,7 +2,7 @@
 #define __EXAMPLES_XLUA__
 
 #include "luauser.h"
-#include "olua.hpp"
+#include "olua.h"
 #include "Object.h"
 
 extern lua_State *xlua_invokingstate;
