@@ -10,7 +10,6 @@ set(source
     xlua.h
     xlua.cpp
     ../../olua.h
-    ../../olua.hpp
     ../../olua.c
 )
 
