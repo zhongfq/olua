@@ -14,6 +14,7 @@ local alias_types = {}
 local type_convs = {}
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
+local aborted = nil
 
 local deferred = {clang_args = nil, modules = olua.newarray()}
 
@@ -1040,6 +1041,10 @@ function writer.write_module(module)
 end
 
 function writer.__gc()
+    if aborted then
+        print(aborted)
+        return
+    end
     xpcall(function ()
         deferred_autoconf()
 
@@ -1315,122 +1320,126 @@ end
 -- autoconf 'conf/lua-exmpale.lua'
 --
 function M.__call(_, path)
-    local ifdef = nil
-    local m = {
-        class_types = olua.newhash(),
-        exclude_types = {},
-        typedef_types = olua.newhash(),
-        luacls = function (cppname)
-            return string.gsub(cppname, "::", ".")
-        end,
-    }
-    local CMD = {}
-
-    add_value_command(CMD, 'module', m, 'name')
-    add_value_command(CMD, 'path', m)
-    add_value_command(CMD, 'luaopen', m)
-    add_value_command(CMD, 'headers', m)
-    add_value_command(CMD, 'chunk', m)
-    add_value_command(CMD, 'luacls', m, nil, checkfunc)
-
-    function CMD.exclude(tn)
-        m.exclude_types[tn] = true
-    end
-
-    function CMD.include(filepath)
-        assert(loadfile(filepath, nil, CMD))()
-    end
-
-    function CMD.ifdef(cond)
-        if string.find(cond, '^defined%(') then
-            ifdef = '#if ' .. cond
-        elseif string.find(cond, '^#if') then
-            ifdef = cond
-        else
-            ifdef = '#ifdef ' .. cond
-        end
-    end
-
-    function CMD.endif(cond)
-        ifdef = nil
-    end
-
-    function CMD.typeconf(classname, kind)
-        local cls = {
-            cppcls = assert(classname, 'not specify classname'),
-            luacls = m.luacls(classname),
-            excludes = olua.newhash(),
-            usings = olua.newhash(),
-            attrs = olua.newhash(),
-            enums = olua.newhash(),
-            consts = olua.newhash(),
-            funcs = olua.newhash(),
-            callbacks = olua.newhash(),
-            props = olua.newhash(),
-            vars = olua.newhash(),
-            aliases = olua.newhash(),
-            inserts = olua.newhash(),
-            ifdefs = olua.newhash(),
-            index = #m.class_types + 1,
-            kind = kind,
-            reg_luatype = true,
-            luaname = function (n) return n end,
+    xpcall(function ()
+        local ifdef = nil
+        local m = {
+            class_types = olua.newhash(),
+            exclude_types = {},
+            typedef_types = olua.newhash(),
+            luacls = function (cppname)
+                return string.gsub(cppname, "::", ".")
+            end,
         }
-        local last = m.class_types[classname]
-        if last then
-            if last.kind == kind then
-                assert(not m.class_types[classname], 'class conflict: ' .. classname)
+        local CMD = {}
+
+        add_value_command(CMD, 'module', m, 'name')
+        add_value_command(CMD, 'path', m)
+        add_value_command(CMD, 'luaopen', m)
+        add_value_command(CMD, 'headers', m)
+        add_value_command(CMD, 'chunk', m)
+        add_value_command(CMD, 'luacls', m, nil, checkfunc)
+
+        function CMD.exclude(tn)
+            m.exclude_types[tn] = true
+        end
+
+        function CMD.include(filepath)
+            assert(loadfile(filepath, nil, CMD))()
+        end
+
+        function CMD.ifdef(cond)
+            if string.find(cond, '^defined%(') then
+                ifdef = '#if ' .. cond
+            elseif string.find(cond, '^#if') then
+                ifdef = cond
             else
-                if kind == kFLAG_CONV then
-                    cls = last
-                end
-                if not cls.kind then
-                    cls.kind = kFLAG_POINTEE
-                end
-                cls.kind = cls.kind | kFLAG_CONV
-                m.class_types:take(classname)
+                ifdef = '#ifdef ' .. cond
             end
         end
-        m.class_types[classname] = cls
-        if ifdef then
-            cls.ifdefs['*'] = {name = '*', value = ifdef}
+
+        function CMD.endif(cond)
+            ifdef = nil
         end
-        return make_typeconf_command(cls)
-    end
 
-    function CMD.typeonly(classname)
-        local cls = CMD.typeconf(classname)
-        cls.exclude '*'
-        return cls
-    end
-
-    function CMD.typedef(classname)
-        local cls = {cppcls = classname}
-        m.typedef_types[classname] = cls
-        return make_typedef_command(cls)
-    end
-
-    function CMD.typeconv(classname)
-        return CMD.typeconf(classname, kFLAG_CONV)
-    end
-
-    function CMD.clang(clang_args)
-        deferred.clang_args = clang_args
-        m = nil
-    end
-
-    assert(loadfile(path, nil, setmetatable({}, {
-        __index = function (_, k)
-            return CMD[k] or _ENV[k]
-        end,
-        __newindex = function (_, k)
-            error(string.format("create command '%s' is not available", k))
+        function CMD.typeconf(classname, kind)
+            local cls = {
+                cppcls = assert(classname, 'not specify classname'),
+                luacls = m.luacls(classname),
+                excludes = olua.newhash(),
+                usings = olua.newhash(),
+                attrs = olua.newhash(),
+                enums = olua.newhash(),
+                consts = olua.newhash(),
+                funcs = olua.newhash(),
+                callbacks = olua.newhash(),
+                props = olua.newhash(),
+                vars = olua.newhash(),
+                aliases = olua.newhash(),
+                inserts = olua.newhash(),
+                ifdefs = olua.newhash(),
+                index = #m.class_types + 1,
+                kind = kind,
+                reg_luatype = true,
+                luaname = function (n) return n end,
+            }
+            local last = m.class_types[classname]
+            if last then
+                if last.kind == kind then
+                    assert(not m.class_types[classname], 'class conflict: ' .. classname)
+                else
+                    if kind == kFLAG_CONV then
+                        cls = last
+                    end
+                    if not cls.kind then
+                        cls.kind = kFLAG_POINTEE
+                    end
+                    cls.kind = cls.kind | kFLAG_CONV
+                    m.class_types:take(classname)
+                end
+            end
+            m.class_types[classname] = cls
+            if ifdef then
+                cls.ifdefs['*'] = {name = '*', value = ifdef}
+            end
+            return make_typeconf_command(cls)
         end
-    })))()
 
-    if m then
-        deferred.modules:push(m)
-    end
+        function CMD.typeonly(classname)
+            local cls = CMD.typeconf(classname)
+            cls.exclude '*'
+            return cls
+        end
+
+        function CMD.typedef(classname)
+            local cls = {cppcls = classname}
+            m.typedef_types[classname] = cls
+            return make_typedef_command(cls)
+        end
+
+        function CMD.typeconv(classname)
+            return CMD.typeconf(classname, kFLAG_CONV)
+        end
+
+        function CMD.clang(clang_args)
+            deferred.clang_args = clang_args
+            m = nil
+        end
+
+        assert(loadfile(path, nil, setmetatable({}, {
+            __index = function (_, k)
+                return CMD[k] or _ENV[k]
+            end,
+            __newindex = function (_, k)
+                error(string.format("create command '%s' is not available", k))
+            end
+        })))()
+
+        if m then
+            deferred.modules:push(m)
+        end
+    end, function (...)
+        aborted = debug.traceback(...)
+    end)
 end
 
 olua.autoconf = setmetatable({}, M)
