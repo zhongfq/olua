@@ -4,6 +4,3 @@ require "olua.tools"
 
 autoconf "conf/clang-args.lua"
 autoconf "conf/lua-example.lua"
-
--- export lua bindings
-dofile "autobuild/make.lua"

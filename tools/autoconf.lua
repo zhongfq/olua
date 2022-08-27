@@ -15,6 +15,8 @@ local type_convs = {}
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
 
+local deferred = {clang_args = nil, modules = olua.newarray()}
+
 local writer = {}
 local M = {}
 
@@ -538,6 +540,79 @@ function M:visit(cur)
     end
 end
 
+local function deferred_autoconf()
+    local clang_args = deferred.clang_args
+    for _, m in ipairs(deferred.modules) do
+        clang_args.headers = string.format('%s\n%s', clang_args.headers or '', m.headers)
+    end
+
+    do
+        local HEADER_PATH = 'autobuild/.autoconf.h'
+        local header = io.open(HEADER_PATH, 'w')
+        header:write(format [[
+            #ifndef __AUTOCONF_H__
+            #define __AUTOCONF_H__
+
+            ${clang_args.headers}
+
+            #endif
+        ]])
+        header:close()
+        local has_target = false
+        local flags = olua.newarray()
+        for i, v in ipairs(clang_args.flags) do
+            flags[#flags + 1] = v
+            if v:find('^-target') then
+                has_target = true
+            end
+        end
+        if not has_target then
+            flags:merge({
+                '-x', 'c++', '-nostdinc', '-std=c++11',
+                '-U__SSE__',
+                '-DANDROID',
+                '-target', 'armv7-none-linux-androideabi',
+                '-idirafter', '${OLUA_HOME}/include/c++',
+                '-idirafter', '${OLUA_HOME}/include/c',
+                '-idirafter', '${OLUA_HOME}/include/android-sysroot/x86_64-linux-android',
+                '-idirafter', '${OLUA_HOME}/include/android-sysroot',
+            })
+        end
+        for i, v in ipairs(flags) do
+            local OLUA_HOME = olua.OLUA_HOME
+            flags[i] = format(v)
+        end
+        clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
+        for _, v in ipairs(clang_tu:diagnostics()) do
+            if v.severity == 'error' or v.severity == 'fatal' then
+                error('parse header error')
+            end
+        end
+        os.remove(HEADER_PATH)
+    end
+
+    for _, m in ipairs(deferred.modules) do
+        for _, cls in ipairs(m.class_types) do
+            for fn, fi in pairs(cls.funcs) do
+                if not fi.snippet then
+                    cls.funcs:take(fn)
+                    cls.excludes:take(fn)
+                end
+            end
+        end
+        for _, cls in ipairs(m.class_types) do
+            for vn, vi in pairs(cls.vars) do
+                if not vi.snippet then
+                    cls.vars:take(vn)
+                    cls.excludes:take(vn)
+                end
+            end
+        end
+        setmetatable(m, {__index = M})
+        m:parse(path)
+    end
+end
+
 -------------------------------------------------------------------------------
 -- output config
 -------------------------------------------------------------------------------
@@ -965,9 +1040,8 @@ function writer.write_module(module)
 end
 
 function writer.__gc()
-    if not next(module_files) then
-        return
-    end
+    deferred_autoconf()
+
     local file = io.open('autobuild/autoconf-ignore.log', 'w')
     local arr = {}
     for cls, flag in pairs(ignored_types) do
@@ -1027,6 +1101,9 @@ function writer.__gc()
         ${type_files}
         ${files}
     ]]))
+    if _G.OLUA_AUTO_BUILD ~= false then
+        dofile('autobuild/make.lua')
+    end
 end
 setmetatable(writer, writer)
 
@@ -1334,49 +1411,7 @@ function M.__call(_, path)
     end
 
     function CMD.clang(clang_args)
-        local HEADER_PATH = 'autobuild/.autoconf.h'
-        local header = io.open(HEADER_PATH, 'w')
-        header:write(format [[
-            #ifndef __AUTOCONF_H__
-            #define __AUTOCONF_H__
-
-            ${clang_args.headers}
-
-            #endif
-        ]])
-        header:close()
-        local has_target = false
-        local flags = olua.newarray()
-        for i, v in ipairs(clang_args.flags) do
-            flags[#flags + 1] = v
-            if v:find('^-target') then
-                has_target = true
-            end
-        end
-        if not has_target then
-            flags:merge({
-                '-x', 'c++', '-nostdinc', '-std=c++11',
-                '-U__SSE__',
-                '-DANDROID',
-                '-target', 'armv7-none-linux-androideabi',
-                '-idirafter', '${OLUA_HOME}/include/c++',
-                '-idirafter', '${OLUA_HOME}/include/c',
-                '-idirafter', '${OLUA_HOME}/include/android-sysroot/x86_64-linux-android',
-                '-idirafter', '${OLUA_HOME}/include/android-sysroot',
-            })
-        end
-        for i, v in ipairs(flags) do
-            local OLUA_HOME = olua.OLUA_HOME
-            flags[i] = format(v)
-        end
-        clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
-        for _, v in ipairs(clang_tu:diagnostics()) do
-            if v.severity == 'error' or v.severity == 'fatal' then
-                error('parse header error')
-            end
-        end
-        os.remove(HEADER_PATH)
-
+        deferred.clang_args = clang_args
         m = nil
     end
 
@@ -1390,35 +1425,8 @@ function M.__call(_, path)
     })))()
 
     if m then
-        for _, cls in ipairs(m.class_types) do
-            for fn, fi in pairs(cls.funcs) do
-                if not fi.snippet then
-                    cls.funcs:take(fn)
-                    cls.excludes:take(fn)
-                end
-            end
-        end
-        for _, cls in ipairs(m.class_types) do
-            for vn, vi in pairs(cls.vars) do
-                if not vi.snippet then
-                    cls.vars:take(vn)
-                    cls.excludes:take(vn)
-                end
-            end
-        end
-        setmetatable(m, {__index = M})
-        m:parse(path)
+        deferred.modules:push(m)
     end
-end
-
-local _dofile = dofile
-
-function dofile(path, ...)
-    if string.find(path, 'autobuild/make.lua$') then
-        writer.__gc()
-        module_files = {}
-    end
-    _dofile(path, ...)
 end
 
 olua.autoconf = setmetatable({}, M)
