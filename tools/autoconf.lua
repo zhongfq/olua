@@ -1040,70 +1040,74 @@ function writer.write_module(module)
 end
 
 function writer.__gc()
-    deferred_autoconf()
+    xpcall(function ()
+        deferred_autoconf()
 
-    local file = io.open('autobuild/autoconf-ignore.log', 'w')
-    local arr = {}
-    for cls, flag in pairs(ignored_types) do
-        if flag then
-            arr[#arr + 1] = cls
+        local file = io.open('autobuild/autoconf-ignore.log', 'w')
+        local arr = {}
+        for cls, flag in pairs(ignored_types) do
+            if flag then
+                arr[#arr + 1] = cls
+            end
         end
-    end
-    table.sort(arr)
-    for _, cls in pairs(arr) do
-        file:write(string.format("[ignore class] %s\n", cls))
-    end
-
-    local types = olua.newarray('\n')
-    for cppcls, v in pairs(alias_types) do
-        if visited_types[cppcls] then
-            goto continue
+        table.sort(arr)
+        for _, cls in pairs(arr) do
+            file:write(string.format("[ignore class] %s\n", cls))
         end
-        if v:find('^enum ') then
-            types:push({
-                cppcls = cppcls,
-                decltype = 'lua_Unsigned',
-                conv = 'olua_$$_uint',
-            })
-        elseif type(type_convs[v]) == 'string' then
-            types:push({
-                cppcls = cppcls,
-                decltype = cppcls,
-                conv = type_convs[v],
-            })
+
+        local types = olua.newarray('\n')
+        for cppcls, v in pairs(alias_types) do
+            if visited_types[cppcls] then
+                goto continue
+            end
+            if v:find('^enum ') then
+                types:push({
+                    cppcls = cppcls,
+                    decltype = 'lua_Unsigned',
+                    conv = 'olua_$$_uint',
+                })
+            elseif type(type_convs[v]) == 'string' then
+                types:push({
+                    cppcls = cppcls,
+                    decltype = cppcls,
+                    conv = type_convs[v],
+                })
+            end
+            ::continue::
         end
-        ::continue::
-    end
-    local typedefs = olua.newarray('\n')
-    for i, v in ipairs(olua.sort(types, 'cppcls')) do
-        typedefs:pushf([[
-            typedef {
-                cppcls = '${v.cppcls}',
-                decltype = '${v.decltype}',
-                conv = '${v.conv}',
-            }
-        ]])
-        typedefs:push('')
-    end
+        local typedefs = olua.newarray('\n')
+        for i, v in ipairs(olua.sort(types, 'cppcls')) do
+            typedefs:pushf([[
+                typedef {
+                    cppcls = '${v.cppcls}',
+                    decltype = '${v.decltype}',
+                    conv = '${v.conv}',
+                }
+            ]])
+            typedefs:push('')
+        end
 
-    olua.write('autobuild/alias-types.lua', format([[
-        ${typedefs}
-    ]]))
+        olua.write('autobuild/alias-types.lua', format([[
+            ${typedefs}
+        ]]))
 
-    local files = olua.newarray('\n')
-    local type_files = olua.newarray('\n')
-    type_files:push('dofile "autobuild/alias-types.lua"')
-    for _, v in ipairs(module_files) do
-        files:pushf('export "${v.class_file}"')
-        type_files:pushf('dofile "${v.type_file}"')
-    end
-    olua.write('autobuild/make.lua', format([[
-        ${type_files}
-        ${files}
-    ]]))
-    if _G.OLUA_AUTO_BUILD ~= false then
-        dofile('autobuild/make.lua')
-    end
+        local files = olua.newarray('\n')
+        local type_files = olua.newarray('\n')
+        type_files:push('dofile "autobuild/alias-types.lua"')
+        for _, v in ipairs(module_files) do
+            files:pushf('export "${v.class_file}"')
+            type_files:pushf('dofile "${v.type_file}"')
+        end
+        olua.write('autobuild/make.lua', format([[
+            ${type_files}
+            ${files}
+        ]]))
+        if _G.OLUA_AUTO_BUILD ~= false then
+            dofile('autobuild/make.lua')
+        end
+    end, function (...)
+        print(debug.traceback(...))
+    end)
 end
 setmetatable(writer, writer)
 
