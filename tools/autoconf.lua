@@ -124,6 +124,13 @@ function M:is_excluded_type(type, cur)
     -- const T * => T *
     -- const T & => T
     local rawtn = tn:gsub('^const *', ''):gsub(' *&$', '')
+    if rawtn:find('<') then
+        for _, subtype in ipairs(type.templateArgTypes) do
+            if self:is_excluded_type(subtype) then
+                return true
+            end
+        end
+    end
     if self:is_excluded_typeanme(rawtn) then
         return true
     elseif tn ~= type.canonicalType.name then
