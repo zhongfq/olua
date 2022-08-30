@@ -7,8 +7,8 @@ set(source
     luauser.h
     Object.h
     Object.cpp
-    xlua.h
-    xlua.cpp
+    olua-custom.h
+    olua-custom.cpp
     ../../olua.h
     ../../olua.c
 )

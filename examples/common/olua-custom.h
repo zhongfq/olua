@@ -1,15 +1,15 @@
-#ifndef __EXAMPLES_XLUA__
-#define __EXAMPLES_XLUA__
+#ifndef __EXAMPLES_OLUA_CUSTOM_H__
+#define __EXAMPLES_OLUA_CUSTOM_H__
 
 #include "luauser.h"
 #include "olua.h"
 #include "Object.h"
 
-extern lua_State *xlua_invokingstate;
+extern lua_State *olua_invokingstate;
 
-lua_State *xlua_new();
-int xlua_dofile(lua_State *L, const char *filename);
-int xlua_objgc(lua_State *L);
+lua_State *olua_new();
+int olua_dofile(lua_State *L, const char *filename);
+int olua_objgc(lua_State *L);
 
 //
 // implement olua api
@@ -23,8 +23,8 @@ OLUA_API void olua_checkhostthread();
 #endif
 
 #ifdef OLUA_HAVE_TRACEINVOKING
-#define olua_startinvoke(L)     (xlua_invokingstate = L)
-#define olua_endinvoke(L)       (xlua_invokingstate = nullptr)
+#define olua_startinvoke(L)     (olua_invokingstate = L)
+#define olua_endinvoke(L)       (olua_invokingstate = nullptr)
 #endif
 
 #ifdef OLUA_HAVE_CMPREF

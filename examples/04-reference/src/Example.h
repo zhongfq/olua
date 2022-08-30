@@ -2,7 +2,7 @@
 #define __EXAMPLES_CONVERTOR__
 
 #include "Object.h"
-#include "xlua.h"
+#include "olua-custom.h"
 #include "lua_conv.h"
 
 #include <string>
