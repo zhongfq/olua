@@ -89,7 +89,7 @@ static int _example_Object___gc(lua_State *L)
 
     olua_endinvoke(L);
 
-    return xlua_objgc(L);
+    return olua_objgc(L);
 }
 
 static int _example_Object___olua_move(lua_State *L)

@@ -1,4 +1,4 @@
-#include "xlua.h"
+#include "olua-custom.h"
 
 #include <unordered_map>
 #include <functional>
@@ -6,16 +6,16 @@
 
 using namespace example;
 
-lua_State *xlua_invokingstate = NULL;
+lua_State *olua_invokingstate = NULL;
 static lua_State *GL = NULL;
 static std::unordered_map<std::string, std::string> _typemap;
 static std::thread::id _thread;
 
 extern bool assert_script_compatible(const char *msg)
 {
-    if (xlua_invokingstate) {
-        lua_State *L = xlua_invokingstate;
-        xlua_invokingstate = NULL;
+    if (olua_invokingstate) {
+        lua_State *L = olua_invokingstate;
+        olua_invokingstate = NULL;
         luaL_error(L, msg);
     }
     return false;
@@ -46,7 +46,7 @@ static int _errorfunc(lua_State *L)
     return 0;
 }
 
-lua_State *xlua_new()
+lua_State *olua_new()
 {
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
@@ -57,7 +57,7 @@ lua_State *xlua_new()
     return L;
 }
 
-int xlua_dofile(lua_State *L, const char *path)
+int olua_dofile(lua_State *L, const char *path)
 {
     int status;
     if ((status = luaL_loadfile(L, path)) != LUA_OK) {
@@ -67,7 +67,7 @@ int xlua_dofile(lua_State *L, const char *path)
     return olua_pcall(L, 0, 0);
 }
 
-int xlua_objgc(lua_State *L)
+int olua_objgc(lua_State *L)
 {
     auto obj = olua_toobj<Object>(L, 1);
     if (olua_isdebug(L)) {

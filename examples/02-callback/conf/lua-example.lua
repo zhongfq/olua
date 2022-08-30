@@ -4,7 +4,7 @@ path "src"
 
 headers [[
 #include "Example.h"
-#include "xlua.h"
+#include "olua-custom.h"
 ]]
 
 chunk [[

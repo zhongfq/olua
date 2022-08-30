@@ -8,6 +8,7 @@ end
 local format = olua.format
 local clang_tu
 
+local exclude_types = {}
 local ignored_types = {}
 local visited_types = {}
 local alias_types = {}
@@ -45,7 +46,7 @@ function M:parse(path)
 
     module_files:push(self)
 
-    for cls in pairs(self.exclude_types) do
+    for cls in pairs(exclude_types) do
         ignored_types[cls] = false
     end
 
@@ -106,7 +107,7 @@ function M:check_class()
 end
 
 function M:is_excluded_typeanme(name)
-    if self.exclude_types[name] then
+    if exclude_types[name] then
         return true
     elseif string.find(name, '<') then
         name = string.gsub(name, '<.*>', '')
@@ -503,7 +504,7 @@ function M:visit(cur)
         if need_visit then
             self:visit_class(cls, cur)
         else
-            if not self.exclude_types[cls] and ignored_types[cls] == nil then
+            if not exclude_types[cls] and ignored_types[cls] == nil then
                 ignored_types[cls] = true
             end
             for _, c in ipairs(cur.children) do
@@ -969,14 +970,16 @@ end
 
 function writer.write_cls_insert(module, cls, append)
     for _, v in ipairs(cls.inserts) do
-        append(format([[
-            .insert('${v.name}', {
-                before = ${v.before?},
-                after = ${v.after?},
-                cbefore = ${v.cbefore?},
-                cafter = ${v.cafter?},
-            })
-        ]], 4))
+        if v.before or v.after or v.cbefore or v.cafter then
+            append(format([[
+                .insert('${v.name}', {
+                    before = ${v.before?},
+                    after = ${v.after?},
+                    cbefore = ${v.cbefore?},
+                    cafter = ${v.cafter?},
+                })
+            ]], 4))
+        end
     end
 end
 
@@ -1177,20 +1180,29 @@ local function add_value_command(CMD, key, store, field, tofunc)
     end
 end
 
+local function add_attr_command(CMD, name, cls)
+    local entry = {}
+    cls.attrs[name] = entry
+    add_value_command(CMD, 'optional', entry, nil, tobool)
+    add_value_command(CMD, 'readonly', entry, nil, tobool)
+    add_value_command(CMD, 'ret', entry)
+    for i = 1, 25 do
+        add_value_command(CMD, 'arg' .. i, entry)
+    end
+end
+
+local function add_insert_command(CMD, name, cls)
+    local entry = {name = name}
+    cls.inserts[name] = entry
+    add_value_command(CMD, 'insert_before', entry, 'before')
+    add_value_command(CMD, 'insert_after', entry, 'after')
+    add_value_command(CMD, 'insert_cbefore', entry, 'cbefore')
+    add_value_command(CMD, 'insert_cafter', entry, 'cafter')
+end
+
 local function make_typeconf_command(cls)
     local CMD = {}
     local ifdef = nil
-
-    local function add_attr_command(cmd, name)
-        local entry = {}
-        cls.attrs[name] = entry
-        add_value_command(cmd, 'optional', entry, nil, tobool)
-        add_value_command(cmd, 'readonly', entry, nil, tobool)
-        add_value_command(cmd, 'ret', entry)
-        for i = 1, 25 do
-            add_value_command(cmd, 'arg' .. i, entry)
-        end
-    end
 
     add_value_command(CMD, 'chunk', cls)
     add_value_command(CMD, 'luaname', cls, nil, checkfunc)
@@ -1247,7 +1259,8 @@ local function make_typeconf_command(cls)
         end
         cls.funcs[name] = entry
         add_value_command(SubCMD, 'snippet', entry)
-        add_attr_command(SubCMD, name)
+        add_attr_command(SubCMD, name, cls)
+        add_insert_command(SubCMD, name, cls)
         return olua.command_proxy(SubCMD, CMD)
     end
 
@@ -1261,7 +1274,8 @@ local function make_typeconf_command(cls)
         add_value_command(SubCMD, 'tag_mode', entry, nil, toany(totable))
         add_value_command(SubCMD, 'tag_store', entry, nil, tonum)
         add_value_command(SubCMD, 'tag_scope', entry, nil)
-        add_attr_command(SubCMD, name)
+        add_attr_command(SubCMD, name, cls)
+        add_insert_command(SubCMD, name, cls)
         return olua.command_proxy(SubCMD, CMD)
     end
 
@@ -1286,7 +1300,7 @@ local function make_typeconf_command(cls)
         else
             name = 'var*'
         end
-        add_attr_command(SubCMD, name)
+        add_attr_command(SubCMD, name, cls)
         return olua.command_proxy(SubCMD, CMD)
     end
 
@@ -1294,21 +1308,6 @@ local function make_typeconf_command(cls)
         local name, alias = string.match(value, '([^ ]+) *-> *([^ ]+)')
         assert(name, value)
         cls.aliases[name] = {name = name, alias = alias}
-    end
-
-    function CMD.insert(names)
-        local entry = {}
-        local SubCMD = {}
-        names = type(names) == 'string' and {names} or names
-        for _, n in ipairs(names) do
-            n = checkstr('insert', n)
-            cls.inserts[n] = setmetatable({name = n}, {__index = entry})
-        end
-        add_value_command(SubCMD, 'before', entry)
-        add_value_command(SubCMD, 'after', entry)
-        add_value_command(SubCMD, 'cbefore', entry)
-        add_value_command(SubCMD, 'cafter', entry)
-        return olua.command_proxy(SubCMD, CMD)
     end
 
     return olua.command_proxy(CMD)
@@ -1330,8 +1329,8 @@ function M.__call(_, path)
     xpcall(function ()
         local ifdef = nil
         local m = {
+            headers = '',
             class_types = olua.newhash(),
-            exclude_types = {},
             typedef_types = olua.newhash(),
             luacls = function (cppname)
                 return string.gsub(cppname, "::", ".")
@@ -1347,7 +1346,7 @@ function M.__call(_, path)
         add_value_command(CMD, 'luacls', m, nil, checkfunc)
 
         function CMD.exclude(tn)
-            m.exclude_types[tn] = true
+            exclude_types[tn] = true
         end
 
         function CMD.include(filepath)
@@ -1441,7 +1440,7 @@ function M.__call(_, path)
             end
         })))()
 
-        if m then
+        if m and m.name then
             deferred.modules:push(m)
         end
     end, function (...)

@@ -4,5 +4,5 @@ typeconf "example::Object"
     .func'__gc'
         .snippet [[
         {
-            return xlua_objgc(L);
+            return olua_objgc(L);
         }]]

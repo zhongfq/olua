@@ -4,7 +4,7 @@ path "src"
 
 headers [[
 #include "Example.h"
-#include "xlua.h"
+#include "olua-custom.h"
 ]]
 
 include "../common/lua-object.lua"
@@ -20,8 +20,7 @@ typeconf "example::Node"
     .func 'getChildByName' .ret '@addref(children |)'
     .func 'removeAllChildren' .ret '@delref(children *)'
     .func 'removeSelf' .ret '@delref(children | parent)'
-    .insert 'removeSelf'
-        .before [[
+        .insert_before [[
             if (!self->getParent()) {
                 return 0;
             }
