@@ -285,6 +285,13 @@ local function gen_func_args(cls, fi, codeset)
     end
 
     for i, ai in ipairs(fi.args) do
+        if i == 1 and ai.type.cppcls == 'lua_State *'
+            and fi.ret.type.cppcls == 'oluaret_t'
+        then
+            codeset.caller_args:pushf('L')
+            goto continue
+        end
+
         local argname = "arg" .. i
         local argn = codeset.idx + 1
         codeset.idx = argn
@@ -313,6 +320,8 @@ local function gen_func_args(cls, fi, codeset)
         olua.gen_check_exp(ai, argname, argn, codeset)
         olua.gen_addref_exp(fi, ai, argn, argname, codeset)
         olua.gen_delref_exp(fi, ai, argn, argname, codeset)
+
+        ::continue::
     end
 end
 
@@ -394,8 +403,12 @@ local function gen_func_ret(cls, fi, codeset)
 
         local retblock = {push_args = olua.newarray()}
 
-        olua.gen_push_exp(fi.ret, 'ret', retblock)
-        codeset.push_ret = format('int num_ret = ${retblock.push_args}')
+        if fi.ret.type.cppcls == 'oluaret_t' then
+            codeset.num_ret = "(int)ret"
+        else
+            olua.gen_push_exp(fi.ret, 'ret', retblock)
+            codeset.push_ret = format('int num_ret = ${retblock.push_args}')
+        end
 
         if #codeset.push_ret > 0 then
             codeset.num_ret = "num_ret"
@@ -435,6 +448,11 @@ local function gen_one_func(cls, fi, write, funcidx)
     if fi.snippet then
         gen_func_snippet(cls, fi, write)
         return
+    end
+
+    local extend = fi.ret.attr.extend
+    if extend then
+        caller = extend[1] .. '::'
     end
 
     gen_func_args(cls, fi, codeset)

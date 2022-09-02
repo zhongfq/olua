@@ -47,6 +47,32 @@ private:
     vector<Node *> _children;
 };
 
+class NodeExtend {
+public:
+    static oluaret_t __index(lua_State *L)
+    {
+        if(!olua_isuserdata(L, 1)) {
+            return 0;
+        }
+            
+        if (olua_isstring(L, 2)) {
+            auto self = olua_toobj<Node>(L, 1);
+            auto children = self->getChildren();
+            std::string name = olua_tostring(L, 2);
+            for (auto child : children) {
+                if (child->getIdentifier() == name) {
+                    olua_pushobj<Node>(L, child);
+                    olua_addref(L, 1, "children", -1, OLUA_FLAG_MULTIPLE);
+                    return 1;
+                }
+            }
+        }
+        lua_settop(L, 2);
+        olua_getvariable(L, 1);
+        return 1;
+    }
+};
+
 }
 
 // example::Color

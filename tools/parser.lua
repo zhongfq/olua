@@ -62,6 +62,9 @@ function olua.typeinfo(tn, cls, silence, variant)
     if strfind(tn, '<') then
         subtis = {}
         for subtn in strgmatch(strmatch(tn, '<(.*)>'), '[^,]+') do
+            if subtn:find('<') then
+                olua.error("unsupport template class as template args: %s", tn)
+            end
             subtis[#subtis + 1] = olua.typeinfo(subtn, cls, silence)
         end
         olua.assert(next(subtis), 'not found subtype')
@@ -534,7 +537,8 @@ local function parse_prop(cls, name, declget, declset)
                 has_func(fi, name2, '[gG]et') or has_func(fi, name2, '[iI]s')
             then
                 olua.message(cls.cppcls .. ': ' .. fi.funcdesc)
-                olua.assert(#fi.args == 0, "function '%s::%s' has arguments", cls.cppcls, fi.cppfunc)
+                olua.assert(#fi.args == 0 or fi.ret.attr.extend and #fi.args == 1,
+                    "function '%s::%s' has arguments", cls.cppcls, fi.cppfunc)
                 pi.get = fi
                 break
             end

@@ -169,6 +169,18 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
 }
 OLUA_END_DECLS
 
+static int _example_Node___index(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    // @extend(example::NodeExtend) static oluaret_t __index(lua_State *L)
+    oluaret_t ret = example::NodeExtend::__index(L);
+
+    olua_endinvoke(L);
+
+    return (int)ret;
+}
+
 static int _example_Node___olua_move(lua_State *L)
 {
     olua_startinvoke(L);
@@ -343,6 +355,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Node(lua_State *L)
 {
     oluacls_class(L, "example.Node", "example.Object");
+    oluacls_func(L, "__index", _example_Node___index);
     oluacls_func(L, "__olua_move", _example_Node___olua_move);
     oluacls_func(L, "getChildren", _example_Node_getChildren);
     oluacls_func(L, "getColor", _example_Node_getColor);
