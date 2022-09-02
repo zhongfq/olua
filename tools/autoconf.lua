@@ -15,11 +15,9 @@ local alias_types = {}
 local type_convs = {}
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
-local aborted = nil
 
 local deferred = {clang_args = nil, modules = olua.newarray()}
 
-local writer = {}
 local M = {}
 
 local kFLAG_POINTEE = 1 << 1     -- pointee type
@@ -37,7 +35,12 @@ local function conv_func(cls)
     return 'olua_$$_' .. string.gsub(cls.cppcls, '::', '_')
 end
 
-function M:parse(path)
+local function log(fmt, ...)
+    logfile:write(string.format(fmt, ...))
+    logfile:write('\n')
+end
+
+function M:parse()
     assert(not self.class_file)
     assert(not self.type_file)
     local filename = self.name:gsub('_', '-')
@@ -75,8 +78,6 @@ function M:parse(path)
 
     self:visit(clang_tu:cursor())
     self:check_class()
-
-    writer.write_module(self)
 end
 
 function M:has_define_class(cls)
@@ -243,7 +244,6 @@ end
 
 function M:visit_method(cls, cur)
     if cur.isVariadic
-        or cur.name:find('^_')
         or cur.isCopyConstructor
         or cur.isMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
@@ -254,7 +254,8 @@ function M:visit_method(cls, cur)
     end
 
     local fn = cur.name
-    local attr = cls.attrs[fn] or cls.attrs['*'] or {}
+    local attrs = (cls.maincls or cls).attrs
+    local attr = attrs[fn] or attrs['*'] or {}
     local callback = cls.callbacks[fn] or {}
     local exps = olua.newarray('')
     local declexps = olua.newarray('')
@@ -345,7 +346,8 @@ function M:visit_var(cls, cur)
     end
 
     local exps = olua.newarray('')
-    local attr = cls.attrs[cur.name] or cls.attrs['var*'] or {}
+    local attrs = (cls.maincls or cls).attrs
+    local attr = attrs[cur.name] or attrs['var*'] or {}
     local tn = self:typename(cur.type, cur)
     local cb_kind
 
@@ -549,7 +551,454 @@ function M:visit(cur)
     end
 end
 
-local function deferred_autoconf()
+-------------------------------------------------------------------------------
+-- output config
+-------------------------------------------------------------------------------
+local function write_module_metadata(module, append)
+    append(format([[
+        name = "${module.name}"
+        path = "${module.path}"
+    ]]))
+
+    append(format('headers = ${module.headers?}'))
+    append(format('chunk = ${module.chunk?}'))
+    append(format('luaopen = ${module.luaopen?}'))
+    append('')
+
+    for _, cls in ipairs(module.class_types) do
+        if not has_kflag(cls, kFLAG_CONV) then
+            goto continue
+        end
+
+        ignored_types[cls.cppcls] = false
+
+        local ifdef = (cls.ifdefs['*'] or {}).value
+        append(format([[typeconv '${cls.cppcls}']]))
+        for _, v in ipairs(cls.ifdefs) do
+            append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
+        end
+        for _, v in ipairs(cls.vars) do
+            append(format('.var(${v.name?}, ${v.snippet?})', 4))
+        end
+        append('')
+
+        ::continue::
+    end
+end
+
+local function write_module_typedef(module)
+    local t = olua.newarray('\n')
+
+    local function writeLine(fmt, ...)
+        t:push(string.format(fmt, ...))
+    end
+
+    writeLine("-- AUTO BUILD, DON'T MODIFY!")
+    writeLine('')
+    for _, td in ipairs(module.typedef_types) do
+        local arr = {}
+        ignored_types[td.cppcls] = false
+        for k, v in pairs(td) do
+            arr[#arr + 1] = {k, v}
+        end
+        table.sort(arr, function (a, b) return a[1] < b[1] end)
+        writeLine("typedef {")
+        for _, p in ipairs(arr) do
+            local key, value = p[1], p[2]
+            writeLine(format('${key} = ${value?},', 4))
+        end
+        writeLine("}")
+        writeLine("")
+    end
+
+    for _, cls in ipairs(module.class_types) do
+        if cls.maincls then
+            goto continue
+        end
+
+        local conv
+        local cppcls = cls.cppcls
+        local decltype, luacls, num_vars = 'nil', 'nil', 'nil'
+
+        if has_kflag(cls, kFLAG_FUNC) then
+            luacls = olua.stringify(cls.luacls, "'")
+            decltype = olua.stringify(cls.decltype, "'")
+            conv = 'olua_$$_callback'
+        elseif has_kflag(cls, kFLAG_ENUM) then
+            conv = 'olua_$$_uint'
+            luacls = olua.stringify(cls.luacls, "'")
+            decltype = olua.stringify('lua_Unsigned')
+        elseif has_kflag(cls, kFLAG_POINTEE) then
+            if has_kflag(cls, kFLAG_STRUCT) then
+                cppcls = format('${cppcls} *; struct ${cppcls} *')
+            else
+                cppcls = cppcls .. ' *'
+            end
+            luacls = olua.stringify(cls.luacls, "'")
+            conv = 'olua_$$_cppobj'
+        elseif has_kflag(cls, kFLAG_CONV) then
+            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
+            num_vars = #cls.vars
+        else
+            error(cls.cppcls .. ' ' .. cls.kind)
+        end
+
+        t:pushf([[
+            typedef {
+                cppcls = '${cppcls}',
+                luacls = ${luacls},
+                decltype = ${decltype},
+                conv = '${conv}',
+                num_vars = ${num_vars},
+            }
+        ]])
+
+        if has_kflag(cls, kFLAG_POINTEE) and has_kflag(cls, kFLAG_CONV) then
+            cppcls = cppcls:gsub('[ *]+', '')
+            luacls = 'nil'
+            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
+            num_vars =  #cls.vars
+            t:pushf([[
+                typedef {
+                    cppcls = '${cppcls}',
+                    luacls = ${luacls},
+                    decltype = ${decltype},
+                    conv = '${conv}',
+                    num_vars = ${num_vars},
+                }
+            ]])
+        end
+
+        ::continue::
+    end
+
+    olua.write(module.type_file, tostring(t))
+end
+
+local function is_new_func(module, supercls, fn)
+    if not supercls or fn.static then
+        return true
+    end
+
+    local super = visited_types[supercls]
+    if not super then
+        error(format("not found super class '${supercls}'"))
+    elseif super.funcs[fn.prototype] or super.excludes[fn.name] then
+        return false
+    else
+        return is_new_func(module, super.supercls, fn)
+    end
+end
+
+local function parse_prop_name(fn)
+    if (fn.name:find('^[gG]et') or fn.name:find('^[iI]s'))
+        and (fn.num_args == 0 or (fn.extended and fn.num_args == 1))
+    then
+        -- getABCd isAbc => ABCd Abc
+        local name = fn.name:gsub('^[gG]et', '')
+        name = name:gsub('^[iI]s', '')
+        return string.gsub(name, '^%u+', function (str)
+            if #str > 1 and #str ~= #name then
+                if #str == #name - 1 then
+                    -- ABCDs => abcds
+                    return str:lower()
+                else
+                    -- ABCd => abCd
+                    return str:sub(1, #str - 1):lower() .. str:sub(#str)
+                end
+            else
+                -- AbcdEF => abcdEF
+                return str:lower()
+            end
+        end)
+    end
+end
+
+local function search_using_func(module, cls)
+    local function search_parent(arr, name, supercls)
+        local super = visited_types[supercls]
+        if super then
+            for _, fn in ipairs(super.funcs) do
+                if fn.name == name then
+                    arr[#arr + 1] = fn
+                end
+            end
+            if #arr == 0 then
+                search_parent(arr, name, super.supercls)
+            end
+        end
+    end
+    for name, where in pairs(cls.usings) do
+        local arr = {}
+        local supercls = cls.supercls
+        while supercls and supercls ~= where do
+            local super = visited_types[supercls]
+            if super then
+                supercls = super.supercls
+            end
+        end
+        search_parent(arr, name, supercls)
+        for _, fn in ipairs(arr) do
+            if not cls.funcs[fn.prototype] then
+                cls.funcs[fn.prototype] = fn
+            end
+        end
+    end
+end
+
+local function write_cls_func(module, cls, append)
+    search_using_func(module, cls)
+
+    local group_by_name = olua.newhash()
+    for _, fn in ipairs(cls.funcs) do
+        local arr = group_by_name[fn.name]
+        if not arr then
+            arr = {}
+            group_by_name[fn.name] = arr
+        end
+        if is_new_func(module, cls.supercls, fn) then
+            arr.has_new = true
+        else
+            fn = setmetatable({
+                func = '@using ' .. fn.func
+            }, {__index = fn})
+        end
+        arr[#arr + 1] = fn
+    end
+
+    for _, arr in ipairs(group_by_name) do
+        if not arr.has_new then
+            goto continue
+        end
+        local funcs = olua.newarray("', '", "'", "'")
+        local has_callback = false
+        local fn = arr[1]
+        for _, v in ipairs(arr) do
+            if v.cb_kind or cls.callbacks[v.name] then
+                has_callback = true
+            end
+            funcs[#funcs + 1] = v.func
+        end
+
+        if #arr == 1 then
+            local name = parse_prop_name(fn)
+            if name then
+                local setname = 'set' .. name:lower()
+                local lessone, moreone
+                for _, f in ipairs(cls.funcs) do
+                    if f.name:lower() == setname then
+                        if f.min_args <= (f.extended and 2 or 1) then
+                            lessone = true
+                        end
+                        if f.min_args > (f.extended and 2 or 1) then
+                            moreone = true
+                        end
+                    end
+                end
+                if lessone or not moreone then
+                    cls.props[name] = {name = name}
+                end
+            end
+        end
+        if not has_callback then
+            if #funcs > 0 then
+                append(format(".func(nil, ${funcs})", 4))
+            else
+                append(format(".func('${fn.name}', ${fn.snippet?})", 4))
+            end
+        else
+            local tag_maker = fn.name:gsub('^set', ''):gsub('^get', '')
+            local mode = fn.cb_kind == 'ret' and 'subequal' or 'replace'
+            local callback = cls.callbacks[fn.name]
+            if callback then
+                callback.funcs = funcs
+                callback.tag_maker = callback.tag_maker or format('${tag_maker}')
+                callback.tag_mode = callback.tag_mode or mode
+            else
+                cls.callbacks[fn.name] = {
+                    name = fn.name,
+                    funcs = funcs,
+                    tag_maker = olua.format '${tag_maker}',
+                    tag_mode = mode,
+                }
+            end
+        end
+
+        ::continue::
+    end
+end
+
+local function write_cls_ifdef(module, cls, append)
+    for _, v in ipairs(cls.ifdefs) do
+        append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
+    end
+end
+
+local function write_cls_const(module, cls, append)
+    for _, v in ipairs(cls.consts) do
+        append(format([[.const('${v.name}', '${cls.cppcls}::${v.name}', '${v.typename}')]], 4))
+    end
+end
+
+local function write_cls_enum(module, cls, append)
+    for _, e in ipairs(cls.enums) do
+        append(format(".enum('${e.name}', '${e.value}')", 4))
+    end
+end
+
+local function write_cls_var(module, cls, append)
+    for _, fn in ipairs(cls.vars) do
+        append(format(".var('${fn.name}', ${fn.snippet?})", 4))
+    end
+end
+
+local function write_cls_prop(module, cls, append)
+    for _, p in ipairs(cls.props) do
+        append(format([[.prop('${p.name}', ${p.get?}, ${p.set?})]], 4))
+    end
+end
+
+local function write_cls_callback(module, cls, append)
+    for i, v in ipairs(cls.callbacks) do
+        assert(v.funcs, cls.cppcls .. '::' .. v.name)
+        local funcs = olua.newarray("',\n'", "'", "'"):merge(v.funcs)
+        local tag_maker = olua.newarray("', '", "'", "'")
+        local tag_mode = olua.newarray("', '", "'", "'")
+        local tag_store = v.tag_store or '0'
+        local tag_scope = v.tag_scope or 'object'
+        if type(v.tag_store) == 'string' then
+            tag_store = olua.stringify(v.tag_store)
+        end
+        assert(v.tag_maker, 'no tag maker')
+        assert(v.tag_mode, 'no tag mode')
+        if type(v.tag_maker) == 'string' then
+            tag_maker:push(v.tag_maker)
+        else
+            tag_maker:merge(v.tag_maker)
+            tag_maker = format('{${tag_maker}}')
+        end
+        if type(v.tag_mode) == 'string' then
+            tag_mode:push(v.tag_mode)
+        else
+            tag_mode:merge(v.tag_mode)
+            tag_mode = format('{${tag_mode}}')
+        end
+        append(format([[
+            .callback {
+                funcs =  {
+                    ${funcs}
+                },
+                tag_maker = ${tag_maker},
+                tag_mode = ${tag_mode},
+                tag_store = ${tag_store},
+                tag_scope = '${tag_scope}',
+            }
+        ]], 4))
+        log(format([[
+            funcs => name = '${v.name}'
+                    funcs = {
+                        ${funcs}
+                    }
+                    tag_maker = ${tag_maker}
+                    tag_mode = ${tag_mode}
+                    tag_store = ${tag_store}
+                    tag_scope = ${tag_scope}
+        ]], 4))
+    end
+end
+
+local function write_cls_insert(module, cls, append)
+    for _, v in ipairs(cls.inserts) do
+        if v.before or v.after or v.cbefore or v.cafter then
+            append(format([[
+                .insert('${v.name}', {
+                    before = ${v.before?},
+                    after = ${v.after?},
+                    cbefore = ${v.cbefore?},
+                    cafter = ${v.cafter?},
+                })
+            ]], 4))
+        end
+    end
+end
+
+local function write_cls_alias(module, cls, append)
+    for _, v in ipairs(cls.aliases) do
+        append(format(".alias('${v.name}', '${v.alias}')", 4))
+    end
+end
+
+local function write_module_classes(module, append)
+    append('')
+    for _, cls in ipairs(module.class_types) do
+        for v in pairs(cls.extends) do
+            local extcls = module.class_types[v]
+            for _, fn in ipairs(extcls.funcs) do
+                if not fn.static then
+                    error(string.format('extend only support static function: %s::%s',
+                        extcls.cppcls, fn.prototype))
+                end
+                fn.extended = true
+                fn.func = format("@extend(${extcls.cppcls}) ${fn.func}")
+                cls.funcs:replace(fn.prototype, fn)
+            end
+        end
+    end
+    for _, cls in ipairs(module.class_types) do
+        if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
+            or has_kflag(cls, kFLAG_ALIAS) or cls.maincls
+        then
+            goto continue
+        end
+
+        log("[%s]", cls.cppcls)
+        append(format([[
+            typeconf '${cls.cppcls}'
+                .supercls(${cls.supercls?})
+                .reg_luatype(${cls.reg_luatype?})
+                .chunk(${cls.chunk?})
+                .luaopen(${cls.luaopen?})
+                .indexerror(${cls.indexerror?})
+        ]]))
+
+        write_cls_ifdef(module, cls, append)
+        write_cls_const(module, cls, append)
+        write_cls_func(module, cls, append)
+        write_cls_enum(module, cls, append)
+        write_cls_var(module, cls, append)
+        write_cls_callback(module, cls, append)
+        write_cls_prop(module, cls, append)
+        write_cls_insert(module, cls, append)
+        write_cls_alias(module, cls, append)
+
+        append('')
+
+        ::continue::
+    end
+end
+
+local function write_module(module)
+    local t = olua.newarray('\n')
+
+    local function append(str)
+        t:push(str)
+    end
+
+    append(format([[
+        -- AUTO BUILD, DON'T MODIFY!
+
+        dofile "${module.type_file}"
+    ]]))
+    append('')
+
+    write_module_metadata(module, append)
+    write_module_classes(module, append)
+    write_module_typedef(module, append)
+
+    olua.write(module.class_file, tostring(t))
+end
+
+local function parse_modules()
     local clang_args = deferred.clang_args
     for _, m in ipairs(deferred.modules) do
         clang_args.headers = string.format('%s\n%s', clang_args.headers or '', m.headers)
@@ -608,8 +1057,6 @@ local function deferred_autoconf()
                     cls.excludes:take(fn)
                 end
             end
-        end
-        for _, cls in ipairs(m.class_types) do
             for vn, vi in pairs(cls.vars) do
                 if not vi.snippet then
                     cls.vars:take(vn)
@@ -618,513 +1065,90 @@ local function deferred_autoconf()
             end
         end
         setmetatable(m, {__index = M})
-        m:parse(path)
+        m:parse()
+        write_module(m)
     end
 end
 
--------------------------------------------------------------------------------
--- output config
--------------------------------------------------------------------------------
-function writer.write_metadata(module, append)
-    append(format([[
-        name = "${module.name}"
-        path = "${module.path}"
-    ]]))
+local function write_ignored_types()
+    local file = io.open('autobuild/autoconf-ignore.log', 'w')
+    local arr = {}
+    for cls, flag in pairs(ignored_types) do
+        if flag then
+            arr[#arr + 1] = cls
+        end
+    end
+    table.sort(arr)
+    for _, cls in pairs(arr) do
+        file:write(string.format("[ignore class] %s\n", cls))
+    end
+end
 
-    append(format('headers = ${module.headers?}'))
-    append(format('chunk = ${module.chunk?}'))
-    append(format('luaopen = ${module.luaopen?}'))
-    append('')
-
-    for _, cls in ipairs(module.class_types) do
-        if not has_kflag(cls, kFLAG_CONV) then
+local function write_alias_types()
+    local types = olua.newarray('\n')
+    for cppcls, v in pairs(alias_types) do
+        if visited_types[cppcls] then
             goto continue
         end
-
-        ignored_types[cls.cppcls] = false
-
-        local ifdef = (cls.ifdefs['*'] or {}).value
-        append(format([[typeconv '${cls.cppcls}']]))
-        for _, v in ipairs(cls.ifdefs) do
-            append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
+        if v:find('^enum ') then
+            types:push({
+                cppcls = cppcls,
+                decltype = 'lua_Unsigned',
+                conv = 'olua_$$_uint',
+            })
+        elseif type(type_convs[v]) == 'string' then
+            types:push({
+                cppcls = cppcls,
+                decltype = cppcls,
+                conv = type_convs[v],
+            })
         end
-        for _, v in ipairs(cls.vars) do
-            append(format('.var(${v.name?}, ${v.snippet?})', 4))
-        end
-        append('')
-
         ::continue::
     end
-end
-
-function writer.write_typedef(module)
-    local t = olua.newarray('\n')
-
-    local function writeLine(fmt, ...)
-        t:push(string.format(fmt, ...))
-    end
-
-    writeLine("-- AUTO BUILD, DON'T MODIFY!")
-    writeLine('')
-    for _, td in ipairs(module.typedef_types) do
-        local arr = {}
-        ignored_types[td.cppcls] = false
-        for k, v in pairs(td) do
-            arr[#arr + 1] = {k, v}
-        end
-        table.sort(arr, function (a, b) return a[1] < b[1] end)
-        writeLine("typedef {")
-        for _, p in ipairs(arr) do
-            local key, value = p[1], p[2]
-            writeLine(format('${key} = ${value?},', 4))
-        end
-        writeLine("}")
-        writeLine("")
-    end
-
-    local function write_class_typedef(cppcls, luacls, decltype, conv, num_vars)
-        t:pushf([[
+    local typedefs = olua.newarray('\n')
+    for i, v in ipairs(olua.sort(types, 'cppcls')) do
+        typedefs:pushf([[
             typedef {
-                cppcls = '${cppcls}',
-                luacls = ${luacls},
-                decltype = ${decltype},
-                conv = '${conv}',
-                num_vars = ${num_vars},
+                cppcls = '${v.cppcls}',
+                decltype = '${v.decltype}',
+                conv = '${v.conv}',
             }
         ]])
-        t:push('')
+        typedefs:push('')
     end
 
-    for _, cls in ipairs(module.class_types) do
-        local conv
-        local cppcls = cls.cppcls
-        local decltype, luacls, num_vars = 'nil', 'nil', 'nil'
-
-        if has_kflag(cls, kFLAG_FUNC) then
-            luacls = olua.stringify(cls.luacls, "'")
-            decltype = olua.stringify(cls.decltype, "'")
-            conv = 'olua_$$_callback'
-        elseif has_kflag(cls, kFLAG_ENUM) then
-            conv = 'olua_$$_uint'
-            luacls = olua.stringify(cls.luacls, "'")
-            decltype = olua.stringify('lua_Unsigned')
-        elseif has_kflag(cls, kFLAG_POINTEE) then
-            if has_kflag(cls, kFLAG_STRUCT) then
-                cppcls = format('${cppcls} *; struct ${cppcls} *')
-            else
-                cppcls = cppcls .. ' *'
-            end
-            luacls = olua.stringify(cls.luacls, "'")
-            conv = 'olua_$$_cppobj'
-        elseif has_kflag(cls, kFLAG_CONV) then
-            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
-            num_vars = #cls.vars
-        else
-            error(cls.cppcls .. ' ' .. cls.kind)
-        end
-
-        write_class_typedef(cppcls, luacls, decltype, conv, num_vars)
-
-        if has_kflag(cls, kFLAG_POINTEE) and has_kflag(cls, kFLAG_CONV) then
-            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
-            num_vars = #cls.vars
-            luacls = 'nil'
-            cppcls = cppcls:gsub('[ *]+', '')
-            write_class_typedef(cppcls, luacls, decltype, conv, num_vars)
-        end
-    end
-    t:push('')
-    olua.write(module.type_file, tostring(t))
-end
-
-function writer.is_new_func(module, supercls, fn)
-    if not supercls or fn.static then
-        return true
-    end
-
-    local super = visited_types[supercls]
-    if not super then
-        error(format("not found super class '${supercls}'"))
-    elseif super.funcs[fn.prototype] or super.excludes[fn.name] then
-        return false
-    else
-        return writer.is_new_func(module, super.supercls, fn)
-    end
-end
-
-function writer.to_prop_name(fn, filter, props)
-    if (fn.name:find('^[gG]et') or fn.name:find('^[iI]s')) and fn.num_args == 0
-    then
-        -- getABCd isAbc => ABCd Abc
-        local name = fn.name:gsub('^[gG]et', '')
-        name = name:gsub('^[iI]s', '')
-        return string.gsub(name, '^%u+', function (str)
-            if #str > 1 and #str ~= #name then
-                if #str == #name - 1 then
-                    -- ABCDs => abcds
-                    return str:lower()
-                else
-                    -- ABCd => abCd
-                    return str:sub(1, #str - 1):lower() .. str:sub(#str)
-                end
-            else
-                -- AbcdEF => abcdEF
-                return str:lower()
-            end
-        end)
-    end
-end
-
-function writer.search_using_func(module, cls)
-    local function search_parent(arr, name, supercls)
-        local super = visited_types[supercls]
-        if super then
-            for _, fn in ipairs(super.funcs) do
-                if fn.name == name then
-                    arr[#arr + 1] = fn
-                end
-            end
-            if #arr == 0 then
-                search_parent(arr, name, super.supercls)
-            end
-        end
-    end
-    for name, where in pairs(cls.usings) do
-        local arr = {}
-        local supercls = cls.supercls
-        while supercls and supercls ~= where do
-            local super = visited_types[supercls]
-            if super then
-                supercls = super.supercls
-            end
-        end
-        search_parent(arr, name, supercls)
-        for _, fn in ipairs(arr) do
-            if not cls.funcs[fn.prototype] then
-                cls.funcs[fn.prototype] = fn
-            end
-        end
-    end
-end
-
-function writer.write_cls_func(module, cls, append)
-    writer.search_using_func(module, cls)
-
-    local func_group = olua.newhash()
-    for _, fn in ipairs(cls.funcs) do
-        local arr = func_group[fn.name]
-        if not arr then
-            arr = {}
-            func_group[fn.name] = arr
-        end
-        if writer.is_new_func(module, cls.supercls, fn) then
-            arr.has_new = true
-        else
-            fn = setmetatable({
-                func = '@using ' .. fn.func
-            }, {__index = fn})
-        end
-        arr[#arr + 1] = fn
-    end
-
-    for _, arr in ipairs(func_group) do
-        if not arr.has_new then
-            goto continue
-        end
-        local funcs = olua.newarray("', '", "'", "'")
-        local has_callback = false
-        local fn = arr[1]
-        for _, v in ipairs(arr) do
-            if v.cb_kind or cls.callbacks[v.name] then
-                has_callback = true
-            end
-            funcs[#funcs + 1] = v.func
-        end
-
-        if #arr == 1 then
-            local name = writer.to_prop_name(fn)
-            if name then
-                local setname = 'set' .. name:lower()
-                local lessone, moreone
-                for _, f in ipairs(cls.funcs) do
-                    if f.name:lower() == setname then
-                        if f.min_args <= 1 then
-                            lessone = true
-                        end
-                        if f.min_args > 1 then
-                            moreone = true
-                        end
-                    end
-                end
-                if lessone or not moreone then
-                    cls.props[name] = {name = name}
-                end
-            end
-        end
-        if not has_callback then
-            if #funcs > 0 then
-                append(format(".func(nil, ${funcs})", 4))
-            else
-                append(format(".func('${fn.name}', ${fn.snippet?})", 4))
-            end
-        else
-            local tag_maker = fn.name:gsub('^set', ''):gsub('^get', '')
-            local mode = fn.cb_kind == 'ret' and 'subequal' or 'replace'
-            local callback = cls.callbacks[fn.name]
-            if callback then
-                callback.funcs = funcs
-                callback.tag_maker = callback.tag_maker or format('${tag_maker}')
-                callback.tag_mode = callback.tag_mode or mode
-            else
-                cls.callbacks[fn.name] = {
-                    name = fn.name,
-                    funcs = funcs,
-                    tag_maker = olua.format '${tag_maker}',
-                    tag_mode = mode,
-                }
-            end
-        end
-
-        ::continue::
-    end
-end
-
-function writer.write_cls_ifdef(module, cls, append)
-    for _, v in ipairs(cls.ifdefs) do
-        append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
-    end
-end
-
-function writer.write_cls_const(module, cls, append)
-    for _, v in ipairs(cls.consts) do
-        append(format([[.const('${v.name}', '${cls.cppcls}::${v.name}', '${v.typename}')]], 4))
-    end
-end
-
-function writer.write_cls_enum(module, cls, append)
-    for _, e in ipairs(cls.enums) do
-        append(format(".enum('${e.name}', '${e.value}')", 4))
-    end
-end
-
-function writer.write_cls_var(module, cls, append)
-    for _, fn in ipairs(cls.vars) do
-        append(format(".var('${fn.name}', ${fn.snippet?})", 4))
-    end
-end
-
-function writer.write_cls_prop(module, cls, append)
-    for _, p in ipairs(cls.props) do
-        append(format([[.prop('${p.name}', ${p.get?}, ${p.set?})]], 4))
-    end
-end
-
-function writer.write_cls_callback(module, cls, append)
-    for i, v in ipairs(cls.callbacks) do
-        assert(v.funcs, cls.cppcls .. '::' .. v.name)
-        local funcs = olua.newarray("',\n'", "'", "'"):merge(v.funcs)
-        local tag_maker = olua.newarray("', '", "'", "'")
-        local tag_mode = olua.newarray("', '", "'", "'")
-        local tag_store = v.tag_store or '0'
-        local tag_scope = v.tag_scope or 'object'
-        if type(v.tag_store) == 'string' then
-            tag_store = olua.stringify(v.tag_store)
-        end
-        assert(v.tag_maker, 'no tag maker')
-        assert(v.tag_mode, 'no tag mode')
-        if type(v.tag_maker) == 'string' then
-            tag_maker:push(v.tag_maker)
-        else
-            tag_maker:merge(v.tag_maker)
-            tag_maker = format('{${tag_maker}}')
-        end
-        if type(v.tag_mode) == 'string' then
-            tag_mode:push(v.tag_mode)
-        else
-            tag_mode:merge(v.tag_mode)
-            tag_mode = format('{${tag_mode}}')
-        end
-        append(format([[
-            .callback {
-                funcs =  {
-                    ${funcs}
-                },
-                tag_maker = ${tag_maker},
-                tag_mode = ${tag_mode},
-                tag_store = ${tag_store},
-                tag_scope = '${tag_scope}',
-            }
-        ]], 4))
-        writer.log(format([[
-            funcs => name = '${v.name}'
-                    funcs = {
-                        ${funcs}
-                    }
-                    tag_maker = ${tag_maker}
-                    tag_mode = ${tag_mode}
-                    tag_store = ${tag_store}
-                    tag_scope = ${tag_scope}
-        ]], 4))
-    end
-end
-
-function writer.write_cls_insert(module, cls, append)
-    for _, v in ipairs(cls.inserts) do
-        if v.before or v.after or v.cbefore or v.cafter then
-            append(format([[
-                .insert('${v.name}', {
-                    before = ${v.before?},
-                    after = ${v.after?},
-                    cbefore = ${v.cbefore?},
-                    cafter = ${v.cafter?},
-                })
-            ]], 4))
-        end
-    end
-end
-
-function writer.write_cls_alias(module, cls, append)
-    for _, v in ipairs(cls.aliases) do
-        append(format(".alias('${v.name}', '${v.alias}')", 4))
-    end
-end
-
-function writer.write_classes(module, append)
-    append('')
-    for _, cls in ipairs(module.class_types) do
-        if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
-            or has_kflag(cls, kFLAG_ALIAS)
-        then
-            goto continue
-        end
-
-        writer.log("[%s]", cls.cppcls)
-        append(format([[
-            typeconf '${cls.cppcls}'
-                .supercls(${cls.supercls?})
-                .reg_luatype(${cls.reg_luatype?})
-                .chunk(${cls.chunk?})
-                .luaopen(${cls.luaopen?})
-                .indexerror(${cls.indexerror?})
-        ]]))
-
-        writer.write_cls_ifdef(module, cls, append)
-        writer.write_cls_const(module, cls, append)
-        writer.write_cls_func(module, cls, append)
-        writer.write_cls_enum(module, cls, append)
-        writer.write_cls_var(module, cls, append)
-        writer.write_cls_callback(module, cls, append)
-        writer.write_cls_prop(module, cls, append)
-        writer.write_cls_insert(module, cls, append)
-        writer.write_cls_alias(module, cls, append)
-
-        append('')
-
-        ::continue::
-    end
-end
-
-function writer.log(fmt, ...)
-    logfile:write(string.format(fmt, ...))
-    logfile:write('\n')
-end
-
-function writer.write_module(module)
-    local t = olua.newarray('\n')
-
-    local function append(str)
-        t:push(str)
-    end
-
-    append(format([[
-        -- AUTO BUILD, DON'T MODIFY!
-
-        dofile "${module.type_file}"
+    olua.write('autobuild/alias-types.lua', format([[
+        ${typedefs}
     ]]))
-    append('')
-
-    writer.write_metadata(module, append)
-    writer.write_classes(module, append)
-    writer.write_typedef(module, append)
-
-    olua.write(module.class_file, tostring(t))
 end
 
-function writer.__gc()
-    if aborted then
-        print(aborted)
-        return
+local function write_makefile()
+    local class_files = olua.newarray('\n')
+    local type_files = olua.newarray('\n')
+    type_files:push('dofile "autobuild/alias-types.lua"')
+    for _, v in ipairs(module_files) do
+        class_files:pushf('export "${v.class_file}"')
+        type_files:pushf('dofile "${v.type_file}"')
     end
-    xpcall(function ()
-        deferred_autoconf()
+    olua.write('autobuild/make.lua', format([[
+        require "olua.tools"
 
-        local file = io.open('autobuild/autoconf-ignore.log', 'w')
-        local arr = {}
-        for cls, flag in pairs(ignored_types) do
-            if flag then
-                arr[#arr + 1] = cls
-            end
-        end
-        table.sort(arr)
-        for _, cls in pairs(arr) do
-            file:write(string.format("[ignore class] %s\n", cls))
-        end
+        ${type_files}
 
-        local types = olua.newarray('\n')
-        for cppcls, v in pairs(alias_types) do
-            if visited_types[cppcls] then
-                goto continue
-            end
-            if v:find('^enum ') then
-                types:push({
-                    cppcls = cppcls,
-                    decltype = 'lua_Unsigned',
-                    conv = 'olua_$$_uint',
-                })
-            elseif type(type_convs[v]) == 'string' then
-                types:push({
-                    cppcls = cppcls,
-                    decltype = cppcls,
-                    conv = type_convs[v],
-                })
-            end
-            ::continue::
-        end
-        local typedefs = olua.newarray('\n')
-        for i, v in ipairs(olua.sort(types, 'cppcls')) do
-            typedefs:pushf([[
-                typedef {
-                    cppcls = '${v.cppcls}',
-                    decltype = '${v.decltype}',
-                    conv = '${v.conv}',
-                }
-            ]])
-            typedefs:push('')
-        end
-
-        olua.write('autobuild/alias-types.lua', format([[
-            ${typedefs}
-        ]]))
-
-        local files = olua.newarray('\n')
-        local type_files = olua.newarray('\n')
-        type_files:push('dofile "autobuild/alias-types.lua"')
-        for _, v in ipairs(module_files) do
-            files:pushf('export "${v.class_file}"')
-            type_files:pushf('dofile "${v.type_file}"')
-        end
-        olua.write('autobuild/make.lua', format([[
-            ${type_files}
-            ${files}
-        ]]))
-        if _G.OLUA_AUTO_BUILD ~= false then
-            dofile('autobuild/make.lua')
-        end
-    end, function (...)
-        print(debug.traceback(...))
-    end)
+        ${class_files}
+    ]]))
 end
-setmetatable(writer, writer)
+
+local function deferred_autoconf()
+    parse_modules()
+    write_ignored_types()
+    write_alias_types()
+    write_makefile()
+
+    if _G.OLUA_AUTO_BUILD ~= false then
+        dofile('autobuild/make.lua')
+    end
+end
 
 -------------------------------------------------------------------------------
 -- define config module
@@ -1200,7 +1224,7 @@ local function add_insert_command(CMD, name, cls)
     add_value_command(CMD, 'insert_cafter', entry, 'cafter')
 end
 
-local function make_typeconf_command(cls)
+local function make_typeconf_command(cls, ModuleCMD)
     local CMD = {}
     local ifdef = nil
 
@@ -1209,6 +1233,13 @@ local function make_typeconf_command(cls)
     add_value_command(CMD, 'supercls', cls)
     add_value_command(CMD, 'luaopen', cls)
     add_value_command(CMD, 'indexerror', cls)
+    add_value_command(CMD, '_maincls', cls, "maincls", totable)
+
+    function CMD.extend(extcls)
+        cls.extends[extcls] = true
+        ModuleCMD.typeconf(extcls)
+            ._maincls(cls)
+    end
 
     function CMD.exclude(name)
         name = checkstr('exclude', name)
@@ -1325,127 +1356,140 @@ end
 -- module conf
 -- autoconf 'conf/lua-exmpale.lua'
 --
+local has_hook = false
+
 function M.__call(_, path)
-    xpcall(function ()
-        local ifdef = nil
-        local m = {
-            headers = '',
-            class_types = olua.newhash(),
-            typedef_types = olua.newhash(),
-            luacls = function (cppname)
-                return string.gsub(cppname, "::", ".")
-            end,
+    if not has_hook then
+        has_hook = true
+        local debug_getinfo = debug.getinfo
+        local build_func = debug_getinfo(2, "f").func
+        local count = 0
+        debug.sethook(function ()
+            count = count + 1
+            if debug_getinfo(2, "f").func == build_func then
+                debug.sethook(nil)
+                deferred_autoconf()
+            end
+        end, 'r')
+    end
+
+    local ifdef = nil
+    local module = {
+        headers = '',
+        class_types = olua.newhash(),
+        typedef_types = olua.newhash(),
+        luacls = function (cppname)
+            return string.gsub(cppname, "::", ".")
+        end,
+    }
+    local CMD = {}
+
+    add_value_command(CMD, 'module', module, 'name')
+    add_value_command(CMD, 'path', module)
+    add_value_command(CMD, 'luaopen', module)
+    add_value_command(CMD, 'headers', module)
+    add_value_command(CMD, 'chunk', module)
+    add_value_command(CMD, 'luacls', module, nil, checkfunc)
+
+    function CMD.exclude(tn)
+        exclude_types[tn] = true
+    end
+
+    function CMD.include(filepath)
+        assert(loadfile(filepath, nil, CMD))()
+    end
+
+    function CMD.ifdef(cond)
+        if string.find(cond, '^defined%(') then
+            ifdef = '#if ' .. cond
+        elseif string.find(cond, '^#if') then
+            ifdef = cond
+        else
+            ifdef = '#ifdef ' .. cond
+        end
+    end
+
+    function CMD.endif(cond)
+        ifdef = nil
+    end
+
+    function CMD.typeconf(classname, kind)
+        local cls = {
+            cppcls = assert(classname, 'not specify classname'),
+            luacls = module.luacls(classname),
+            extends = olua.newhash(),
+            excludes = olua.newhash(),
+            usings = olua.newhash(),
+            attrs = olua.newhash(),
+            enums = olua.newhash(),
+            consts = olua.newhash(),
+            funcs = olua.newhash(),
+            callbacks = olua.newhash(),
+            props = olua.newhash(),
+            vars = olua.newhash(),
+            aliases = olua.newhash(),
+            inserts = olua.newhash(),
+            ifdefs = olua.newhash(),
+            index = #module.class_types + 1,
+            kind = kind,
+            reg_luatype = true,
+            luaname = function (n) return n end,
         }
-        local CMD = {}
-
-        add_value_command(CMD, 'module', m, 'name')
-        add_value_command(CMD, 'path', m)
-        add_value_command(CMD, 'luaopen', m)
-        add_value_command(CMD, 'headers', m)
-        add_value_command(CMD, 'chunk', m)
-        add_value_command(CMD, 'luacls', m, nil, checkfunc)
-
-        function CMD.exclude(tn)
-            exclude_types[tn] = true
-        end
-
-        function CMD.include(filepath)
-            assert(loadfile(filepath, nil, CMD))()
-        end
-
-        function CMD.ifdef(cond)
-            if string.find(cond, '^defined%(') then
-                ifdef = '#if ' .. cond
-            elseif string.find(cond, '^#if') then
-                ifdef = cond
+        local last = module.class_types[classname]
+        if last then
+            if last.kind == kind then
+                assert(not module.class_types[classname], 'class conflict: ' .. classname)
             else
-                ifdef = '#ifdef ' .. cond
-            end
-        end
-
-        function CMD.endif(cond)
-            ifdef = nil
-        end
-
-        function CMD.typeconf(classname, kind)
-            local cls = {
-                cppcls = assert(classname, 'not specify classname'),
-                luacls = m.luacls(classname),
-                excludes = olua.newhash(),
-                usings = olua.newhash(),
-                attrs = olua.newhash(),
-                enums = olua.newhash(),
-                consts = olua.newhash(),
-                funcs = olua.newhash(),
-                callbacks = olua.newhash(),
-                props = olua.newhash(),
-                vars = olua.newhash(),
-                aliases = olua.newhash(),
-                inserts = olua.newhash(),
-                ifdefs = olua.newhash(),
-                index = #m.class_types + 1,
-                kind = kind,
-                reg_luatype = true,
-                luaname = function (n) return n end,
-            }
-            local last = m.class_types[classname]
-            if last then
-                if last.kind == kind then
-                    assert(not m.class_types[classname], 'class conflict: ' .. classname)
-                else
-                    if kind == kFLAG_CONV then
-                        cls = last
-                    end
-                    if not cls.kind then
-                        cls.kind = kFLAG_POINTEE
-                    end
-                    cls.kind = cls.kind | kFLAG_CONV
-                    m.class_types:take(classname)
+                if kind == kFLAG_CONV then
+                    cls = last
                 end
+                if not cls.kind then
+                    cls.kind = kFLAG_POINTEE
+                end
+                cls.kind = cls.kind | kFLAG_CONV
+                module.class_types:take(classname)
             end
-            m.class_types[classname] = cls
-            if ifdef then
-                cls.ifdefs['*'] = {name = '*', value = ifdef}
-            end
-            return make_typeconf_command(cls)
         end
-
-        function CMD.typeonly(classname)
-            local cls = CMD.typeconf(classname)
-            cls.exclude '*'
-            return cls
+        module.class_types[classname] = cls
+        if ifdef then
+            cls.ifdefs['*'] = {name = '*', value = ifdef}
         end
+        return make_typeconf_command(cls, CMD)
+    end
 
-        function CMD.typedef(classname)
-            local cls = {cppcls = classname}
-            m.typedef_types[classname] = cls
-            return make_typedef_command(cls)
+    function CMD.typeonly(classname)
+        local cls = CMD.typeconf(classname)
+        cls.exclude '*'
+        return cls
+    end
+
+    function CMD.typedef(classname)
+        local cls = {cppcls = classname}
+        module.typedef_types[classname] = cls
+        return make_typedef_command(cls)
+    end
+
+    function CMD.typeconv(classname)
+        return CMD.typeconf(classname, kFLAG_CONV)
+    end
+
+    function CMD.clang(clang_args)
+        deferred.clang_args = clang_args
+        module = nil
+    end
+
+    assert(loadfile(path, nil, setmetatable({}, {
+        __index = function (_, k)
+            return CMD[k] or _ENV[k]
+        end,
+        __newindex = function (_, k)
+            error(string.format("create command '%s' is not available", k))
         end
+    })))()
 
-        function CMD.typeconv(classname)
-            return CMD.typeconf(classname, kFLAG_CONV)
-        end
-
-        function CMD.clang(clang_args)
-            deferred.clang_args = clang_args
-            m = nil
-        end
-
-        assert(loadfile(path, nil, setmetatable({}, {
-            __index = function (_, k)
-                return CMD[k] or _ENV[k]
-            end,
-            __newindex = function (_, k)
-                error(string.format("create command '%s' is not available", k))
-            end
-        })))()
-
-        if m and m.name then
-            deferred.modules:push(m)
-        end
-    end, function (...)
-        aborted = debug.traceback(...)
-    end)
+    if module and module.name then
+        deferred.modules:push(module)
+    end
 end
 
 olua.autoconf = setmetatable({}, M)

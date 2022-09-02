@@ -18,3 +18,4 @@ typedef "example::vector"
 typeconv "example::Point"
 
 typeconf "example::Node"
+    .extend 'example::NodeExtend'

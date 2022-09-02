@@ -7,6 +7,16 @@ typedef {
 }
 
 typedef {
+    cppcls = 'oluaret_t',
+    conv = '<NONE>',
+}
+
+typedef {
+    cppcls = 'lua_State *',
+    conv = 'olua_$$_obj',
+}
+
+typedef {
     cppcls = [[
         void *
         GLvoid *
