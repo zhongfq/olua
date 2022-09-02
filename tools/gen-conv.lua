@@ -29,7 +29,7 @@ local function gen_push_func(cv, write)
     end
 
     write(format([[
-        int olua_push_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value)
+        OLUA_LIB int olua_push_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value)
         {
             if (value) {
                 lua_createtable(L, 0, ${num_args});
@@ -96,7 +96,7 @@ local function gen_check_func(cv, write)
     end
 
     write(format([[
-        void olua_check_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value)
+        OLUA_LIB void olua_check_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -136,7 +136,7 @@ local function gen_pack_func(cv, write)
     end
 
     write(format([[
-        void olua_pack_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value)
+        OLUA_LIB void olua_pack_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value)
         {
             if (!value) {
                 luaL_error(L, "value is NULL");
@@ -167,7 +167,7 @@ local function gen_unpack_func(cv, write)
     end
 
     write(format([[
-        int olua_unpack_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value)
+        OLUA_LIB int olua_unpack_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value)
         {
             if (value) {
                 ${codeset.push_args}
@@ -193,7 +193,7 @@ local function gen_is_func(cv, write)
         end
     end
     write(format([[
-        bool olua_is_${{cv.cppcls}}(lua_State *L, int idx)
+        OLUA_LIB bool olua_is_${{cv.cppcls}}(lua_State *L, int idx)
         {
             return ${exps};
         }
@@ -213,7 +213,7 @@ local function gen_canpack_func(cv, write)
         end
     end
     write(format([[
-        bool olua_canpack_${{cv.cppcls}}(lua_State *L, int idx)
+        OLUA_LIB bool olua_canpack_${{cv.cppcls}}(lua_State *L, int idx)
         {
             return ${exps};
         }
@@ -226,12 +226,12 @@ function olua.gen_conv_header(module, write)
         write(ifdef)
         write(format([[
             // ${cv.cppcls}
-            int olua_push_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value);
-            void olua_check_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value);
-            bool olua_is_${{cv.cppcls}}(lua_State *L, int idx);
-            void olua_pack_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value);
-            int olua_unpack_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value);
-            bool olua_canpack_${{cv.cppcls}}(lua_State *L, int idx);
+            OLUA_LIB int olua_push_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value);
+            OLUA_LIB void olua_check_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value);
+            OLUA_LIB bool olua_is_${{cv.cppcls}}(lua_State *L, int idx);
+            OLUA_LIB void olua_pack_${{cv.cppcls}}(lua_State *L, int idx, ${cv.cppcls} *value);
+            OLUA_LIB int olua_unpack_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value);
+            OLUA_LIB bool olua_canpack_${{cv.cppcls}}(lua_State *L, int idx);
         ]]))
         write(ifdef and '#endif' or nil)
         write("")
