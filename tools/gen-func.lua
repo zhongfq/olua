@@ -455,6 +455,10 @@ local function gen_one_func(cls, fi, write, funcidx)
         caller = extend[1] .. '::'
     end
 
+    if fi.ret.attr.postnew then
+        codeset.insert_after:push('olua_postnew(L, ret);')
+    end
+
     gen_func_args(cls, fi, codeset)
     gen_func_ret(cls, fi, codeset)
 
