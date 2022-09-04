@@ -294,6 +294,7 @@ function M:visit_method(cls, cur)
     end
 
     local fn = cur.name
+    local luaname = fn
     local attr = self:get_attr_copy(cls, fn)
     local callback = cls.callbacks[fn] or {}
     local exps = olua.newarray('')
@@ -323,6 +324,7 @@ function M:visit_method(cls, cur)
         end
         exps:push(tn)
         exps:push(olua.typespace(tn))
+        luaname = cls.luaname(fn, 'func')
     end
 
     local optional = false
@@ -372,6 +374,7 @@ function M:visit_method(cls, cur)
     end
     cls.funcs[prototype] = {
         func = func,
+        luaname = luaname == fn and 'nil' or olua.stringify(luaname),
         name = fn,
         static = static,
         num_args = #cur.arguments,
@@ -814,7 +817,7 @@ local function write_cls_func(module, cls, append)
         end
         local funcs = olua.newarray("', '", "'", "'")
         local has_callback = false
-        local fn = arr[1]
+        local fi = arr[1]
         for _, v in ipairs(arr) do
             if v.cb_kind or cls.callbacks[v.name] then
                 has_callback = true
@@ -823,7 +826,7 @@ local function write_cls_func(module, cls, append)
         end
 
         if #arr == 1 then
-            local name = parse_prop_name(fn)
+            local name = parse_prop_name(fi)
             if name then
                 local setname = 'set' .. name:lower()
                 local lessone, moreone
@@ -844,21 +847,21 @@ local function write_cls_func(module, cls, append)
         end
         if not has_callback then
             if #funcs > 0 then
-                append(format(".func(nil, ${funcs})", 4))
+                append(format(".func(${fi.luaname}, ${funcs})", 4))
             else
-                append(format(".func('${fn.name}', ${fn.snippet?})", 4))
+                append(format(".func('${fi.name}', ${fi.snippet?})", 4))
             end
         else
-            local tag_maker = fn.name:gsub('^set', ''):gsub('^get', '')
-            local mode = fn.cb_kind == 'ret' and 'subequal' or 'replace'
-            local callback = cls.callbacks[fn.name]
+            local tag_maker = fi.name:gsub('^set', ''):gsub('^get', '')
+            local mode = fi.cb_kind == 'ret' and 'subequal' or 'replace'
+            local callback = cls.callbacks[fi.name]
             if callback then
                 callback.funcs = funcs
                 callback.tag_maker = callback.tag_maker or format('${tag_maker}')
                 callback.tag_mode = callback.tag_mode or mode
             else
-                cls.callbacks[fn.name] = {
-                    name = fn.name,
+                cls.callbacks[fi.name] = {
+                    name = fi.name,
                     funcs = funcs,
                     tag_maker = olua.format '${tag_maker}',
                     tag_mode = mode,
