@@ -236,10 +236,49 @@ function M:has_unexposed_attr(cur)
     end
 end
 
+function M:has_exclude_attr(cur)
+    for _, c in ipairs(cur.children) do
+        if c.kind == 'AnnotateAttr' and c.name == 'exclude' then
+            return true
+        end
+    end
+end
+
 function M:is_func_type(tn)
     local rawtn = tn:match('([%w:_]+) ?[&*]?$')
     local decl = alias_types[rawtn] or ''
     return tn:find('std::function') or decl:find('std::function')
+end
+
+function M:parse_attr_from_annotate(attr, cur, isvar)
+    local function parse_and_merge_attr(node, key)
+        local exps = nil
+        for _, c in ipairs(node.children) do
+            if c.kind == 'AnnotateAttr' then
+                local name = c.name
+                if name:find('^@') then
+                    exps = exps or olua.newarray(' ')
+                    exps:push(name)
+                end
+            end
+        end
+        if exps then
+            exps:push(attr[key])
+            attr[key] = tostring(exps)
+        end
+    end
+
+    parse_and_merge_attr(cur, 'ret')
+    if not isvar then
+        for i, arg in ipairs(cur.arguments) do
+            parse_and_merge_attr(arg, 'arg' .. i)
+        end
+    end
+end
+
+function M:get_attr_copy(cls, fn, wildcard)
+    local attrs = (cls.maincls or cls).attrs
+    return setmetatable({}, {__index = (attrs[fn] or attrs[wildcard or '*'] or {})})
 end
 
 function M:visit_method(cls, cur)
@@ -249,20 +288,22 @@ function M:visit_method(cls, cur)
         or cur.name:find('operator *[%-=+/*><!()]?')
         or self:is_excluded_type(cur.resultType, cur)
         or self:has_unexposed_attr(cur)
+        or self:has_exclude_attr(cur)
     then
         return
     end
 
     local fn = cur.name
-    local attrs = (cls.maincls or cls).attrs
-    local attr = attrs[fn] or attrs['*'] or {}
+    local attr = self:get_attr_copy(cls, fn)
     local callback = cls.callbacks[fn] or {}
     local exps = olua.newarray('')
     local declexps = olua.newarray('')
 
+    self:parse_attr_from_annotate(attr, cur)
+    
     for i, arg in ipairs(cur.arguments) do
-        local attrn = (attr['arg' .. i]) or ''
-        if not attrn:find('@ret') and self:is_excluded_type(arg.type, arg) then
+        local v = (attr['arg' .. i]) or ''
+        if not v:find('@ret') and self:is_excluded_type(arg.type, arg) then
             return
         end
     end
@@ -346,14 +387,15 @@ function M:visit_var(cls, cur)
     end
 
     local exps = olua.newarray('')
-    local attrs = (cls.maincls or cls).attrs
-    local attr = attrs[cur.name] or attrs['var*'] or {}
+    local attr = self:get_attr_copy(cls, cur.name, 'var*')
     local tn = self:typename(cur.type, cur)
     local cb_kind
 
     if tn:find('%[') then
         return
     end
+
+    self:parse_attr_from_annotate(attr, cur, true)
 
     if attr.readonly then
         exps:push('@readonly ')
@@ -1026,6 +1068,7 @@ local function parse_modules()
         end
         if not has_target then
             flags:merge({
+                '-DOLUA_AUTOCONF',
                 '-x', 'c++', '-nostdinc', '-std=c++11',
                 '-U__SSE__',
                 '-DANDROID',

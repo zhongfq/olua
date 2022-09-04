@@ -12,11 +12,11 @@ OLUA_LIB int luaopen_example(lua_State *L);
 OLUA_END_DECLS
 
 // example::Point
-int olua_push_example_Point(lua_State *L, const example::Point *value);
-void olua_check_example_Point(lua_State *L, int idx, example::Point *value);
-bool olua_is_example_Point(lua_State *L, int idx);
-void olua_pack_example_Point(lua_State *L, int idx, example::Point *value);
-int olua_unpack_example_Point(lua_State *L, const example::Point *value);
-bool olua_canpack_example_Point(lua_State *L, int idx);
+OLUA_LIB int olua_push_example_Point(lua_State *L, const example::Point *value);
+OLUA_LIB void olua_check_example_Point(lua_State *L, int idx, example::Point *value);
+OLUA_LIB bool olua_is_example_Point(lua_State *L, int idx);
+OLUA_LIB void olua_pack_example_Point(lua_State *L, int idx, example::Point *value);
+OLUA_LIB int olua_unpack_example_Point(lua_State *L, const example::Point *value);
+OLUA_LIB bool olua_canpack_example_Point(lua_State *L, int idx);
 
 #endif

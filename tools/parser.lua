@@ -603,6 +603,10 @@ function olua.is_enum_type(cls)
     return cls.reg_luatype and olua.is_value_type(ti)
 end
 
+function olua.is_oluaret(fi)
+    return fi.ret.type.cppcls == 'oluaret_t'
+end
+
 local valuetype = {
     ['bool'] = 'false',
     ['const char *'] = 'nullptr',
