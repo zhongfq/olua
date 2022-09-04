@@ -238,33 +238,6 @@ function olua.gen_conv_header(module, write)
     end
 end
 
-local function gen_cb_is_func(cls, write)
-    write(format([[
-        bool olua_is_${{cls.cppcls}}(lua_State *L, int idx)
-        {
-            return olua_is_callback<${cls.cppcls}>(L, idx);
-        }
-    ]]))
-end
-
-local function gen_cb_push_func(cls, write)
-    write(format([[
-        int olua_push_${{cls.cppcls}}(lua_State *L, const ${cls.cppcls} *value)
-        {
-            return olua_push_callback<${cls.cppcls}>(L, value);
-        }
-    ]]))
-end
-
-local function gen_cb_check_func(cls, write)
-    write(format([[
-        void olua_check_${{cls.cppcls}}(lua_State *L, int idx, ${cls.cppcls} *value)
-        {
-            olua_check_callback<${cls.cppcls}>(L, idx, value);
-        }
-    ]]))
-end
-
 function olua.gen_conv_source(module, write)
     for _, cv in ipairs(module.convs) do
         local ifdef = cv.ifdef

@@ -3,7 +3,7 @@
 //
 #include "lua_example.h"
 
-int olua_push_example_Point(lua_State *L, const example::Point *value)
+OLUA_LIB int olua_push_example_Point(lua_State *L, const example::Point *value)
 {
     if (value) {
         lua_createtable(L, 0, 2);
@@ -20,7 +20,7 @@ int olua_push_example_Point(lua_State *L, const example::Point *value)
     return 1;
 }
 
-void olua_check_example_Point(lua_State *L, int idx, example::Point *value)
+OLUA_LIB void olua_check_example_Point(lua_State *L, int idx, example::Point *value)
 {
     if (!value) {
         luaL_error(L, "value is NULL");
@@ -42,12 +42,12 @@ void olua_check_example_Point(lua_State *L, int idx, example::Point *value)
     lua_pop(L, 1);
 }
 
-bool olua_is_example_Point(lua_State *L, int idx)
+OLUA_LIB bool olua_is_example_Point(lua_State *L, int idx)
 {
     return olua_istable(L, idx) && olua_hasfield(L, idx, "y") && olua_hasfield(L, idx, "x");
 }
 
-void olua_pack_example_Point(lua_State *L, int idx, example::Point *value)
+OLUA_LIB void olua_pack_example_Point(lua_State *L, int idx, example::Point *value)
 {
     if (!value) {
         luaL_error(L, "value is NULL");
@@ -64,7 +64,7 @@ void olua_pack_example_Point(lua_State *L, int idx, example::Point *value)
     value->y = (int)arg2;
 }
 
-int olua_unpack_example_Point(lua_State *L, const example::Point *value)
+OLUA_LIB int olua_unpack_example_Point(lua_State *L, const example::Point *value)
 {
     if (value) {
         olua_push_int(L, (lua_Integer)value->x);
@@ -78,7 +78,7 @@ int olua_unpack_example_Point(lua_State *L, const example::Point *value)
     return 2;
 }
 
-bool olua_canpack_example_Point(lua_State *L, int idx)
+OLUA_LIB bool olua_canpack_example_Point(lua_State *L, int idx)
 {
     return olua_is_int(L, idx + 0) && olua_is_int(L, idx + 1);
 }
