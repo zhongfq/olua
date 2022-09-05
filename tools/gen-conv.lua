@@ -41,6 +41,7 @@ local function gen_push_func(cv, write)
             return 1;
         }
     ]]))
+    write('')
 end
 
 local function gen_check_func(cv, write)
@@ -109,6 +110,7 @@ local function gen_check_func(cv, write)
             ${codeset.check_args}
         }
     ]]))
+    write('')
 end
 
 local function gen_pack_func(cv, write)
@@ -148,6 +150,7 @@ local function gen_pack_func(cv, write)
             ${codeset.check_args}
         }
     ]]))
+    write('')
 end
 
 local function gen_unpack_func(cv, write)
@@ -180,6 +183,7 @@ local function gen_unpack_func(cv, write)
             return ${num_args};
         }
     ]]))
+    write('')
 end
 
 local function gen_is_func(cv, write)
@@ -198,6 +202,7 @@ local function gen_is_func(cv, write)
             return ${exps};
         }
     ]]))
+    write('')
 end
 
 local function gen_canpack_func(cv, write)
@@ -222,8 +227,8 @@ end
 
 function olua.gen_conv_header(module, write)
     for _, cv in ipairs(module.convs) do
-        local ifdef = cv.ifdef
-        write(ifdef)
+        local macro = cv.macros['*']
+        write(macro)
         write(format([[
             // ${cv.cppcls}
             OLUA_LIB int olua_push_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value);
@@ -233,27 +238,22 @@ function olua.gen_conv_header(module, write)
             OLUA_LIB int olua_unpack_${{cv.cppcls}}(lua_State *L, const ${cv.cppcls} *value);
             OLUA_LIB bool olua_canpack_${{cv.cppcls}}(lua_State *L, int idx);
         ]]))
-        write(ifdef and '#endif' or nil)
+        write(macro and '#endif' or nil)
         write("")
     end
 end
 
 function olua.gen_conv_source(module, write)
     for _, cv in ipairs(module.convs) do
-        local ifdef = cv.ifdef
-        write(ifdef)
+        local macro = cv.macros['*']
+        write(macro)
         gen_push_func(cv, write)
-        write('')
         gen_check_func(cv, write)
-        write('')
         gen_is_func(cv, write)
-        write('')
         gen_pack_func(cv, write)
-        write('')
         gen_unpack_func(cv, write)
-        write('')
         gen_canpack_func(cv, write)
-        write(ifdef and '#endif' or nil)
+        write(macro and '#endif' or nil)
         write('')
     end
 end
