@@ -16,7 +16,7 @@ local type_convs = {}
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
 
-local deferred = {clang_args = nil, modules = olua.newarray()}
+local deferred = {clang_args = {flags = {'-I./'}}, modules = olua.newarray()}
 
 local M = {}
 
@@ -617,10 +617,10 @@ local function write_module_metadata(module, append)
 
         ignored_types[cls.cppcls] = false
 
-        local ifdef = (cls.ifdefs['*'] or {}).value
+        local macro = (cls.macros['*'] or {}).value
         append(format([[typeconv '${cls.cppcls}']]))
-        for _, v in ipairs(cls.ifdefs) do
-            append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
+        for _, v in ipairs(cls.macros) do
+            append(format([[.macro('${v.name}', '${v.value}')]], 4))
         end
         for _, v in ipairs(cls.vars) do
             append(format('.var(${v.name?}, ${v.snippet?})', 4))
@@ -873,9 +873,9 @@ local function write_cls_func(module, cls, append)
     end
 end
 
-local function write_cls_ifdef(module, cls, append)
-    for _, v in ipairs(cls.ifdefs) do
-        append(format([[.ifdef('${v.name}', '${v.value}')]], 4))
+local function write_cls_macro(module, cls, append)
+    for _, v in ipairs(cls.macros) do
+        append(format([[.macro('${v.name}', '${v.value}')]], 4))
     end
 end
 
@@ -1006,7 +1006,7 @@ local function write_module_classes(module, append)
                 .indexerror(${cls.indexerror?})
         ]]))
 
-        write_cls_ifdef(module, cls, append)
+        write_cls_macro(module, cls, append)
         write_cls_const(module, cls, append)
         write_cls_func(module, cls, append)
         write_cls_enum(module, cls, append)
@@ -1063,7 +1063,7 @@ local function parse_modules()
         header:close()
         local has_target = false
         local flags = olua.newarray()
-        for i, v in ipairs(clang_args.flags) do
+        for i, v in ipairs(clang_args.flags or {}) do
             flags[#flags + 1] = v
             if v:find('^-target') then
                 has_target = true
@@ -1272,7 +1272,7 @@ end
 
 local function make_typeconf_command(cls, ModuleCMD)
     local CMD = {}
-    local ifdef = nil
+    local macro = nil
 
     add_value_command(CMD, 'chunk', cls)
     add_value_command(CMD, 'luaname', cls, nil, checkfunc)
@@ -1292,19 +1292,13 @@ local function make_typeconf_command(cls, ModuleCMD)
         cls.excludes[name] = true
     end
 
-    function CMD.ifdef(cond)
-        cond = checkstr('ifdef', cond)
-         if string.find(cond, '^defined%(') then
-            ifdef = '#if ' .. cond
-        elseif string.find(cond, '^#if') then
-            ifdef = cond
+    function CMD.macro(cond)
+        cond = checkstr('macro', cond)
+        if cond == '' then
+            macro = nil
         else
-            ifdef = '#ifdef ' .. cond
+            macro = cond
         end
-    end
-
-    function CMD.endif()
-        ifdef = nil
     end
 
     function CMD.enum(name)
@@ -1331,8 +1325,8 @@ local function make_typeconf_command(cls, ModuleCMD)
         local SubCMD = {}
         name = checkstr('func', name)
         cls.excludes[name] = true
-        if ifdef then
-            cls.ifdefs[name] = {name = name, value = ifdef}
+        if macro then
+            cls.macros[name] = {name = name, value = macro}
         end
         cls.funcs[name] = entry
         add_value_command(SubCMD, 'snippet', entry)
@@ -1419,7 +1413,7 @@ function M.__call(_, path)
         end, 'r')
     end
 
-    local ifdef = nil
+    local macro = nil
     local module = {
         headers = '',
         class_types = olua.newhash(),
@@ -1445,18 +1439,13 @@ function M.__call(_, path)
         assert(loadfile(filepath, nil, CMD))()
     end
 
-    function CMD.ifdef(cond)
-        if string.find(cond, '^defined%(') then
-            ifdef = '#if ' .. cond
-        elseif string.find(cond, '^#if') then
-            ifdef = cond
+    function CMD.macro(cond)
+        cond = checkstr('macro', cond)
+        if cond == '' then
+            macro = nil
         else
-            ifdef = '#ifdef ' .. cond
+            macro = cond
         end
-    end
-
-    function CMD.endif(cond)
-        ifdef = nil
     end
 
     function CMD.typeconf(classname, kind)
@@ -1475,7 +1464,7 @@ function M.__call(_, path)
             vars = olua.newhash(),
             aliases = olua.newhash(),
             inserts = olua.newhash(),
-            ifdefs = olua.newhash(),
+            macros = olua.newhash(),
             index = #module.class_types + 1,
             kind = kind,
             reg_luatype = true,
@@ -1497,8 +1486,8 @@ function M.__call(_, path)
             end
         end
         module.class_types[classname] = cls
-        if ifdef then
-            cls.ifdefs['*'] = {name = '*', value = ifdef}
+        if macro then
+            cls.macros['*'] = {name = '*', value = macro}
         end
         return make_typeconf_command(cls, CMD)
     end

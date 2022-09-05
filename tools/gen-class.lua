@@ -75,10 +75,10 @@ local function check_gen_class_func(cls, fis, write)
             end
         end
     end
-    local ifdef = cls.ifdefs[cppfunc]
-    write(ifdef)
+    local macro = cls.macros[cppfunc]
+    write(macro)
     olua.gen_class_func(cls, fis, write)
-    write(ifdef and '#endif' or nil)
+    write(macro and '#endif' or nil)
     write('')
 end
 
@@ -135,15 +135,17 @@ local function gen_class_open(cls, write)
     for _, fis in ipairs(cls.funcs) do
         local cppfunc = fis[1].cppfunc
         local luafunc = fis[1].luafunc
-        local ifdef = cls.ifdefs[cppfunc]
-        funcs:push(ifdef)
+        local macro = cls.macros[cppfunc]
+        funcs:push(macro)
         funcs:pushf('oluacls_func(L, "${luafunc}", _${{cls.cppcls}}_${cppfunc});')
-        funcs:push(ifdef and '#endif' or nil)
+        funcs:push(macro and '#endif' or nil)
     end
 
     for _, pi in ipairs(cls.props) do
         local func_get = "nullptr"
         local func_set = "nullptr"
+        local macro = cls.macros[pi.get.cppfunc]
+        funcs:push(macro)
         if pi.get then
             func_get = format('_${{cls.cppcls}}_${pi.get.cppfunc}')
         end
@@ -151,15 +153,19 @@ local function gen_class_open(cls, write)
             func_set = format('_${{cls.cppcls}}_${pi.set.cppfunc}')
         end
         funcs:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
+        funcs:push(macro and '#endif' or nil)
     end
 
     for _, vi in ipairs(cls.vars) do
         local func_get = format('_${{cls.cppcls}}_${vi.get.cppfunc}')
         local func_set = "nullptr"
+        local macro = cls.macros[vi.get.varname]
+        funcs:push(macro)
         if vi.set and vi.set.cppfunc then
            func_set = format('_${{cls.cppcls}}_${vi.set.cppfunc}')
         end
         funcs:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
+        funcs:push(macro and '#endif' or nil)
     end
 
     olua.sort(cls.consts, 'name')
@@ -271,13 +277,13 @@ end
 local function gen_classes(module, write)
     for _, cls in ipairs(module.class_types) do
         cls.luacls = olua.luacls(cls.cppcls)
-        local ifdef = cls.ifdefs['*']
-        write(ifdef)
+        local macro = cls.macros['*']
+        write(macro)
         check_meta_method(cls)
         gen_class_chunk(cls, write)
         gen_class_funcs(cls, write)
         gen_class_open(cls, write)
-        write(ifdef and '#endif' or nil)
+        write(macro and '#endif' or nil)
         write('')
     end
 end
@@ -285,12 +291,21 @@ end
 local function gen_luaopen(module, write)
     local requires = olua.newarray('\n')
 
+    local last_macro
     for _, cls in ipairs(module.class_types) do
-        local ifdef = cls.ifdefs['*']
-        requires:push(ifdef)
+        local macro = cls.macros['*']
+        if last_macro ~= macro then
+            if last_macro then
+                requires:push('#endif')
+            end
+            if macro then
+                requires:push(macro)
+            end
+            last_macro = macro
+        end
         requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${{cls.cppcls}});')
-        requires:push(ifdef and '#endif' or nil)
     end
+    requires:push(last_macro and '#endif' or nil)
 
     local luaopen = module.luaopen or ''
 

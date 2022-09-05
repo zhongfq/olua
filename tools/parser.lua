@@ -666,7 +666,7 @@ local function typeconf(cppcls)
         enums = olua.newarray(),
         props = olua.newarray(),
         vars = olua.newarray(),
-        ifdefs = {},
+        macros = {},
         prototypes = {},
     }
 
@@ -692,8 +692,8 @@ local function typeconf(cppcls)
         cls.indexerror = indexerror
     end
 
-    function CMD.ifdef(name, value)
-        cls.ifdefs[name] = value
+    function CMD.macro(name, value)
+        cls.macros[name] = value
     end
 
     function CMD.func(name, ...)
