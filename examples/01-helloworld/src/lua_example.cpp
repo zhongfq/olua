@@ -2,6 +2,8 @@
 // AUTO BUILD, DON'T MODIFY!
 //
 #include "lua_example.h"
+#include "Example.h"
+#include "olua-custom.h"
 
 static int _example_Object___gc(lua_State *L)
 {

@@ -2,6 +2,16 @@
 // AUTO BUILD, DON'T MODIFY!
 //
 #include "lua_example.h"
+#include "Example.h"
+#include "olua-custom.h"
+
+// example::Point
+OLUA_LIB int olua_push_example_Point(lua_State *L, const example::Point *value);
+OLUA_LIB void olua_check_example_Point(lua_State *L, int idx, example::Point *value);
+OLUA_LIB bool olua_is_example_Point(lua_State *L, int idx);
+OLUA_LIB void olua_pack_example_Point(lua_State *L, int idx, example::Point *value);
+OLUA_LIB int olua_unpack_example_Point(lua_State *L, const example::Point *value);
+OLUA_LIB bool olua_canpack_example_Point(lua_State *L, int idx);
 
 OLUA_LIB int olua_push_example_Point(lua_State *L, const example::Point *value)
 {
