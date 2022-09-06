@@ -619,6 +619,7 @@ local function write_module_metadata(module, append)
 
         local macro = (cls.macros['*'] or {}).value
         append(format([[typeconv '${cls.cppcls}']]))
+        append(format([[.export(${cls.export})]], 4))
         for _, v in ipairs(cls.macros) do
             append(format([[.macro('${v.name}', '${v.value}')]], 4))
         end
@@ -1280,6 +1281,11 @@ local function make_typeconf_command(cls, ModuleCMD)
     add_value_command(CMD, 'luaopen', cls)
     add_value_command(CMD, 'indexerror', cls)
     add_value_command(CMD, '_maincls', cls, "maincls", totable)
+
+    if has_kflag(cls, kFLAG_CONV) then
+        cls.export = false
+        add_value_command(CMD, 'export', cls, nil, tobool)
+    end
 
     function CMD.extend(extcls)
         cls.extends[extcls] = true
