@@ -938,6 +938,9 @@ function olua.export(path)
     function CMD.typeconv(cppcls)
         local conv, SubCMD = typeconf(cppcls)
         m.convs[#m.convs + 1] = conv
+        function SubCMD.export(export)
+            conv.export = export
+        end
         return olua.command_proxy(SubCMD)
     end
 

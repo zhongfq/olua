@@ -233,6 +233,10 @@ function olua.gen_header(module)
     end
 
     local HEADER = string.upper(module.name)
+    local headers = module.headers
+    if not olua.has_exported_conv(module) then
+        headers = '#include "olua/olua.h"'
+    end
 
     write(format([[
         //
@@ -241,7 +245,7 @@ function olua.gen_header(module)
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
 
-        ${module.headers}
+        ${headers}
 
         OLUA_BEGIN_DECLS
         OLUA_LIB int luaopen_${module.name}(lua_State *L);
@@ -249,7 +253,7 @@ function olua.gen_header(module)
     ]]))
     write('')
 
-    olua.gen_conv_header(module, write)
+    olua.gen_conv_header(module, write, true)
 
     write('#endif')
 
@@ -258,13 +262,22 @@ function olua.gen_header(module)
 end
 
 local function gen_include(module, write)
+    local headers = ''
+    if not olua.has_exported_conv(module) then
+        headers = module.headers
+    end
     write(format([[
         //
         // AUTO BUILD, DON'T MODIFY!
         //
         #include "lua_${module.name}.h"
+        ${headers}
     ]]))
     write('')
+
+    if not olua.has_exported_conv(module) then
+        olua.gen_conv_header(module, write, false)
+    end
 
     if module.chunk and #module.chunk > 0 then
         write(format(module.chunk))

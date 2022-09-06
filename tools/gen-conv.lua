@@ -225,8 +225,20 @@ local function gen_canpack_func(cv, write)
     ]]))
 end
 
-function olua.gen_conv_header(module, write)
+function olua.has_exported_conv(module)
     for _, cv in ipairs(module.convs) do
+        if cv.export then
+            return true
+        end
+    end
+    return false
+end
+
+function olua.gen_conv_header(module, write, export)
+    for _, cv in ipairs(module.convs) do
+        if cv.export ~= export then
+            goto continue
+        end
         local macro = cv.macros['*']
         write(macro)
         write(format([[
@@ -240,6 +252,7 @@ function olua.gen_conv_header(module, write)
         ]]))
         write(macro and '#endif' or nil)
         write("")
+        ::continue::
     end
 end
 
