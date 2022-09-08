@@ -49,7 +49,7 @@ private:
 
 class NodeExtend {
 public:
-    static oluaret_t __index(lua_State *L)
+    static olua_return __index(lua_State *L)
     {
         if(!olua_isuserdata(L, 1)) {
             return 0;

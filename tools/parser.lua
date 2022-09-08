@@ -604,7 +604,7 @@ function olua.is_enum_type(cls)
 end
 
 function olua.is_oluaret(fi)
-    return fi.ret.type.cppcls == 'oluaret_t'
+    return fi.ret.type.cppcls == 'olua_return'
 end
 
 local valuetype = {
