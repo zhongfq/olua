@@ -16,7 +16,7 @@ local type_convs = {}
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
 
-local deferred = {clang_args = {flags = {'-I./'}}, modules = olua.newarray()}
+local deferred = {clang_args = {}, modules = olua.newarray()}
 
 local M = {}
 
@@ -95,7 +95,7 @@ function M:check_class()
             else
                 error(format([[
                     class not found: ${cls.cppcls}
-                      *** add include header file in 'conf/clang-args.lua' or check the class name
+                      *** add include header file in your config file or check the class name
                 ]]))
             end
         end
@@ -1045,9 +1045,9 @@ local function write_module(module)
 end
 
 local function parse_modules()
-    local clang_args = deferred.clang_args
+    local headers = olua.newarray('\n')
     for _, m in ipairs(deferred.modules) do
-        clang_args.headers = string.format('%s\n%s', clang_args.headers or '', m.headers)
+        headers:push(m.headers)
     end
 
     do
@@ -1057,14 +1057,14 @@ local function parse_modules()
             #ifndef __AUTOCONF_H__
             #define __AUTOCONF_H__
 
-            ${clang_args.headers}
+            ${headers}
 
             #endif
         ]])
         header:close()
         local has_target = false
         local flags = olua.newarray()
-        for i, v in ipairs(clang_args.flags or {}) do
+        for i, v in ipairs(deferred.clang_args) do
             flags[#flags + 1] = v
             if v:find('^-target') then
                 has_target = true

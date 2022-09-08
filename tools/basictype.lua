@@ -7,7 +7,7 @@ typedef {
 }
 
 typedef {
-    cppcls = 'oluaret_t',
+    cppcls = 'olua_return',
     conv = '<NONE>',
 }
 

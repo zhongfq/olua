@@ -247,12 +247,12 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     end
 
     local callback_block = format([[
-        lua_Integer cb_ctx = olua_context(L);
+        olua_context_t cb_ctx = olua_context(L);
         ${argname} = [cb_store, cb_name, cb_ctx](${callbackset.args}) {
             lua_State *L = olua_mainthread(NULL);
             olua_checkhostthread();
             ${callbackset.decl_result}
-            if (L != NULL && olua_context(L) == cb_ctx) {
+            if (olua_contextequal(L, cb_ctx)) {
                 int top = lua_gettop(L);
                 ${callbackset.push_args}
 
