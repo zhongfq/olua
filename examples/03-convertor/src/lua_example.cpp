@@ -183,8 +183,8 @@ static int _example_Node___index(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @extend(example::NodeExtend) static olua_return __index(lua_State *L)
-    olua_return ret = example::NodeExtend::__index(L);
+    // @extend(example::NodeExtend) static olua_Return __index(lua_State *L)
+    olua_Return ret = example::NodeExtend::__index(L);
 
     olua_endinvoke(L);
 
