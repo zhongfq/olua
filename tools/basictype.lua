@@ -7,7 +7,7 @@ typedef {
 }
 
 typedef {
-    cppcls = 'olua_return',
+    cppcls = 'olua_Return',
     conv = '<NONE>',
 }
 

@@ -5,8 +5,8 @@ local format = olua.format
 local tag_mode_map = {
     new = 'OLUA_TAG_NEW',
     replace = 'OLUA_TAG_REPLACE',
-    substartwith = 'OLUA_TAG_SUBSTARTWITH',
-    subequal = 'OLUA_TAG_SUBEQUAL',
+    startwith = 'OLUA_TAG_STARTWITH',
+    equal = 'OLUA_TAG_EQUAL',
 }
 
 local function get_tag_mode(fi)
@@ -87,8 +87,8 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     if olua.is_func_type(fi.ret.type) then
         codeset.callback = gen_ret_callback(cls, fi)
         return
-    elseif fi.callback.tag_mode == 'subequal'
-        or fi.callback.tag_mode == 'substartwith'
+    elseif fi.callback.tag_mode == 'equal'
+        or fi.callback.tag_mode == 'startwith'
     then
         codeset.callback = gen_remove_callback(cls, fi)
         return
@@ -207,7 +207,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
             'olua_postpush(L, ret, OLUA_OBJ_NEW);'
         local remove_callback = ''
         if tag_mode == 'OLUA_TAG_REPLACE' then
-            remove_callback = 'olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_SUBEQUAL);'
+            remove_callback = 'olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_EQUAL);'
         end
         cb_store = format 'olua_newobjstub(L, "${fi.ret.type.luacls}")'
         codeset.push_stub = format [[
@@ -247,7 +247,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     end
 
     local callback_block = format([[
-        olua_context_t cb_ctx = olua_context(L);
+        olua_Context cb_ctx = olua_context(L);
         ${argname} = [cb_store, cb_name, cb_ctx](${callbackset.args}) {
             lua_State *L = olua_mainthread(NULL);
             olua_checkhostthread();
@@ -277,7 +277,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         local func_is = olua.conv_func(arg.type, 'is')
         if tag_mode == 'OLUA_TAG_REPLACE' then
             callbackset.remove_normal_callback = format [[
-                olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_SUBEQUAL);
+                olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_EQUAL);
             ]]
         end
         callback_block = format([[

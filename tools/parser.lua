@@ -604,7 +604,7 @@ function olua.is_enum_type(cls)
 end
 
 function olua.is_oluaret(fi)
-    return fi.ret.type.cppcls == 'olua_return'
+    return fi.ret.type.cppcls == 'olua_Return'
 end
 
 local valuetype = {
@@ -791,10 +791,10 @@ local function typeconf(cppcls)
         }
 
         remove all callback:
-            {tag_maker = "", tag_mode = "substartwith", REMOVE = true}
+            {tag_maker = "", tag_mode = "startwith", REMOVE = true}
 
         remove click callback:
-            {tag_maker = "click", tag_mode = "subequal", REMOVE = true}
+            {tag_maker = "click", tag_mode = "equal", REMOVE = true}
 
         add new callback:
             {tag_maker = 'click', tag_mode = "new"}
@@ -844,7 +844,7 @@ local function typeconf(cppcls)
             }
             cb_get = {
                 tag_maker = name,
-                tag_mode = 'subequal',
+                tag_mode = 'equal',
                 tag_store = 0,
                 tag_scope = 'object',
             }

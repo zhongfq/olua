@@ -854,7 +854,7 @@ local function write_cls_func(module, cls, append)
             end
         else
             local tag_maker = fi.name:gsub('^set', ''):gsub('^get', '')
-            local mode = fi.cb_kind == 'ret' and 'subequal' or 'replace'
+            local mode = fi.cb_kind == 'ret' and 'equal' or 'replace'
             local callback = cls.callbacks[fi.name]
             if callback then
                 callback.funcs = funcs
