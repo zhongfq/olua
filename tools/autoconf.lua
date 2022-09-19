@@ -1063,17 +1063,24 @@ local function parse_modules()
         ]])
         header:close()
         local has_target = false
+        local has_stdv = false
         local flags = olua.newarray()
+        flags:push('-DOLUA_AUTOCONF')
         for i, v in ipairs(deferred.clang_args) do
             flags[#flags + 1] = v
             if v:find('^-target') then
                 has_target = true
             end
+            if v:find('^-std') then
+                has_stdv = true
+            end
+        end
+        if not has_stdv then
+            flags:push('-std=c++11')
         end
         if not has_target then
             flags:merge({
-                '-DOLUA_AUTOCONF',
-                '-x', 'c++', '-nostdinc', '-std=c++11',
+                '-x', 'c++', '-nostdinc',
                 '-U__SSE__',
                 '-DANDROID',
                 '-target', 'armv7-none-linux-androideabi',
