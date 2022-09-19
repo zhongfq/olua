@@ -49,6 +49,11 @@ typedef {
 }
 
 typedef {
+    cppcls = 'std::string_view',
+    conv = 'olua_$$_std_string_view',
+}
+
+typedef {
     cppcls = 'std::function',
     luacls = 'std.function',
     conv = 'olua_$$_callback',
