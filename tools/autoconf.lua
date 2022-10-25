@@ -802,7 +802,7 @@ local function write_cls_func(module, cls, append)
             arr = {}
             group_by_name[fn.name] = arr
         end
-        if is_new_func(module, cls.supercls, fn) then
+        if fn.snippet or is_new_func(module, cls.supercls, fn) then
             arr.has_new = true
         else
             fn = setmetatable({
