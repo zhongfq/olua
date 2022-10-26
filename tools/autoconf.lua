@@ -741,8 +741,12 @@ local function parse_prop_name(fn)
         and (fn.num_args == 0 or (fn.extended and fn.num_args == 1))
     then
         -- getABCd isAbc => ABCd Abc
-        local name = fn.name:gsub('^[gG]et', '')
-        name = name:gsub('^[iI]s', '')
+        local name
+        if fn.name:find('^[gG]et') then
+            name = fn.name:gsub('^[gG]et', '')
+        else
+            name = fn.name:gsub('^[iI]s', '')
+        end
         return string.gsub(name, '^%u+', function (str)
             if #str > 1 and #str ~= #name then
                 if #str == #name - 1 then
