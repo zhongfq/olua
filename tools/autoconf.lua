@@ -171,9 +171,9 @@ function M:typename(type, cur)
             end
             exps:push(')>')
             exps:push(tn:find('&$') and ' &' or nil)
-            return tostring(exps)
+            return tostring(exps):gsub('^::', '')
         else
-            return tn
+            return tn:gsub('^::', '')
         end
     end
 
@@ -493,7 +493,7 @@ function M:visit_class(cppcls, cur)
             goto continue
         elseif kind == 'CXXBaseSpecifier' then
             if not cls.supercls then
-                cls.supercls = c.type.name
+                cls.supercls = c.type.name:gsub('^::', '')
             end
         elseif kind == 'UsingDeclaration' then
             for _, cc in ipairs(c.children) do
