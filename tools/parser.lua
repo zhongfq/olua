@@ -33,7 +33,7 @@ function olua.assert(cond, fmt, ...)
     return cond
 end
 
-local function pretty_typename(tn, trimref)
+function olua.pretty_typename(tn, trimref)
     tn = strgsub(tn, '^ *', '') -- trim head space
     tn = strgsub(tn, ' *$', '') -- trim tail space
     tn = strgsub(tn, ' +', ' ') -- remove needless space
@@ -55,7 +55,7 @@ end
 function olua.typeinfo(tn, cls, silence, variant)
     local ti, ref, subtis, const -- for tn<T, ...>
 
-    tn = pretty_typename(tn, true)
+    tn = olua.pretty_typename(tn, true)
     const = strfind(tn, '^const ')
 
     -- parse template
@@ -68,7 +68,7 @@ function olua.typeinfo(tn, cls, silence, variant)
             subtis[#subtis + 1] = olua.typeinfo(subtn, cls, silence)
         end
         olua.assert(next(subtis), 'not found subtype')
-        tn = pretty_typename(strgsub(tn, '<.*>', ''))
+        tn = olua.pretty_typename(strgsub(tn, '<.*>', ''))
     end
 
     ti = typeinfo_map[tn]
@@ -99,7 +99,7 @@ function olua.typeinfo(tn, cls, silence, variant)
             while #nsarr > 0 do
                 -- const Object * => const ns::Object *
                 local ns = table.concat(nsarr, "::")
-                local nstn = pretty_typename(strgsub(tn, '[%w:_]+ *%**$', ns .. '::%1'), true)
+                local nstn = olua.pretty_typename(strgsub(tn, '[%w:_]+ *%**$', ns .. '::%1'), true)
                 local nsti = olua.typeinfo(nstn, nil, true)
                 nsarr[#nsarr] = nil
                 if nsti then
@@ -223,7 +223,7 @@ local function parse_type(str)
                 olua.assert(tn, 'no type')
                 break
             end
-            local subtn = pretty_typename(strsub(substr, 1, to))
+            local subtn = olua.pretty_typename(strsub(substr, 1, to))
             subtn = strgsub(subtn, '[ &*]*$', '') -- rm ' *&'
             if composite_types[subtn] then
                 tn = (tn and tn or '') .. strsub(substr, 1, to)
@@ -233,7 +233,7 @@ local function parse_type(str)
                 substr = strsub(substr, to + 1)
                 break
             else
-                local ptn = pretty_typename(tn)
+                local ptn = olua.pretty_typename(tn)
                 ptn = strgsub(ptn, '[ &*]*$', '') -- rm ' *&'
                 if ptn == 'struct' or ptn == 'const' then
                     tn = (tn and tn or '') .. strsub(substr, 1, to)
@@ -245,7 +245,7 @@ local function parse_type(str)
     end
     str = strsub(str, #tn + 1)
     str = strgsub(str, '^ *', '')
-    return pretty_typename(tn), attr, str
+    return olua.pretty_typename(tn), attr, str
 end
 
 local function type_func_info(tn, cls)
@@ -325,7 +325,7 @@ function parse_args(cls, declstr)
             if strfind(tn, '%*$') then
                 attr.ret = 'pointee'
                 tn = strgsub(tn, '%*$', '')
-                tn = pretty_typename(tn)
+                tn = olua.pretty_typename(tn)
             end
         end
 
@@ -644,7 +644,7 @@ end
 function olua.typedef(typeinfo)
     for tn in strgmatch(typeinfo.cppcls, '[^\n\r;]+') do
         local ti = setmetatable({}, {__index = typeinfo})
-        tn = pretty_typename(tn)
+        tn = olua.pretty_typename(tn)
         ti.cppcls = tn
         if ti.decltype and strfind(ti.decltype, 'std::function') then
             ti.declfunc = ti.decltype
