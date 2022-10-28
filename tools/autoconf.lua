@@ -101,8 +101,10 @@ function M:check_class()
         end
     end
     for _, cls in ipairs(self.class_types) do
-        if cls.supercls and not visited_types[cls.supercls]then
-            error(format('super class not found: ${cls.cppcls} -> ${cls.supercls}'))
+        for supercls in pairs(cls.supers) do
+            if  not visited_types[supercls]then
+                error(format('super class not found: ${cls.cppcls} -> ${supercls}'))
+            end
         end
     end
 end
@@ -492,9 +494,11 @@ function M:visit_class(cppcls, cur)
         if access == 'private' or access == 'protected' then
             goto continue
         elseif kind == 'CXXBaseSpecifier' then
+            local supercls = c.type.name:gsub('^::', '')
             if not cls.supercls then
-                cls.supercls = c.type.name:gsub('^::', '')
+                cls.supercls = supercls
             end
+            cls.supers[supercls] = true
         elseif kind == 'UsingDeclaration' then
             for _, cc in ipairs(c.children) do
                 if cc.kind == 'TypeRef' then
@@ -995,6 +999,28 @@ local function write_module_classes(module, append)
         end
     end
     for _, cls in ipairs(module.class_types) do
+        for supercls in pairs(cls.supers) do
+            if cls.supercls == supercls then
+                goto continue
+            end
+            local function copy_super_funcs(super)
+                for _, fn in ipairs(super.funcs) do
+                    if not cls.funcs[fn.prototype] then
+                        cls.funcs[fn.prototype] = setmetatable({
+                            func = format("@copyfrom(${super.cppcls}) ${fn.func}")
+                        }, {__index = fn})
+                    end
+                end
+                for sc in pairs(super.supers) do
+                    copy_super_funcs(module.class_types[sc])
+                end
+            end
+            copy_super_funcs(module.class_types[supercls])
+
+            ::continue::
+        end
+    end
+    for _, cls in ipairs(module.class_types) do
         if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
             or has_kflag(cls, kFLAG_ALIAS) or cls.maincls
         then
@@ -1484,6 +1510,7 @@ function M.__call(_, path)
             macros = olua.newhash(),
             index = #module.class_types + 1,
             kind = kind,
+            supers = olua.newhash(),
             reg_luatype = true,
             luaname = function (n) return n end,
         }
