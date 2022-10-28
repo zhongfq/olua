@@ -588,7 +588,7 @@ local function gen_one_func(cls, fi, write, funcidx)
                 ${codeset.check_args}
 
                 do {
-                    if (olua_strequal(arg1, "${cls.luacls}")) {
+                    if (olua_isa(L, 1, arg1)) {
                         lua_pushvalue(L, 1);
                         break;
                     }
