@@ -204,6 +204,10 @@ function olua.newhash()
         return value
     end
 
+    function t:array()
+        return arr
+    end
+
     local mt = {}
     function mt:__len()
         return #arr

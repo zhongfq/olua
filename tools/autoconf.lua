@@ -288,6 +288,7 @@ function M:visit_method(cls, cur)
         or cur.isCopyConstructor
         or cur.isMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
+        or cur.name == 'as'  -- 'as used to cast object'
         or self:is_excluded_type(cur.resultType, cur)
         or self:has_unexposed_attr(cur)
         or self:has_exclude_attr(cur)
@@ -880,6 +881,27 @@ local function write_cls_func(module, cls, append)
 
         ::continue::
     end
+
+     -- find as
+     local ascls = olua.newhash()
+     local function find_as_cls(c)
+         for supercls in pairs(c.supers) do
+             if c.supercls ~= supercls then
+                 if not ascls[supercls] then
+                     ascls[supercls] = supercls
+                 end
+             end
+             if c.supercls then
+                 find_as_cls(module.class_types[c.supercls])
+             end
+         end
+     end
+     find_as_cls(cls)
+     if #ascls > 0 then
+        local func = table.concat(ascls:array(), ' ')
+        func = format("'@as(${func}) void *as(const char *cls)'")
+        append(format(".func(nil, ${func})", 4))
+     end
 end
 
 local function write_cls_macro(module, cls, append)
