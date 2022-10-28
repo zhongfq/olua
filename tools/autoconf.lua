@@ -109,12 +109,12 @@ function M:check_class()
     end
 end
 
-function M:is_excluded_typeanme(name)
+function M:is_excluded_typename(name)
     if exclude_types[name] then
         return true
     elseif string.find(name, '<') then
         name = string.gsub(name, '<.*>', '')
-        return self:is_excluded_typeanme(name)
+        return self:is_excluded_typename(name)
     end
 end
 
@@ -135,7 +135,7 @@ function M:is_excluded_type(type, cur)
             end
         end
     end
-    if self:is_excluded_typeanme(rawtn) then
+    if self:is_excluded_typename(rawtn) then
         return true
     elseif tn ~= type.canonicalType.name then
         return self:is_excluded_type(type.canonicalType)
@@ -384,6 +384,8 @@ function M:visit_method(cls, cur)
         min_args = min_args,
         cb_kind = cb_kind,
         prototype = prototype,
+        displayName = cur.displayName,
+        isctor = cur.kind == 'Constructor',
     }
 end
 
@@ -493,13 +495,22 @@ function M:visit_class(cppcls, cur)
         local kind = c.kind
         local access = c.access
         if access == 'private' or access == 'protected' then
+            if kind == 'FunctionDecl' or kind == 'CXXMethod' then
+                cls.excludes:replace(c.displayName, true)
+            end
             goto continue
         elseif kind == 'CXXBaseSpecifier' then
             local supercls = c.type.name:gsub('^::', '')
-            if not cls.supercls then
-                cls.supercls = supercls
+            if not supercls:find('<') then
+                if not cls.supercls then
+                    cls.supercls = supercls
+                end
+                if not (self:is_excluded_typename(supercls)
+                    or self:is_excluded_typename(supercls .. ' *'))
+                then
+                    cls.supers[supercls] = true
+                end
             end
-            cls.supers[supercls] = true
         elseif kind == 'UsingDeclaration' then
             for _, cc in ipairs(c.children) do
                 if cc.kind == 'TypeRef' then
@@ -851,7 +862,7 @@ local function write_cls_func(module, cls, append)
                     end
                 end
                 if lessone or not moreone then
-                    cls.props[name] = {name = name}
+                    cls.props:replace(name, {name = name})
                 end
             end
         end
@@ -884,21 +895,25 @@ local function write_cls_func(module, cls, append)
 
      -- find as
      local ascls = olua.newhash()
-     local function find_as_cls(c)
-         for supercls in pairs(c.supers) do
-             if c.supercls ~= supercls then
-                 if not ascls[supercls] then
-                     ascls[supercls] = supercls
-                 end
-             end
-             if c.supercls then
-                 find_as_cls(module.class_types[c.supercls])
-             end
-         end
+     if #cls.supers > 1 then
+        local function find_as_cls(c)
+            for supercls in pairs(c.supers) do
+                if c.supercls ~= supercls then
+                    if not ascls[supercls] then
+                        ascls[supercls] = supercls
+                    end
+                end
+                if c.supercls then
+                    find_as_cls(visited_types[c.supercls])
+                end
+            end
+        end
+        find_as_cls(cls)
      end
-     find_as_cls(cls)
      if #ascls > 0 then
-        local func = table.concat(ascls:array(), ' ')
+        ascls = ascls:array()
+        table.sort(ascls)
+        local func = table.concat(ascls, ' ')
         func = format("'@as(${func}) void *as(const char *cls)'")
         append(format(".func(nil, ${func})", 4))
      end
@@ -1027,17 +1042,20 @@ local function write_module_classes(module, append)
             end
             local function copy_super_funcs(super)
                 for _, fn in ipairs(super.funcs) do
-                    if not cls.funcs[fn.prototype] then
+                    if not cls.funcs[fn.prototype]
+                        and not fn.isctor
+                        and not cls.excludes[fn.displayName]
+                    then
                         cls.funcs[fn.prototype] = setmetatable({
                             func = format("@copyfrom(${super.cppcls}) ${fn.func}")
                         }, {__index = fn})
                     end
                 end
                 for sc in pairs(super.supers) do
-                    copy_super_funcs(module.class_types[sc])
+                    copy_super_funcs(visited_types[sc])
                 end
             end
-            copy_super_funcs(module.class_types[supercls])
+            copy_super_funcs(visited_types[supercls])
 
             ::continue::
         end
@@ -1497,6 +1515,7 @@ function M.__call(_, path)
     add_value_command(CMD, 'luacls', module, nil, checkfunc)
 
     function CMD.exclude(tn)
+        tn = olua.pretty_typename(tn)
         exclude_types[tn] = true
     end
 
