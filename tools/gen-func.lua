@@ -553,33 +553,84 @@ local function gen_one_func(cls, fi, write, funcidx)
         end
     end
 
-    write(format([[
-        static int _${{cls.cppcls}}_${fi.cppfunc}${funcidx}(lua_State *L)
-        {
-            olua_startinvoke(L);
+    if fi.cppfunc == 'as' then
+        --[[
+            if (strcmp(arg1, "example.Hello") == 0) {
+                lua_pushvalue(L, 1);
+            } else if (strcmp(arg1, "example.Copyable") == 0) {
+                example::Copyable *asobj = self;
+                olua_pushobj_as(L, asobj, arg1);
+            } else {
+                luaL_error(L, "can't cast to '%s'", arg1);
+            }
 
-            ${codeset.decl_args}
+        ]]
+        local asexp = olua.newarray()
+        for _, ascls in ipairs(fi.ret.attr.as) do
+            local asti = olua.typeinfo(ascls .. '*')
+            asexp:pushf([[
+                if (olua_strequal(arg1, "${asti.luacls}")) {
+                    ${ascls} *asobj = self;
+                    olua_pushobj_as<${ascls}>(L, asobj);
+                    olua_addref(L, 1, "as.${asti.luacls}", -1, OLUA_FLAG_SINGLE);
+                    olua_addref(L, -1, "as.self", 1, OLUA_FLAG_SINGLE);
+                    break;
+                }
+            ]])
+        end
+        write(format([[
+            static int _${{cls.cppcls}}_${fi.cppfunc}${funcidx}(lua_State *L)
+            {
+                olua_startinvoke(L);
 
-            ${codeset.check_args}
+                ${codeset.decl_args}
 
-            ${codeset.insert_before}
+                ${codeset.check_args}
 
-            ${codeset.callback}
+                do {
+                    if (olua_strequal(arg1, "${cls.luacls}")) {
+                        lua_pushvalue(L, 1);
+                        break;
+                    }
+                    ${asexp}
 
-            // ${fi.funcdesc}
-            ${codeset.decl_ret}${caller}${args_begin}${codeset.caller_args}${args_end};
-            ${codeset.push_ret}
-            ${codeset.post_new}
+                    luaL_error(L, "'${cls.cppcls}' can't cast to '%s'", arg1);
+                } while (0);
 
-            ${codeset.insert_after}
+                olua_endinvoke(L);
 
-            ${codeset.remove_function_callback}
+                return 1;
+            }
+        ]]))
+    else
+        write(format([[
+            static int _${{cls.cppcls}}_${fi.cppfunc}${funcidx}(lua_State *L)
+            {
+                olua_startinvoke(L);
 
-            olua_endinvoke(L);
+                ${codeset.decl_args}
 
-            return ${codeset.num_ret};
-        }
-    ]]))
+                ${codeset.check_args}
+
+                ${codeset.insert_before}
+
+                ${codeset.callback}
+
+                // ${fi.funcdesc}
+                ${codeset.decl_ret}${caller}${args_begin}${codeset.caller_args}${args_end};
+                ${codeset.push_ret}
+                ${codeset.post_new}
+
+                ${codeset.insert_after}
+
+                ${codeset.remove_function_callback}
+
+                olua_endinvoke(L);
+
+                return ${codeset.num_ret};
+            }
+        ]]))
+    end
 end
 
 local function get_func_with_num_args(cls, funcs, num_args)

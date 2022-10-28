@@ -68,9 +68,13 @@ local function check_gen_class_func(cls, fis, write)
     if pts and getmetatable(pts) then
         local supermeta = getmetatable(pts).__index
         for _, f in ipairs(fis) do
-            if not f.static and f.prototype and rawget(pts, f.prototype)
-                    and supermeta[f.prototype]
-                    and not f.ret.attr.using then
+            if not f.static
+                and f.prototype
+                and f.cppfunc ~= 'as'
+                and rawget(pts, f.prototype)
+                and supermeta[f.prototype]
+                and not f.ret.attr.using
+            then
                 print(format("${cls.cppcls}: super class already export ${f.funcdesc}"))
             end
         end
