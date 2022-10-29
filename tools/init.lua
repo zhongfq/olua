@@ -72,6 +72,24 @@ then
     end
 end
 
+-- error handle
+local willdo = ''
+function olua.willdo(exp)
+    willdo = olua.format(exp)
+end
+
+function olua.error(exp)
+    print(willdo)
+    error(olua.format(exp))
+end
+
+function olua.assert(cond, exp)
+    if not cond then
+        olua.error(exp or '<no assert info>')
+    end
+    return cond
+end
+
 local _ipairs = ipairs
 function ipairs(t)
     local mt = getmetatable(t)
@@ -301,7 +319,7 @@ local function eval(line)
         end
 
         if value == nil and not opt then
-            error("value not found for '" .. str .. "'")
+            olua.error("value not found for '" .. str .. "'")
         end
 
         -- indent the value if value has multiline
@@ -311,7 +329,7 @@ local function eval(line)
             if mt and mt.__tostring then
                 value = tostring(value)
             else
-                error("no meta method '__tostring' for " .. str)
+                olua.error("no meta method '__tostring' for " .. str)
             end
         elseif value == nil then
             value = 'nil'

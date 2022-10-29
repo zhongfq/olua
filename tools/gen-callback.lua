@@ -11,7 +11,7 @@ local tag_mode_map = {
 
 local function get_tag_mode(fi)
     local tag_mode = tag_mode_map[fi.callback.tag_mode]
-    olua.assert(tag_mode, "unknown tag mode: %s", fi.callback.tag_mode)
+    olua.assert(tag_mode, "unknown tag mode: ${fi.callback.tag_mode}")
     return tag_mode
 end
 
@@ -22,7 +22,7 @@ local function get_tag_store(fi, idx)
         idx = idx + #fi.args + 1
     end
     if idx > 0 then
-        olua.assert(idx <= #fi.args and idx >= 0, "store index '%d' out of range", idx)
+        olua.assert(idx <= #fi.args and idx >= 0, "store index '${idx}' out of range")
     end
     return idx
 end
@@ -30,7 +30,7 @@ end
 local function check_tag_store(fi, idx)
     if idx > 0 then
         local ai = fi.args[idx]
-        olua.assert(olua.is_pointer_type(ai.type), 'arg #%d is not a userdata', idx)
+        olua.assert(olua.is_pointer_type(ai.type), 'arg #${idx} is not a userdata')
     end
 end
 
@@ -97,7 +97,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     end
 
     olua.assert(fi.callback.tag_mode == 'replace' or fi.callback.tag_mode == 'new',
-        "expect 'replace' or 'new', got '%s'", fi.callback.tag_mode)
+        "expect 'replace' or 'new', got '${fi.callback.tag_mode}'")
 
     local argname = 'arg' .. argn
     local tag_mode = get_tag_mode(fi)
@@ -229,7 +229,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         cb_store = 'arg' .. tag_store
         check_tag_store(fi, tag_store)
     else
-        olua.error('invalid tag store: %s', tag_store)
+        olua.error('invalid tag store: ${tag_store}')
     end
 
     if #callbackset.insert_cbefore > 0 then
