@@ -1045,6 +1045,7 @@ local function write_module_classes(module, append)
                     if not cls.funcs[fn.prototype]
                         and not fn.isctor
                         and not cls.excludes[fn.displayName]
+                        and not fn.snippet
                     then
                         cls.funcs[fn.prototype] = setmetatable({
                             func = format("@copyfrom(${super.cppcls}) ${fn.func}")
