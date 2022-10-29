@@ -209,14 +209,14 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
         olua.assert(ref_mode == '|', "expect use like: @addref(ref_name |)")
         if #arg.type.subtypes == 1 then
             local subtype = arg.type.subtypes[1]
-            olua.assert(olua.is_pointer_type(subtype), "'%s' not a pointer type", subtype.cppcls)
+            olua.assert(olua.is_pointer_type(subtype), "'${subtype.cppcls}' not a pointer type")
         else
             olua.assert(#arg.type.subtypes == 2)
             olua.assert(olua.is_pointer_type(arg.type.subtypes[1])
                 or olua.is_pointer_type(arg.type.subtypes[2]))
         end
     else
-        olua.assert(olua.is_pointer_type(arg.type), "'%s' not a pointer type", arg.type.cppcls)
+        olua.assert(olua.is_pointer_type(arg.type), "'${arg.type.cppcls}' not a pointer type")
     end
 
     if ref_mode == '|' then
@@ -288,7 +288,7 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
             olua.assert(arg.attr.delref[3], 'must supply where to delref object')
             argn = 1
         else
-            olua.assert(olua.is_pointer_type(arg.type), "'%s' not a pointer type", arg.type.cppcls)
+            olua.assert(olua.is_pointer_type(arg.type), "'${arg.type.cppcls}' not a pointer type")
         end
     end
 
@@ -488,7 +488,11 @@ local function gen_one_func(cls, fi, write, funcidx)
         remove_function_callback = "",
     }
 
-    olua.message(cls.cppcls .. ': ' .. fi.funcdesc)
+    olua.willdo([[
+        gen one func:
+            class = ${cls.cppcls}
+            func = ${fi.funcdesc}
+    ]])
 
     if fi.snippet then
         gen_func_snippet(cls, fi, write)

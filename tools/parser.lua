@@ -5,7 +5,6 @@ local class_map = {}
 
 local format = olua.format
 
-local message = ""
 local strgsub = string.gsub
 local strsub = string.sub
 local strmatch = string.match
@@ -15,22 +14,6 @@ local strgmatch = string.gmatch
 
 function olua.get_class(cls)
     return cls == '*' and class_map or class_map[cls]
-end
-
-function olua.message(msg)
-    message = msg
-end
-
-function olua.error(fmt, ...)
-    print("parse => " .. message)
-    error(strformat(fmt, ...))
-end
-
-function olua.assert(cond, fmt, ...)
-    if not cond then
-        olua.error(fmt or '', ...)
-    end
-    return cond
 end
 
 function olua.pretty_typename(tn, trimref)
@@ -63,7 +46,7 @@ function olua.typeinfo(tn, cls, silence, variant)
         subtis = {}
         for subtn in strgmatch(strmatch(tn, '<(.*)>'), '[^,]+') do
             if subtn:find('<') then
-                olua.error("unsupport template class as template args: %s", tn)
+                olua.error("unsupport template class as template args: ${tn}")
             end
             subtis[#subtis + 1] = olua.typeinfo(subtn, cls, silence)
         end
@@ -113,7 +96,7 @@ function olua.typeinfo(tn, cls, silence, variant)
         -- search in super class namespace
         if not ti and cls and cls.supercls then
             local super = class_map[cls.supercls]
-            olua.assert(super, "super class '%s' of '%s' is not found", cls.supercls, cls.cppcls)
+            olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
             local sti, stn = olua.typeinfo(tn, super, true)
             if sti then
                 ti = sti
@@ -128,7 +111,7 @@ function olua.typeinfo(tn, cls, silence, variant)
         ti.variant = (ref ~= nil) or ti.variant
         return ti, tn
     elseif not silence then
-        olua.error("type info not found: %s", tn)
+        olua.error("type info not found: ${tn}")
     end
 end
 
@@ -449,7 +432,11 @@ function olua.parse_func(cls, name, ...)
     local arr = {max_args = 0}
     for _, declfunc in ipairs({...}) do
         local fi = {ret = {}}
-        olua.message(cls.cppcls .. ': ' .. declfunc)
+        olua.willdo([[
+            parse func:
+                class = ${cls.cppcls}
+                func = ${declfunc}
+        ]])
         if strfind(declfunc, '{') then
             fi.luafunc = assert(name)
             fi.cppfunc = name
@@ -536,9 +523,13 @@ local function parse_prop(cls, name, declget, declset)
             if has_func(fi, name, '[gG]et') or has_func(fi, name, '[iI]s') or
                 has_func(fi, name2, '[gG]et') or has_func(fi, name2, '[iI]s')
             then
-                olua.message(cls.cppcls .. ': ' .. fi.funcdesc)
+                olua.willdo([[
+                    parse prop:
+                        class = ${cls.cppcls}
+                        func = ${fi.funcdesc}
+                ]])
                 olua.assert(#fi.args == 0 or fi.ret.attr.extend and #fi.args == 1,
-                    "function '%s::%s' has arguments", cls.cppcls, fi.cppfunc)
+                    "function '${cls.cppcls}::${fi.cppfunc}' has arguments")
                 pi.get = fi
                 break
             end
@@ -751,7 +742,7 @@ local function typeconf(cppcls)
             apply_insert(vi.set, true)
         end
 
-        olua.assert(found, 'function not found: %s::%s', cls.cppcls, name)
+        olua.assert(found, 'function not found: ${cls.cppcls}::${name}')
     end
 
     function CMD.alias(luafunc, alias)
@@ -823,11 +814,16 @@ local function typeconf(cppcls)
     function CMD.var(name, declstr)
         local readonly, static
         local rawstr = declstr
+        local cppcls = cls.cppcls
         declstr, readonly = strgsub(declstr, '@readonly *', '')
         declstr = strgsub(declstr, '[; ]*$', '')
         declstr, static = strgsub(declstr, '^ *static *', '')
 
-        olua.message(cls.cppcls .. ': ' .. declstr)
+        olua.willdo([[
+            parse var:
+                class = ${cppcls}
+                var = ${declstr}
+        ]])
 
         local args = parse_args(cls, '(' .. declstr .. ')')
         name = name or args[1].varname
