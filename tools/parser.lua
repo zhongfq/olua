@@ -95,7 +95,7 @@ function olua.typeinfo(tn, cls, silence, variant)
 
         -- search in super class namespace
         if not ti and cls and cls.supercls then
-            local super = class_map[cls.supercls]
+            local super = typeinfo_map[cls.supercls .. ' *']
             olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
             local sti, stn = olua.typeinfo(tn, super, true)
             if sti then
@@ -451,6 +451,10 @@ function olua.parse_func(cls, name, ...)
         else
             local tn, attr, str = parse_type(declfunc)
             local ctor = strmatch(cls.cppcls, '[^:]+$')
+            local fromcls = cls
+            if attr.copyfrom then
+                fromcls = olua.typeinfo(attr.copyfrom[1] .. ' *', cls)
+            end
             if tn == ctor and strfind(str, '^ *%(') then
                 tn = tn .. ' *'
                 str = 'new' .. str
@@ -462,22 +466,22 @@ function olua.parse_func(cls, name, ...)
             fi.static = attr.static
             fi.funcdesc = declfunc
             fi.insert = {}
-            if olua.is_func_type(tn, cls) then
-                local cb = parse_callback(cls, tn, nil)
+            if olua.is_func_type(tn, fromcls) then
+                local cb = parse_callback(fromcls, tn, nil)
                 fi.ret = {
                     type = setmetatable({
                         decltype = cb.decltype,
-                    }, {__index = type_func_info(tn, cls)}),
+                    }, {__index = type_func_info(tn, fromcls)}),
                     decltype = cb.decltype,
                     attr = attr,
                     callback = cb,
                 }
             else
-                fi.ret.type = olua.typeinfo(tn, cls)
-                fi.ret.decltype = todecltype(cls, tn)
+                fi.ret.type = olua.typeinfo(tn, fromcls)
+                fi.ret.decltype = todecltype(fromcls, tn)
                 fi.ret.attr = attr
             end
-            fi.args, fi.max_args = parse_args(cls, strsub(str, #fi.cppfunc + 1))
+            fi.args, fi.max_args = parse_args(fromcls, strsub(str, #fi.cppfunc + 1))
             gen_func_prototype(cls, fi)
             gen_func_pack(cls, fi, arr)
         end

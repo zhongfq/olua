@@ -155,6 +155,40 @@ function M:fullname(cur)
     end
 end
 
+function M:try_parse_template_type(tn)
+    local ti = {}
+    local mt = tn:gsub('<(.*)>', ''):gsub('const ', '') -- remove const
+    ti[#ti + 1] = olua.pretty_typename(mt)
+    for subt in string.gmatch(tn:match('<(.*)>'), '[^,]+') do
+        -- unsupport nested template args
+        if subt:find('<') then
+            return nil
+        end
+        subt = subt:gsub('const ', '') -- remove const
+
+        --[[
+            std::function<void (Object *, Event *)>
+            subtn:
+                1. void (Object *
+                2. Event *)
+        ]]
+        if subt:find('(', 1, true) then
+            subt = subt:gsub('^[^(]+%(', '') -- remove '('
+        end
+        if subt:find(')', 1, true) then
+            subt = subt:gsub('[^)]+%)', '') -- remove ')'
+        end
+
+        ti[#ti + 1] = olua.pretty_typename(subt)
+    end
+    return ti
+end
+
+function M:is_end_with(str, suffix)
+    local _, e = str:find(suffix, 1, true)
+    return e == #str
+end
+
 function M:typename(type, cur)
     local tn = type.name
     -- remove const, & and *: const T * => T
@@ -174,6 +208,25 @@ function M:typename(type, cur)
             exps:push(')>')
             exps:push(tn:find('&$') and ' &' or nil)
             return tostring(exps):gsub('^::', '')
+        elseif tn:find('<') then
+            tn = tn:gsub('^::', '')
+            local ti1 = self:try_parse_template_type(tn)
+            local ti2 = self:try_parse_template_type(type.canonicalType.name)
+            if ti1 and ti2 and #ti1 == #ti2 then
+                for i, v in ipairs(ti1) do
+                    if not self:is_end_with(ti2[i], v) then
+                        return tn
+                    end
+                end
+                --[[
+                    ype.name:
+                       Vector<example::Node *> &
+                   type.canonicalType.name:
+                       example::Vector<example::Node *> &
+                ]]
+                tn = type.canonicalType.name
+            end
+            return tn
         else
             return tn:gsub('^::', '')
         end
@@ -680,8 +733,12 @@ local function write_module_typedef(module)
 
         local conv
         local cppcls = cls.cppcls
+        local supercls =  'nil'
         local decltype, luacls, num_vars = 'nil', 'nil', 'nil'
 
+        if cls.supercls then
+            supercls = olua.stringify(cls.supercls, "'")
+        end
         if has_kflag(cls, kFLAG_FUNC) then
             luacls = olua.stringify(cls.luacls, "'")
             decltype = olua.stringify(cls.decltype, "'")
@@ -709,6 +766,7 @@ local function write_module_typedef(module)
             typedef {
                 cppcls = '${cppcls}',
                 luacls = ${luacls},
+                supercls = ${supercls},
                 decltype = ${decltype},
                 conv = '${conv}',
                 num_vars = ${num_vars},
@@ -724,6 +782,7 @@ local function write_module_typedef(module)
                 typedef {
                     cppcls = '${cppcls}',
                     luacls = ${luacls},
+                    supercls = ${supercls},
                     decltype = ${decltype},
                     conv = '${conv}',
                     num_vars = ${num_vars},
