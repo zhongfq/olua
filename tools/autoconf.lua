@@ -5,6 +5,11 @@ if not olua.isdir('autobuild') then
     olua.mkdir('autobuild')
 end
 
+-- auto export after config
+_G.OLUA_AUTO_BUILD = true
+-- enable var or method name with underscore
+_G.OLUA_ENABLE_WITH_UNDERSCORE = false
+
 local format = olua.format
 local clang_tu
 
@@ -347,6 +352,12 @@ function M:visit_method(cls, cur)
         or self:has_exclude_attr(cur)
     then
         return
+    end
+
+    if not _G.OLUA_ENABLE_WITH_UNDERSCORE then
+        if cur.name:find('^_%w') then
+            return
+        end
     end
 
     local fn = cur.name
@@ -1099,6 +1110,7 @@ local function write_module_classes(module, append)
             if cls.supercls == supercls then
                 goto continue
             end
+
             local function copy_super_funcs(super)
                 for _, fn in ipairs(super.funcs) do
                     if not cls.funcs[fn.prototype]
@@ -1116,6 +1128,22 @@ local function write_module_classes(module, append)
                 end
             end
             copy_super_funcs(visited_types[supercls])
+
+            local function copy_super_var(super)
+                for _, var in ipairs(super.vars) do
+                    if not cls.vars[var.name]
+                        and not cls.excludes[var.name]
+                    then
+                        cls.vars[var.name] = setmetatable({
+                            snippet = format("@copyfrom(${super.cppcls}) ${var.snippet}")
+                        }, {__index = var})
+                    end
+                end
+                for sc in pairs(super.supers) do
+                    copy_super_var(visited_types[sc])
+                end
+            end
+            copy_super_var(visited_types[supercls])
 
             ::continue::
         end
