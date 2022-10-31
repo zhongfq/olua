@@ -35,9 +35,10 @@ function olua.pretty_typename(tn, trimref)
     return tn
 end
 
-function olua.typeinfo(tn, cls, silence, variant)
+function olua.typeinfo(tn, cls, silence, variant, errors)
     local ti, ref, subtis, const -- for tn<T, ...>
 
+    errors = errors or olua.newhash()
     tn = olua.pretty_typename(tn, true)
     const = strfind(tn, '^const ')
 
@@ -55,6 +56,7 @@ function olua.typeinfo(tn, cls, silence, variant)
     end
 
     ti = typeinfo_map[tn]
+    errors:replace(tn, tn)
 
     if ti then
         ti = setmetatable({}, {__index = ti})
@@ -62,13 +64,13 @@ function olua.typeinfo(tn, cls, silence, variant)
         if not variant then
             -- try pointee
             if not ti and not strfind(tn, '%*$') then
-                ti = olua.typeinfo(tn .. ' *', nil, true, true)
+                ti = olua.typeinfo(tn .. ' *', nil, true, true, errors)
                 ref = ti and tn or nil
             end
 
             -- try reference type
             if not ti and strfind(tn, '%*$') then
-                ti = olua.typeinfo(tn:gsub('[ *]+$', ''), nil, true, true)
+                ti = olua.typeinfo(tn:gsub('[ *]+$', ''), nil, true, true, errors)
                 ref = ti and tn or nil
             end
         end
@@ -77,13 +79,13 @@ function olua.typeinfo(tn, cls, silence, variant)
         if not ti and cls and cls.cppcls then
             local nsarr = {}
             for ns in strgmatch(cls.cppcls, '[^:]+') do
-                nsarr[#nsarr + 1] = ns
+                nsarr[#nsarr + 1] = ns:match('[^ %*&]+') -- remove * &
             end
             while #nsarr > 0 do
                 -- const Object * => const ns::Object *
                 local ns = table.concat(nsarr, "::")
                 local nstn = olua.pretty_typename(strgsub(tn, '[%w:_]+ *%**$', ns .. '::%1'), true)
-                local nsti = olua.typeinfo(nstn, nil, true)
+                local nsti = olua.typeinfo(nstn, nil, true, false, errors)
                 nsarr[#nsarr] = nil
                 if nsti then
                     ti = nsti
@@ -97,7 +99,7 @@ function olua.typeinfo(tn, cls, silence, variant)
         if not ti and cls and cls.supercls then
             local super = typeinfo_map[cls.supercls .. ' *']
             olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
-            local sti, stn = olua.typeinfo(tn, super, true)
+            local sti, stn = olua.typeinfo(tn, super, true, false, errors)
             if sti then
                 ti = sti
                 tn = stn
@@ -111,6 +113,8 @@ function olua.typeinfo(tn, cls, silence, variant)
         ti.variant = (ref ~= nil) or ti.variant
         return ti, tn
     elseif not silence then
+        print('try type:')
+        print('    ' .. table.concat(errors:array(), '\n    '))
         olua.error("type info not found: ${tn}")
     end
 end
