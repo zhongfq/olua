@@ -20,8 +20,16 @@ local alias_types = {}
 local type_convs = {}
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
-
 local deferred = {clang_args = {}, modules = olua.newarray()}
+local metamethod = {
+    __index = true, __newindex = true,
+    __gc = true, __pairs = true, __len = true, __eq = true, __tostring = true,
+    __add = true, __sub = true, __mul = true, __mod = true, __pow = true,
+    __div = true, __idiv = true,
+    __band = true, __bor = true, __bxor = true, __shl = true, __shr = true,
+    __unm = true, __bnot = true, __lt = true, __le = true,
+    __concat = true, __call = true, __close = true
+}
 
 local M = {}
 
@@ -196,6 +204,10 @@ end
 
 function M:typename(type, cur)
     local tn = type.name
+    local ctn = assert(type.canonicalType.name, tn)
+    if self:is_end_with(ctn, '::' .. tn) then
+        tn = ctn
+    end
     -- remove const, & and *: const T * => T
     local rawtn = tn:match('([%w:_]+) ?[&*]?$')
     if not rawtn then
@@ -204,11 +216,11 @@ function M:typename(type, cur)
             local exps = olua.newarray('')
             exps:push(tn:find('^const') and 'const ' or nil)
             exps:push('std::function<')
-            exps:push(ftype.resultType.name)
+            exps:push(self:typename(ftype.resultType, cur))
             exps:push(' (')
             for i, v in ipairs(ftype.argTypes) do
                 exps:push(i > 1 and ', ' or nil)
-                exps:push(v.name)
+                exps:push(self:typename(v, cur))
             end
             exps:push(')>')
             exps:push(tn:find('&$') and ' &' or nil)
@@ -352,12 +364,6 @@ function M:visit_method(cls, cur)
         or self:has_exclude_attr(cur)
     then
         return
-    end
-
-    if not _G.OLUA_ENABLE_WITH_UNDERSCORE then
-        if cur.name:find('^_%w') then
-            return
-        end
     end
 
     local fn = cur.name
@@ -565,6 +571,9 @@ function M:visit_class(cppcls, cur)
             goto continue
         elseif kind == 'CXXBaseSpecifier' then
             local supercls = c.type.name:gsub('^::', '')
+            if not supercls:find('::') then
+                supercls = c.type.canonicalType.name
+            end
             if not supercls:find('<') then
                 if not cls.supercls then
                     cls.supercls = supercls
@@ -585,7 +594,16 @@ function M:visit_class(cppcls, cur)
         elseif kind == 'FieldDecl' or kind == 'VarDecl' then
             local vn = c.name
             local ct = c.type
-            if cls.excludes['*'] or cls.excludes[vn] or vn:find('^_') then
+            local mode = #cls.includes > 0 and 'include' or 'exclude'
+            if not _G.OLUA_ENABLE_WITH_UNDERSCORE
+                and c.name:find('^_')
+                and not metamethod[c.name]
+            then
+                goto continue
+            end
+            if (mode == 'include' and not cls.includes[vn])
+                or (cls.excludes['*'] or cls.excludes[vn])
+            then
                 goto continue
             end
             if ct.isConst and kind == 'VarDecl' then
@@ -596,7 +614,15 @@ function M:visit_class(cppcls, cur)
                 self:visit_var(cls, c)
             end
         elseif kind == 'Constructor' or kind == 'FunctionDecl' or kind == 'CXXMethod' then
-            if (cls.excludes['*'] or cls.excludes[c.name] or cls.excludes[c.displayName])
+            local mode = #cls.includes > 0 and 'include' or 'exclude'
+            if not _G.OLUA_ENABLE_WITH_UNDERSCORE
+                and c.name:find('^_')
+                and not metamethod[c.name]
+            then
+                goto continue
+            end
+            if (mode == 'include' and not cls.includes[c.name])
+                or (cls.excludes['*'] or cls.excludes[c.name] or cls.excludes[c.displayName])
                 or (kind == 'Constructor' and (cls.excludes['new'] or cur.isAbstract))
             then
                 goto continue
@@ -1439,6 +1465,7 @@ end
 local function make_typeconf_command(cls, ModuleCMD)
     local CMD = {}
     local macro = nil
+    local mode = nil
 
     add_value_command(CMD, 'chunk', cls)
     add_value_command(CMD, 'luaname', cls, nil, checkfunc)
@@ -1459,8 +1486,27 @@ local function make_typeconf_command(cls, ModuleCMD)
     end
 
     function CMD.exclude(name)
+        if mode and mode ~= 'exclude' then
+            error(string.format(
+                "can't use .include and .exclude at the same time in typeconf '%s'",
+                cls.cppcls
+            ))
+        end
+        mode = 'exclude'
         name = checkstr('exclude', name)
         cls.excludes[name] = true
+    end
+
+    function CMD.include(name)
+        if mode and mode ~= 'include' then
+            error(string.format(
+                "can't use .include and .exclude at the same time in typeconf '%s'",
+                cls.cppcls
+            ))
+        end
+        mode = 'include'
+        name = checkstr('include', name)
+        cls.includes[name] = true
     end
 
     function CMD.macro(cond)
@@ -1626,6 +1672,7 @@ function M.__call(_, path)
             luacls = module.luacls(classname),
             extends = olua.newhash(),
             excludes = olua.newhash(),
+            includes = olua.newhash(),
             usings = olua.newhash(),
             attrs = olua.newhash(),
             enums = olua.newhash(),
