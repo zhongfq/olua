@@ -558,17 +558,6 @@ local function gen_one_func(cls, fi, write, funcidx)
     end
 
     if fi.cppfunc == 'as' then
-        --[[
-            if (strcmp(arg1, "example.Hello") == 0) {
-                lua_pushvalue(L, 1);
-            } else if (strcmp(arg1, "example.Copyable") == 0) {
-                example::Copyable *asobj = self;
-                olua_pushobj_as(L, asobj, arg1);
-            } else {
-                luaL_error(L, "can't cast to '%s'", arg1);
-            }
-
-        ]]
         local asexp = olua.newarray()
         for _, ascls in ipairs(fi.ret.attr.as) do
             local asti = olua.typeinfo(ascls .. '*')
