@@ -90,6 +90,11 @@ function olua.assert(cond, exp)
     return cond
 end
 
+function olua.is_end_with(str, substr)
+    local _, e = str:find(substr, 1, true)
+    return e == #str
+end
+
 local _ipairs = ipairs
 function ipairs(t)
     local mt = getmetatable(t)
@@ -195,7 +200,10 @@ function olua.newhash()
 
     function t:replace(key, value)
         local old = map[key]
-        map[key] = assert(value ~= nil, 'value is nil')
+        if value == nil then
+            error("value is nil")
+        end
+        map[key] = value
         if old then
             for i, v in ipairs(arr) do
                 if v == old then
