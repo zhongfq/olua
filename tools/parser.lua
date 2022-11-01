@@ -51,7 +51,9 @@ function olua.typeinfo(tn, cls, silence, variant, errors)
             end
             subtis[#subtis + 1] = olua.typeinfo(subtn, cls, silence)
         end
-        olua.assert(next(subtis), 'not found subtype')
+        if not silence then
+            olua.assert(next(subtis), 'not found subtype: ' .. tn)
+        end
         tn = olua.pretty_typename(strgsub(tn, '<.*>', ''))
     end
 
@@ -656,10 +658,10 @@ function olua.typedef(typeinfo)
     end
 end
 
-local function typeconf(cppcls)
+local function typeconf(...)
     local CMD = {}
     local cls = {
-        cppcls = cppcls,
+        cppcls = ...,
         funcs = olua.newarray(),
         consts = olua.newarray(),
         enums = olua.newarray(),
