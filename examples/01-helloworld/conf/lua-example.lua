@@ -9,4 +9,7 @@ headers [[
 
 include "../common/lua-object.lua"
 
+typeconf 'example::Singleton'
 typeconf "example::Hello"
+
+typeconf '^example::obj_type_*'
