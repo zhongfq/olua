@@ -46,7 +46,7 @@ void olua_postpush(lua_State *L, T* obj, int status)
         ((example::Object *)obj)->retain();
 #ifdef OLUA_DEBUG
         if (!olua_isa<example::Object>(L, -1)) {
-            luaL_error(L, "class '%s' not inherit from 'cc.Ref'", olua_getluatype(L, obj, ""));
+            luaL_error(L, "class '%s' not inherit from 'example::Object'", olua_getluatype(L, obj, ""));
         }
 #endif
     }
