@@ -193,8 +193,23 @@ function olua.newarray(sep, prefix, posfix)
     return setmetatable({}, mt)
 end
 
+function olua.clone(t, newt)
+    newt = newt or {}
+    for k, v in pairs(t) do
+        newt[k] = v
+    end
+    return newt
+end
+
 function olua.newhash()
     local hash = {values = {}, map = {}}
+
+    function hash:clone()
+        local new = olua.newhash()
+        new.values = olua.clone(hash.values, new.values)
+        new.map = olua.clone(hash.map, new.map)
+        return new
+    end
 
     function hash:replace(key, value)
         local old = hash.map[key]

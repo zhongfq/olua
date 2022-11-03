@@ -18,6 +18,12 @@ enum class TestWildcardTouchEvent {
     T1, T2, T3
 };
 
+class TestWildcardListener {
+public:
+    void test() {};
+    void hello() {};
+};
+
 template<class T> class Singleton
 {
 public:
