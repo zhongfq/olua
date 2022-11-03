@@ -592,15 +592,15 @@ function M:visit_class(cppcls, cur)
             if self:is_excluded_typename(supercls)
                 or self:is_excluded_typename(supercls .. ' *')
             then
-                skipsuper = true
                 goto continue
-            end
-            if not cls.supercls and not skipsuper then
-                cls.supercls = supercls
             end
             if is_templdate_type(supercls) then
                 local super = visited_types[supercls:gsub('<.*>', '')]
+                skipsuper = true
                 visited_types[supercls] = assert(super, supercls)
+            end
+            if not cls.supercls and not skipsuper then
+                cls.supercls = supercls
             end
             cls.supers[supercls] = supercls
         elseif kind == 'UsingDeclaration' then
@@ -1159,6 +1159,9 @@ local function copy_super_template_funcs(cls, super, supercls)
             }, {__index = fn})
         end
     end
+    for sc in pairs(super.supers) do
+        copy_super_template_funcs(cls, visited_types[sc], sc)
+    end
 end
 
 local function copy_super_funcs(cls, super)
@@ -1174,7 +1177,7 @@ local function copy_super_funcs(cls, super)
         end
     end
     for sc in pairs(super.supers) do
-        copy_super_funcs(visited_types[sc])
+        copy_super_funcs(cls, visited_types[sc])
     end
 end
 
@@ -1189,7 +1192,7 @@ local function copy_super_var(cls, super)
         end
     end
     for sc in pairs(super.supers) do
-        copy_super_var(visited_types[sc])
+        copy_super_var(cls, visited_types[sc])
     end
 end
 
