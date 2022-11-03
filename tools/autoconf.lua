@@ -39,6 +39,7 @@ local kFLAG_ALIAS = 1 << 3       -- alias type
 local kFLAG_CONV = 1 << 4        -- conv type
 local kFLAG_FUNC = 1 << 5        -- function type
 local kFLAG_STRUCT = 1 << 6      -- struct type
+local kFLAG_TEMPLATE = 1 << 7    -- template type
 
 local function has_kflag(cls, kind)
     return ((cls.kind or 0) & kind) ~= 0
@@ -51,6 +52,10 @@ end
 local function log(fmt, ...)
     logfile:write(string.format(fmt, ...))
     logfile:write('\n')
+end
+
+local function is_templdate_type(tn)
+    return tn:find('<')
 end
 
 function M:parse()
@@ -115,7 +120,7 @@ function M:check_class()
     end
     for _, cls in ipairs(self.class_types) do
         for supercls in pairs(cls.supers) do
-            if  not visited_types[supercls]then
+            if not visited_types[supercls]then
                 error(format('super class not found: ${cls.cppcls} -> ${supercls}'))
             end
         end
@@ -139,8 +144,8 @@ function M:is_excluded_type(type, cur)
     -- remove const and &
     -- const T * => T *
     -- const T & => T
-    local rawtn = tn:gsub('^const *', ''):gsub(' *&$', '')
-    if rawtn:find('<') then
+    local rawtn = tn:gsub('^const ', ''):gsub(' *&$', '')
+    if is_templdate_type(rawtn) then
         for _, subtype in ipairs(type.templateArgTypes) do
             if self:is_excluded_type(subtype) then
                 return true
@@ -170,7 +175,7 @@ function M:parse_typename_from_tree(type)
     end
 end
 
-function M:parse_typename_from_type(type)
+function M:parse_typename_from_type(type, template_types)
     local kind = type.kind
     local name = type.name
     local template_arg_types = type.templateArgTypes
@@ -180,24 +185,24 @@ function M:parse_typename_from_type(type)
         local tn = self:parse_typename_from_tree(type)
         exps:push(has_const and 'const ' or nil)
         exps:push(tn)
-        if name:find('<') then
+        if is_templdate_type(name) then
             exps:push('<')
             for i, v in ipairs(template_arg_types) do
                 exps:push(i > 1 and ', ' or nil)
-                exps:push(self:parse_typename_from_type(v))
+                exps:push(self:parse_typename_from_type(v, template_types))
             end
             exps:push('>')
         end
         return tostring(exps)
     elseif kind == 'LValueReference' then
-        return self:parse_typename_from_type(type.pointeeType) .. ' &'
+        return self:parse_typename_from_type(type.pointeeType, template_types) .. ' &'
     elseif kind == 'RValueReference' then
-        return self:parse_typename_from_type(type.pointeeType) .. ' &&'
+        return self:parse_typename_from_type(type.pointeeType, template_types) .. ' &&'
     elseif kind == 'Pointer' then
         if type.pointeeType.kind == 'Pointer' then
-            return self:parse_typename_from_type(type.pointeeType) .. '*'
+            return self:parse_typename_from_type(type.pointeeType, template_types) .. '*'
         else
-            return self:parse_typename_from_type(type.pointeeType) .. ' *'
+            return self:parse_typename_from_type(type.pointeeType, template_types) .. ' *'
         end
     elseif kind == 'FunctionProto' then
         local exps = olua.newarray('')
@@ -238,6 +243,9 @@ function M:parse_typename_from_type(type)
         end
         local cname = type.canonicalType.name:gsub('const ', '')
         local newname
+        if template_types and template_types[name] then
+            return '$@' .. name -- is template type
+        end
         if not rawtype:find(':') then
             rawtype = '::' .. rawtype
         end
@@ -262,8 +270,8 @@ function M:parse_typename_from_type(type)
     end
 end
 
-function M:typename(type)
-    local tn = self:parse_typename_from_type(type)
+function M:typename(type, template_types)
+    local tn = self:parse_typename_from_type(type, template_types)
     local rawtn = tn:gsub('^const ', ''):match('[^ <]+')
     local alias = alias_types[rawtn]
     if alias and not type_convs[rawtn] then
@@ -390,15 +398,16 @@ function M:visit_method(cls, cur)
     local cb_kind
 
     if cur.kind ~= 'Constructor' then
-        local tn = self:typename(cur.resultType)
+        local tn = self:typename(cur.resultType, cls.template_types)
         if self:is_func_type(tn) then
             cb_kind = 'ret'
             if callback.localvar ~= false then
                 exps:push('@localvar ')
             end
         end
-        exps:push(tn)
-        exps:push(olua.typespace(tn))
+        local tn_decl = tn .. olua.typespace(tn)
+        exps:push(tn_decl)
+        declexps:push(tn_decl)
         luaname = cls.luaname(fn, 'func')
     end
 
@@ -407,7 +416,7 @@ function M:visit_method(cls, cur)
     exps:push(fn .. '(')
     declexps:push(fn .. '(')
     for i, arg in ipairs(cur.arguments) do
-        local tn = self:typename(arg.type)
+        local tn = self:typename(arg.type, cls.template_types)
         local displayName = cur.displayName
         local argn = 'arg' .. i
         exps:push(i > 1 and ', ' or nil)
@@ -552,8 +561,13 @@ end
 
 function M:visit_class(cppcls, cur)
     local cls = self:do_visit(cppcls)
+    local skipsuper = false
 
     cls.kind = cls.kind or kFLAG_POINTEE
+
+    if cur.kind == 'ClassTemplate' then
+        cls.kind = cls.kind | kFLAG_TEMPLATE
+    end
 
     if cur.kind == 'StructDecl' then
         cls.kind = cls.kind | kFLAG_STRUCT
@@ -571,18 +585,24 @@ function M:visit_class(cppcls, cur)
                 cls.excludes:replace(c.displayName, true)
             end
             goto continue
+        elseif kind == 'TemplateTypeParameter' then
+            cls.template_types[c.name] = '$@' .. c.name
         elseif kind == 'CXXBaseSpecifier' then
             local supercls = self:typename(c.type)
             if self:is_excluded_typename(supercls)
                 or self:is_excluded_typename(supercls .. ' *')
-                or supercls:find('<')
             then
+                skipsuper = true
                 goto continue
             end
-            if not cls.supercls then
+            if not cls.supercls and not skipsuper then
                 cls.supercls = supercls
             end
-            cls.supers[supercls] = true
+            if is_templdate_type(supercls) then
+                local super = visited_types[supercls:gsub('<.*>', '')]
+                visited_types[supercls] = assert(super, supercls)
+            end
+            cls.supers[supercls] = supercls
         elseif kind == 'UsingDeclaration' then
             for _, cc in ipairs(c.children) do
                 if cc.kind == 'TypeRef' then
@@ -652,7 +672,9 @@ function M:visit(cur)
                 self:visit(c)
             end
         end
-    elseif kind == 'ClassDecl' or kind == 'StructDecl' or kind == 'UnionDecl' then
+    elseif kind == 'ClassTemplate' or kind == 'ClassDecl'
+        or kind == 'StructDecl' or kind == 'UnionDecl'
+    then
         if need_visit then
             self:visit_class(cls, cur)
         else
@@ -1118,6 +1140,59 @@ local function write_cls_alias(module, cls, append)
     end
 end
 
+local function copy_super_template_funcs(cls, super, supercls)
+    for _, v in ipairs(super.funcs) do
+        local fn = setmetatable({}, {__index = v})
+        for _, t in ipairs(super.template_types) do
+            local old = t .. ' '
+            local new = cls.cppcls .. ' '
+            fn.func = fn.func:gsub(old, new)
+            fn.prototype = fn.prototype:gsub(old, new)
+        end
+        if not cls.funcs[fn.prototype]
+            and not fn.isctor
+            and not cls.excludes[fn.displayName]
+            and not fn.snippet
+        then
+            cls.funcs[fn.prototype] = setmetatable({
+                func = format("@copyfrom(${super.cppcls}) ${fn.func}")
+            }, {__index = fn})
+        end
+    end
+end
+
+local function copy_super_funcs(cls, super)
+    for _, fn in ipairs(super.funcs) do
+        if not cls.funcs[fn.prototype]
+            and not fn.isctor
+            and not cls.excludes[fn.displayName]
+            and not fn.snippet
+        then
+            cls.funcs[fn.prototype] = setmetatable({
+                func = format("@copyfrom(${super.cppcls}) ${fn.func}")
+            }, {__index = fn})
+        end
+    end
+    for sc in pairs(super.supers) do
+        copy_super_funcs(visited_types[sc])
+    end
+end
+
+local function copy_super_var(cls, super)
+    for _, var in ipairs(super.vars) do
+        if not cls.vars[var.name]
+            and not cls.excludes[var.name]
+        then
+            cls.vars[var.name] = setmetatable({
+                snippet = format("@copyfrom(${super.cppcls}) ${var.snippet}")
+            }, {__index = var})
+        end
+    end
+    for sc in pairs(super.supers) do
+        copy_super_var(visited_types[sc])
+    end
+end
+
 local function write_module_classes(module, append)
     append('')
     for _, cls in ipairs(module.class_types) do
@@ -1139,47 +1214,20 @@ local function write_module_classes(module, append)
             if cls.supercls == supercls then
                 goto continue
             end
-
-            local function copy_super_funcs(super)
-                for _, fn in ipairs(super.funcs) do
-                    if not cls.funcs[fn.prototype]
-                        and not fn.isctor
-                        and not cls.excludes[fn.displayName]
-                        and not fn.snippet
-                    then
-                        cls.funcs[fn.prototype] = setmetatable({
-                            func = format("@copyfrom(${super.cppcls}) ${fn.func}")
-                        }, {__index = fn})
-                    end
-                end
-                for sc in pairs(super.supers) do
-                    copy_super_funcs(visited_types[sc])
-                end
+            if is_templdate_type(supercls) then
+                copy_super_template_funcs(cls, visited_types[supercls], supercls)
+            else
+                copy_super_funcs(cls, visited_types[supercls])
+                copy_super_var(cls, visited_types[supercls])
             end
-            copy_super_funcs(visited_types[supercls])
-
-            local function copy_super_var(super)
-                for _, var in ipairs(super.vars) do
-                    if not cls.vars[var.name]
-                        and not cls.excludes[var.name]
-                    then
-                        cls.vars[var.name] = setmetatable({
-                            snippet = format("@copyfrom(${super.cppcls}) ${var.snippet}")
-                        }, {__index = var})
-                    end
-                end
-                for sc in pairs(super.supers) do
-                    copy_super_var(visited_types[sc])
-                end
-            end
-            copy_super_var(visited_types[supercls])
-
             ::continue::
         end
     end
     for _, cls in ipairs(module.class_types) do
         if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
-            or has_kflag(cls, kFLAG_ALIAS) or cls.maincls
+            or has_kflag(cls, kFLAG_ALIAS)
+            or has_kflag(cls, kFLAG_TEMPLATE) -- don't export template class
+            or cls.maincls
         then
             goto continue
         end
@@ -1691,6 +1739,7 @@ function M.__call(_, path)
             kind = kind,
             supers = olua.newhash(),
             reg_luatype = true,
+            template_types = olua.newhash(),
             luaname = function (n) return n end,
         }
         local last = module.class_types[classname]
