@@ -12,4 +12,8 @@ include "../common/lua-object.lua"
 typeconf 'example::Singleton'
 typeconf "example::Hello"
 
-typeconf '^example::obj_type_*'
+typeconf '^example::TestWildcard*'
+    .exclude 'hello'
+    .luaopen [[
+        printf("test wildcard luaopen\n");
+    ]]

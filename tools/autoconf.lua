@@ -697,9 +697,9 @@ function M:visit(cur)
     local children = cur.children
     local cls = self:parse_typename_from_tree({declaration = cur, name = cur.name})
     if not self.class_types[cls] then
-        for cppcls in pairs(self.wildcard_types) do
+        for cppcls, v in pairs(self.wildcard_types) do
             if cls:find(cppcls) then
-                self.CMD.typeconf(cls)
+                self.CMD.typefrom(cls, v)
             end
         end
     end
@@ -1796,7 +1796,6 @@ function M.__call(_, path)
             aliases = olua.newhash(),
             inserts = olua.newhash(),
             macros = olua.newhash(),
-            index = #module.class_types + 1,
             kind = kind,
             supers = olua.newhash(),
             reg_luatype = true,
@@ -1843,6 +1842,23 @@ function M.__call(_, path)
 
     function CMD.typeconv(classname)
         return CMD.typeconf(classname, kFLAG_CONV)
+    end
+
+    function CMD.typefrom(classname, fromcls)
+        CMD.typeconf(classname)
+        local cls = module.class_types[classname]
+        for k, v in pairs(fromcls) do
+            if k == 'cppcls' or k == 'luacls' then
+                goto continue
+            end
+            if type(v) == 'table' then
+                cls[k] = v:clone()
+            else
+                cls[k] = v
+            end
+
+            ::continue::
+        end
     end
 
     function CMD.clang(clang_args)
