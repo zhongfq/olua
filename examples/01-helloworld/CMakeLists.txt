@@ -10,14 +10,9 @@ set(source
 
 add_executable(helloworld ${source})
 target_link_libraries(helloworld common)
-add_custom_command(
-  TARGET
-    helloworld
-  PRE_BUILD
-  COMMAND
-    cp -v ${CMAKE_CURRENT_SOURCE_DIR}/src/*.lua ${CMAKE_CURRENT_BINARY_DIR}
-  COMMAND
-    cp -v ${CMAKE_CURRENT_SOURCE_DIR}/../common/*.lua ${CMAKE_CURRENT_BINARY_DIR}
+target_compile_definitions(helloworld
+  PUBLIC
+    LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
 )
 add_test(NAME test_helloworld COMMAND helloworld)
 
