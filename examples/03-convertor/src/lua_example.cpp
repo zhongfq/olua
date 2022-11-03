@@ -211,7 +211,7 @@ static int _example_Node_getChildren(lua_State *L)
 
     olua_to_cppobj(L, 1, (void **)&self, "example.Node");
 
-    // const vector<example::Node *> &getChildren()
+    // const example::vector<example::Node *> &getChildren()
     const example::vector<example::Node *> &ret = self->getChildren();
     int num_ret = olua_push_array<example::Node *>(L, &ret, [L](example::Node *value) {
         olua_push_cppobj(L, value, "example.Node");
@@ -299,7 +299,7 @@ static int _example_Node_setChildren(lua_State *L)
         olua_check_cppobj(L, -1, (void **)value, "example.Node");
     });
 
-    // void setChildren(const vector<example::Node *> &value)
+    // void setChildren(const example::vector<example::Node *> &value)
     self->setChildren(arg1);
 
     olua_endinvoke(L);

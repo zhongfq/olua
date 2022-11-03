@@ -64,7 +64,8 @@ int olua_dofile(lua_State *L, const char *path)
         printf("%s\n", lua_tostring(L, -1));
         return status;
     }
-    return olua_pcall(L, 0, 0);
+    lua_pushstring(L, path);
+    return olua_pcall(L, 1, 0);
 }
 
 int olua_objgc(lua_State *L)

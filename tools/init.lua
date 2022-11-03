@@ -193,36 +193,78 @@ function olua.newarray(sep, prefix, posfix)
     return setmetatable({}, mt)
 end
 
-function olua.newhash()
-    local t = {}
-    local arr = {}
-    local map = {}
+function olua.clone(t, newt)
+    newt = newt or {}
+    for k, v in pairs(t) do
+        newt[k] = v
+    end
+    return newt
+end
 
-    function t:replace(key, value)
-        local old = map[key]
+function olua.newhash()
+    local hash = {values = {}, map = {}}
+
+    function hash:clone()
+        local new = olua.newhash()
+        new.values = olua.clone(hash.values, new.values)
+        new.map = olua.clone(hash.map, new.map)
+        return new
+    end
+
+    function hash:replace(key, value)
+        local old = hash.map[key]
         if value == nil then
             error("value is nil")
         end
-        map[key] = value
+        hash.map[key] = value
         if old then
-            for i, v in ipairs(arr) do
+            for i, v in ipairs(hash.values) do
                 if v == old then
-                    arr[i] = value
+                    hash.values[i] = value
                     break
                 end
             end
         else
-            arr[#arr + 1] = value
+            hash.values[#hash.values + 1] = value
         end
     end
 
-    function t:take(key)
-        local value = map[key]
+    function hash:insert(where, curr, key, value)
+        local idx
+        if where == 'front' then
+            idx = 1
+        elseif where == 'after' then
+            for i, v in ipairs(hash.values) do
+                if v == curr then
+                    idx = i + 1
+                    break
+                end
+            end
+        elseif where == 'before' then
+            for i, v in ipairs(hash.values) do
+                if v == curr then
+                    idx = i
+                    break
+                end
+            end
+        elseif where == 'back' then
+            idx = #hash.values + 1
+        end
+        if idx then
+            table.insert(hash.values, idx, value)
+            hash.map[key] = value
+        else
+            olua.error("can't insert value: %s, because current value not found", key)
+        end
+    end
+
+    function hash:take(key)
+        local value = hash.map[key]
         if value then
-            for i, v in ipairs(arr) do
+            for i, v in ipairs(hash.values) do
                 if value == v then
-                    table.remove(arr, i)
-                    map[key] = nil
+                    table.remove(hash.values, i)
+                    hash.map[key] = nil
                     break
                 end
             end
@@ -230,39 +272,35 @@ function olua.newhash()
         return value
     end
 
-    function t:array()
-        return arr
-    end
-
     local mt = {}
     function mt:__len()
-        return #arr
+        return #hash.values
     end
 
     function mt:__index(key)
         if type(key) == 'number' then
-            return arr[key]
+            return hash.values[key]
         else
-            return map[key]
+            return hash.map[key]
         end
     end
 
     function mt:__newindex(key, value)
         assert(type(key) == 'string', 'only support string key')
-        assert(not map[key], 'key conflict: ' .. key)
-        map[key] = value
-        arr[#arr + 1] = value
+        assert(not hash.map[key], 'key conflict: ' .. key)
+        hash.map[key] = value
+        hash.values[#hash.values + 1] = value
     end
 
     function mt:__pairs()
-        return pairs(map)
+        return pairs(hash.map)
     end
 
     function mt:__ipairs()
-        return ipairs(arr)
+        return ipairs(hash.values)
     end
 
-    return setmetatable(t, mt)
+    return setmetatable(hash, mt)
 end
 
 local function lookup(level, key)

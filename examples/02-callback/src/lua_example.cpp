@@ -333,7 +333,7 @@ static int _example_Callback_setEvent(lua_State *L)
         }
     };
 
-    // void setEvent(@localvar const std::function<void (const Event *)> &callback)
+    // void setEvent(@localvar const std::function<void (const example::Event *)> &callback)
     self->setEvent(arg1);
 
     olua_endinvoke(L);

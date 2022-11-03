@@ -116,7 +116,7 @@ function olua.typeinfo(tn, cls, silence, variant, errors)
         return ti, tn
     elseif not silence then
         print('try type:')
-        print('    ' .. table.concat(errors:array(), '\n    '))
+        print('    ' .. table.concat(errors.values, '\n    '))
         olua.error("type info not found: ${tn}")
     end
 end
