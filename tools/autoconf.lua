@@ -10,6 +10,11 @@ if _G.OLUA_AUTO_BUILD == nil then
     _G.OLUA_AUTO_BUILD = true
 end
 
+-- auto generate property
+if _G.OLUA_AUTO_GEN_PROP == nil then
+    _G.OLUA_AUTO_GEN_PROP = true
+end
+
 -- enable auto export parent
 if _G.OLUA_AUTO_EXPORT_PARENT == nil then
     _G.OLUA_AUTO_EXPORT_PARENT = false
@@ -147,7 +152,7 @@ function M:is_excluded_typename(name)
     end
 end
 
-function M:is_excluded_type(type, cur)
+function M:is_excluded_type(type)
     if type.kind == 'IncompleteArray' then
         return true
     end
@@ -381,7 +386,7 @@ function M:visit_method(cls, cur)
         or cur.isMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
         or cur.name == 'as'  -- 'as used to cast object'
-        or self:is_excluded_type(cur.resultType, cur)
+        or self:is_excluded_type(cur.resultType)
         or self:has_unexposed_attr(cur)
         or self:has_exclude_attr(cur)
     then
@@ -399,7 +404,7 @@ function M:visit_method(cls, cur)
     
     for i, arg in ipairs(cur.arguments) do
         local v = (attr['arg' .. i]) or ''
-        if not v:find('@ret') and self:is_excluded_type(arg.type, arg) then
+        if not v:find('@ret') and self:is_excluded_type(arg.type) then
             return
         end
     end
@@ -483,7 +488,7 @@ function M:visit_method(cls, cur)
 end
 
 function M:visit_var(cls, cur)
-    if cur.type.isConst or self:is_excluded_type(cur.type, cur) then
+    if cur.type.isConst or self:is_excluded_type(cur.type) then
         return
     end
 
@@ -657,7 +662,7 @@ function M:visit_class(cppcls, cur)
                 goto continue
             end
             if ct.isConst and kind == 'VarDecl' then
-                if not self:is_excluded_type(ct, c) then
+                if not self:is_excluded_type(ct) then
                     cls.consts[vn] = {name = vn, typename = ct.name}
                 end
             else
@@ -1006,7 +1011,7 @@ local function write_cls_func(module, cls, append)
             funcs[#funcs + 1] = v.func
         end
 
-        if #arr == 1 then
+        if #arr == 1 and _G.OLUA_AUTO_GEN_PROP then
             local name = parse_prop_name(fi)
             if name then
                 local setname = 'set' .. name:lower()
@@ -1478,6 +1483,15 @@ local function deferred_autoconf()
     write_ignored_types()
     write_alias_types()
     write_makefile()
+
+    template_cursors = nil
+    exclude_types = nil
+    ignored_types = nil
+    visited_types = nil
+    alias_types = nil
+    type_convs = nil
+    module_files = nil
+    deferred = nil
 
     if _G.OLUA_AUTO_BUILD ~= false then
         dofile('autobuild/make.lua')
