@@ -6,13 +6,24 @@ if not olua.isdir('autobuild') then
 end
 
 -- auto export after config
-_G.OLUA_AUTO_BUILD = true
+if _G.OLUA_AUTO_BUILD == nil then
+    _G.OLUA_AUTO_BUILD = true
+end
+
+-- enable auto export parent
+if _G.OLUA_AUTO_EXPORT_PARENT == nil then
+    _G.OLUA_AUTO_EXPORT_PARENT = false
+end
+
 -- enable var or method name with underscore
-_G.OLUA_ENABLE_WITH_UNDERSCORE = false
+if _G.OLUA_ENABLE_WITH_UNDERSCORE == nil then
+    _G.OLUA_ENABLE_WITH_UNDERSCORE = false
+end
 
 local format = olua.format
 local clang_tu
 
+local template_cursors = {}
 local exclude_types = {}
 local ignored_types = {}
 local visited_types = {}
@@ -76,7 +87,8 @@ function M:parse()
             if cls.decltype then
                 local ti = olua.typeinfo(cls.decltype, nil, true)
                 if not ti then
-                    error(string.format("decltype '%s' for '%s' is not found", cls.decltype, cls.cppcls))
+                    error(string.format("decltype '%s' for '%s' is not found",
+                        cls.decltype, cls.cppcls))
                 end
                 cls.conv = ti.conv
             else
@@ -594,6 +606,25 @@ function M:visit_class(cppcls, cur)
             then
                 goto continue
             end
+
+            if _G.OLUA_AUTO_EXPORT_PARENT then
+                local rawsupercls = supercls:gsub('<.*>', '')
+                local super = visited_types[rawsupercls]
+                if not super then
+                    self.CMD.typeconf(rawsupercls)
+                    if is_templdate_type(supercls) then
+                        self:visit_class(rawsupercls, template_cursors[rawsupercls])
+                    end
+                    self:visit_class(rawsupercls, c.type.declaration)
+                    super = self.class_types:take(rawsupercls)
+                    if super.supercls then
+                        self.class_types:insert('after', visited_types[super.supercls], rawsupercls, super)
+                    else
+                        self.class_types:insert('front', nil, rawsupercls, super)
+                    end
+                end
+            end
+
             if is_templdate_type(supercls) then
                 local super = visited_types[supercls:gsub('<.*>', '')]
                 skipsuper = true
@@ -656,10 +687,22 @@ function M:visit_class(cppcls, cur)
 end
 
 function M:visit(cur)
+    local need_visit = false
     local kind = cur.kind
     local children = cur.children
     local cls = self:parse_typename_from_tree({declaration = cur, name = cur.name})
-    local need_visit = self.class_types[cls] and not visited_types[cls]
+    if not self.class_types[cls] then
+        for cppcls in pairs(self.wildcard_types) do
+            if cls:find(cppcls) then
+                self.CMD.typeconf(cls)
+            end
+        end
+    end
+    if kind == 'ClassTemplate' then
+        -- TODO: will be removed next luaclang version
+        template_cursors[cls] = cur
+    end
+    need_visit = self.class_types[cls] and not visited_types[cls]
     if self:has_unexposed_attr(cur) then
         return
     elseif #children == 0 or string.find(cls, "^std::") then
@@ -1032,9 +1075,8 @@ local function write_cls_func(module, cls, append)
         remove_first_as_cls(cls)
      end
      if #ascls > 0 then
-        ascls = ascls:array()
-        table.sort(ascls)
-        local func = table.concat(ascls, ' ')
+        table.sort(ascls.values)
+        local func = table.concat(ascls.values, ' ')
         func = format("'@as(${func}) void *as(const char *cls)'")
         append(format(".func(nil, ${func})", 4))
      end
@@ -1685,15 +1727,17 @@ function M.__call(_, path)
     end
 
     local macro = nil
+    local CMD = {}
     local module = {
+        CMD = CMD,
         headers = '',
         class_types = olua.newhash(),
+        wildcard_types = olua.newhash(),
         typedef_types = olua.newhash(),
         luacls = function (cppname)
             return string.gsub(cppname, "::", ".")
         end,
     }
-    local CMD = {}
 
     add_value_command(CMD, 'module', module, 'name')
     add_value_command(CMD, 'path', module)
@@ -1760,7 +1804,11 @@ function M.__call(_, path)
                 module.class_types:take(classname)
             end
         end
-        module.class_types[classname] = cls
+        if classname:find('[%^%%%$%*%+]') then -- ^%$*+
+            module.wildcard_types[classname] = cls
+        else
+            module.class_types[classname] = cls
+        end
         if macro then
             cls.macros['*'] = {name = '*', value = macro}
         end
