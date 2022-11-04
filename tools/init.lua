@@ -201,8 +201,14 @@ function olua.clone(t, newt)
     return newt
 end
 
-function olua.newhash()
+function olua.newhash(map_only)
     local hash = {values = {}, map = {}}
+
+    local function checkkey(key)
+        if type(key) ~= 'string' then
+            error(string.format('only support string key: %s(%s)', key, type(key)))
+        end
+    end
 
     function hash:clone()
         local new = olua.newhash()
@@ -211,25 +217,35 @@ function olua.newhash()
         return new
     end
 
-    function hash:replace(key, value)
-        local old = hash.map[key]
-        if value == nil then
-            error("value is nil")
-        end
+    function hash:get(key)
+        checkkey(key)
+        return hash.map[key]
+    end
+
+    function hash:has(key)
+        checkkey(key)
+        return hash.map[key] ~= nil
+    end
+
+    function hash:push(key, value)
+        checkkey(key)
+        assert(not hash.map[key], 'key conflict: ' .. key)
+        assert(value ~= nil, 'no value')
         hash.map[key] = value
-        if old then
-            for i, v in ipairs(hash.values) do
-                if v == old then
-                    hash.values[i] = value
-                    break
-                end
-            end
-        else
+        if not map_only then
             hash.values[#hash.values + 1] = value
         end
     end
 
+    function hash:push_if_not_exist(key, value)
+        if not hash:has(key) then
+            hash:push(key, value)
+        end
+    end
+
     function hash:insert(where, curr, key, value)
+        checkkey(key)
+        assert(not map_only, 'insert not allowed for map only')
         local idx
         if where == 'front' then
             idx = 1
@@ -258,13 +274,33 @@ function olua.newhash()
         end
     end
 
+    function hash:replace(key, value)
+        checkkey(key)
+        local old = hash.map[key]
+        hash.map[key] = value
+        if not map_only then
+            assert(value ~= nil, "value is nil")
+            if old then
+                for i, v in ipairs(hash.values) do
+                    if v == old then
+                        hash.values[i] = value
+                        break
+                    end
+                end
+            else
+                hash.values[#hash.values + 1] = value
+            end
+        end
+    end
+
     function hash:take(key)
+        checkkey(key)
         local value = hash.map[key]
-        if value then
+        hash.map[key] = nil
+        if value and not map_only then
             for i, v in ipairs(hash.values) do
                 if value == v then
                     table.remove(hash.values, i)
-                    hash.map[key] = nil
                     break
                 end
             end
@@ -272,35 +308,27 @@ function olua.newhash()
         return value
     end
 
-    local mt = {}
-    function mt:__len()
+    function hash:__len()
         return #hash.values
     end
 
-    function mt:__index(key)
-        if type(key) == 'number' then
-            return hash.values[key]
-        else
-            return hash.map[key]
-        end
+    function hash:__index(key)
+        error('use get')
     end
 
-    function mt:__newindex(key, value)
-        assert(type(key) == 'string', 'only support string key')
-        assert(not hash.map[key], 'key conflict: ' .. key)
-        hash.map[key] = value
-        hash.values[#hash.values + 1] = value
+    function hash:__newindex(key, value)
+        error('use push')
     end
 
-    function mt:__pairs()
+    function hash:__pairs()
         return pairs(hash.map)
     end
 
-    function mt:__ipairs()
+    function hash:__ipairs()
         return ipairs(hash.values)
     end
 
-    return setmetatable(hash, mt)
+    return setmetatable(hash, hash)
 end
 
 local function lookup(level, key)
