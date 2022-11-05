@@ -28,9 +28,8 @@ end
 local format = olua.format
 local clang_tu
 
-local template_cursors = olua.newhash(true)
+local type_cursors = olua.newhash(true)
 local exclude_types = olua.newhash(true)
-local ignored_types = olua.newhash(true)
 local visited_types = olua.newhash(true)
 local alias_types = olua.newhash(true)
 local type_convs = olua.newhash(true)
@@ -370,11 +369,7 @@ function M:parse()
 
     module_files:push(self)
 
-    for cls in pairs(exclude_types) do
-        ignored_types:replace(cls, false)
-    end
-
-    self:visit(clang_tu:cursor())
+    self:start_visit()
     self:check_class()
 end
 
@@ -554,15 +549,14 @@ function M:visit_var(cls, cur)
     })
 end
 
-function M:do_visit(cppcls)
+function M:will_visit(cppcls)
     local cls = self.class_types:get(cppcls)
     visited_types:replace(cppcls, cls)
-    ignored_types:replace(cppcls, false)
     return cls
 end
 
 function M:visit_enum(cppcls, cur)
-    local cls = self:do_visit(cppcls)
+    local cls = self:will_visit(cppcls)
     for _, c in ipairs(cur.children) do
         local value =  c.name
         local name = cls.luaname(value, 'enum')
@@ -576,7 +570,7 @@ function M:visit_enum(cppcls, cur)
 end
 
 function M:visit_alias_class(alias, cppcls)
-    local cls = self:do_visit(alias)
+    local cls = self:will_visit(alias)
     cls.kind = cls.kind or kFLAG_POINTEE
     if is_func_type(cppcls) then
         cls.kind = cls.kind | kFLAG_FUNC
@@ -590,7 +584,7 @@ function M:visit_alias_class(alias, cppcls)
 end
 
 function M:visit_class(cppcls, cur)
-    local cls = self:do_visit(cppcls)
+    local cls = self:will_visit(cppcls)
     local skipsuper = false
 
     cls.kind = cls.kind or kFLAG_POINTEE
@@ -631,7 +625,7 @@ function M:visit_class(cppcls, cur)
                 if not super then
                     self.CMD.typeconf(rawsupercls)
                     if is_templdate_type(supercls) then
-                        self:visit_class(rawsupercls, template_cursors:get(rawsupercls))
+                        self:visit_class(rawsupercls, type_cursors:get(rawsupercls))
                     end
                     self:visit_class(rawsupercls, c.type.declaration)
                     super = self.class_types:take(rawsupercls)
@@ -698,8 +692,6 @@ function M:visit_class(cppcls, cur)
                 goto continue
             end
             self:visit_method(cls, c)
-        else
-            self:visit(c)
         end
 
         ::continue::
@@ -707,72 +699,80 @@ function M:visit_class(cppcls, cur)
 end
 
 function M:visit(cur, cppcls)
-    local need_visit = false
     local kind = cur.kind
     local children = cur.children
     local astcls = parse_from_ast({declaration = cur, name = cur.name})
     cppcls = cppcls or astcls
-    if not self.class_types:has(cppcls) then
-        for type, conf in pairs(self.wildcard_types) do
-            if cppcls:find(type) then
-                self.CMD.typefrom(cppcls, conf)
-            end
-        end
-    end
-    if kind == 'ClassTemplate' then
-        -- TODO: will be removed next luaclang version
-        template_cursors:replace(cppcls, cur)
-    end
-    need_visit = self.class_types:has(cppcls) and not visited_types:has(cppcls)
-    if has_unexposed_attr(cur) then
-        return
-    elseif #children == 0 or string.find(cppcls, "^std::") then
-        return
-    elseif kind == 'Namespace' then
-        if need_visit then
-            self:visit_class(cppcls, cur)
-        else
-            for _, c in ipairs(children) do
-                self:visit(c)
-            end
-        end
+    if kind == 'Namespace' then
+        self:visit_class(cppcls, cur)
     elseif kind == 'ClassTemplate'or kind == 'ClassDecl'
         or kind == 'StructDecl' or kind == 'UnionDecl'
     then
-        if need_visit then
-            if astcls ~= cppcls and type_convs:has(astcls) then
-                self:visit_alias_class(cppcls, astcls)
-            else
-                self:visit_class(cppcls, cur)
-            end
+        if astcls ~= cppcls and type_convs:has(astcls) then
+            self:visit_alias_class(cppcls, astcls)
         else
-            if not exclude_types:has(cppcls) and ignored_types:has(cppcls) == nil then
-                ignored_types:replace(cppcls, true)
-            end
-            for _, c in ipairs(cur.children) do
-                self:visit(c)
-            end
+            self:visit_class(cppcls, cur)
         end
     elseif kind == 'EnumDecl' then
-        if need_visit then
-            self:visit_enum(cppcls, cur)
-        end
+        self:visit_enum(cppcls, cur)
     elseif kind == 'TypeAliasDecl' then
-        if need_visit then
+        self:visit(cur.underlyingType.declaration, cppcls)
+    elseif kind == 'TypedefDecl' then
+        local underlying_cppcls = typename(cur.underlyingType)
+        if is_func_type(underlying_cppcls) then
+            self:visit_alias_class(cppcls, underlying_cppcls)
+        else
             self:visit(cur.underlyingType.declaration, cppcls)
         end
-    elseif kind == 'TypedefDecl' then
-        if need_visit then
-            local underlying_cppcls = typename(cur.underlyingType)
-            if is_func_type(underlying_cppcls) then
-                self:visit_alias_class(cppcls, underlying_cppcls)
-            else
-                self:visit(cur.underlyingType.declaration, cppcls)
+    end
+end
+
+function M:start_visit()
+    for _, cls in ipairs(self.class_types:clone()) do
+        local cppcls = cls.cppcls
+        local cur = assert(type_cursors:get(cppcls), 'no cursor: ' .. cppcls)
+        self:visit(cur, cppcls)
+    end
+end
+
+local function try_add_wildcard_type(cppcls)
+    for _, m in ipairs(deferred.modules) do
+        if not m.class_types:has(cppcls) then
+            for type, conf in pairs(m.wildcard_types) do
+                if cppcls:find(type) then
+                    m.CMD.typefrom(cppcls, conf)
+                end
             end
         end
-    else
-        for _, c in ipairs(children) do
-            self:visit(c)
+    end
+end
+
+local function prepare_cursor(cur)
+    local kind = cur.kind
+    local cppcls = parse_from_ast({declaration = cur, name = cur.name})
+    if has_unexposed_attr(cur) then
+        return
+    elseif kind == 'ClassDecl'
+        or kind == 'EnumDecl'
+        or kind == 'ClassTemplate'
+        or kind == 'StructDecl'
+        or kind == 'UnionDecl'
+        or kind == 'Namespace'
+        or kind == 'TranslationUnit'
+    then
+        local children = cur.children
+        if #children > 0 then
+            type_cursors:push_if_not_exist(cppcls, cur)
+            try_add_wildcard_type(cppcls)
+            for _, v in ipairs(children) do
+                prepare_cursor(v)
+            end
+        end
+    elseif kind == 'TypeAliasDecl' or kind == 'TypedefDecl' then
+        local children = cur.children
+        if #children > 0 then
+            type_cursors:push_if_not_exist(cppcls, cur)
+            try_add_wildcard_type(cppcls)
         end
     end
 end
@@ -795,8 +795,6 @@ local function write_module_metadata(module, append)
         if not has_kflag(cls, kFLAG_CONV) then
             goto continue
         end
-
-        ignored_types:replace(cls.cppcls, false)
 
         local macro = (cls.macros:get('*') or {}).value
         append(format([[typeconv '${cls.cppcls}']]))
@@ -824,7 +822,6 @@ local function write_module_typedef(module)
     writeLine('')
     for _, td in ipairs(module.typedef_types) do
         local arr = {}
-        ignored_types:replace(td.cppcls, false)
         for k, v in pairs(td) do
             arr[#arr + 1] = {k, v}
         end
@@ -1031,7 +1028,7 @@ local function write_cls_func(module, cls, append)
                     end
                 end
                 if lessone or not moreone then
-                    cls.props:replace(name, {name = name})
+                    cls.props:push_if_not_exist(name, {name = name})
                 end
             end
         end
@@ -1392,6 +1389,8 @@ local function parse_modules()
         os.remove(HEADER_PATH)
     end
 
+    prepare_cursor(clang_tu:cursor())
+
     for _, m in ipairs(deferred.modules) do
         for _, cls in ipairs(m.typedef_types) do
             add_type_conv_func(cls)
@@ -1424,14 +1423,24 @@ end
 
 local function write_ignored_types()
     local file = io.open('autobuild/autoconf-ignore.log', 'w')
-    local arr = {}
-    for cls, flag in pairs(ignored_types) do
-        if flag then
-            arr[#arr + 1] = cls
+    local ignored_types = {}
+    for cppcls, cur in  pairs(type_cursors) do
+        local kind = cur.kind
+        if not cppcls:find('^std::')
+            and (kind == 'ClassDecl'
+                or kind == 'EnumDecl'
+                or kind == 'ClassTemplate'
+                or kind == 'StructDecl')
+            and not (visited_types:has(cppcls)
+                or exclude_types:has(cppcls)
+                or alias_types:has(cppcls)
+                or type_convs:has(cppcls))
+        then
+            ignored_types[#ignored_types + 1] = cppcls
         end
     end
-    table.sort(arr)
-    for _, cls in pairs(arr) do
+    table.sort(ignored_types)
+    for _, cls in pairs(ignored_types) do
         file:write(string.format("[ignore class] %s\n", cls))
     end
 end
@@ -1507,9 +1516,7 @@ local function deferred_autoconf()
     write_alias_types()
     write_makefile()
 
-    template_cursors = nil
     exclude_types = nil
-    ignored_types = nil
     visited_types = nil
     alias_types = nil
     type_convs = nil
