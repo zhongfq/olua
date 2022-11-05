@@ -467,7 +467,7 @@ function olua.parse_func(cls, name, ...)
                 fi.ctor = true
                 attr.static = true
             end
-            fi.cppfunc = strmatch(str, '[^ ()]+')
+            fi.cppfunc = olua.assert(strmatch(str, '[^ ()]+'), 'invalid func')
             fi.luafunc = name or fi.cppfunc
             fi.static = attr.static
             fi.funcdesc = declfunc
