@@ -173,7 +173,7 @@ local function parse_from_type(type, template_types, try_underlying)
                 const ui::ClickListener
             type.canonicalType.name:
                 const cclua::Object *(*ClickListener)()
-            build_name:
+            ast name:
                 const cclua::ui::ClickListener
         ]]
         local rawtype = name
@@ -381,9 +381,15 @@ function M:check_class()
                     *** add include header file in your config file or check the class name
             ]]))
         end
-        for supercls in pairs(cls.supers) do
-            if not visited_types:has(supercls)then
-                error(format('super class not found: ${cls.cppcls} -> ${supercls}'))
+        for _, supercls in ipairs(cls.supers) do
+            local rawsuper = supercls:gsub('<.*>', '')
+            if not visited_types:has(rawsuper) then
+                error(format([[
+                    super class not configured: ${cls.cppcls} -> ${supercls}
+                    you should do one of:
+                        * add in config file: typeconf '${rawsuper}'
+                        * set in build file: OLUA_AUTO_EXPORT_PARENT = true
+                ]]))
             end
         end
     end
@@ -443,16 +449,16 @@ function M:visit_method(cls, cur)
     declexps:push(fn .. '(')
     for i, arg in ipairs(cur.arguments) do
         local tn = typename(arg.type, cls.template_types)
-        local displayName = cur.displayName
+        local display_name = cur.displayName
         local argn = 'arg' .. i
         exps:push(i > 1 and ', ' or nil)
         declexps:push(i > 1 and ', ' or nil)
         declexps:push(tn)
         if is_func_type(arg.type) then
             if cb_kind then
-                error(format('has more than one std::function: ${cls.cppcls}::${displayName}'))
+                error(format('has more than one std::function: ${cls.cppcls}::${display_name}'))
             end
-            assert(not cb_kind, cls.cppcls .. '::' .. displayName)
+            assert(not cb_kind, cls.cppcls .. '::' .. display_name)
             cb_kind = 'arg'
             if callback.localvar ~= false then
                 exps:push('@localvar ')
@@ -463,7 +469,7 @@ function M:visit_method(cls, cur)
             optional = true
         else
             min_args = min_args + 1
-            assert(not optional, cls.cppcls .. '::' .. displayName)
+            assert(not optional, cls.cppcls .. '::' .. display_name)
         end
         exps:push(attr[argn] and (attr[argn] .. ' ') or nil)
         exps:push(tn)
@@ -491,7 +497,7 @@ function M:visit_method(cls, cur)
         min_args = min_args,
         cb_kind = cb_kind,
         prototype = prototype,
-        displayName = cur.displayName,
+        display_name = cur.displayName,
         isctor = cur.kind == 'Constructor',
     })
 end
@@ -638,9 +644,7 @@ function M:visit_class(cppcls, cur)
             end
 
             if is_templdate_type(supercls) then
-                local super = visited_types:get(supercls:gsub('<.*>', ''))
                 skipsuper = true
-                visited_types:replace(supercls, assert(super, supercls))
             end
             if not cls.supercls and not skipsuper then
                 cls.supercls = supercls
@@ -1064,8 +1068,9 @@ local function write_cls_func(module, cls, append)
      if #cls.supers > 1 then
         local function find_as_cls(c)
             for supercls in pairs(c.supers) do
+                local rawsuper = supercls:gsub('<.*>', '')
                 ascls:replace(supercls, supercls)
-                find_as_cls(visited_types:get(supercls))
+                find_as_cls(visited_types:get(rawsuper))
             end
         end
         find_as_cls(cls)
@@ -1197,35 +1202,41 @@ local function copy_super_template_funcs(cls, super, supercls)
             fn.func = fn.func:gsub(old, new)
             fn.prototype = fn.prototype:gsub(old, new)
         end
-        if not cls.funcs:has(fn.prototype)
+        if not cls.funcs:has(fn.prototype or fn.name)
             and not fn.isctor
-            and not cls.excludes:has(fn.displayName)
-            and not fn.snippet
+            and not cls.excludes:has(fn.display_name or fn.name)
         then
             cls.funcs:push(fn.prototype, setmetatable({
                 func = format("@copyfrom(${super.cppcls}) ${fn.func}")
             }, {__index = fn}))
         end
     end
-    for sc in pairs(super.supers) do
+    for _, sc in ipairs(super.supers) do
+        print('sc', sc)
         copy_super_template_funcs(cls, visited_types:get(sc), sc)
     end
 end
 
 local function copy_super_funcs(cls, super)
     for _, fn in ipairs(super.funcs) do
-        if not cls.funcs:has(fn.prototype)
-            and not fn.isctor
-            and not cls.excludes:has(fn.displayName)
-            and not fn.snippet
-        then
-            cls.funcs:push(fn.prototype, setmetatable({
-                func = format("@copyfrom(${super.cppcls}) ${fn.func}")
-            }, {__index = fn}))
+        if fn.snippet then
+            if not cls.funcs:has(fn.name) and not cls.excludes:has(fn.name) then
+                cls.funcs:push(fn.name, setmetatable({}, {__index = fn}))
+            end
+        else
+            if not cls.funcs:has(fn.prototype or fn.name)
+                and not fn.isctor
+                and not cls.excludes:has(fn.display_name or fn.name)
+            then
+                cls.funcs:push(fn.prototype, setmetatable({
+                    func = format("@copyfrom(${super.cppcls}) ${fn.func}")
+                }, {__index = fn}))
+            end
         end
     end
-    for sc in pairs(super.supers) do
-        copy_super_funcs(cls, visited_types:get(sc))
+    for _, sc in ipairs(super.supers) do
+        local rawsc = sc:gsub('<.*>', '')
+        copy_super_funcs(cls, visited_types:get(rawsc))
     end
 end
 
@@ -1239,8 +1250,9 @@ local function copy_super_var(cls, super)
             }, {__index = var}))
         end
     end
-    for sc in pairs(super.supers) do
-        copy_super_var(cls, visited_types:get(sc))
+    for _, sc in ipairs(super.supers) do
+        local rawsc = sc:gsub('<.*>', '')
+        copy_super_var(cls, visited_types:get(rawsc))
     end
 end
 
@@ -1265,11 +1277,12 @@ local function write_module_classes(module, append)
             if cls.supercls == supercls then
                 goto continue
             end
+            local rawsuper = supercls:gsub('<.*>', '')
             if is_templdate_type(supercls) then
-                copy_super_template_funcs(cls, visited_types:get(supercls), supercls)
+                copy_super_template_funcs(cls, visited_types:get(rawsuper), supercls)
             else
-                copy_super_funcs(cls, visited_types:get(supercls))
-                copy_super_var(cls, visited_types:get(supercls))
+                copy_super_funcs(cls, visited_types:get(rawsuper))
+                copy_super_var(cls, visited_types:get(rawsuper))
             end
             ::continue::
         end
@@ -1901,7 +1914,7 @@ function M.__call(_, path)
             return CMD[k] or _ENV[k]
         end,
         __newindex = function (_, k)
-            error(string.format("create command '%s' is not available", k))
+            error(format("create command '${k}' is not available"))
         end
     })))()
 
