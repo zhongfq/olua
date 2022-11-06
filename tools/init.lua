@@ -80,7 +80,7 @@ end
 
 function olua.error(exp)
     print(willdo)
-    error(olua.format(exp))
+    error(exp)
 end
 
 function olua.assert(cond, exp)
