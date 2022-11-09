@@ -779,6 +779,11 @@ void oluacls_class_smartptr(lua_State *L)
 template <typename T> inline
 int olua_push_cppobj(lua_State *L, const std::shared_ptr<T> *value, const char *cls)
 {
+    if (!value->get()) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
     oluacls_class_smartptr<std::shared_ptr, T>(L);
     
     std::shared_ptr<T> *newvalue = new std::shared_ptr<T>();
@@ -809,6 +814,11 @@ void olua_check_cppobj(lua_State *L, int idx, std::weak_ptr<T> *value, const cha
 template <typename T> inline
 int olua_push_cppobj(lua_State *L, const std::weak_ptr<T> *value, const char *cls)
 {
+    if (!value->lock().get()) {
+        lua_pushnil(L);
+        return 1;
+    }
+    
     oluacls_class_smartptr<std::shared_ptr, T>(L);
     
     std::shared_ptr<T> *newvalue = new std::shared_ptr<T>();
