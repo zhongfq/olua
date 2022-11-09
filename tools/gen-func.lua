@@ -81,7 +81,12 @@ function olua.gen_check_exp(arg, name, i, codeset)
             ${func_check}(L, ${argn}, &${argname}, "${arg.type.luacls}");
         ]])
     elseif arg.type.subtypes then
-        if #arg.type.subtypes == 1 then
+        if arg.type.smartptr then
+            local subtype = arg.type.subtypes[1]
+            codeset.check_args:pushf([[
+                ${func_check}(L, ${argn}, &${argname}, "${subtype.luacls}");
+            ]])
+        elseif #arg.type.subtypes == 1 then
             local subtype = arg.type.subtypes[1]
             local type_space = olua.typespace(subtype.decltype)
             local subtype_func_check = olua.conv_func(subtype, 'check')
@@ -118,16 +123,15 @@ function olua.gen_check_exp(arg, name, i, codeset)
                 local subtype_func_check = olua.conv_func(subtype, 'check')
                 local type_space = olua.typespace(subtype.decltype)
                 local subtype_name = 'arg' .. ii
-                local const = subtype.const and 'const ' or ''
                 if olua.is_pointer_type(subtype) then
-                    subtype_decl_args:pushf('${const}${subtype.cppcls}*${subtype_name}')
-                    subtype_template_args:pushf('${const}${subtype.cppcls}')
+                    subtype_decl_args:pushf('${subtype.rawdecl}*${subtype_name}')
+                    subtype_template_args:pushf('${subtype.rawdecl}')
                     subtype_check_exp:pushf([[
                         ${subtype_func_check}(L, ${idx}, (void **)${subtype_name}, "${subtype.luacls}");
                     ]])
                 else
-                    subtype_decl_args:pushf('${const}${subtype.cppcls} *${subtype_name}')
-                    subtype_template_args:pushf('${const}${subtype.cppcls}')
+                    subtype_decl_args:pushf('${subtype.rawdecl} *${subtype_name}')
+                    subtype_template_args:pushf('${subtype.rawdecl}')
                     if subtype.cppcls == subtype.decltype then
                         subtype_check_exp:pushf([[
                             ${subtype_func_check}(L, ${idx}, ${subtype_name});
@@ -378,7 +382,10 @@ function olua.gen_push_exp(arg, name, codeset)
     elseif olua.is_func_type(arg.type) then
         codeset.push_args:pushf('${func_push}(L, &${argname}, "${arg.type.luacls}");')
     elseif arg.type.subtypes then
-        if #arg.type.subtypes == 1 then
+        if arg.type.smartptr then
+            local subtype = arg.type.subtypes[1]
+            codeset.push_args:pushf('${func_push}(L, &${argname}, "${subtype.luacls}");')
+        elseif #arg.type.subtypes == 1 then
             local subtype = arg.type.subtypes[1]
             local subtype_func_push = olua.conv_func(subtype, 'push')
             local subtype_cast = olua.is_value_type(subtype) and format('(${subtype.decltype})') or '&'
@@ -404,14 +411,13 @@ function olua.gen_push_exp(arg, name, codeset)
                 local subtype_func_push = olua.conv_func(subtype, 'push')
                 local subtype_cast = olua.is_value_type(subtype) and format('(${subtype.decltype})') or '&'
                 local subtype_name = 'arg' .. i
-                local const = subtype.const and 'const ' or ''
                 if olua.is_pointer_type(subtype) then
-                    subtype_decl_args:pushf('${const}${subtype.cppcls}${subtype_name}')
-                    subtype_template_args:pushf('${const}${subtype.cppcls}')
+                    subtype_decl_args:pushf('${subtype.rawdecl}${subtype_name}')
+                    subtype_template_args:pushf('${subtype.rawdecl}')
                     subtype_push_exp:pushf('${subtype_func_push}(L, ${subtype_name}, "${subtype.luacls}");')
                 else
-                    subtype_decl_args:pushf('${const}${subtype.cppcls} ${subtype_name}')
-                    subtype_template_args:pushf('${const}${subtype.cppcls}')
+                    subtype_decl_args:pushf('${subtype.rawdecl} ${subtype_name}')
+                    subtype_template_args:pushf('${subtype.rawdecl}')
                     subtype_push_exp:pushf('${subtype_func_push}(L, ${subtype_cast}${subtype_name});')
                 end
             end
@@ -441,7 +447,7 @@ local function gen_func_ret(cls, fi, codeset)
         if fi.ret.type.variant and type_space == ' ' then
             codeset.decl_ret = format('${fi.ret.decltype} &ret = (${fi.ret.decltype} &)')
         else
-            olua.assert(fi.ret.decltype:find(fi.ret.type.cppcls))
+            olua.assert(fi.ret.decltype:find(fi.ret.type.cppcls), fi.ret.decltype)
             codeset.decl_ret = format('${fi.ret.decltype}${type_space}ret = ') .. ' '
         end
 
@@ -561,11 +567,15 @@ local function gen_one_func(cls, fi, write, funcidx)
         local asexp = olua.newarray()
         for _, ascls in ipairs(fi.ret.attr.as) do
             local asti = olua.typeinfo(ascls .. '*')
+            local asluacls = asti.luacls:match('^[^< ]+')
             asexp:pushf([[
-                if (olua_strequal(arg1, "${asti.luacls}")) {
+                if (olua_strequal(arg1, "${asluacls}")) {
+                    if (olua_loadref(L, 1, "as.${asluacls}") == LUA_TUSERDATA) {
+                        break;
+                    }
                     ${ascls} *asobj = self;
                     olua_pushobj_as<${ascls}>(L, asobj);
-                    olua_addref(L, 1, "as.${asti.luacls}", -1, OLUA_FLAG_SINGLE);
+                    olua_addref(L, 1, "as.${asluacls}", -1, OLUA_FLAG_SINGLE);
                     olua_addref(L, -1, "as.self", 1, OLUA_FLAG_SINGLE);
                     break;
                 }

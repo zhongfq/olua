@@ -37,6 +37,7 @@ typedef {
         const char *
         unsigned char *
         const unsigned char *
+        GLchar *
         const GLchar *
     ]],
     decltype = 'const char *',
@@ -73,6 +74,15 @@ typedef {
         std::vector
     ]],
     conv = 'olua_$$_array',
+}
+
+typedef {
+    cppcls = [[
+        std::shared_ptr
+        std::weak_ptr
+    ]],
+    smartptr = true,
+    conv = 'olua_$$_cppobj',
 }
 
 typedef {

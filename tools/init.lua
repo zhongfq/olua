@@ -78,9 +78,13 @@ function olua.willdo(exp)
     willdo = olua.format(exp)
 end
 
-function olua.error(exp)
+local function throw_error(msg)
     print(willdo)
-    error(exp)
+    error(msg)
+end
+
+function olua.error(exp)
+    throw_error(olua.format(exp))
 end
 
 function olua.assert(cond, exp)
@@ -210,8 +214,13 @@ function olua.newhash(map_only)
         end
     end
 
+    function hash:clear()
+        hash.values = {}
+        hash.map = {}
+    end
+
     function hash:clone()
-        local new = olua.newhash()
+        local new = olua.newhash(map_only)
         new.values = olua.clone(hash.values, new.values)
         new.map = olua.clone(hash.map, new.map)
         return new
@@ -243,10 +252,9 @@ function olua.newhash(map_only)
         end
     end
 
-    function hash:insert(where, curr, key, value)
+    function hash:insert(where, curr, key, value, idx)
         checkkey(key)
         assert(not map_only, 'insert not allowed for map only')
-        local idx
         if where == 'front' then
             idx = 1
         elseif where == 'after' then
@@ -270,7 +278,7 @@ function olua.newhash(map_only)
             table.insert(hash.values, idx, value)
             hash.map[key] = value
         else
-            olua.error("can't insert value: %s, because current value not found", key)
+            error(string.format("can't insert value: %s, because current value not found", key))
         end
     end
 
@@ -309,6 +317,7 @@ function olua.newhash(map_only)
     end
 
     function hash:__len()
+        assert(not map_only, '__leng not allowed for map only')
         return #hash.values
     end
 
@@ -325,13 +334,14 @@ function olua.newhash(map_only)
     end
 
     function hash:__ipairs()
+        assert(not map_only, 'ipairs not allowed for map only')
         return ipairs(hash.values)
     end
 
     return setmetatable(hash, hash)
 end
 
-local function lookup(level, key)
+local function lookup(level, key, upvalue)
     assert(key and #key > 0, key)
 
     local value
@@ -349,8 +359,18 @@ local function lookup(level, key)
         return value
     end
 
-    local info1 = debug.getinfo(level, 'Sn')
+    local info1 = debug.getinfo(level, 'Snf')
     local info2 = debug.getinfo(level + 1, 'Sn')
+
+    if upvalue then
+        for i = 1, 256 do
+            local k, v = debug.getupvalue(info1.func, i)
+            if k == key then
+                return v
+            end
+        end
+    end
+
     if info1.source == info2.source or
         info1.short_src == info2.short_src then
         return lookup(level + 1, key)
@@ -383,7 +403,7 @@ local function eval(line)
         local key = string.match(str, '[%w_]+')
         local opt = string.match(str, '%?+')
         local fix = string.match(str, '{{')
-        local value = lookup(level + 1, key) or _G[key]
+        local value = lookup(level + 1, key, true) or _G[key]
         for field in string.gmatch(string.match(str, "[%w_.]+"), '[^.]+') do
             if not value then
                 break
@@ -393,7 +413,7 @@ local function eval(line)
         end
 
         if value == nil and not opt then
-            olua.error("value not found for '" .. str .. "'")
+            throw_error("value not found for '" .. str .. "'")
         end
 
         -- indent the value if value has multiline
@@ -403,7 +423,7 @@ local function eval(line)
             if mt and mt.__tostring then
                 value = tostring(value)
             else
-                olua.error("no meta method '__tostring' for " .. str)
+                throw_error("no meta method '__tostring' for " .. str)
             end
         elseif value == nil then
             value = 'nil'

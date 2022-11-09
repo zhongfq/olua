@@ -1,6 +1,6 @@
 package.path = "../../../?.lua;../../../?/init.lua;" .. package.path
 
-OLUA_AUTO_EXPORT_PARENT = true
+_G.OLUA_AUTO_EXPORT_PARENT = true
 
 require "olua.tools"
 

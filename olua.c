@@ -407,9 +407,16 @@ OLUA_API void *olua_toobj(lua_State *L, int idx, const char *cls)
 
 OLUA_API const char *olua_objstring(lua_State *L, int idx)
 {
-    const void *p = olua_isuserdata(L, idx) ?
-        olua_torawobj(L, idx) : lua_topointer(L, idx);
-    return lua_pushfstring(L, "%s: %p", olua_typename(L, idx), p);
+    const void *ud = lua_topointer(L, idx);
+    const void *obj = ud;
+    if (olua_isuserdata(L, idx)) {
+        obj = olua_torawobj(L, idx);
+    }
+    if (aux_getvmenv(L)->debug) {
+        return lua_pushfstring(L, "%s: %p(%p)", olua_typename(L, idx), obj, ud);
+    } else {
+        return lua_pushfstring(L, "%s: %p", olua_typename(L, idx), obj);
+    }
 }
 
 OLUA_API int olua_indexerror(lua_State *L)
@@ -732,7 +739,18 @@ OLUA_API void olua_getref(lua_State *L, olua_Ref ref)
     lua_replace(L, -2);
 }
 
-OLUA_API void olua_getreftable(lua_State *L, int idx, const char *name)
+OLUA_API int olua_loadref(lua_State *L, int idx, const char *name)
+{
+    int type;
+    olua_assert(olua_isuserdata(L, idx), "expect userdata");
+    aux_getusertable(L, idx);
+    aux_pushrefkey(L, name);
+    type = olua_rawget(L, -2);
+    lua_replace(L, -2); // replace usertable
+    return type;
+}
+
+static void aux_getreftable(lua_State *L, int idx, const char *name)
 {
     olua_assert(olua_isuserdata(L, idx), "expect userdata");
     aux_getusertable(L, idx);
@@ -774,7 +792,7 @@ static void aux_changeref(lua_State *L, int idx, const char *name, int obj, int 
         }
         if (flags & OLUA_FLAG_TABLE) {
             olua_assert(olua_istable(L, obj), "expect table");
-            olua_getreftable(L, idx, name);
+            aux_getreftable(L, idx, name);
             lua_pushnil(L);
             while (lua_next(L, obj)) {
                 if (olua_isuserdata(L, -2)) {
@@ -793,7 +811,7 @@ static void aux_changeref(lua_State *L, int idx, const char *name, int obj, int 
             }
         } else {
             olua_assert(olua_isuserdata(L, obj), "expect userdata");
-            olua_getreftable(L, idx, name);
+            aux_getreftable(L, idx, name);
             lua_pushvalue(L, obj);
             lua_pushvalue(L, top + 1);
             // L: reftable obj obj|nil
@@ -822,16 +840,17 @@ OLUA_API void olua_visitrefs(lua_State *L, int idx, const char *name, olua_RefVi
 {
     olua_assert(olua_isuserdata(L, idx), "expect userdata");
     idx = lua_absindex(L, idx);
-    olua_getreftable(L, idx, name);
-    lua_pushnil(L);
-    while (lua_next(L, -2)) {
-        int kidx = lua_gettop(L) - 1;
-        if (walk(L, -2)) { // remove?
-            lua_pushvalue(L, kidx);
-            lua_pushnil(L);
-            lua_rawset(L, kidx - 1);
+    if (olua_loadref(L, idx, name) == LUA_TTABLE) {
+        lua_pushnil(L);
+        while (lua_next(L, -2)) {
+            int kidx = lua_gettop(L) - 1;
+            if (walk(L, -2)) { // remove?
+                lua_pushvalue(L, kidx);
+                lua_pushnil(L);
+                lua_rawset(L, kidx - 1);
+            }
+            lua_settop(L, kidx);
         }
-        lua_settop(L, kidx);
     }
     lua_pop(L, 1);
 }
@@ -896,6 +915,12 @@ static int cls_metamethod(lua_State *L)
             lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
             return lua_gettop(L);
         } else if (olua_isuserdata(L, 2)) {
+            if (olua_getownership(L, 2) == OLUA_OWNERSHIP_ALIAS) {
+                if (olua_isdebug(L)) {
+                    printf("skip gc for alias object: %s\n", olua_objstring(L, 2));
+                }
+                return 0;
+            }
             if (olua_isa(L, 2, OLUA_VOIDCLS)) {
                 aux_getvmenv(L)->objcount--;
             }
