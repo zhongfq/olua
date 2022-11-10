@@ -226,6 +226,7 @@ OLUA_API int olua_callback(lua_State *L, void *obj, const char *func, int argc);
     
 // class store, store static callback or other
 OLUA_API void *olua_pushclassobj(lua_State *L, const char *cls);
+OLUA_API bool olua_getclass(lua_State *L, const char *cls);
 
 // get or set variable in userdata
 OLUA_API int olua_getvariable(lua_State *L, int idx);
@@ -652,16 +653,21 @@ inline int olua_pushobj(lua_State *L, const T *value)
 }
 
 template <typename T>
-inline int olua_pushobj_as(lua_State *L, const T *value)
+inline int olua_pushobj_as(lua_State *L, int idx, const T *value, const char *ref)
 {
-    const char *cls = olua_getluatype<T>(L);
-    if (olua_unlikely(!cls || olua_getmetatable(L, cls) != LUA_TTABLE)) {
-        luaL_error(L, "class '%s' not found", cls ? cls : "NULL");
+    idx = lua_absindex(L, idx);
+    if (olua_loadref(L, idx, ref) != LUA_TUSERDATA) {
+        const char *cls = olua_getluatype<T>(L);
+        if (olua_unlikely(!cls || olua_getmetatable(L, cls) != LUA_TTABLE)) {
+            luaL_error(L, "class '%s' not found", cls ? cls : "NULL");
+        }
+        olua_newrawobj(L, (void *)value);
+        lua_insert(L, -2);
+        lua_setmetatable(L, -2);
+        olua_setownership(L, -1, OLUA_OWNERSHIP_ALIAS);
+        olua_addref(L, idx, ref, -1, OLUA_FLAG_SINGLE);
+        olua_addref(L, -1, "as.self", idx, OLUA_FLAG_SINGLE);
     }
-    olua_newrawobj(L, (void *)value);
-    lua_insert(L, -2);
-    lua_setmetatable(L, -2);
-    olua_setownership(L, -1, OLUA_OWNERSHIP_ALIAS);
     return 1;
 }
 
@@ -863,24 +869,24 @@ static inline void olua_check_std_string_view(lua_State *L, int idx, std::string
 #define olua_is_map(L, i)   (olua_istable(L, (i)))
 
 template <class K, class V, template<class ...> class Map, class ...Ts>
-void olua_insert_map(Map<K, V, Ts...> *map, K key, V value)
+void olua_insert_map(Map<K, V, Ts...> *map, const K &key, const V &value)
 {
     map->insert(std::make_pair(key, value));
 }
 
 template <class K, class V, template<class ...> class Map, class ...Ts>
-void olua_foreach_map(const Map<K, V, Ts...> *map, const std::function<void(K, V)> &callback)
+void olua_foreach_map(const Map<K, V, Ts...> *map, const std::function<void(K &, V &)> &callback)
 {
     for (auto itor : (*map)) {
-        callback(itor.first, itor.second);
+        callback(const_cast<K &>(itor.first), itor.second);
     }
 }
 
 template <class K, class V, template<class ...> class Map, class ...Ts>
-int olua_push_map(lua_State *L, const Map<K, V, Ts...> *map, const std::function<void(K, V)> &push)
+int olua_push_map(lua_State *L, const Map<K, V, Ts...> *map, const std::function<void(K &, V &)> &push)
 {
     lua_newtable(L);
-    olua_foreach_map<K, V>(map, [=](K key, V value) {
+    olua_foreach_map<K, V>(map, [=](K &key, V &value) {
         push(key, value);
         lua_rawset(L, -3);
     });
@@ -904,33 +910,33 @@ void olua_check_map(lua_State *L, int idx, Map<K, V, Ts...> *map, const std::fun
 
 // array
 template <class T>
-void olua_insert_array(std::vector<T> *array, T value)
+void olua_insert_array(std::vector<T> *array, const T &value)
 {
     array->push_back(value);
 }
 
 template <class T>
-void olua_insert_array(std::set<T> *array, T value)
+void olua_insert_array(std::set<T> *array, const T &value)
 {
     array->insert(value);
 }
 
 template <class T, template<class ...> class Array, class ...Ts>
-void olua_foreach_array(const Array<T, Ts...> *array, const std::function<void(T)> &callback)
+void olua_foreach_array(const Array<T, Ts...> *array, const std::function<void(T &)> &callback)
 {
-    for (auto itor : (*array)) {
-        callback(itor);
+    for (auto &itor : (*array)) {
+        callback(const_cast<T &>(itor));
     }
 }
 
 #define olua_is_array(L, i)     (olua_istable(L, (i)))
 
 template <class T, template<class ...> class Array, class ...Ts>
-int olua_push_array(lua_State *L, const Array<T, Ts...> *array, const std::function<void(T)> &push)
+int olua_push_array(lua_State *L, const Array<T, Ts...> *array, const std::function<void(T &)> &push)
 {
     int idx = 0;
     lua_newtable(L);
-    olua_foreach_array<T>(array, [=](T value) mutable {
+    olua_foreach_array<T>(array, [=](T &value) mutable {
         push(value);
         lua_rawseti(L, -2, ++idx);
     });

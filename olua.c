@@ -666,6 +666,18 @@ OLUA_API void *olua_pushclassobj(lua_State *L, const char *cls)
     return lua_touserdata(L, -1);
 }
 
+OLUA_API bool olua_getclass(lua_State *L, const char *cls)
+{
+    if (olua_getmetatable(L, cls) == LUA_TTABLE) {
+        olua_rawgetf(L, -1, OLUA_CKEY_CLASS); // metaclass[.class]
+        lua_replace(L, -2); // pop metaclass
+        return true;
+    } else {
+        lua_pop(L, 1);
+        return false;
+    }
+}
+
 OLUA_API int olua_getvariable(lua_State *L, int idx)
 {
     int type = LUA_TNIL;

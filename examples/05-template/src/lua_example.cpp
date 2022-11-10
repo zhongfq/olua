@@ -260,23 +260,11 @@ static int _example_Hello_as(lua_State *L)
             break;
         }
         if (olua_strequal(arg1, "example.Singleton")) {
-            if (olua_loadref(L, 1, "as.example.Singleton") == LUA_TUSERDATA) {
-                break;
-            }
-            example::Singleton<example::Hello> *asobj = self;
-            olua_pushobj_as<example::Singleton<example::Hello>>(L, asobj);
-            olua_addref(L, 1, "as.example.Singleton", -1, OLUA_FLAG_SINGLE);
-            olua_addref(L, -1, "as.self", 1, OLUA_FLAG_SINGLE);
+            olua_pushobj_as<example::Singleton<example::Hello>>(L, 1, self, "as.example.Singleton");
             break;
         }
         if (olua_strequal(arg1, "example.TestWildcardListener")) {
-            if (olua_loadref(L, 1, "as.example.TestWildcardListener") == LUA_TUSERDATA) {
-                break;
-            }
-            example::TestWildcardListener *asobj = self;
-            olua_pushobj_as<example::TestWildcardListener>(L, asobj);
-            olua_addref(L, 1, "as.example.TestWildcardListener", -1, OLUA_FLAG_SINGLE);
-            olua_addref(L, -1, "as.self", 1, OLUA_FLAG_SINGLE);
+            olua_pushobj_as<example::TestWildcardListener>(L, 1, self, "as.example.TestWildcardListener");
             break;
         }
 
@@ -496,13 +484,7 @@ static int _example_TestGC_as(lua_State *L)
             break;
         }
         if (olua_strequal(arg1, "example.GC")) {
-            if (olua_loadref(L, 1, "as.example.GC") == LUA_TUSERDATA) {
-                break;
-            }
-            example::GC *asobj = self;
-            olua_pushobj_as<example::GC>(L, asobj);
-            olua_addref(L, 1, "as.example.GC", -1, OLUA_FLAG_SINGLE);
-            olua_addref(L, -1, "as.self", 1, OLUA_FLAG_SINGLE);
+            olua_pushobj_as<example::GC>(L, 1, self, "as.example.GC");
             break;
         }
 

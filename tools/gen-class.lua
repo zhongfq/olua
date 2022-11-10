@@ -324,7 +324,7 @@ local function gen_luaopen(module, write)
     end
     requires:push(last_macro and '#endif' or nil)
 
-    local luaopen = module.luaopen or ''
+    local luaopen = format(module.luaopen or '')
 
     write(format([[
         OLUA_BEGIN_DECLS

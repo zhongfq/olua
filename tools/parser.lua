@@ -65,15 +65,21 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
     -- parse template args
     if cpptype:find('<') then
         subtis = {}
-        for subcpptype in cpptype:match('<(.*)>'):gmatch('[^,]+') do
-            if subcpptype:find('<') then
+        for subcpptype in cpptype:match('<(.*)>'):gmatch(' *([^,]+)') do
+            local subti = olua.typeinfo(subcpptype, cls, silence)
+            if subti.smartptr then
+                subti.cppcls = olua.decltype(subti, true)
+                subti.decltype = subti.cppcls
+                subti.rawdecl = subcpptype
+                subti.luacls = subti.subtypes[1].luacls
+            elseif subcpptype:find('<') then
                 olua.error([[
                     unsupport template class as template args:
                            type: ${cpptype}
                         subtype: ${subcpptype}
                 ]])
             end
-            subtis[#subtis + 1] = olua.typeinfo(subcpptype, cls, silence)
+            subtis[#subtis + 1] = subti
         end
         if not silence then
             olua.assert(next(subtis), 'not found subtype: ' .. cpptype)
@@ -149,7 +155,7 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
         if not silence then
             print('try type:')
             print('    ' .. table.concat(errors.values, '\n    '))
-            olua.error("type info not found: ${tn}")
+            olua.error("type info not found: ${cpptype}")
         end
         return
     end

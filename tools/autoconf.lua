@@ -91,6 +91,10 @@ local function raw_type(cppcls, keep_pointer)
     end
     if keep_pointer and cppcls:find('%*$') then
         return cppcls:gsub('<.*>', '')
+    elseif cppcls:find('^struct ') then
+        return cppcls:match('^struct [^< ]+')
+    elseif cppcls:find('^enum ') then
+        return cppcls:match('^enum [^< ]+')
     else
         return cppcls:match('[^< ]+')
     end
@@ -234,6 +238,21 @@ local function parse_from_type(type, template_types, try_underlying)
     end
 end
 
+local function check_alias_typename(tn, underlying)
+    local rawtn = raw_type(tn)
+    local raw_underlying = raw_type(underlying)
+    local has_conv = type_convs:has(raw_underlying)
+    local has_ti = olua.typeinfo(raw_underlying, nil, true)
+    if has_conv or (has_ti and not is_templdate_type(underlying)) then
+        alias_types:replace(rawtn, raw_underlying)
+        return tn, true
+    elseif has_ti then
+        return underlying, true
+    else
+        return tn, false
+    end
+end
+
 local function typename(type, template_types)
     local tn = parse_from_type(type, template_types)
     local rawtn = raw_type(tn, KEEP_POINTER)
@@ -246,18 +265,24 @@ local function typename(type, template_types)
     if not type_convs:has(rawtn) and not olua.typeinfo(rawtn, nil, true) then
         --[[
             typedef std::function<void()> ClickEvent;
-            -- type: ClickEvent
-            -- underlying_type: std::function<void()>
+              -- type: ClickEvent
+              -- underlying: std::function<void()>
+
+            typedef long __darwin_time_t
+            typedef __darwin_time_t time_t
+              -- type: time_t
+              -- underlying: __darwin_time_t
+              -- canonical: long
         ]]
+
         -- try underlying_type
-        local underlying = parse_from_type(type, template_types, true)
-        local raw_underlying = raw_type(underlying)
-        local has_conv = type_convs:has(raw_underlying)
-        local has_ti = olua.typeinfo(raw_underlying, nil, true)
-        if has_conv or (has_ti and not is_templdate_type(underlying)) then
-            alias_types:replace(rawtn, raw_underlying)
-        elseif has_ti then
-            tn = underlying
+        local valid
+        local alias = parse_from_type(type, template_types, true)
+        tn, valid = check_alias_typename(tn, alias)
+        
+        if not valid then
+            alias = type.canonicalType.name
+            tn = check_alias_typename(tn, alias)
         end
     end
     return tn
@@ -1575,6 +1600,8 @@ local function write_alias_types()
                 decltype = alias,
                 conv = type_convs:get(cppcls),
             })
+        elseif has_kflag(cls, kFLAG_STRUCT) then
+            goto continue
         else
             error('TODO:' .. alias .. ' => ' .. cppcls)
         end

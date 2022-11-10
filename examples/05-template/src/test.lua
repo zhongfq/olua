@@ -30,3 +30,6 @@ local TestGC = require "example.TestGC"
 local test = TestGC.new()
 print('GC', test:as('example.GC'))
 print('GC', test:as('example.GC'))
+
+util.dumpUserValue(test)
+util.dumpUserValue(test:as('example.GC'))
