@@ -93,6 +93,7 @@ OLUA_BEGIN_DECLS
 #define OLUA_POSTNEW        __attribute__((annotate("@postnew")))
 #define OLUA_READONLY       __attribute__((annotate("@readonly")))
 #define OLUA_OPTIONAL       __attribute__((annotate("@optional")))
+#define OLUA_GETTER         __attribute__((annotate("@getter")))
 #define OLUA_RET            __attribute__((annotate("@ret")))
 #else
 #define OLUA_EXCLUDE
@@ -104,6 +105,7 @@ OLUA_BEGIN_DECLS
 #define OLUA_POSTNEW
 #define OLUA_READONLY
 #define OLUA_OPTIONAL
+#define OLUA_GETTER
 #define OLUA_RET
 #endif
     
@@ -754,8 +756,7 @@ template <typename T> inline
 void olua_check_cppobj(lua_State *L, int idx, std::shared_ptr<T> *value, const char *cls)
 {
     idx = lua_absindex(L, idx);
-    lua_pushstring(L, OLUA_SMART_PRT);
-    olua_getvariable(L, idx);
+    olua_loadref(L, idx, OLUA_SMART_PRT);
     *value = *olua_checkobj<std::shared_ptr<T>>(L, -1);
     lua_pop(L, 1);
 }
@@ -795,9 +796,9 @@ int olua_push_cppobj(lua_State *L, const std::shared_ptr<T> *value, const char *
     std::shared_ptr<T> *newvalue = new std::shared_ptr<T>();
     *newvalue = *value;
     olua_pushobj<T>(L, newvalue->get(), cls);
-    lua_pushstring(L, OLUA_SMART_PRT);
     olua_pushobj<std::shared_ptr<T>>(L, newvalue);
-    olua_setvariable(L, -3);
+    olua_addref(L, -2, OLUA_SMART_PRT, -1, OLUA_FLAG_SINGLE);
+    lua_pop(L, 1);
     return 1;
 }
 

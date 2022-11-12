@@ -79,9 +79,12 @@ function olua.willdo(exp)
 end
 
 local function throw_error(msg)
-    print(willdo)
+    if #willdo > 0 then
+        print(willdo)
+    end
     error(msg)
 end
+
 
 function olua.error(exp)
     throw_error(olua.format(exp))
@@ -92,6 +95,10 @@ function olua.assert(cond, exp)
         olua.error(exp or '<no assert info>')
     end
     return cond
+end
+
+function olua.print(exp)
+    print(olua.format(exp))
 end
 
 function olua.is_end_with(str, substr)
@@ -431,12 +438,12 @@ local function eval(line)
             value = value:gsub('[\n]*$', '')
             if opt then
                 value = olua.trim(value)
-                if string.find(value, '[\n\r]') then
+                if value:find('[\n\r]') then
                     value = '\n' .. value
                     prefix = '[['
                     posfix =  '\n' .. indent .. ']]'
                     indent = indent .. '    '
-                elseif string.find(value, '[\'"]') then
+                elseif value:find('[\'"]') then
                     value = '[[' .. value .. ']]'
                 else
                     value = "'" .. value .. "'"
@@ -447,13 +454,13 @@ local function eval(line)
         end
 
         if fix then
-            value = string.gsub(value, '[^%w_]+', '_')
+            value = value:gsub('[^%w_]+', '_'):gsub('_+$', '')
         end
 
-        return prefix .. string.gsub(value, '\n', '\n' .. indent) .. posfix
+        return prefix .. value:gsub('\n', '\n' .. indent) .. posfix
     end
-    line = string.gsub(line, '${[%w_.?]+}', replace)
-    line = string.gsub(line, '${{[%w_.?]+}}', replace)
+    line = line:gsub('${[%w_.?]+}', replace)
+    line = line:gsub('${{[%w_.?]+}}', replace)
     return line
 end
 
@@ -474,14 +481,14 @@ end
 
 function olua.trim(expr, indent)
     if type(expr) == 'string' then
-        expr = string.gsub(expr, '[\n\r]', '\n')
-        expr = string.gsub(expr, '^[\n]*', '') -- trim head '\n'
-        expr = string.gsub(expr, '[ \n]*$', '') -- trim tail '\n' or ' '
+        expr = expr:gsub('[\n\r]', '\n')
+        expr = expr:gsub('^[\n]*', '') -- trim head '\n'
+        expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
 
         local space = string.match(expr, '^[ ]*')
         indent = string.rep(' ', indent or 0)
-        expr = string.gsub(expr, '^[ ]*', '')  -- trim head space
-        expr = string.gsub(expr, '\n' .. space, '\n' .. indent)
+        expr = expr:gsub('^[ ]*', '')  -- trim head space
+        expr = expr:gsub('\n' .. space, '\n' .. indent)
         expr = indent .. expr
     end
     return expr
@@ -491,7 +498,7 @@ function olua.format(expr, indent)
     expr = doeval(olua.trim(expr, indent))
 
     while true do
-        local s, n = string.gsub(expr, '\n[ ]+\n', '\n\n')
+        local s, n = expr:gsub('\n[ ]+\n', '\n\n')
         expr = s
         if n == 0 then
             break
@@ -499,15 +506,15 @@ function olua.format(expr, indent)
     end
 
     while true do
-        local s, n = string.gsub(expr, '\n\n\n', '\n\n')
+        local s, n = expr:gsub('\n\n\n', '\n\n')
         expr = s
         if n == 0 then
             break
         end
     end
 
-    expr = string.gsub(expr, '{\n\n', '{\n')
-    expr = string.gsub(expr, '\n\n}', '\n}')
+    expr = expr:gsub('{\n\n', '{\n')
+    expr = expr:gsub('\n\n}', '\n}')
 
     return expr
 end

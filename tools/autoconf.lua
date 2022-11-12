@@ -63,10 +63,6 @@ local kFLAG_TEMPLATE = 1 << 7    -- template type
 
 local KEEP_POINTER = true
 
-local function errorf(...)
-    error(format(...))
-end
-
 local function has_kflag(cls, kind)
     return ((cls.kind or 0) & kind) ~= 0
 end
@@ -107,7 +103,7 @@ local function add_type_conv_func(cls)
             if cls.decltype then
                 local ti = olua.typeinfo(cls.decltype, nil, true)
                 if not ti then
-                    errorf("decltype '${cls.decltype}' for '${cls.cppcls}' is not found")
+                    olua.error("decltype '${cls.decltype}' for '${cls.cppcls}' is not found")
                 end
                 cls.conv = ti.conv
             else
@@ -184,6 +180,8 @@ local function parse_from_type(type, template_types, try_underlying)
     elseif try_underlying and underlying then
         local const = name:match('^const ') or ''
         return const .. parse_from_type(underlying, template_types)
+    elseif template_types and template_types:has(name) then
+        return template_types:get(name)
     else
         --[[
             type.name:
@@ -211,9 +209,6 @@ local function parse_from_type(type, template_types, try_underlying)
         end
         local cname = type.canonicalType.name:gsub('const ', '')
         local newname
-        if template_types and template_types:has(name) then
-            return '$@' .. name -- is template type
-        end
         if not rawtype:find(':') then
             rawtype = '::' .. rawtype
         end
@@ -336,36 +331,13 @@ local function has_default_value(cur)
     end
 end
 
-local opened_files = olua.newhash(true)
-
-local function open_file(path)
-    local lines = opened_files:get(path)
-    if not lines then
-        lines = {}
-        for line in io.open(path):lines() do
-            lines[#lines + 1] = line
-        end
-        opened_files:push(path, lines)
-    end
-    return lines
-end
-
 local function has_deprecated_attr(cur)
     if OLUA_ENABLE_DEPRECATED then
         return false
     end
-    for _, c in ipairs(cur.children) do
-        -- attribute(deprecated) ?
-        if c.kind == 'UnexposedAttr' then
-            local path, startline, startcol, endline, endcol = c:location()
-            local lines = open_file(path)
-            for i = startline, endline do
-                local l = lines[i]
-                if l:lower():find('deprecated') then
-                    return true
-                end
-            end
-        end
+    if cur.prettyPrinted:find("__attribute__%(%(deprecated")
+        or cur.prettyPrinted:find("__declspec%(deprecated%)") then
+        return true
     end
 end
 
@@ -445,19 +417,18 @@ function M:parse()
 
     -- check class
     for _, cls in ipairs(self.class_types) do
-        if not is_templdate_type(cls.cppcls) and not visited_types:has(cls.cppcls) then
-            errorf([[
-                class not found: ${cls.cppcls}:
+        if not visited_types:has(cls.cppcls) then
+            olua.error([[
+                class not found: ${cls.cppcls}
                     * add include header file in your config file or check the class name
             ]])
         end
         for _, supercls in ipairs(cls.supers) do
-            local rawsuper = raw_type(supercls, KEEP_POINTER)
-            if not visited_types:has(rawsuper) then
-                errorf([[
+            if not visited_types:has(supercls) then
+                olua.error([[
                     super class not configured: ${cls.cppcls} -> ${supercls}
                     you should do one of:
-                        * add in config file: typeconf '${rawsuper}'
+                        * add in config file: typeconf '${supercls}'
                         * set in build file: OLUA_AUTO_EXPORT_PARENT = true
                 ]])
             end
@@ -515,18 +486,20 @@ function M:visit_method(cls, cur)
 
     local optional = false
     local min_args = 0
+    local num_args = 0
     declexps:push(fn .. '(')
     protoexps:push(fn .. '(')
     for i, arg in ipairs(cur.arguments) do
         local tn = typename(arg.type, cls.template_types)
         local display_name = cur.displayName
         local argn = 'arg' .. i
+        num_args = num_args + 1
         declexps:push(i > 1 and ', ' or nil)
         protoexps:push(i > 1 and ', ' or nil)
         protoexps:push(tn)
         if is_func_type(arg.type) then
             if cb_kind then
-                errorf([[
+                olua.error([[
                     has more than one std::function:
                         class: ${cls.cppcls}
                          func: ${display_name}
@@ -562,12 +535,26 @@ function M:visit_method(cls, cur)
         decl = 'static ' .. decl
         static = true
     end
+    if decl:find('@getter') then
+        if num_args == 0 then
+            cls.props:push(fn, {
+                name = fn,
+                get = decl,
+            })
+            return
+        else
+            olua.print([[
+                ignore getter '${fn}', because function has argument
+                    prototype: ${decl}
+            ]])
+        end
+    end
     cls.funcs:push(prototype, {
         decl = decl,
         luaname = luaname == fn and 'nil' or olua.stringify(luaname),
         name = fn,
         static = static,
-        num_args = #cur.arguments,
+        num_args = num_args,
         min_args = min_args,
         cb_kind = cb_kind,
         prototype = prototype,
@@ -583,7 +570,7 @@ function M:visit_var(cls, cur)
 
     local exps = olua.newarray('')
     local attr = get_attr_copy(cls, cur.name, 'var*')
-    local tn = typename(cur.type)
+    local tn = typename(cur.type, cls.template_types)
     local cb_kind
 
     if tn:find('%[') then
@@ -663,24 +650,24 @@ function M:visit_alias_class(alias, cppcls)
     end
 end
 
-function M:visit_class(cppcls, cur)
+function M:visit_class(cppcls, cur, template_types)
     local cls = self:will_visit(cppcls)
     local skipsuper = false
 
     cls.kind = cls.kind or kFLAG_POINTEE
 
     if cur.kind == 'ClassTemplate' then
+        olua.assert(template_types, [[
+            don't config template class:
+                you should remove: typeconf '${cls.cppcls}'
+        ]])
         cls.kind = cls.kind | kFLAG_TEMPLATE
-    end
-
-    if cur.kind == 'StructDecl' then
+    elseif cur.kind == 'StructDecl' then
         cls.kind = cls.kind | kFLAG_STRUCT
-    end
-
-    if cur.kind == 'Namespace' then
+    elseif cur.kind == 'Namespace' then
         cls.reg_luatype = false
     end
-
+    
     for _, c in ipairs(cur.children) do
         local kind = c.kind
         local access = c.access
@@ -690,20 +677,37 @@ function M:visit_class(cppcls, cur)
             end
             goto continue
         elseif kind == 'TemplateTypeParameter' then
-            cls.template_types:push(c.name, '$@' .. c.name)
+            local tn = table.remove(template_types, 1)
+            if not tn then
+                olua.error([[
+                    template type not found:
+                          cppcls: ${cls.cppcls}
+                        typename: ${c.name}
+                ]])
+            end
+            cls.template_types:push(c.name, tn)
         elseif kind == 'CXXBaseSpecifier' then
             local supercls = typename(c.type)
-            if is_excluded_typename(supercls)
-                or is_excluded_typename(supercls .. ' *')
+            local rawsupercls = raw_type(supercls)
+            local supercursor = type_cursors:get(rawsupercls)
+
+            if is_excluded_typename(rawsupercls)
+                or is_excluded_typename(rawsupercls .. ' *')
             then
                 goto continue
             end
 
-            if OLUA_AUTO_EXPORT_PARENT then
-                local rawsupercls = raw_type(supercls, KEEP_POINTER)
+            if is_templdate_type(supercls) then
+                skipsuper = true
+                local arg_types = {}
+                for i, v in ipairs(c.type.templateArgTypes) do
+                    arg_types[i] = parse_from_type(v)
+                end
+                self.CMD.typeconf(supercls)
+                self:visit_class(supercls, supercursor, arg_types)
+            elseif OLUA_AUTO_EXPORT_PARENT then
                 local super = visited_types:get(rawsupercls)
                 if not super then
-                    local supercursor = type_cursors:get(rawsupercls)
                     assert(supercursor, "no cursor for " .. rawsupercls)
                     if not self.class_types:has(rawsupercls) then
                         self.CMD.typeconf(rawsupercls)
@@ -719,14 +723,6 @@ function M:visit_class(cppcls, cur)
                 end
             end
 
-            if is_templdate_type(supercls) then
-                skipsuper = true
-                if not self.class_types:has(supercls) then
-                    self.CMD.typeconf(supercls)
-                    local super = self.class_types:get(supercls)
-                    super.kind = kFLAG_POINTEE
-                end
-            end
             if not cls.supercls and not skipsuper then
                 cls.supercls = supercls
             end
@@ -1022,7 +1018,7 @@ local function is_new_func(module, supercls, func)
 
     local super = visited_types:get(supercls)
     if not super then
-        errorf("not found super class '${supercls}'")
+        olua.error("not found super class '${supercls}'")
     elseif super.funcs:has(func.prototype) or super.excludes:has(func.name) then
         return false
     else
@@ -1037,9 +1033,9 @@ local function parse_prop_name(func)
         -- getABCd isAbc => ABCd Abc
         local name
         if func.name:find('^[gG]et') then
-            name = func.name:gsub('^[gG]et', '')
+            name = func.name:gsub('^[gG]et_*', '')
         else
-            name = func.name:gsub('^[iI]s', '')
+            name = func.name:gsub('^[iI]s_*', '')
         end
         return string.gsub(name, '^%u+', function (str)
             if #str > 1 and #str ~= #name then
@@ -1125,10 +1121,13 @@ local function write_cls_func(module, cls, append)
         if #arr == 1 and OLUA_AUTO_GEN_PROP then
             local name = parse_prop_name(fi)
             if name then
-                local setname = 'set' .. name:lower()
+                local setfunc
+                local getfunc = fi
+                local setname = '^set_*' .. name:lower() .. '$'
                 local lessone, moreone
                 for _, f in ipairs(cls.funcs) do
-                    if f.name:lower() == setname then
+                    if f.name:lower():find(setname) then
+                        setfunc = f
                         if f.min_args <= (f.extended and 2 or 1) then
                             lessone = true
                         end
@@ -1138,7 +1137,11 @@ local function write_cls_func(module, cls, append)
                     end
                 end
                 if lessone or not moreone then
-                    cls.props:push_if_not_exist(name, {name = name})
+                    cls.props:push_if_not_exist(name, {
+                        name = name,
+                        get = getfunc.decl,
+                        set = setfunc and setfunc.decl or nil
+                    })
                 end
             end
         end
@@ -1174,9 +1177,8 @@ local function write_cls_func(module, cls, append)
      if #cls.supers > 1 then
         local function find_as_cls(c)
             for supercls in pairs(c.supers) do
-                local rawsuper = raw_type(supercls, KEEP_POINTER)
                 ascls:replace(supercls, supercls)
-                find_as_cls(visited_types:get(rawsuper))
+                find_as_cls(visited_types:get(supercls))
             end
         end
         find_as_cls(cls)
@@ -1187,7 +1189,7 @@ local function write_cls_func(module, cls, append)
             if supercls then
                 local rawsuper = raw_type(supercls, KEEP_POINTER)
                 ascls:take(rawsuper)
-                remove_first_as_cls(visited_types:get(rawsuper))
+                remove_first_as_cls(visited_types:get(supercls))
             end
         end
         remove_first_as_cls(cls)
@@ -1300,31 +1302,6 @@ local function write_cls_alias(module, cls, append)
     end
 end
 
-local function copy_super_template_funcs(cls, super, supercls)
-    for _, v in ipairs(super.funcs) do
-        local func = setmetatable({}, {__index = v})
-        if func.name == '__gc' then
-            goto continue
-        end
-        for _, t in ipairs(super.template_types) do
-            func.decl = func.decl:gsub(t, cls.cppcls)
-            func.prototype = func.prototype:gsub(t, cls.cppcls)
-        end
-        if not cls.funcs:has(func.prototype or func.name)
-            and not func.isctor
-            and not cls.excludes:has(func.display_name or func.name)
-        then
-            cls.funcs:push(func.prototype, setmetatable({
-                decl = format("@copyfrom(${super.cppcls}) ${func.decl}")
-            }, {__index = func}))
-        end
-        ::continue::
-    end
-    for _, sc in ipairs(super.supers) do
-        copy_super_template_funcs(cls, visited_types:get(sc), sc)
-    end
-end
-
 local function copy_super_funcs(cls, super)
     for _, func in ipairs(super.funcs) do
         if func.name == '__gc' then
@@ -1347,8 +1324,7 @@ local function copy_super_funcs(cls, super)
         ::continue::
     end
     for _, sc in ipairs(super.supers) do
-        local rawsc = raw_type(sc, KEEP_POINTER)
-        copy_super_funcs(cls, visited_types:get(rawsc))
+        copy_super_funcs(cls, visited_types:get(sc))
     end
 end
 
@@ -1363,8 +1339,7 @@ local function copy_super_var(cls, super)
         end
     end
     for _, sc in ipairs(super.supers) do
-        local rawsc = raw_type(sc, KEEP_POINTER)
-        copy_super_var(cls, visited_types:get(rawsc))
+        copy_super_var(cls, visited_types:get(sc))
     end
 end
 
@@ -1375,7 +1350,7 @@ local function write_module_classes(module, append)
             local extcls = module.class_types:get(v)
             for _, func in ipairs(extcls.funcs) do
                 if not func.static then
-                    errorf([[
+                    olua.error([[
                         extend only support static function:
                             class: ${extcls.cppcls}
                              func: ${func.prototype}
@@ -1392,21 +1367,15 @@ local function write_module_classes(module, append)
             if cls.supercls == supercls then
                 goto continue
             end
-            local rawsuper = raw_type(supercls, KEEP_POINTER)
-            local super = visited_types:get(rawsuper)
-            if is_templdate_type(supercls) then
-                copy_super_template_funcs(cls, super, supercls)
-            else
-                copy_super_funcs(cls, super)
-                copy_super_var(cls, super)
-            end
+            local super = visited_types:get(supercls)
+            copy_super_funcs(cls, super)
+            copy_super_var(cls, super)
             ::continue::
         end
     end
     for _, cls in ipairs(module.class_types) do
         if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
             or has_kflag(cls, kFLAG_ALIAS)
-            or has_kflag(cls, kFLAG_TEMPLATE) -- don't export template class
             or cls.maincls
         then
             goto continue
@@ -1759,7 +1728,7 @@ local function make_typeconf_command(cls, ModuleCMD)
     function CMD.exclude(name)
         if mode and mode ~= 'exclude' then
             local cppcls = cls.cppcls
-            errorf("can't use .include and .exclude at the same time in typeconf '${cppcls}'")
+            olua.error("can't use .include and .exclude at the same time in typeconf '${cppcls}'")
         end
         mode = 'exclude'
         name = checkstr('exclude', name)
@@ -1769,7 +1738,7 @@ local function make_typeconf_command(cls, ModuleCMD)
     function CMD.include(name)
         if mode and mode ~= 'include' then
             local cppcls = cls.cppcls
-            errorf("can't use .include and .exclude at the same time in typeconf '${cppcls}'")
+            olua.error("can't use .include and .exclude at the same time in typeconf '${cppcls}'")
         end
         mode = 'include'
         name = checkstr('include', name)
@@ -1962,7 +1931,7 @@ function M.__call(_, path)
         local last = module.class_types:get(classname)
         if last then
             if last.kind == kind then
-                errorf('class conflict: ${classname}')
+                olua.error('class conflict: ${classname}')
             else
                 if kind == kFLAG_CONV then
                     cls = last
@@ -2028,7 +1997,7 @@ function M.__call(_, path)
             return CMD[k] or _ENV[k]
         end,
         __newindex = function (_, k)
-            errorf("create command '${k}' is not available")
+            olua.error("create command '${k}' is not available")
         end
     })))()
 

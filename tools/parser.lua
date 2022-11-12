@@ -560,6 +560,7 @@ function olua.parse_func(cls, name, ...)
             fi.args, fi.max_args = parse_args(fromcls, str:sub(#fi.cppfunc + 1))
             gen_func_prototype(cls, fi)
             gen_func_pack(cls, fi, arr)
+            cls.parsed_funcs:push(declfunc, fi)
         end
         arr[#arr + 1] = fi
         arr.max_args = math.max(arr.max_args, fi.max_args)
@@ -573,59 +574,19 @@ local function parse_prop(cls, name, declget, declset)
     local pi = {}
     pi.name = assert(name, 'no prop name')
 
-    -- eg: name = url
-    -- try getUrl and getURL
-    -- try setUrl and setURL
-    local name2 = name:gsub('^%l+', function (s)
-        return string.upper(s)
-    end)
-
-    local function has_func(fi, pn, op)
-        pn = pn:gsub('^%w', function (s)
-            return string.upper(s)
-        end)
-        local pattern = '^' .. op .. pn .. '$'
-        if fi.cppfunc:find(pattern) or fi.luafunc:find(pattern) then
-            return true
-        else
-            -- getXXXXS => getXXXXs?
-            pn = pn:sub(1, #pn - 1) .. pn:sub(#pn):lower()
-            pattern = '^' .. op .. pn .. '$'
-            return fi.cppfunc:find(pattern) or fi.luafunc:find(pattern)
-        end
-    end
-
     if declget then
-        pi.get = declget and olua.parse_func(cls, name, declget)[1] or nil
-    else
-        for _, v in ipairs(cls.funcs) do
-            local fi = v[1]
-            if has_func(fi, name, '[gG]et') or has_func(fi, name, '[iI]s') or
-                has_func(fi, name2, '[gG]et') or has_func(fi, name2, '[iI]s')
-            then
-                olua.willdo([[
-                    parse prop:
-                        class = ${cls.cppcls}
-                        func = ${fi.funcdesc}
-                ]])
-                olua.assert(#fi.args == 0 or fi.ret.attr.extend and #fi.args == 1,
-                    format("function '${cls.cppcls}::${fi.cppfunc}' has arguments"))
-                pi.get = fi
-                break
-            end
+        if cls.parsed_funcs:has(declget) then
+            pi.get = cls.parsed_funcs:get(declget)
+        else
+            pi.get = olua.parse_func(cls, name, declget)[1]
         end
-        assert(pi.get, name)
     end
 
     if declset then
-        pi.set = declset and olua.parse_func(cls, name, declset)[1] or nil
-    else
-        for _, v in ipairs(cls.funcs) do
-            local fi = v[1]
-            if has_func(fi, name, '[sS]et') or has_func(fi, name2, '[sS]et') then
-                pi.set = fi
-                break
-            end
+        if cls.parsed_funcs:has(declset) then
+            pi.set = cls.parsed_funcs:get(declset)
+        else
+            pi.set = olua.parse_func(cls, name, declset)[1]
         end
     end
 
@@ -725,7 +686,15 @@ function olua.typedef(typeinfo)
             ti.decltype = ti.decltype or tn
         end
         typeinfo_map[tn] = ti
-        -- typeinfo_map['const ' .. tn] = ti
+
+        local rawtn = tn:gsub('<.*>', '')
+        if tn:find('<') and not typeinfo_map[rawtn]  then
+            typeinfo_map[rawtn] = {
+                cppcls = rawtn,
+                luacls = ti.luacls:gsub('<.*>', ''),
+                conv = ti.conv
+            }
+        end
     end
 end
 
@@ -740,6 +709,7 @@ local function typeconf(...)
         vars = olua.newarray(),
         macros = {},
         prototypes = {},
+        parsed_funcs = olua.newhash(),
     }
 
     class_map[cls.cppcls] = cls
@@ -973,7 +943,6 @@ local function typeconf(...)
     end
 
     function CMD.prop(name, get, set)
-        assert(not name:find('[^_%w]+'), name)
         cls.props:push(parse_prop(cls, name, get, set))
     end
 

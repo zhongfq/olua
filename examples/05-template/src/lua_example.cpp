@@ -280,7 +280,7 @@ static int _example_Hello_create(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @copyfrom(example::Singleton) static example::Hello *create()
+    // @copyfrom(example::Singleton<example::Hello>) static example::Hello *create()
     example::Hello *ret = example::Hello::create();
     int num_ret = olua_push_cppobj(L, ret, "example.Hello");
 
@@ -361,7 +361,7 @@ static int _example_Hello_printSingleton(lua_State *L)
 
     olua_to_cppobj(L, 1, (void **)&self, "example.Hello");
 
-    // @copyfrom(example::Singleton) void printSingleton()
+    // @copyfrom(example::Singleton<example::Hello>) void printSingleton()
     self->printSingleton();
 
     olua_endinvoke(L);
@@ -593,7 +593,7 @@ OLUA_LIB int luaopen_example_TestWildcardTouchEvent(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _example_Singleton_example_Hello____olua_move(lua_State *L)
+static int _example_Singleton_example_Hello___olua_move(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -605,11 +605,42 @@ static int _example_Singleton_example_Hello____olua_move(lua_State *L)
     return 1;
 }
 
+static int _example_Singleton_example_Hello_create(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    // static example::Hello *create()
+    example::Hello *ret = example::Singleton<example::Hello>::create();
+    int num_ret = olua_push_cppobj(L, ret, "example.Hello");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_Singleton_example_Hello_printSingleton(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Singleton<example::Hello> *self = nullptr;
+
+    olua_to_cppobj(L, 1, (void **)&self, "example.Singleton<example.Hello>");
+
+    // void printSingleton()
+    self->printSingleton();
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Singleton_example_Hello_(lua_State *L)
+OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
     oluacls_class(L, "example.Singleton<example.Hello>", nullptr);
-    oluacls_func(L, "__olua_move", _example_Singleton_example_Hello____olua_move);
+    oluacls_func(L, "__olua_move", _example_Singleton_example_Hello___olua_move);
+    oluacls_func(L, "create", _example_Singleton_example_Hello_create);
+    oluacls_func(L, "printSingleton", _example_Singleton_example_Hello_printSingleton);
 
     olua_registerluatype<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
 
@@ -628,7 +659,7 @@ OLUA_LIB int luaopen_example(lua_State *L)
     olua_require(L, "example.TestGC", luaopen_example_TestGC);
     olua_require(L, "example.TestWildcardClickEvent", luaopen_example_TestWildcardClickEvent);
     olua_require(L, "example.TestWildcardTouchEvent", luaopen_example_TestWildcardTouchEvent);
-    olua_require(L, "example.Singleton<example.Hello>", luaopen_example_Singleton_example_Hello_);
+    olua_require(L, "example.Singleton<example.Hello>", luaopen_example_Singleton_example_Hello);
 
     return 0;
 }
