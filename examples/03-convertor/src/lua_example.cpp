@@ -107,7 +107,7 @@ static int _example_Object___olua_move(lua_State *L)
     olua_startinvoke(L);
 
     auto self = (example::Object *)olua_toobj(L, 1, "example.Object");
-    olua_push_cppobj(L, self, "example.Object");
+    olua_push_obj(L, self, "example.Object");
 
     olua_endinvoke(L);
 
@@ -120,11 +120,11 @@ static int _example_Object_autorelease(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Object");
+    olua_to_obj(L, 1, &self, "example.Object");
 
     // example::Object *autorelease()
     example::Object *ret = self->autorelease();
-    int num_ret = olua_push_cppobj(L, ret, "example.Object");
+    int num_ret = olua_push_obj(L, ret, "example.Object");
 
     olua_endinvoke(L);
 
@@ -137,7 +137,7 @@ static int _example_Object_getReferenceCount(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Object");
+    olua_to_obj(L, 1, &self, "example.Object");
 
     // unsigned int getReferenceCount()
     unsigned int ret = self->getReferenceCount();
@@ -154,7 +154,7 @@ static int _example_Object_new(lua_State *L)
 
     // Object()
     example::Object *ret = new example::Object();
-    int num_ret = olua_push_cppobj(L, ret, "example.Object");
+    int num_ret = olua_push_obj(L, ret, "example.Object");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -196,7 +196,7 @@ static int _example_Node___olua_move(lua_State *L)
     olua_startinvoke(L);
 
     auto self = (example::Node *)olua_toobj(L, 1, "example.Node");
-    olua_push_cppobj(L, self, "example.Node");
+    olua_push_obj(L, self, "example.Node");
 
     olua_endinvoke(L);
 
@@ -209,12 +209,12 @@ static int _example_Node_getChildren(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // const example::vector<example::Node *> &getChildren()
     const example::vector<example::Node *> &ret = self->getChildren();
     int num_ret = olua_push_array<example::Node *>(L, &ret, [L](example::Node *value) {
-        olua_push_cppobj(L, value, "example.Node");
+        olua_push_obj(L, value, "example.Node");
     });
 
     olua_endinvoke(L);
@@ -228,7 +228,7 @@ static int _example_Node_getColor(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // const example::Color &getColor()
     const example::Color &ret = self->getColor();
@@ -245,7 +245,7 @@ static int _example_Node_getIdentifier(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // const example::Identifier &getIdentifier()
     const example::Identifier &ret = self->getIdentifier();
@@ -262,7 +262,7 @@ static int _example_Node_getPosition(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // const example::Point &getPosition()
     const example::Point &ret = self->getPosition();
@@ -279,7 +279,7 @@ static int _example_Node_new(lua_State *L)
 
     // Node()
     example::Node *ret = new example::Node();
-    int num_ret = olua_push_cppobj(L, ret, "example.Node");
+    int num_ret = olua_push_obj(L, ret, "example.Node");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -294,9 +294,9 @@ static int _example_Node_setChildren(lua_State *L)
     example::Node *self = nullptr;
     example::vector<example::Node *> arg1;       /** value */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
     olua_check_array<example::Node *>(L, 2, &arg1, [L](example::Node **value) {
-        olua_check_cppobj(L, -1, (void **)value, "example.Node");
+        olua_check_obj(L, -1, value, "example.Node");
     });
 
     // void setChildren(const example::vector<example::Node *> &value)
@@ -314,7 +314,7 @@ static int _example_Node_setColor(lua_State *L)
     example::Node *self = nullptr;
     example::Color arg1;       /** value */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
     olua_check_example_Color(L, 2, &arg1);
 
     // void setColor(const example::Color &value)
@@ -332,7 +332,7 @@ static int _example_Node_setIdentifier(lua_State *L)
     example::Node *self = nullptr;
     std::string arg1;       /** value */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
     olua_check_std_string(L, 2, &arg1);
 
     // void setIdentifier(const example::Identifier &value)
@@ -350,7 +350,7 @@ static int _example_Node_setPosition(lua_State *L)
     example::Node *self = nullptr;
     example::Point arg1;       /** value */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
     olua_check_example_Point(L, 2, &arg1);
 
     // void setPosition(const example::Point &value)

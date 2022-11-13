@@ -19,7 +19,7 @@ static int _example_Object___olua_move(lua_State *L)
     olua_startinvoke(L);
 
     auto self = (example::Object *)olua_toobj(L, 1, "example.Object");
-    olua_push_cppobj(L, self, "example.Object");
+    olua_push_obj(L, self, "example.Object");
 
     olua_endinvoke(L);
 
@@ -32,11 +32,11 @@ static int _example_Object_autorelease(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Object");
+    olua_to_obj(L, 1, &self, "example.Object");
 
     // example::Object *autorelease()
     example::Object *ret = self->autorelease();
-    int num_ret = olua_push_cppobj(L, ret, "example.Object");
+    int num_ret = olua_push_obj(L, ret, "example.Object");
 
     olua_endinvoke(L);
 
@@ -49,7 +49,7 @@ static int _example_Object_getReferenceCount(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Object");
+    olua_to_obj(L, 1, &self, "example.Object");
 
     // unsigned int getReferenceCount()
     unsigned int ret = self->getReferenceCount();
@@ -66,7 +66,7 @@ static int _example_Object_new(lua_State *L)
 
     // Object()
     example::Object *ret = new example::Object();
-    int num_ret = olua_push_cppobj(L, ret, "example.Object");
+    int num_ret = olua_push_obj(L, ret, "example.Object");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -96,7 +96,7 @@ static int _example_Node___olua_move(lua_State *L)
     olua_startinvoke(L);
 
     auto self = (example::Node *)olua_toobj(L, 1, "example.Node");
-    olua_push_cppobj(L, self, "example.Node");
+    olua_push_obj(L, self, "example.Node");
 
     olua_endinvoke(L);
 
@@ -110,8 +110,8 @@ static int _example_Node_addChild1(lua_State *L)
     example::Node *self = nullptr;
     example::Node *arg1 = nullptr;       /** child */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
-    olua_check_cppobj(L, 2, (void **)&arg1, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
+    olua_check_obj(L, 2, &arg1, "example.Node");
 
     // void addChild(@addref(children |) example::Node *child)
     self->addChild(arg1);
@@ -132,8 +132,8 @@ static int _example_Node_addChild2(lua_State *L)
     example::Node *arg1 = nullptr;       /** child */
     std::string arg2;       /** name */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
-    olua_check_cppobj(L, 2, (void **)&arg1, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
+    olua_check_obj(L, 2, &arg1, "example.Node");
     olua_check_std_string(L, 3, &arg2);
 
     // void addChild(@addref(children |) example::Node *child, const std::string &name)
@@ -152,14 +152,14 @@ static int _example_Node_addChild(lua_State *L)
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 1) {
-        // if ((olua_is_cppobj(L, 2, "example.Node"))) {
+        // if ((olua_is_obj(L, 2, "example.Node"))) {
             // void addChild(@addref(children |) example::Node *child)
             return _example_Node_addChild1(L);
         // }
     }
 
     if (num_args == 2) {
-        // if ((olua_is_cppobj(L, 2, "example.Node")) && (olua_is_std_string(L, 3))) {
+        // if ((olua_is_obj(L, 2, "example.Node")) && (olua_is_std_string(L, 3))) {
             // void addChild(@addref(children |) example::Node *child, const std::string &name)
             return _example_Node_addChild2(L);
         // }
@@ -177,12 +177,12 @@ static int _example_Node_getChildByName(lua_State *L)
     example::Node *self = nullptr;
     std::string arg1;       /** name */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
     olua_check_std_string(L, 2, &arg1);
 
     // @addref(children |) example::Node *getChildByName(const std::string &name)
     example::Node *ret = self->getChildByName(arg1);
-    int num_ret = olua_push_cppobj(L, ret, "example.Node");
+    int num_ret = olua_push_obj(L, ret, "example.Node");
 
     // insert code after call
     olua_addref(L, 1, "children", -1, OLUA_FLAG_MULTIPLE);
@@ -198,11 +198,11 @@ static int _example_Node_getComponent(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // @addref(component ^) example::Node *getComponent()
     example::Node *ret = self->getComponent();
-    int num_ret = olua_push_cppobj(L, ret, "example.Node");
+    int num_ret = olua_push_obj(L, ret, "example.Node");
 
     // insert code after call
     olua_addref(L, 1, "component", -1, OLUA_FLAG_SINGLE);
@@ -218,7 +218,7 @@ static int _example_Node_getName(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // const std::string &getName()
     const std::string &ret = self->getName();
@@ -235,7 +235,7 @@ static int _example_Node_getNumChildren(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // size_t getNumChildren()
     size_t ret = self->getNumChildren();
@@ -252,11 +252,11 @@ static int _example_Node_getParent(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // example::Node *getParent()
     example::Node *ret = self->getParent();
-    int num_ret = olua_push_cppobj(L, ret, "example.Node");
+    int num_ret = olua_push_obj(L, ret, "example.Node");
 
     olua_endinvoke(L);
 
@@ -269,7 +269,7 @@ static int _example_Node_new(lua_State *L)
 
     // Node()
     example::Node *ret = new example::Node();
-    int num_ret = olua_push_cppobj(L, ret, "example.Node");
+    int num_ret = olua_push_obj(L, ret, "example.Node");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -283,7 +283,7 @@ static int _example_Node_removeAllChildren(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // @delref(children *) void removeAllChildren()
     self->removeAllChildren();
@@ -303,8 +303,8 @@ static int _example_Node_removeChild(lua_State *L)
     example::Node *self = nullptr;
     example::Node *arg1 = nullptr;       /** child */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
-    olua_check_cppobj(L, 2, (void **)&arg1, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
+    olua_check_obj(L, 2, &arg1, "example.Node");
 
     // void removeChild(@delref(children |) example::Node *child)
     self->removeChild(arg1);
@@ -324,7 +324,7 @@ static int _example_Node_removeChildByName(lua_State *L)
     example::Node *self = nullptr;
     std::string arg1;       /** name */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
     olua_check_std_string(L, 2, &arg1);
 
     // insert code before call
@@ -347,13 +347,13 @@ static int _example_Node_removeSelf(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
 
     // insert code before call
     if (!self->getParent()) {
         return 0;
     }
-    olua_push_cppobj<example::Node>(L, self->getParent());
+    olua_pushobj<example::Node>(L, self->getParent());
     int parent = lua_gettop(L);
 
     // @delref(children | parent) void removeSelf()
@@ -374,8 +374,8 @@ static int _example_Node_setComponent(lua_State *L)
     example::Node *self = nullptr;
     example::Node *arg1 = nullptr;       /** value */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
-    olua_check_cppobj(L, 2, (void **)&arg1, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
+    olua_check_obj(L, 2, &arg1, "example.Node");
 
     // void setComponent(@addref(component ^) example::Node *value)
     self->setComponent(arg1);
@@ -395,7 +395,7 @@ static int _example_Node_setName(lua_State *L)
     example::Node *self = nullptr;
     std::string arg1;       /** value */
 
-    olua_to_cppobj(L, 1, (void **)&self, "example.Node");
+    olua_to_obj(L, 1, &self, "example.Node");
     olua_check_std_string(L, 2, &arg1);
 
     // void setName(const std::string &value)

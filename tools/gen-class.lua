@@ -46,7 +46,7 @@ local function check_meta_method(cls)
         cls.funcs:push(olua.parse_func(cls, '__olua_move', format([[
         {
             auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
-            olua_push_cppobj(L, self, "${cls.luacls}");
+            olua_push_obj(L, self, "${cls.luacls}");
             return 1;
         }]])))
     end

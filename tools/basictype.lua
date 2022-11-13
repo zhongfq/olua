@@ -82,7 +82,7 @@ typedef {
         std::weak_ptr
     ]],
     smartptr = true,
-    conv = 'olua_$$_cppobj',
+    conv = 'olua_$$_obj',
 }
 
 typedef {

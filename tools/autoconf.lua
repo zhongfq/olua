@@ -969,7 +969,7 @@ local function write_module_typedef(module)
                 cppcls = cppcls .. ' *'
             end
             luacls = olua.stringify(cls.luacls, "'")
-            conv = 'olua_$$_cppobj'
+            conv = 'olua_$$_obj'
         elseif has_kflag(cls, kFLAG_CONV) then
             conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
             num_vars = #cls.vars

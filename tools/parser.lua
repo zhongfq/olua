@@ -188,7 +188,7 @@ end
 
     Object *self = nullptr;
     std::vector<int> arg1;
-    olua_to_cppobj(L, 1, (void **)&self, "Object");
+    olua_to_obj(L, 1, &self, "Object");
     olua_check_std_vector(L, 2, arg1, "A");
     self->call(arg1);
 ]]

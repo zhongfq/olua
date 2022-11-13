@@ -24,6 +24,6 @@ typeconf "example::Node"
             if (!self->getParent()) {
                 return 0;
             }
-            olua_push_cppobj<example::Node>(L, self->getParent());
+            olua_pushobj<example::Node>(L, self->getParent());
             int parent = lua_gettop(L);
         ]]

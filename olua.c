@@ -1686,6 +1686,27 @@ OLUA_API const char *olua_getluatype(lua_State *L, const char *cls)
 }
 #endif
 
+OLUA_API int olua_push_obj(lua_State *L, void *obj, const char *cls)
+{
+    olua_pushobj(L, obj, cls);
+    return 1;
+}
+
+OLUA_API void olua_check_obj(lua_State *L, int idx, void **obj, const char *cls)
+{
+    *obj = olua_checkobj(L, idx, cls);
+}
+
+OLUA_API void olua_to_obj(lua_State *L, int idx, void **obj, const char *cls)
+{
+    *obj = olua_toobj(L, idx, cls);
+}
+
+OLUA_API bool olua_is_obj(lua_State *L, int idx, const char *cls)
+{
+    return olua_isa(L, idx, cls);
+}
+
 OLUA_API int olua_callback_wrapper(lua_State *L)
 {
     lua_pushvalue(L, lua_upvalueindex(1));
