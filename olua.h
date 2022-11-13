@@ -108,6 +108,11 @@ OLUA_BEGIN_DECLS
 #define OLUA_GETTER
 #define OLUA_RET
 #endif
+
+// max cpp type size
+#ifndef OLUA_MAX_CPPTYPE
+#define OLUA_MAX_CPPTYPE 256
+#endif
     
 // object status
 #define OLUA_OBJ_EXIST  0   // object exist
@@ -569,8 +574,8 @@ void olua_postgc(lua_State *L, int idx)
  * Define OLUA_HAVE_LUATYPE when you has implemention
  */
 OLUA_BEGIN_DECLS
-OLUA_API void olua_registerluatype(lua_State *L, const char *type, const char *cls);
-OLUA_API const char *olua_getluatype(lua_State *L, const char *cls);
+OLUA_API void olua_registerluatype(lua_State *L, const char *cpptype, const char *cls);
+OLUA_API const char *olua_getluatype(lua_State *L, const char *cpptype);
 OLUA_END_DECLS
 
 template <class T>
@@ -642,7 +647,7 @@ int olua_pushobj(lua_State *L, const T *value, const char *cls)
 {
     cls = olua_getluatype(L, value, cls);
     if (!cls) {
-        luaL_error(L, "class not found: %s", typeid(T).name());
+        luaL_error(L, "lua class not found: %s", typeid(T).name());
     }
     olua_postpush(L, (T *)value, olua_pushobj(L, (void *)value, cls));
     return 1;
@@ -661,7 +666,7 @@ int olua_pushobj_as(lua_State *L, int idx, const T *value, const char *ref)
     if (olua_loadref(L, idx, ref) != LUA_TUSERDATA) {
         const char *cls = olua_getluatype<T>(L);
         if (olua_unlikely(!cls || olua_getmetatable(L, cls) != LUA_TTABLE)) {
-            luaL_error(L, "class '%s' not found", cls ? cls : "NULL");
+            luaL_error(L, "class metatable '%s' not found", cls ? cls : "NULL");
         }
         olua_newrawobj(L, (void *)value);
         lua_insert(L, -2);

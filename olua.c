@@ -325,7 +325,7 @@ OLUA_API int olua_pushobj(lua_State *L, void *obj, const char *cls)
     }
     
     if (olua_unlikely(!cls || olua_getmetatable(L, cls) != LUA_TTABLE)) {
-        luaL_error(L, "class '%s' not found", cls ? cls : "NULL");
+        luaL_error(L, "class metatable '%s' not found", cls ? cls : "NULL");
     }
     
     aux_pushobjtable(L);
@@ -1673,16 +1673,31 @@ OLUA_API lua_State *olua_mainthread(lua_State *L)
 #endif
 
 #ifndef OLUA_HAVE_LUATYPE
-OLUA_API void olua_registerluatype(lua_State *L, const char *type, const char *cls)
+static void format_cpptype(char *buf, const char *cpptype)
 {
-    lua_pushstring(L, type);
+    /**
+     *  if cpptype is equal to cls, it will cause metatable miss.
+     *     REGISTRY[cls] = class metatable
+     *     REGISTRY[cpptype] = cls
+     */
+    olua_assert((strlen(cpptype) < (OLUA_MAX_CPPTYPE - 10)), "cpp type is too long");
+    snprintf(buf, OLUA_MAX_CPPTYPE, "olua:%s", cpptype);
+}
+
+OLUA_API void olua_registerluatype(lua_State *L, const char *cpptype, const char *cls)
+{
+    char newtype[OLUA_MAX_CPPTYPE];
+    format_cpptype(newtype, cpptype);
+    lua_pushstring(L, newtype);
     lua_pushstring(L, cls);
     lua_rawset(L, LUA_REGISTRYINDEX);
 }
 
-OLUA_API const char *olua_getluatype(lua_State *L, const char *cls)
+OLUA_API const char *olua_getluatype(lua_State *L, const char *cpptype)
 {
-    return olua_optfieldstring(L, LUA_REGISTRYINDEX, cls, NULL);
+    char newtype[OLUA_MAX_CPPTYPE];
+    format_cpptype(newtype, cpptype);
+    return olua_optfieldstring(L, LUA_REGISTRYINDEX, newtype, NULL);
 }
 #endif
 

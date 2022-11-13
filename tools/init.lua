@@ -102,7 +102,7 @@ function olua.print(exp)
 end
 
 function olua.is_end_with(str, substr)
-    local _, e = str:find(substr, 1, true)
+    local _, e = str:find(substr, #str - #substr + 1, true)
     return e == #str
 end
 

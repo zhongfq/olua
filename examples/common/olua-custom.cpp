@@ -142,14 +142,14 @@ OLUA_API void olua_endcmpref(lua_State *L, int idx, const char *refname)
 #endif
 
 #ifdef OLUA_HAVE_LUATYPE
-OLUA_API void olua_registerluatype(lua_State *L, const char *type, const char *cls)
+OLUA_API void olua_registerluatype(lua_State *L, const char *cpptype, const char *cls)
 {
-    _typemap[type] = cls;
+    _typemap[cpptype] = cls;
 }
 
-OLUA_API const char *olua_getluatype(lua_State *L, const char *type)
+OLUA_API const char *olua_getluatype(lua_State *L, const char *cpptype)
 {
-    auto cls = _typemap.find(type);
+    auto cls = _typemap.find(cpptype);
     return cls != _typemap.end() ? cls->second.c_str() : nullptr;
 }
 #endif
