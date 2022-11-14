@@ -1,5 +1,10 @@
 unused = false
 new_globals = {
+    "OLUA_AUTO_BUILD",
+    "OLUA_AUTO_GEN_PROP",
+    "OLUA_AUTO_EXPORT_PARENT",
+    "OLUA_ENABLE_WITH_UNDERSCORE",
+    "OLUA_ENABLE_DEPRECATED",
     "autoconf",
     "chunk",
     "clang",
@@ -12,6 +17,7 @@ new_globals = {
     "luacls",
     "luaopen",
     "macro",
+    "olua",
     "pairs",
     "path",
     "typeconf",

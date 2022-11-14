@@ -150,10 +150,10 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
 
     for i, v in ipairs(arg.callback.args) do
         local cb_argname = 'arg' .. i
-        local type_space = olua.typespace(v.rawdecl)
+        local type_space = olua.typespace(v.declarg)
         olua.gen_push_exp(v, cb_argname, callbackset)
         callbackset.args:pushf([[
-            ${v.rawdecl}${type_space}${cb_argname}
+            ${v.declarg}${type_space}${cb_argname}
         ]])
     end
 

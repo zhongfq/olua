@@ -3,7 +3,7 @@ package.loaded['olua'] = olua
 
 local scrpath = select(2, ...)
 local osn = package.cpath:find('?.dll') and 'windows' or
-    ((io.popen('uname'):read("*l"):find('Darwin')) and 'macosx' or 'linux')
+    ((io.popen('uname'):read("*l"):find('Darwin')) and 'macos' or 'linux')
 
 function olua.isdir(path)
     if not string.find(path, '[/\\]$') then
@@ -42,7 +42,8 @@ else
 end
 
 -- version
-olua.OLUA_HOME = olua.OLUA_HOME .. '/v4'
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v5'
+print(' olua home: ' .. olua.OLUA_HOME)
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
@@ -50,26 +51,30 @@ package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
 -- lua c search path
 local suffix = osn == 'windows' and 'dll' or 'so'
 local version = string.match(_VERSION, '%d.%d'):gsub('%.', '')
-package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
-    olua.OLUA_HOME, version, osn, suffix, package.cpath)
+package.cpath = string.format('%s/lua%s/?.%s;%s',
+    olua.OLUA_HOME, version, suffix, package.cpath)
 
 -- unzip lib and header
 if not olua.isdir(olua.OLUA_HOME)
-    or not olua.isdir(olua.OLUA_HOME .. '/lib')
+    or not olua.isdir(olua.OLUA_HOME .. '/lua53')
+    or not olua.isdir(olua.OLUA_HOME .. '/lua54')
     or not olua.isdir(olua.OLUA_HOME .. '/include')
 then
-    local dir = scrpath:gsub('[^/.\\]+%.lua$', '')
-    local libzip = string.format('%slib-%s.zip', dir, osn)
-    local includezip = dir .. 'include.zip'
+    local dir = scrpath:gsub('[^/.\\]+%.lua$', 'libs')
     olua.mkdir(olua.OLUA_HOME)
-    if osn == 'windows' then
-        local unzip = dir .. 'unzip.exe'
-        os.execute(unzip .. ' -f ' .. libzip .. ' -o ' .. olua.OLUA_HOME)
-        os.execute(unzip .. ' -f ' .. includezip .. ' -o ' .. olua.OLUA_HOME)
-    else
-        os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.OLUA_HOME)
-        os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.OLUA_HOME)
+    local function unzip(path)
+        local cmd
+        if osn == 'windows' then
+            cmd = ('%s\\unzip.exe -f %s -o %s'):format(dir, path, olua.OLUA_HOME)
+            cmd = cmd:gsub('/', '\\')
+        else
+            cmd = ('unzip -o %s -d %s'):format(path, olua.OLUA_HOME)
+        end
+        os.execute(cmd)
     end
+    unzip(('%s/%s-lua53.zip'):format(dir, osn))
+    unzip(('%s/%s-lua54.zip'):format(dir, osn))
+    unzip(dir .. '/include.zip')
 end
 
 -- error handle
@@ -78,9 +83,16 @@ function olua.willdo(exp)
     willdo = olua.format(exp)
 end
 
+local function throw_error(msg)
+    if #willdo > 0 then
+        print(willdo)
+    end
+    error(msg)
+end
+
+
 function olua.error(exp)
-    print(willdo)
-    error(exp)
+    throw_error(olua.format(exp))
 end
 
 function olua.assert(cond, exp)
@@ -90,8 +102,12 @@ function olua.assert(cond, exp)
     return cond
 end
 
+function olua.print(exp)
+    print(olua.format(exp))
+end
+
 function olua.is_end_with(str, substr)
-    local _, e = str:find(substr, 1, true)
+    local _, e = str:find(substr, #str - #substr + 1, true)
     return e == #str
 end
 
@@ -210,8 +226,13 @@ function olua.newhash(map_only)
         end
     end
 
+    function hash:clear()
+        hash.values = {}
+        hash.map = {}
+    end
+
     function hash:clone()
-        local new = olua.newhash()
+        local new = olua.newhash(map_only)
         new.values = olua.clone(hash.values, new.values)
         new.map = olua.clone(hash.map, new.map)
         return new
@@ -243,10 +264,9 @@ function olua.newhash(map_only)
         end
     end
 
-    function hash:insert(where, curr, key, value)
+    function hash:insert(where, curr, key, value, idx)
         checkkey(key)
         assert(not map_only, 'insert not allowed for map only')
-        local idx
         if where == 'front' then
             idx = 1
         elseif where == 'after' then
@@ -270,7 +290,7 @@ function olua.newhash(map_only)
             table.insert(hash.values, idx, value)
             hash.map[key] = value
         else
-            olua.error("can't insert value: %s, because current value not found", key)
+            error(string.format("can't insert value: %s, because current value not found", key))
         end
     end
 
@@ -309,6 +329,7 @@ function olua.newhash(map_only)
     end
 
     function hash:__len()
+        assert(not map_only, '__leng not allowed for map only')
         return #hash.values
     end
 
@@ -325,13 +346,14 @@ function olua.newhash(map_only)
     end
 
     function hash:__ipairs()
+        assert(not map_only, 'ipairs not allowed for map only')
         return ipairs(hash.values)
     end
 
     return setmetatable(hash, hash)
 end
 
-local function lookup(level, key)
+local function lookup(level, key, upvalue)
     assert(key and #key > 0, key)
 
     local value
@@ -349,8 +371,18 @@ local function lookup(level, key)
         return value
     end
 
-    local info1 = debug.getinfo(level, 'Sn')
+    local info1 = debug.getinfo(level, 'Snf')
     local info2 = debug.getinfo(level + 1, 'Sn')
+
+    if upvalue then
+        for i = 1, 256 do
+            local k, v = debug.getupvalue(info1.func, i)
+            if k == key then
+                return v
+            end
+        end
+    end
+
     if info1.source == info2.source or
         info1.short_src == info2.short_src then
         return lookup(level + 1, key)
@@ -383,7 +415,7 @@ local function eval(line)
         local key = string.match(str, '[%w_]+')
         local opt = string.match(str, '%?+')
         local fix = string.match(str, '{{')
-        local value = lookup(level + 1, key) or _G[key]
+        local value = lookup(level + 1, key, true) or _G[key]
         for field in string.gmatch(string.match(str, "[%w_.]+"), '[^.]+') do
             if not value then
                 break
@@ -393,7 +425,7 @@ local function eval(line)
         end
 
         if value == nil and not opt then
-            olua.error("value not found for '" .. str .. "'")
+            throw_error("value not found for '" .. str .. "'")
         end
 
         -- indent the value if value has multiline
@@ -403,7 +435,7 @@ local function eval(line)
             if mt and mt.__tostring then
                 value = tostring(value)
             else
-                olua.error("no meta method '__tostring' for " .. str)
+                throw_error("no meta method '__tostring' for " .. str)
             end
         elseif value == nil then
             value = 'nil'
@@ -411,12 +443,12 @@ local function eval(line)
             value = value:gsub('[\n]*$', '')
             if opt then
                 value = olua.trim(value)
-                if string.find(value, '[\n\r]') then
+                if value:find('[\n\r]') then
                     value = '\n' .. value
                     prefix = '[['
                     posfix =  '\n' .. indent .. ']]'
                     indent = indent .. '    '
-                elseif string.find(value, '[\'"]') then
+                elseif value:find('[\'"]') then
                     value = '[[' .. value .. ']]'
                 else
                     value = "'" .. value .. "'"
@@ -427,13 +459,13 @@ local function eval(line)
         end
 
         if fix then
-            value = string.gsub(value, '[^%w_]+', '_')
+            value = value:gsub('[^%w_]+', '_'):gsub('_+$', '')
         end
 
-        return prefix .. string.gsub(value, '\n', '\n' .. indent) .. posfix
+        return prefix .. value:gsub('\n', '\n' .. indent) .. posfix
     end
-    line = string.gsub(line, '${[%w_.?]+}', replace)
-    line = string.gsub(line, '${{[%w_.?]+}}', replace)
+    line = line:gsub('${[%w_.?]+}', replace)
+    line = line:gsub('${{[%w_.?]+}}', replace)
     return line
 end
 
@@ -454,14 +486,14 @@ end
 
 function olua.trim(expr, indent)
     if type(expr) == 'string' then
-        expr = string.gsub(expr, '[\n\r]', '\n')
-        expr = string.gsub(expr, '^[\n]*', '') -- trim head '\n'
-        expr = string.gsub(expr, '[ \n]*$', '') -- trim tail '\n' or ' '
+        expr = expr:gsub('[\n\r]', '\n')
+        expr = expr:gsub('^[\n]*', '') -- trim head '\n'
+        expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
 
         local space = string.match(expr, '^[ ]*')
         indent = string.rep(' ', indent or 0)
-        expr = string.gsub(expr, '^[ ]*', '')  -- trim head space
-        expr = string.gsub(expr, '\n' .. space, '\n' .. indent)
+        expr = expr:gsub('^[ ]*', '')  -- trim head space
+        expr = expr:gsub('\n' .. space, '\n' .. indent)
         expr = indent .. expr
     end
     return expr
@@ -471,7 +503,7 @@ function olua.format(expr, indent)
     expr = doeval(olua.trim(expr, indent))
 
     while true do
-        local s, n = string.gsub(expr, '\n[ ]+\n', '\n\n')
+        local s, n = expr:gsub('\n[ ]+\n', '\n\n')
         expr = s
         if n == 0 then
             break
@@ -479,15 +511,15 @@ function olua.format(expr, indent)
     end
 
     while true do
-        local s, n = string.gsub(expr, '\n\n\n', '\n\n')
+        local s, n = expr:gsub('\n\n\n', '\n\n')
         expr = s
         if n == 0 then
             break
         end
     end
 
-    expr = string.gsub(expr, '{\n\n', '{\n')
-    expr = string.gsub(expr, '\n\n}', '\n}')
+    expr = expr:gsub('{\n\n', '{\n')
+    expr = expr:gsub('\n\n}', '\n}')
 
     return expr
 end

@@ -10,3 +10,10 @@ headers [[
 include "../common/lua-object.lua"
 
 typeconf "example::Hello"
+typeconf "example::TestGC"
+
+typeconf '^example::TestWildcard*'
+    .exclude 'hello'
+    .luaopen [[
+        printf("test wildcard luaopen\n");
+    ]]
