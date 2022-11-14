@@ -40,6 +40,10 @@ public:
         T *ret = new T();
         return ret;
     }
+    
+    inline explicit Singleton()
+    {
+    }
 
     virtual void printSingleton() {
         printf("printSingleton: %s\n", typeid(*this).name());
