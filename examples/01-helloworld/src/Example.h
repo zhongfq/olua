@@ -10,37 +10,6 @@ using namespace std;
 
 namespace example {
 
-enum class TestWildcardClickEvent {
-    H1, H2, H3
-};
-
-enum class TestWildcardTouchEvent {
-    T1, T2, T3
-};
-
-class TestWildcardListener {
-public:
-    void test() {};
-    void hello() {};
-};
-
-template<class T> class Singleton
-{
-public:
-    static T *create() {
-        T *ret = new T();
-        return ret;
-    }
-
-    void printSingleton() {
-        printf("printSingleton: %s\n", typeid(*this).name());
-    }
-
-    template<class N> void printN(N *n) {
-
-    }
-};
-
 class ExportParent : public Object {
 public:
     void printExportParent() {
@@ -48,7 +17,7 @@ public:
     }
 };
 
-class Hello : public ExportParent, public Singleton<Hello> {
+class Hello : public ExportParent {
 public:
     Hello() {
         printf("new '%s': %p\n", typeid(*this).name(), this);

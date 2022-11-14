@@ -105,17 +105,18 @@ OLUA_API void olua_checkhostthread()
 #ifdef OLUA_HAVE_CMPREF
 OLUA_API void olua_startcmpref(lua_State *L, int idx, const char *refname)
 {
-    olua_getreftable(L, idx, refname);                      // L: t
-    lua_pushnil(L);                                         // L: t k
-    while (lua_next(L, -2)) {                               // L: t k v
-        if (olua_isa<Object>(L, -2)) {
-            auto obj = olua_toobj<Object>(L, -2);
-            lua_pushvalue(L, -2);                           // L: t k v k
-            lua_pushinteger(L, obj->getReferenceCount());   // L: t k v k refcount
-            lua_rawset(L, -5);                              // L: t k v
+    if (olua_loadref(L, idx, refname) == LUA_TTABLE) {
+        lua_pushnil(L);
+        while (lua_next(L, -2)) {
+            if (olua_isa<Object>(L, -2)) {
+                auto obj = olua_toobj<Object>(L, -2);
+                lua_pushvalue(L, -2);
+                lua_pushinteger(L, obj->getReferenceCount());
+                lua_rawset(L, -5);
+            }
+            lua_pop(L, 1);
         }
-        lua_pop(L, 1);                                      // L: t k
-    }                                                       // L: t
+    }
     lua_pop(L, 1);
 }
 
@@ -141,14 +142,14 @@ OLUA_API void olua_endcmpref(lua_State *L, int idx, const char *refname)
 #endif
 
 #ifdef OLUA_HAVE_LUATYPE
-OLUA_API void olua_registerluatype(lua_State *L, const char *type, const char *cls)
+OLUA_API void olua_registerluatype(lua_State *L, const char *cpptype, const char *cls)
 {
-    _typemap[type] = cls;
+    _typemap[cpptype] = cls;
 }
 
-OLUA_API const char *olua_getluatype(lua_State *L, const char *type)
+OLUA_API const char *olua_getluatype(lua_State *L, const char *cpptype)
 {
-    auto cls = _typemap.find(type);
+    auto cls = _typemap.find(cpptype);
     return cls != _typemap.end() ? cls->second.c_str() : nullptr;
 }
 #endif
