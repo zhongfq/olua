@@ -274,7 +274,10 @@ function typename(type, template_types, level)
 end
 
 local function is_excluded_typename(name)
+    local name2 = name:match(' ([_%w:]+[ &*]*)$')
     if exclude_types:has(name) then
+        return true
+    elseif name2 and exclude_types:has(name2) then
         return true
     elseif name:find('<') then
         return is_excluded_typename(name:gsub('<.*>', ''))
@@ -288,7 +291,7 @@ local function is_excluded_type(type)
 
     local tn = typename(type)
     local rawtn = raw_type(tn, KEEP_POINTER)
-    if is_templdate_type(rawtn) then
+    if is_templdate_type(tn) then
         for _, subtype in ipairs(type.templateArgumentTypes) do
             if is_excluded_type(subtype) then
                 return true
@@ -1872,6 +1875,10 @@ function M.__call(_, path)
     function CMD.exclude(tn)
         tn = olua.pretty_typename(tn)
         exclude_types:replace(tn, true)
+        local rawtn = tn:match('[^ ]+$')
+        if tn ~= rawtn then
+            exclude_types:replace(rawtn, true)
+        end
     end
 
     function CMD.include(filepath)
