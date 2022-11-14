@@ -147,35 +147,38 @@ end
 
 local typename
 
-local function parse_from_type(type, template_types, try_underlying)
+local function parse_from_type(type, template_types, try_underlying, level)
     local kind = type.kind
     local name = type.name
     local template_arg_types = type.templateArgumentTypes
     local decl = type.declaration
     local underlying = decl.underlyingType
     local pointee = type.pointeeType
-    if #template_arg_types > 0 and (not try_underlying or not underlying) then
+    if level and level > 4 then
+        return name
+    elseif #template_arg_types > 0 and (not try_underlying or not underlying) then
         local exps = olua.newarray('')
         local astname = parse_from_ast(type)
         exps:push(type.isConstQualified and 'const ' or nil)
         exps:push(astname)
         if is_templdate_type(name) then
+            level = (level or 0) + 1
             exps:push('<')
             for i, v in ipairs(template_arg_types) do
                 exps:push(i > 1 and ', ' or nil)
-                exps:push(typename(v, template_types))
+                exps:push(typename(v, template_types, level))
             end
             exps:push('>')
         end
         return tostring(exps)
     elseif kind == TypeKind.LValueReference then
-        return parse_from_type(pointee, template_types, try_underlying) .. ' &'
+        return parse_from_type(pointee, template_types, try_underlying, level) .. ' &'
     elseif kind == TypeKind.RValueReference then
-        return parse_from_type(pointee, template_types, try_underlying) .. ' &&'
+        return parse_from_type(pointee, template_types, try_underlying, level) .. ' &&'
     elseif kind == TypeKind.Pointer and pointee.kind == TypeKind.Pointer then
-        return parse_from_type(pointee, template_types, try_underlying) .. '*'
+        return parse_from_type(pointee, template_types, try_underlying, level) .. '*'
     elseif kind == TypeKind.Pointer then
-        return parse_from_type(pointee, template_types, try_underlying) .. ' *'
+        return parse_from_type(pointee, template_types, try_underlying, level) .. ' *'
     elseif kind == TypeKind.FunctionProto then
         local exps = olua.newarray('')
         local result_type = parse_from_type(type.resultType)
@@ -190,7 +193,7 @@ local function parse_from_type(type, template_types, try_underlying)
         return tostring(exps)
     elseif try_underlying and underlying then
         local const = name:match('^const ') or ''
-        return const .. parse_from_type(underlying, template_types)
+        return const .. parse_from_type(underlying, template_types, false, level)
     elseif template_types and template_types:has(name) then
         return template_types:get(name)
     elseif kind >= TypeKind.FirstBuiltin and kind <= TypeKind.LastBuiltin then
@@ -236,8 +239,8 @@ local function check_alias_typename(tn, underlying)
     end
 end
 
-function typename(type, template_types)
-    local tn = parse_from_type(type, template_types)
+function typename(type, template_types, level)
+    local tn = parse_from_type(type, template_types, false, level)
     local rawtn = raw_type(tn, KEEP_POINTER)
 
     if exclude_types:has(rawtn) then
@@ -260,7 +263,7 @@ function typename(type, template_types)
 
         -- try underlying_type
         local valid
-        local alias = parse_from_type(type, template_types, true)
+        local alias = parse_from_type(type, template_types, true, level)
         tn, valid = check_alias_typename(tn, alias)
         if not valid then
             alias = type.canonicalType.name
@@ -1454,6 +1457,7 @@ local function parse_modules()
             local OLUA_HOME = olua.OLUA_HOME
             flags[i] = format(v)
         end
+        print('     clang: start parse translation unit')
         clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
         for _, v in ipairs(clang_tu.diagnostics) do
             if v.severity == DiagnosticSeverity.Error
@@ -1462,7 +1466,9 @@ local function parse_modules()
                 error('parse header error')
             end
         end
+        print('     clang: start prepare cursor')
         prepare_cursor(clang_tu.cursor)
+        print('     clang: complete prepare cursor')
         os.remove(HEADER_PATH)
     end
 
