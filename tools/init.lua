@@ -3,7 +3,7 @@ package.loaded['olua'] = olua
 
 local scrpath = select(2, ...)
 local osn = package.cpath:find('?.dll') and 'windows' or
-    ((io.popen('uname'):read("*l"):find('Darwin')) and 'macosx' or 'linux')
+    ((io.popen('uname'):read("*l"):find('Darwin')) and 'macos' or 'linux')
 
 function olua.isdir(path)
     if not string.find(path, '[/\\]$') then
@@ -42,7 +42,8 @@ else
 end
 
 -- version
-olua.OLUA_HOME = olua.OLUA_HOME .. '/v4'
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v5'
+print(' olua home: ' .. olua.OLUA_HOME)
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
@@ -50,26 +51,30 @@ package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
 -- lua c search path
 local suffix = osn == 'windows' and 'dll' or 'so'
 local version = string.match(_VERSION, '%d.%d'):gsub('%.', '')
-package.cpath = string.format('%s/lib/lua%s/%s/?.%s;%s',
-    olua.OLUA_HOME, version, osn, suffix, package.cpath)
+package.cpath = string.format('%s/lua%s/?.%s;%s',
+    olua.OLUA_HOME, version, suffix, package.cpath)
 
 -- unzip lib and header
 if not olua.isdir(olua.OLUA_HOME)
-    or not olua.isdir(olua.OLUA_HOME .. '/lib')
+    or not olua.isdir(olua.OLUA_HOME .. '/lua53')
+    or not olua.isdir(olua.OLUA_HOME .. '/lua54')
     or not olua.isdir(olua.OLUA_HOME .. '/include')
 then
-    local dir = scrpath:gsub('[^/.\\]+%.lua$', '')
-    local libzip = string.format('%slib-%s.zip', dir, osn)
-    local includezip = dir .. 'include.zip'
+    local dir = scrpath:gsub('[^/.\\]+%.lua$', 'libs')
     olua.mkdir(olua.OLUA_HOME)
-    if osn == 'windows' then
-        local unzip = dir .. 'unzip.exe'
-        os.execute(unzip .. ' -f ' .. libzip .. ' -o ' .. olua.OLUA_HOME)
-        os.execute(unzip .. ' -f ' .. includezip .. ' -o ' .. olua.OLUA_HOME)
-    else
-        os.execute('unzip -o ' .. libzip .. ' -d ' .. olua.OLUA_HOME)
-        os.execute('unzip -o ' .. includezip .. ' -d ' .. olua.OLUA_HOME)
+    local function unzip(path)
+        local cmd
+        if osn == 'windows' then
+            cmd = ('%s\\unzip.exe -f %s -o %s'):format(dir, path, olua.OLUA_HOME)
+            cmd = cmd:gsub('/', '\\')
+        else
+            cmd = ('unzip -o %s -d %s'):format(path, olua.OLUA_HOME)
+        end
+        os.execute(cmd)
     end
+    unzip(('%s/%s-lua53.zip'):format(dir, osn))
+    unzip(('%s/%s-lua54.zip'):format(dir, osn))
+    unzip(dir .. '/include.zip')
 end
 
 -- error handle

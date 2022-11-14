@@ -7,4 +7,6 @@ olua is a lua binding library based on lua gc memory management mechanism, it de
 
 ## export tool
 
-The export tool is based on clang, using lua scripts, it can auto export c/c++ method and lambda function. More detail and example see https://github.com/zhongfq/cocos-lua/tree/main/tools/lua-bindings.
+The export tool is based on clang, using lua scripts, it can auto export c/c++ method and lambda function. More detail and example see:
+ * https://github.com/zhongfq/cocos-lua/tree/main/tools/lua-bindings.
+ * https://github.com/zhongfq/lua-clang

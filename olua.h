@@ -482,12 +482,6 @@ OLUA_END_DECLS
 
 #ifdef __cplusplus
 
-#ifdef _LIBCPP_BEGIN_NAMESPACE_STD
-_LIBCPP_BEGIN_NAMESPACE_STD
-void olua_api_version(); // only used for detect std lib version
-_LIBCPP_END_NAMESPACE_STD
-#endif
-
 template <class T> inline T *olua_toobj(lua_State *L, int idx);
 
 /**
