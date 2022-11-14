@@ -155,7 +155,13 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
         if not silence then
             print('try type:')
             print('    ' .. table.concat(errors.values, '\n    '))
-            olua.error("type info not found: ${cpptype}")
+            olua.error([[
+                type info not found: ${cpptype}
+                you should do one of:
+                    * if has the type convertor, use typedef '${cpptype}'
+                    * if type is pointer, use typeconf '${cpptype}'
+                    * if type is struct value, use typeconv '${cpptype}'
+            ]])
         end
         return
     end
@@ -260,6 +266,8 @@ end
 local composite_types = {
     const = true,
     struct = true,
+    enum = true,
+    union = true,
     signed = true,
     unsigned = true,
     char = true,

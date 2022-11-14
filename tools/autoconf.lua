@@ -776,12 +776,14 @@ function M:visit_class(cppcls, cur, template_types)
             then
                 goto continue
             end
+            local isConstructor = kind == CursorKind.Constructor
             if (mode == 'include' and not cls.includes:has(c.name))
                 or cls.excludes:has('*')
                 or cls.excludes:has(c.name)
                 or cls.excludes:has(c.displayName)
-                or (kind == CursorKind.Constructor and
-                    (cls.excludes:has('new') or cur.isCXXMethoAbstract))
+                or (isConstructor and (cls.excludes:has('new')))
+                or (isConstructor and cur.kind == CursorKind.ClassTemplate)
+                or (isConstructor and cur.isCXXMethoAbstract)
             then
                 goto continue
             end
