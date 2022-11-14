@@ -284,6 +284,18 @@ local function is_excluded_typename(name)
     end
 end
 
+local function get_template_type(type)
+    local kind = type.kind
+    if kind == TypeKind.LValueReference
+        or kind == TypeKind.RValueReference
+        or kind == TypeKind.Pointer
+    then
+        return get_template_type(type.pointeeType)
+    else
+        return type
+    end
+end
+
 local function is_excluded_type(type)
     if type.kind == TypeKind.IncompleteArray then
         return true
@@ -292,7 +304,7 @@ local function is_excluded_type(type)
     local tn = typename(type)
     local rawtn = raw_type(tn, KEEP_POINTER)
     if is_templdate_type(tn) then
-        for _, subtype in ipairs(type.templateArgumentTypes) do
+        for _, subtype in ipairs(get_template_type(type).templateArgumentTypes) do
             if is_excluded_type(subtype) then
                 return true
             end
