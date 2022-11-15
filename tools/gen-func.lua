@@ -459,6 +459,8 @@ function olua.gen_push_exp(arg, name, codeset)
             -- push func: olua_push_value(L, T *)
             -- T *f(), has T conv
             type_cast = not arg.type.variant and '&' or ''
+        elseif arg.type.variant and olua.is_pointer_type(arg.decltype) then
+            type_cast = '*'
         elseif arg.type.decltype ~= arg.type.cppcls then
             -- int => lua_Interge
             type_cast = format('(${arg.type.decltype})')

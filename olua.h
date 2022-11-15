@@ -813,7 +813,12 @@ int olua_push_obj(lua_State *L, const std::weak_ptr<T> *value, const char *cls)
 
 // std::string
 #define olua_is_std_string(L, i)    (olua_isstring(L, (i)))
-#define olua_push_std_string(L, v)  (lua_pushlstring(L, (v).c_str(), (v).length()), 1)
+
+static inline int olua_push_std_string(lua_State *L, const std::string &v)
+{
+    lua_pushlstring(L, v.data(), v.size());
+    return 1;
+}
 
 static inline void olua_check_std_string(lua_State *L, int idx, std::string *value)
 {
@@ -824,7 +829,12 @@ static inline void olua_check_std_string(lua_State *L, int idx, std::string *val
 
 #if __cplusplus >= 201703L
 #define olua_is_std_string_view(L, i)    (olua_isstring(L, (i)))
-#define olua_push_std_string_view(L, v)  (lua_pushlstring(L, (v).data(), (v).size()), 1)
+
+static inline int olua_push_std_string_view(lua_State *L, const std::string_view &v)
+{
+    lua_pushlstring(L, v.data(), v.size());
+    return 1;
+}
 
 static inline void olua_check_std_string_view(lua_State *L, int idx, std::string_view *value)
 {
