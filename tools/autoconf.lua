@@ -131,6 +131,9 @@ local function add_type_conv_func(cls)
 end
 
 local function trim_prefix_colon(tn)
+    if tn:find(' ::') then
+        tn = tn:gsub(' ::', ' ')
+    end
     if tn:find('^::') then
         tn = tn:gsub('^::', '')
     end
@@ -1565,7 +1568,7 @@ local function parse_modules()
         local has_alias = alias_types:has(rawtn)
         if not (has_conv or has_ti or has_alias) then
             type_not_found:pushf([[
-                => ${tn}
+                => ${rawtn}
             ]])
         end
     end
@@ -1600,6 +1603,7 @@ local function parse_modules()
                 * if has the type convertor, use typedef 'NotFoundType'
                 * if type is pointer or enum, use typeconf 'NotFoundType'
                 * if type is struct value, use typeconv 'NotFoundType'
+                * if type not want, use exclude 'NotFoundType'
         ]])
     end
 

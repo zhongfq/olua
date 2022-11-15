@@ -161,6 +161,7 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
                     * if has the type convertor, use typedef '${cpptype}'
                     * if type is pointer or enum, use typeconf '${cpptype}'
                     * if type is struct value, use typeconv '${cpptype}'
+                    * if type not want, use exclude '${cpptype}'
             ]])
         end
         return
