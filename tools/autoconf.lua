@@ -843,7 +843,11 @@ function M:visit(cur, cppcls)
     end
 end
 
-local function try_add_wildcard_type(cppcls)
+local function try_add_wildcard_type(cppcls, cur)
+    if cur.name:find('[.(/]') then
+        -- (unnamed enum at src/protobuf.pb.h:1015:3)
+        return
+    end
     for _, m in ipairs(deferred.modules) do
         if not m.class_types:has(cppcls) then
             for type, conf in pairs(m.wildcard_types) do
@@ -877,7 +881,7 @@ local function prepare_cursor(cur)
         if #children > 0 then
             add_type_cursor(cppcls, cur)
             type_cursors:push_if_not_exist(cppcls, cur)
-            try_add_wildcard_type(cppcls)
+            try_add_wildcard_type(cppcls, cur)
             for _, v in ipairs(children) do
                 prepare_cursor(v)
             end
@@ -889,7 +893,7 @@ local function prepare_cursor(cur)
         if #children > 0 then
             type_cursors:push_if_not_exist(cppcls, cur)
             type_cursors:push_if_not_exist(typename(cur.type), cur)
-            try_add_wildcard_type(cppcls)
+            try_add_wildcard_type(cppcls, cur)
         end
     end
     if kind == CursorKind.TranslationUnit then
