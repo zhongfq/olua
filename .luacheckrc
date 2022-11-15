@@ -5,6 +5,7 @@ new_globals = {
     "OLUA_AUTO_EXPORT_PARENT",
     "OLUA_ENABLE_WITH_UNDERSCORE",
     "OLUA_ENABLE_DEPRECATED",
+    "OLUA_MAX_VARIADIC_ARGS",
     "autoconf",
     "chunk",
     "clang",

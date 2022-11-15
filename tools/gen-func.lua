@@ -383,6 +383,10 @@ local function gen_func_args(cls, fi, codeset)
 
         ::continue::
     end
+
+    if fi.ret.attr.variadic then
+        codeset.caller_args:pushf('nullptr')
+    end
 end
 
 function olua.gen_push_exp(arg, name, codeset)
