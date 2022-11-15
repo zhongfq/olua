@@ -52,7 +52,7 @@ local type_convs = olua.newhash(true)
 local type_checker = olua.newhash()
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
-local deferred = {clang_args = {}, modules = olua.newarray()}
+local deferred = {clang_args = {}, modules = olua.newhash()}
 local metamethod = {
     __index = true, __newindex = true,
     __gc = true, __pairs = true, __len = true, __eq = true, __tostring = true,
@@ -1603,7 +1603,7 @@ local function parse_modules()
                 * if has the type convertor, use typedef 'NotFoundType'
                 * if type is pointer or enum, use typeconf 'NotFoundType'
                 * if type is struct value, use typeconv 'NotFoundType'
-                * if type not want, use exclude 'NotFoundType'
+                * if type not wanted, use exclude 'NotFoundType' or 'NotFoundType *'
         ]])
     end
 
@@ -2104,7 +2104,7 @@ function M.__call(_, path)
     })))()
 
     if module and module.name then
-        deferred.modules:push(module)
+        deferred.modules:push(module.name, module, "(module name)")
     end
 end
 

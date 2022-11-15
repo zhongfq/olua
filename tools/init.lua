@@ -248,9 +248,11 @@ function olua.newhash(map_only)
         return hash.map[key] ~= nil
     end
 
-    function hash:push(key, value)
+    function hash:push(key, value, message)
         checkkey(key)
-        assert(not hash.map[key], 'key conflict: ' .. key)
+        if hash.map[key] then
+            error(string.format('key conflict: %s %s', key, message or ''))
+        end
         assert(value ~= nil, 'no value')
         hash.map[key] = value
         if not map_only then
