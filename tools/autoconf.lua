@@ -36,6 +36,11 @@ if OLUA_ENABLE_WITH_UNDERSCORE == nil then
     OLUA_ENABLE_WITH_UNDERSCORE = false
 end
 
+-- max args for variadic method, this will generate overload method
+if OLUA_MAX_VARIADIC_ARGS == nil then
+    OLUA_MAX_VARIADIC_ARGS = 16
+end
+
 local format = olua.format
 local clang_tu
 
@@ -440,12 +445,11 @@ function M:parse()
 end
 
 function M:visit_method(cls, cur)
-    if cur.isVariadic
+    if has_deprecated_attr(cur)
         or cur.isCXXCopyConstructor
         or cur.isCXXMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
         or cur.name == 'as'  -- 'as used to cast object'
-        or has_deprecated_attr(cur)
         or is_excluded_type(cur.resultType)
         or has_exclude_attr(cur)
     then
@@ -469,6 +473,10 @@ function M:visit_method(cls, cur)
         end
     end
 
+    if cur.isVariadic then
+        declexps:push('@variadic ')
+    end
+
     declexps:push(attr.ret and (attr.ret .. ' ') or nil)
     declexps:push(static and 'static ' or nil)
 
@@ -490,14 +498,14 @@ function M:visit_method(cls, cur)
 
     local optional = false
     local min_args = 0
-    local num_args = 0
+    local arguments = cur.arguments
+    local num_args = #arguments
     declexps:push(fn .. '(')
     protoexps:push(fn .. '(')
-    for i, arg in ipairs(cur.arguments) do
+    for i, arg in ipairs(arguments) do
         local tn = typename(arg.type, cls.template_types)
         local display_name = cur.displayName
         local argn = 'arg' .. i
-        num_args = num_args + 1
         declexps:push(i > 1 and ', ' or nil)
         protoexps:push(i > 1 and ', ' or nil)
         protoexps:push(tn)
@@ -526,7 +534,20 @@ function M:visit_method(cls, cur)
         declexps:push(tn)
         declexps:push(olua.typespace(tn))
         declexps:push(arg.name)
+
+        if cur.isVariadic and i == num_args then
+            for vi = 1, OLUA_MAX_VARIADIC_ARGS do
+                protoexps:push(', ')
+                protoexps:push(tn)
+                declexps:push(', ')
+                declexps:push('@optional ')
+                declexps:push(tn)
+                declexps:push(olua.typespace(tn))
+                declexps:pushf("${arg.name}_variadic_${vi}")
+            end
+        end
     end
+
     declexps:push(')')
     protoexps:push(')')
 
