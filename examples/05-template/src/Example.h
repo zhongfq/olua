@@ -56,10 +56,13 @@ protected:
     int i = 0;
 };
 
-class ExportParent : public Object {
+class ExportParent : public ::example::Object {
 public:
     void printExportParent() {
         printf("printExportParent: %s\n", typeid(*this).name());
+    }
+    
+    void setObject(::example::Object *obj) {
     }
 };
 

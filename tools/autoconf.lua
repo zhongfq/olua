@@ -129,10 +129,17 @@ local function add_type_conv_func(cls)
     end
 end
 
+local function trim_prefix_colon(tn)
+    if tn:find('^::') then
+        tn = tn:gsub('^::', '')
+    end
+    return tn
+end
+
 local function parse_from_ast(type)
     local cur = type.declaration
     if cur.kind == CursorKind.NoDeclFound then
-        return type.name
+        return trim_prefix_colon(type.name)
     end
 
     local exps = olua.newarray('::')
@@ -147,14 +154,14 @@ local function parse_from_ast(type)
             break
         end
     end
-    return tostring(exps)
+    return trim_prefix_colon(tostring(exps))
 end
 
 local typename
 
 local function parse_from_type(type, template_types, try_underlying, level)
     local kind = type.kind
-    local name = type.name
+    local name = trim_prefix_colon(type.name)
     local template_arg_types = type.templateArgumentTypes
     local decl = type.declaration
     local underlying = decl.underlyingType
@@ -275,7 +282,7 @@ function typename(type, template_types, level)
             tn = check_alias_typename(tn, alias)
         end
     end
-    return tn
+    return tn:gsub('^::', '')
 end
 
 local function is_excluded_typename(name)
