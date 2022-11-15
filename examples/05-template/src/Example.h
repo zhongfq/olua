@@ -82,6 +82,15 @@ public:
         sh->printSingleton();
     }
     
+    void setBool(const std::vector<bool> &bools)
+    {
+    }
+    
+    std::vector<bool> getBool()
+    {
+        return std::vector<bool>();
+    }
+    
     Singleton<Hello> * getSingleton()
     {
         return this;

@@ -898,6 +898,15 @@ void olua_foreach_array(const Array<T, Ts...> *array, const std::function<void(T
     }
 }
 
+template <> inline
+void olua_foreach_array<bool>(const std::vector<bool> *array, const std::function<void(bool &)> &callback)
+{
+    for (auto itor : (*array)) {
+        bool v = itor;
+        callback(v);
+    }
+}
+
 #define olua_is_array(L, i)     (olua_istable(L, (i)))
 
 template <class T, template<class ...> class Array, class ...Ts>

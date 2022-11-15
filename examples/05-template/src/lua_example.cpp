@@ -308,6 +308,25 @@ static int _example_Hello_create(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_getBool(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+
+    olua_to_obj(L, 1, &self, "example.Hello");
+
+    // std::vector<bool> getBool()
+    std::vector<bool> ret = self->getBool();
+    int num_ret = olua_push_array<bool>(L, &ret, [L](bool &value) {
+        olua_push_bool(L, (bool)value);
+    });
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
 static int _example_Hello_getName(lua_State *L)
 {
     olua_startinvoke(L);
@@ -404,6 +423,26 @@ static int _example_Hello_say(lua_State *L)
     return 0;
 }
 
+static int _example_Hello_setBool(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    std::vector<bool> arg1;       /** bools */
+
+    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_check_array<bool>(L, 2, &arg1, [L](bool *value) {
+        olua_check_bool(L, -1, value);
+    });
+
+    // void setBool(const std::vector<bool> &bools)
+    self->setBool(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_setName(lua_State *L)
 {
     olua_startinvoke(L);
@@ -447,14 +486,17 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "__olua_move", _example_Hello___olua_move);
     oluacls_func(L, "as", _example_Hello_as);
     oluacls_func(L, "create", _example_Hello_create);
+    oluacls_func(L, "getBool", _example_Hello_getBool);
     oluacls_func(L, "getName", _example_Hello_getName);
     oluacls_func(L, "getSingleton", _example_Hello_getSingleton);
     oluacls_func(L, "new", _example_Hello_new);
     oluacls_func(L, "onClick", _example_Hello_onClick);
     oluacls_func(L, "printSingleton", _example_Hello_printSingleton);
     oluacls_func(L, "say", _example_Hello_say);
+    oluacls_func(L, "setBool", _example_Hello_setBool);
     oluacls_func(L, "setName", _example_Hello_setName);
     oluacls_func(L, "setSingleton", _example_Hello_setSingleton);
+    oluacls_prop(L, "bool", _example_Hello_getBool, _example_Hello_setBool);
     oluacls_prop(L, "name", _example_Hello_getName, _example_Hello_setName);
     oluacls_prop(L, "singleton", _example_Hello_getSingleton, _example_Hello_setSingleton);
 
