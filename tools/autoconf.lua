@@ -49,6 +49,7 @@ local exclude_types = olua.newhash(true)
 local visited_types = olua.newhash(true)
 local alias_types = olua.newhash(true)
 local type_convs = olua.newhash(true)
+local type_checker = olua.newhash()
 local module_files = olua.newarray()
 local logfile = io.open('autobuild/autoconf.log', 'w')
 local deferred = {clang_args = {}, modules = olua.newarray()}
@@ -97,11 +98,11 @@ local function raw_type(cppcls, keep_pointer)
     if keep_pointer and cppcls:find('%*$') then
         return cppcls:gsub('<.*>', '')
     elseif cppcls:find('^struct ') then
-        return cppcls:match('^struct [^< ]+')
+        return cppcls:match('^struct [^< %[]+')
     elseif cppcls:find('^enum ') then
-        return cppcls:match('^enum [^< ]+')
+        return cppcls:match('^enum [^< %[]+')
     else
-        return cppcls:match('[^< ]+')
+        return cppcls:match('[^< %[]+')
     end
 end
 
@@ -159,7 +160,7 @@ end
 
 local typename
 
-local function parse_from_type(type, template_types, try_underlying, level)
+local function parse_from_type(type, template_types, try_underlying, level, willcheck)
     local kind = type.kind
     local name = trim_prefix_colon(type.name)
     local template_arg_types = type.templateArgumentTypes
@@ -178,7 +179,7 @@ local function parse_from_type(type, template_types, try_underlying, level)
             exps:push('<')
             for i, v in ipairs(template_arg_types) do
                 exps:push(i > 1 and ', ' or nil)
-                exps:push(typename(v, template_types, level))
+                exps:push(typename(v, template_types, level, willcheck))
             end
             exps:push('>')
         end
@@ -193,13 +194,13 @@ local function parse_from_type(type, template_types, try_underlying, level)
         return parse_from_type(pointee, template_types, try_underlying, level) .. ' *'
     elseif kind == TypeKind.FunctionProto then
         local exps = olua.newarray('')
-        local result_type = parse_from_type(type.resultType)
+        local result_type = typename(type.resultType, template_types, level, willcheck)
         exps:push(result_type)
         exps:push(result_type:find('[%*&]') and '' or ' ')
         exps:push('(')
         for i, v in ipairs(type.argTypes) do
             exps:push(i > 1 and ', ' or nil)
-            exps:push(parse_from_type(v))
+            exps:push(typename(v, template_types, level, willcheck))
         end
         exps:push(')')
         return tostring(exps)
@@ -251,8 +252,8 @@ local function check_alias_typename(tn, underlying)
     end
 end
 
-function typename(type, template_types, level)
-    local tn = parse_from_type(type, template_types, false, level)
+function typename(type, template_types, level, willcheck)
+    local tn = parse_from_type(type, template_types, false, level, willcheck)
     local rawtn = raw_type(tn, KEEP_POINTER)
 
     if exclude_types:has(rawtn) then
@@ -275,14 +276,19 @@ function typename(type, template_types, level)
 
         -- try underlying_type
         local valid
-        local alias = parse_from_type(type, template_types, true, level)
+        local alias = parse_from_type(type, template_types, true, level, willcheck)
         tn, valid = check_alias_typename(tn, alias)
         if not valid then
-            alias = type.canonicalType.name
+            alias = trim_prefix_colon(type.canonicalType.name)
             tn = check_alias_typename(tn, alias)
         end
     end
-    return tn:gsub('^::', '')
+
+    if willcheck then
+        type_checker:push_if_not_exist(tn, tn)
+    end
+
+    return tn
 end
 
 local function is_excluded_typename(name)
@@ -424,29 +430,8 @@ function M:parse()
     -- scan method, variable, enum, const value
     for _, cls in ipairs(self.class_types:clone()) do
         local cur = type_cursors:get(cls.cppcls)
-        olua.assert(cur, [[
-            cursor not found for class '${cls.cppcls}'
-        ]])
-        self:visit(cur, cls.cppcls)
-    end
-
-    -- check class
-    for _, cls in ipairs(self.class_types) do
-        if not visited_types:has(cls.cppcls) then
-            olua.error([[
-                class not found: ${cls.cppcls}
-                    * add include header file in your config file or check the class name
-            ]])
-        end
-        for _, supercls in ipairs(cls.supers) do
-            if not visited_types:has(supercls) then
-                olua.error([[
-                    super class not configured: ${cls.cppcls} -> ${supercls}
-                    you should do one of:
-                        * add in config file: typeconf '${supercls}'
-                        * set in build file: OLUA_AUTO_EXPORT_PARENT = true
-                ]])
-            end
+        if cur then
+            self:visit(cur, cls.cppcls)
         end
     end
 end
@@ -490,7 +475,7 @@ function M:visit_method(cls, cur)
     local cb_kind
 
     if cur.kind ~= CursorKind.Constructor then
-        local tn = typename(cur.resultType, cls.template_types)
+        local tn = typename(cur.resultType, cls.template_types, nil, true)
         if is_func_type(cur.resultType) then
             cb_kind = 'ret'
             if callback.localvar ~= false then
@@ -510,7 +495,7 @@ function M:visit_method(cls, cur)
     declexps:push(fn .. '(')
     protoexps:push(fn .. '(')
     for i, arg in ipairs(arguments) do
-        local tn = typename(arg.type, cls.template_types)
+        local tn = typename(arg.type, cls.template_types, nil, true)
         local display_name = cur.displayName
         local argn = 'arg' .. i
         declexps:push(i > 1 and ', ' or nil)
@@ -606,7 +591,7 @@ function M:visit_var(cls, cur)
 
     local exps = olua.newarray('')
     local attr = get_attr_copy(cls, cur.name, 'var*')
-    local tn = typename(cur.type, cls.template_types)
+    local tn = typename(cur.type, cls.template_types, nil, true)
     local cb_kind
 
     if tn:find('%[') then
@@ -693,6 +678,7 @@ function M:visit_class(cppcls, cur, template_types)
     cls.kind = cls.kind or kFLAG_POINTEE
 
     if cur.kind == CursorKind.ClassTemplate then
+        type_convs:push_if_not_exist(cppcls:gsub('<.*>', ''), cppcls)
         olua.assert(template_types, [[
             don't config template class:
                 you should remove: typeconf '${cls.cppcls}'
@@ -1453,70 +1439,72 @@ local function write_module(module)
     olua.write(module.class_file, tostring(t))
 end
 
-local function parse_modules()
+local function do_parse_headers()
     local headers = olua.newarray('\n')
     for _, m in ipairs(deferred.modules) do
         headers:push(m.headers)
     end
 
-    do
-        local HEADER_PATH = 'autobuild/.autoconf.h'
-        local header = io.open(HEADER_PATH, 'w')
-        header:write(format [[
-            #ifndef __AUTOCONF_H__
-            #define __AUTOCONF_H__
+    local HEADER_PATH = 'autobuild/.autoconf.h'
+    local header = io.open(HEADER_PATH, 'w')
+    header:write(format [[
+        #ifndef __AUTOCONF_H__
+        #define __AUTOCONF_H__
 
-            ${headers}
+        ${headers}
 
-            #endif
-        ]])
-        header:close()
-        local has_target = false
-        local has_stdv = false
-        local flags = olua.newarray()
-        flags:push('-DOLUA_AUTOCONF')
-        for i, v in ipairs(deferred.clang_args) do
-            flags[#flags + 1] = v
-            if v:find('^-target') then
-                has_target = true
-            end
-            if v:find('^-std') then
-                has_stdv = true
-            end
+        #endif
+    ]])
+    header:close()
+    local has_target = false
+    local has_stdv = false
+    local flags = olua.newarray()
+    flags:push('-DOLUA_AUTOCONF')
+    for i, v in ipairs(deferred.clang_args) do
+        flags[#flags + 1] = v
+        if v:find('^-target') then
+            has_target = true
         end
-        if not has_stdv then
-            flags:push('-std=c++11')
+        if v:find('^-std') then
+            has_stdv = true
         end
-        if not has_target then
-            flags:merge({
-                '-x', 'c++', '-nostdinc',
-                '-U__SSE__',
-                '-DANDROID',
-                '-target', 'armv7-none-linux-androideabi',
-                '-idirafter', '${OLUA_HOME}/include/c++',
-                '-idirafter', '${OLUA_HOME}/include/c',
-                '-idirafter', '${OLUA_HOME}/include/android-sysroot/x86_64-linux-android',
-                '-idirafter', '${OLUA_HOME}/include/android-sysroot',
-            })
-        end
-        for i, v in ipairs(flags) do
-            local OLUA_HOME = olua.OLUA_HOME
-            flags[i] = format(v)
-        end
-        print('     clang: start parse translation unit')
-        clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
-        for _, v in ipairs(clang_tu.diagnostics) do
-            if v.severity == DiagnosticSeverity.Error
-                or v.severity == DiagnosticSeverity.Fatal
-            then
-                error('parse header error')
-            end
-        end
-        print('     clang: start prepare cursor')
-        prepare_cursor(clang_tu.cursor)
-        print('     clang: complete prepare cursor')
-        os.remove(HEADER_PATH)
     end
+    if not has_stdv then
+        flags:push('-std=c++11')
+    end
+    if not has_target then
+        flags:merge({
+            '-x', 'c++', '-nostdinc',
+            '-U__SSE__',
+            '-DANDROID',
+            '-target', 'armv7-none-linux-androideabi',
+            '-idirafter', '${OLUA_HOME}/include/c++',
+            '-idirafter', '${OLUA_HOME}/include/c',
+            '-idirafter', '${OLUA_HOME}/include/android-sysroot/x86_64-linux-android',
+            '-idirafter', '${OLUA_HOME}/include/android-sysroot',
+        })
+    end
+    for i, v in ipairs(flags) do
+        local OLUA_HOME = olua.OLUA_HOME
+        flags[i] = format(v)
+    end
+    print('     clang: start parse translation unit')
+    clang_tu = clang.createIndex(false, true):parse(HEADER_PATH, flags)
+    for _, v in ipairs(clang_tu.diagnostics) do
+        if v.severity == DiagnosticSeverity.Error
+            or v.severity == DiagnosticSeverity.Fatal
+        then
+            error('parse header error')
+        end
+    end
+    print('     clang: start prepare cursor')
+    prepare_cursor(clang_tu.cursor)
+    print('     clang: complete prepare cursor')
+    os.remove(HEADER_PATH)
+end
+
+local function parse_modules()
+    do_parse_headers()
 
     for _, m in ipairs(deferred.modules) do
         for _, cls in ipairs(m.typedef_types) do
@@ -1544,6 +1532,83 @@ local function parse_modules()
         end
         setmetatable(m, {__index = M})
         m:parse()
+    end
+
+    local class_not_found = olua.newarray()
+    local supercls_not_found = olua.newarray()
+    local type_not_found = olua.newarray()
+
+    -- check class and super class
+    for _, m in ipairs(deferred.modules) do
+        for _, cls in ipairs(m.class_types) do
+            if not visited_types:has(cls.cppcls) then
+                class_not_found:pushf([[
+                    => ${cls.cppcls}
+                ]])
+            end
+            for _, supercls in ipairs(cls.supers) do
+                if not visited_types:has(supercls) then
+                    supercls_not_found:pushf([[
+                        => ${cls.cppcls} -> ${supercls}
+                    ]])
+                end
+            end
+        end
+    end
+
+    -- check type info
+    table.sort(type_checker.values)
+    for _, tn in ipairs(type_checker) do
+        local rawtn = raw_type(tn)
+        local has_conv = type_convs:has(rawtn)
+        local has_ti = olua.typeinfo(rawtn, nil, true)
+        local has_alias = alias_types:has(rawtn)
+        if not (has_conv or has_ti or has_alias) then
+            type_not_found:pushf([[
+                => ${tn}
+            ]])
+        end
+    end
+
+    if #class_not_found > 0 then
+        olua.print('')
+        olua.print([[
+            class not configured:
+                ${class_not_found}
+            you should do:
+                * add include header file in your config file or check the class name
+        ]])
+    end
+
+    if #supercls_not_found > 0 then
+        olua.print('')
+        olua.print([[
+            super class not configured:
+                ${supercls_not_found}
+            you should do one of:
+                * add in config file: typeconf 'MissedSuperClass'
+                * set in build file: OLUA_AUTO_EXPORT_PARENT = true
+        ]])
+    end
+
+    if #type_not_found > 0 then
+        olua.print('')
+        olua.print([[
+            type info not found:
+                ${type_not_found}
+            you should do one of:
+                * if has the type convertor, use typedef 'NotFoundType'
+                * if type is pointer or enum, use typeconf 'NotFoundType'
+                * if type is struct value, use typeconv 'NotFoundType'
+        ]])
+    end
+
+    if #class_not_found > 0 or #supercls_not_found > 0 or #type_not_found > 0 then
+        olua.print('')
+        error('You should fix above errors!')
+    end
+
+    for _, m in ipairs(deferred.modules) do
         write_module(m)
     end
 end

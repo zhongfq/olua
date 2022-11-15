@@ -159,7 +159,7 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
                 type info not found: ${cpptype}
                 you should do one of:
                     * if has the type convertor, use typedef '${cpptype}'
-                    * if type is pointer, use typeconf '${cpptype}'
+                    * if type is pointer or enum, use typeconf '${cpptype}'
                     * if type is struct value, use typeconv '${cpptype}'
             ]])
         end
