@@ -219,12 +219,31 @@ static int _example_ExportParent_printExportParent(lua_State *L)
     return 0;
 }
 
+static int _example_ExportParent_setObject(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::ExportParent *self = nullptr;
+    example::Object *arg1 = nullptr;       /** obj */
+
+    olua_to_obj(L, 1, &self, "example.ExportParent");
+    olua_check_obj(L, 2, &arg1, "example.Object");
+
+    // void setObject(example::Object *obj)
+    self->setObject(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
     oluacls_class(L, "example.ExportParent", "example.Object");
     oluacls_func(L, "__olua_move", _example_ExportParent___olua_move);
     oluacls_func(L, "printExportParent", _example_ExportParent_printExportParent);
+    oluacls_func(L, "setObject", _example_ExportParent_setObject);
 
     olua_registerluatype<example::ExportParent>(L, "example.ExportParent");
 
