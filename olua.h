@@ -54,10 +54,12 @@ OLUA_BEGIN_DECLS
 #include <assert.h>
 #include <math.h>
 
+#ifndef olua_assert
 #ifdef OLUA_DEBUG
 #define olua_assert(e, msg) assert((e) && (msg))
 #else
 #define olua_assert(e, msg) ((void)0)
+#endif
 #endif
 
 #define olua_noapi(api) static_assert(false, #api" is not defined")
@@ -85,6 +87,7 @@ OLUA_BEGIN_DECLS
 // olua config file: https://codetypes.com/posts/c505b168/
 #ifdef OLUA_AUTOCONF
 #define OLUA_EXCLUDE        __attribute__((annotate("@exclude")))
+#define OLUA_NAME(name)     __attribute__((annotate("@name("#name")")))
 #define OLUA_ADDREF(...)    __attribute__((annotate("@addref("#__VA_ARGS__")")))
 #define OLUA_DEFREF(...)    __attribute__((annotate("@delref("#__VA_ARGS__")")))
 #define OLUA_PACK           __attribute__((annotate("@pack")))
@@ -97,6 +100,7 @@ OLUA_BEGIN_DECLS
 #define OLUA_RET            __attribute__((annotate("@ret")))
 #else
 #define OLUA_EXCLUDE
+#define OLUA_NAME(name)
 #define OLUA_ADDREF(...)
 #define OLUA_DEFREF(...)
 #define OLUA_PACK

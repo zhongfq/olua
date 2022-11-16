@@ -529,7 +529,7 @@ OLUA_API const char *olua_setcallback(lua_State *L, void *obj, int func, const c
     luaL_checktype(L, func, LUA_TFUNCTION);
     
     if (!olua_getrawobj(L, obj)) {
-        luaL_error(L, "obj userdata not found");
+        luaL_error(L, "obj userdata not found, it maybe in the obj pool!");
     }
     
     aux_getusertable(L, -1);

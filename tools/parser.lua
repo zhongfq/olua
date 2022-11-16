@@ -275,6 +275,7 @@ local composite_types = {
     short = true,
     int = true,
     long = true,
+    double = true,
 }
 
 local function parse_type(str)

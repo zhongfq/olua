@@ -9,6 +9,7 @@ set(source
     Object.cpp
     olua-custom.h
     olua-custom.cpp
+    ../../olua-types.h
     ../../olua.h
     ../../olua.c
 )

@@ -295,11 +295,29 @@ static int _example_Hello_as(lua_State *L)
     return 1;
 }
 
+static int _example_Hello_checkValue(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    int32_t *arg1 = nullptr;       /** t */
+
+    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_check_pointer(L, 2, &arg1, "olua.int32_t");
+
+    // void checkValue(int32_t *t)
+    self->checkValue(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_create(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @copyfrom(example::Singleton<example::Hello>) static example::Hello *create()
+    // @copyfrom(example::Singleton) static example::Hello *create()
     example::Hello *ret = example::Hello::create();
     int num_ret = olua_push_obj(L, ret, "example.Hello");
 
@@ -399,7 +417,7 @@ static int _example_Hello_printSingleton(lua_State *L)
 
     olua_to_obj(L, 1, &self, "example.Hello");
 
-    // @copyfrom(example::Singleton<example::Hello>) void printSingleton()
+    // @copyfrom(example::Singleton) void printSingleton()
     self->printSingleton();
 
     olua_endinvoke(L);
@@ -485,6 +503,7 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_class(L, "example.Hello", "example.ExportParent");
     oluacls_func(L, "__olua_move", _example_Hello___olua_move);
     oluacls_func(L, "as", _example_Hello_as);
+    oluacls_func(L, "checkValue", _example_Hello_checkValue);
     oluacls_func(L, "create", _example_Hello_create);
     oluacls_func(L, "getBool", _example_Hello_getBool);
     oluacls_func(L, "getName", _example_Hello_getName);

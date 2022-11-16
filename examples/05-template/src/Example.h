@@ -86,6 +86,10 @@ public:
     {
     }
     
+    void checkValue(int32_t *t) {
+        *t = 110;
+    }
+    
     std::vector<bool> getBool()
     {
         return std::vector<bool>();

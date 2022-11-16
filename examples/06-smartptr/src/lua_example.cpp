@@ -222,7 +222,7 @@ static int _example_Hello_shared_from_this(lua_State *L)
 
     olua_to_obj(L, 1, &self, "example.Hello");
 
-    // @copyfrom(std::enable_shared_from_this<example::Hello>) std::shared_ptr<example::Hello> shared_from_this()
+    // @copyfrom(std::enable_shared_from_this) std::shared_ptr<example::Hello> shared_from_this()
     std::shared_ptr<example::Hello> ret = self->shared_from_this();
     int num_ret = olua_push_obj(L, &ret, "example.Hello");
 
@@ -253,54 +253,11 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _std_enable_shared_from_this_example_Hello___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (std::enable_shared_from_this<example::Hello> *)olua_toobj(L, 1, "std.enable_shared_from_this<example.Hello>");
-    olua_push_obj(L, self, "std.enable_shared_from_this<example.Hello>");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
-static int _std_enable_shared_from_this_example_Hello_shared_from_this(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    std::enable_shared_from_this<example::Hello> *self = nullptr;
-
-    olua_to_obj(L, 1, &self, "std.enable_shared_from_this<example.Hello>");
-
-    // std::shared_ptr<example::Hello> shared_from_this()
-    std::shared_ptr<example::Hello> ret = self->shared_from_this();
-    int num_ret = olua_push_obj(L, &ret, "example.Hello");
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_std_enable_shared_from_this_example_Hello(lua_State *L)
-{
-    oluacls_class(L, "std.enable_shared_from_this<example.Hello>", nullptr);
-    oluacls_func(L, "__olua_move", _std_enable_shared_from_this_example_Hello___olua_move);
-    oluacls_func(L, "shared_from_this", _std_enable_shared_from_this_example_Hello_shared_from_this);
-
-    olua_registerluatype<std::enable_shared_from_this<example::Hello>>(L, "std.enable_shared_from_this<example.Hello>");
-
-    return 1;
-}
-OLUA_END_DECLS
-
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example(lua_State *L)
 {
     olua_require(L, "example.Object", luaopen_example_Object);
     olua_require(L, "example.Hello", luaopen_example_Hello);
-    olua_require(L, "std.enable_shared_from_this<example.Hello>", luaopen_std_enable_shared_from_this_example_Hello);
 
     return 0;
 }

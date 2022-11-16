@@ -5,6 +5,8 @@ set(source
     src/Example.cpp
     src/lua_example.h
     src/lua_example.cpp
+    src/lua_types.h
+    src/lua_types.cpp
     src/main.cpp
 )
 

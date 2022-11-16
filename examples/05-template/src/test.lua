@@ -33,3 +33,20 @@ print('GC', test:as('example.GC'))
 
 util.dumpUserValue(test)
 util.dumpUserValue(test:as('example.GC'))
+
+
+local int32_t = require "olua.int32_t"
+
+local v = int32_t.new(10)
+print('#1', v, v.length, v.value)
+
+sg:checkValue(v)
+
+print(v[1])
+v[1] = 20
+print(v[1])
+
+local arr = int32_t.array(10)
+print(arr[9])
+arr[9] = 90
+print(arr[9])

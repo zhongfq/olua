@@ -70,6 +70,7 @@ local kFLAG_CONV = 1 << 4        -- conv type
 local kFLAG_FUNC = 1 << 5        -- function type
 local kFLAG_STRUCT = 1 << 6      -- struct type
 local kFLAG_TEMPLATE = 1 << 7    -- template type
+local kFLAG_SKIP = 1 << 8        -- don't export
 
 local KEEP_POINTER = true
 
@@ -166,6 +167,7 @@ local typename
 local function parse_from_type(type, template_types, try_underlying, level, willcheck)
     local kind = type.kind
     local name = trim_prefix_colon(type.name)
+    local rawname = raw_type(name)
     local template_arg_types = type.templateArgumentTypes
     local decl = type.declaration
     local underlying = decl.underlyingType
@@ -210,8 +212,12 @@ local function parse_from_type(type, template_types, try_underlying, level, will
     elseif try_underlying and underlying then
         local const = name:match('^const ') or ''
         return const .. parse_from_type(underlying, template_types, false, level)
-    elseif template_types and template_types:has(name) then
-        return template_types:get(name)
+    elseif template_types and template_types:has(rawname) then
+        --[[
+            kind: Unexposed
+            name: const T
+        ]]
+        return name:gsub('[^ ]+$', template_types:get(rawname))
     elseif kind >= TypeKind.FirstBuiltin and kind <= TypeKind.LastBuiltin then
         return name
     elseif kind == TypeKind.Typedef or kind == TypeKind.Unexposed then
@@ -491,6 +497,11 @@ function M:visit_method(cls, cur)
         luaname = cls.luaname(fn, 'func')
     end
 
+    local name_from_attr = string.match(attr.ret or '', '@name%(([^)]+)%)')
+    if name_from_attr then
+        luaname = name_from_attr
+    end
+
     local optional = false
     local min_args = 0
     local arguments = cur.arguments
@@ -557,7 +568,7 @@ function M:visit_method(cls, cur)
     end
     if decl:find('@getter') then
         if num_args == 0 then
-            cls.props:push(fn, {
+            cls.props:push(luaname, {
                 name = fn,
                 get = decl,
             })
@@ -838,7 +849,25 @@ function M:visit(cur, cppcls)
         if is_func_type(underlying) then
             self:visit_alias_class(cppcls, underlying)
         else
-            self:visit(cur.underlyingType.declaration, cppcls)
+            local decl = cur.underlyingType.declaration
+            local specialized = decl.specializedTemplate
+            if specialized then
+                local arg_types = {}
+                for i, v in ipairs(cur.type.templateArgumentTypes) do
+                    arg_types[i] = parse_from_type(v)
+                end
+                local specializedcls = parse_from_type(cur.underlyingType)
+                self:visit_class(cppcls, specialized, arg_types)
+                type_convs:push_if_not_exist(raw_type(specializedcls), true)
+
+                local typedef = self.CMD.typedef
+                typedef(specializedcls .. ' *')
+                    .decltype(cppcls .. ' *')
+                    .luacls(self.luacls(cppcls))
+                    .conv('olua_$$_obj')
+            else
+                self:visit(decl, cppcls)
+            end
         end
     end
 end
@@ -1320,47 +1349,6 @@ local function write_cls_alias(module, cls, append)
     end
 end
 
-local function copy_super_funcs(cls, super)
-    for _, func in ipairs(super.funcs) do
-        if func.name == '__gc' then
-            goto continue
-        end
-        if func.snippet then
-            if not cls.funcs:has(func.name) and not cls.excludes:has(func.name) then
-                cls.funcs:push(func.name, setmetatable({}, {__index = func}))
-            end
-        else
-            if not cls.funcs:has(func.prototype)
-                and not func.isctor
-                and not cls.excludes:has(func.display_name)
-            then
-                cls.funcs:push(func.prototype, setmetatable({
-                    decl = format("@copyfrom(${super.cppcls}) ${func.decl}")
-                }, {__index = func}))
-            end
-        end
-        ::continue::
-    end
-    for _, sc in ipairs(super.supers) do
-        copy_super_funcs(cls, visited_types:get(sc))
-    end
-end
-
-local function copy_super_var(cls, super)
-    for _, var in ipairs(super.vars) do
-        if not cls.vars:has(var.name)
-            and not cls.excludes:has(var.name)
-        then
-            cls.vars:push(var.name, setmetatable({
-                snippet = format("@copyfrom(${super.cppcls}) ${var.snippet}")
-            }, {__index = var}))
-        end
-    end
-    for _, sc in ipairs(super.supers) do
-        copy_super_var(cls, visited_types:get(sc))
-    end
-end
-
 local function write_module_classes(module, append)
     append('')
     for _, cls in ipairs(module.class_types) do
@@ -1381,19 +1369,9 @@ local function write_module_classes(module, append)
         end
     end
     for _, cls in ipairs(module.class_types) do
-        for _, supercls in ipairs(cls.supers) do
-            if cls.supercls == supercls then
-                goto continue
-            end
-            local super = visited_types:get(supercls)
-            copy_super_funcs(cls, super)
-            copy_super_var(cls, super)
-            ::continue::
-        end
-    end
-    for _, cls in ipairs(module.class_types) do
         if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
             or has_kflag(cls, kFLAG_ALIAS)
+            or has_kflag(cls, kFLAG_SKIP)
             or cls.maincls
         then
             goto continue
@@ -1510,37 +1488,56 @@ local function do_parse_headers()
     os.remove(HEADER_PATH)
 end
 
-local function parse_modules()
-    do_parse_headers()
-
-    for _, m in ipairs(deferred.modules) do
-        for _, cls in ipairs(m.typedef_types) do
-            add_type_conv_func(cls)
-        end
-        for _, cls in ipairs(m.class_types) do
-            add_type_conv_func(cls)
+local function copy_super_funcs(cls, super)
+    local rawsuper = raw_type(super.cppcls)
+    for _, prop in ipairs(super.props) do
+        if not cls.excludes:has(prop.name) and not cls.props:has(prop.name) then
+            local get = prop.get
+            local set = prop.set
+            if get and not get:find('{') then
+                get = format('@copyfrom(${rawsuper}) ${get}')
+            end
+            if set and not set:find('{') then
+                set = format('@copyfrom(${rawsuper}) ${set}')
+            end
+            cls.props:push(prop.name, {name = prop.name, get = get, set = set})
         end
     end
-
-    for _, m in ipairs(deferred.modules) do
-        for _, cls in ipairs(m.class_types) do
-            for fn, func in pairs(cls.funcs) do
-                if not func.snippet then
-                    cls.funcs:take(fn)
-                    cls.excludes:take(fn)
-                end
+    for _, var in ipairs(super.vars) do
+        if not cls.vars:has(var.name)
+            and not cls.excludes:has(var.name)
+        then
+            cls.vars:push(var.name, setmetatable({
+                snippet = format("@copyfrom(${rawsuper}) ${var.snippet}")
+            }, {__index = var}))
+        end
+    end
+    for _, func in ipairs(super.funcs) do
+        if func.name == '__gc' then
+            goto continue
+        end
+        if func.snippet then
+            if not cls.funcs:has(func.name) and not cls.excludes:has(func.name) then
+                cls.funcs:push(func.name, setmetatable({}, {__index = func}))
             end
-            for vn, vi in pairs(cls.vars) do
-                if not vi.snippet then
-                    cls.vars:take(vn)
-                    cls.excludes:take(vn)
-                end
+        else
+            if not cls.funcs:has(func.prototype)
+                and not func.isctor
+                and not cls.excludes:has(func.display_name)
+            then
+                cls.funcs:push(func.prototype, setmetatable({
+                    decl = format("@copyfrom(${rawsuper}) ${func.decl}")
+                }, {__index = func}))
             end
         end
-        setmetatable(m, {__index = M})
-        m:parse()
+        ::continue::
     end
+    for _, sc in ipairs(super.supers) do
+        copy_super_funcs(cls, visited_types:get(sc))
+    end
+end
 
+local function check_errors()
     local class_not_found = olua.newarray()
     local supercls_not_found = olua.newarray()
     local type_not_found = olua.newarray()
@@ -1572,7 +1569,7 @@ local function parse_modules()
         local has_alias = alias_types:has(rawtn)
         if not (has_conv or has_ti or has_alias) then
             type_not_found:pushf([[
-                => ${rawtn}
+                => ${rawtn} : ${tn}
             ]])
         end
     end
@@ -1614,6 +1611,58 @@ local function parse_modules()
     if #class_not_found > 0 or #supercls_not_found > 0 or #type_not_found > 0 then
         olua.print('')
         error('You should fix above errors!')
+    end
+end
+
+local function parse_modules()
+    do_parse_headers()
+
+    for _, m in ipairs(deferred.modules) do
+        for _, cls in ipairs(m.typedef_types) do
+            add_type_conv_func(cls)
+        end
+        for _, cls in ipairs(m.class_types) do
+            add_type_conv_func(cls)
+        end
+    end
+
+    for _, m in ipairs(deferred.modules) do
+        for _, cls in ipairs(m.class_types) do
+            for fn, func in pairs(cls.funcs) do
+                if not func.snippet then
+                    cls.funcs:take(fn)
+                    cls.excludes:take(fn)
+                end
+            end
+            for vn, vi in pairs(cls.vars) do
+                if not vi.snippet then
+                    cls.vars:take(vn)
+                    cls.excludes:take(vn)
+                end
+            end
+        end
+        setmetatable(m, {__index = M})
+        m:parse()
+    end
+
+    check_errors()
+
+    for _, m in ipairs(deferred.modules) do
+        for _, cls in ipairs(m.class_types) do
+            for _, supercls in ipairs(cls.supers) do
+                if cls.supercls == supercls then
+                    goto continue
+                end
+                local super = visited_types:get(supercls)
+                copy_super_funcs(cls, super)
+                if #cls.supers == 1 and is_templdate_type(super.cppcls) then
+                    -- see find 'find_as_cls'
+                    -- no 'as' func, no need to export
+                    super.kind = super.kind | kFLAG_SKIP
+                end
+                ::continue::
+            end
+        end
     end
 
     for _, m in ipairs(deferred.modules) do
@@ -1944,6 +1993,7 @@ local function make_typedef_command(cls)
     add_value_command(CMD, 'vars', cls, 'num_vars', tonum)
     add_value_command(CMD, 'decltype', cls)
     add_value_command(CMD, 'conv', cls)
+    add_value_command(CMD, 'luacls', cls)
     return olua.command_proxy(CMD)
 end
 

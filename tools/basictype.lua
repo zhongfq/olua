@@ -89,6 +89,7 @@ typedef {
     cppcls = [[
         float
         double
+        long double
         GLfloat
         lua_Number
     ]],
@@ -107,6 +108,7 @@ typedef {
         int16_t
         int32_t
         int64_t
+        time_t
         std::int8_t
         std::int16_t
         std::int32_t
