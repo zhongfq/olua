@@ -11,6 +11,8 @@ new_globals = {
     "clang",
     "dofile",
     "exclude",
+    "excludeany",
+    "excludetype",
     "export",
     "headers",
     "include",

@@ -2038,13 +2038,17 @@ function M.__call(_, path)
     add_value_command(CMD, 'chunk', module)
     add_value_command(CMD, 'luacls', module, nil, checkfunc)
 
-    function CMD.exclude(tn)
+    function CMD.excludeany(tn)
+        if tn:find('%*') then
+            olua.error([['${tn}' is not valid name, remove asterisk '*']])
+        end
+        CMD.excludetype(tn)
+        CMD.excludetype(tn .. ' *')
+    end
+
+    function CMD.excludetype(tn)
         tn = olua.pretty_typename(tn)
         exclude_types:replace(tn, true)
-        local rawtn = tn:match('[^ ]+$')
-        if tn ~= rawtn then
-            exclude_types:replace(rawtn, true)
-        end
     end
 
     function CMD.include(filepath)
@@ -2092,13 +2096,26 @@ function M.__call(_, path)
                 if kind == kFLAG_CONV then
                     cls = last
                 end
-                if not cls.kind then
-                    cls.kind = kFLAG_POINTEE
-                end
+                cls.kind = cls.kind or kFLAG_POINTEE
                 cls.kind = cls.kind | kFLAG_CONV
                 module.class_types:take(classname)
             end
         end
+        if has_kflag(cls, kFLAG_POINTEE) and exclude_types:has(cls.cppcls .. ' *') then
+            olua.error([[
+                typeconf '${cls.cppcls}' will not configured
+                you should do one of:
+                    * remove excludeany '${cls.cppcls}'
+                    * remove excludetype '${cls.cppcls} *'
+            ]])
+        end
+        if has_kflag(cls, kFLAG_CONV) and exclude_types:has(cls.cppcls) then
+            olua.error([[
+                typeconv '${cls.cppcls}' will not configured
+                you should do one of:
+                    * remove excludeany '${cls.cppcls}'
+                    * remove excludetype '${cls.cppcls}'
+            ]])        end
         if classname:find('[%^%%%$%*%+]') then -- ^%$*+
             module.wildcard_types:push(classname, cls)
         else
