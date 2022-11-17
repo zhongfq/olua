@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 
 set(source
     src/Example.h
@@ -15,6 +15,10 @@ target_link_libraries(template common)
 target_compile_definitions(template
   PUBLIC
     LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
+)
+add_custom_command(TARGET template POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:template> $<TARGET_FILE_DIR:template>
+  COMMAND_EXPAND_LISTS
 )
 add_test(NAME test_template COMMAND template)
 

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 
 set(source
     src/Example.h
@@ -13,6 +13,10 @@ target_link_libraries(convertor common)
 target_compile_definitions(convertor
   PUBLIC
     LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
+)
+add_custom_command(TARGET convertor POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:convertor> $<TARGET_FILE_DIR:convertor>
+  COMMAND_EXPAND_LISTS
 )
 add_test(NAME test_convertor COMMAND convertor)
 
