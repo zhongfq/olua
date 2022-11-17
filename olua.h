@@ -97,6 +97,7 @@ OLUA_BEGIN_DECLS
 #define OLUA_READONLY       __attribute__((annotate("@readonly")))
 #define OLUA_OPTIONAL       __attribute__((annotate("@optional")))
 #define OLUA_GETTER         __attribute__((annotate("@getter")))
+#define OLUA_SETTER         __attribute__((annotate("@setter")))
 #define OLUA_RET            __attribute__((annotate("@ret")))
 #else
 #define OLUA_EXCLUDE
@@ -110,6 +111,7 @@ OLUA_BEGIN_DECLS
 #define OLUA_READONLY
 #define OLUA_OPTIONAL
 #define OLUA_GETTER
+#define OLUA_SETTER
 #define OLUA_RET
 #endif
 

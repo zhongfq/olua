@@ -18,7 +18,6 @@ end
 
 local function check_meta_method(cls)
     local has_ctor = false
-    local ti = olua.typeinfo(cls.cppcls, cls, true)
     for _, v in ipairs(cls.funcs) do
         if v[1].ctor then
             has_ctor = true

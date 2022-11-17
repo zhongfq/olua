@@ -367,7 +367,7 @@ local function gen_func_args(cls, fi, codeset)
             codeset.caller_args:pushf('${type_cast}${argname}')
         elseif ai.type.decltype ~= ai.type.cppcls and not ai.callback then
             codeset.caller_args:pushf('(${ai.type.cppcls})${argname}')
-        elseif ai.type.variant then
+        elseif olua.is_cast_type(ai.type) then
             -- void f(T), has 'T *' conv: T *arg => f(*arg)
             -- void f(T *) has T conv: T arg => f(&arg)
             local type_cast = olua.is_pointer_type(ai.type) and '*' or '&'
@@ -393,7 +393,7 @@ function olua.gen_push_exp(arg, name, codeset)
     local argname = name
     local func_push = olua.conv_func(arg.type, arg.attr.unpack and 'unpack' or 'push')
     if olua.is_pointer_type(arg.type) then
-        local type_cast = arg.type.variant and '&' or ''
+        local type_cast = olua.is_cast_type(arg.type) and '&' or ''
         codeset.push_args:pushf('${func_push}(L, ${type_cast}${argname}, "${arg.type.luacls}");')
     elseif olua.is_func_type(arg.type) then
         codeset.push_args:pushf('${func_push}(L, &${argname}, "${arg.type.luacls}");')
@@ -458,8 +458,8 @@ function olua.gen_push_exp(arg, name, codeset)
         if not olua.is_value_type(arg.type) then
             -- push func: olua_push_value(L, T *)
             -- T *f(), has T conv
-            type_cast = not arg.type.variant and '&' or ''
-        elseif arg.type.variant and olua.is_pointer_type(arg.decltype) then
+            type_cast = not olua.is_cast_type(arg.type) and '&' or ''
+        elseif olua.is_cast_type(arg.type) and olua.is_pointer_type(arg.decltype) then
             type_cast = '*'
         elseif arg.type.decltype ~= arg.type.cppcls then
             -- int => lua_Interge
@@ -472,7 +472,7 @@ end
 local function gen_func_ret(cls, fi, codeset)
     if fi.ret.type.cppcls ~= 'void' then
         local type_space = olua.typespace(fi.ret.decltype)
-        if fi.ret.type.variant and type_space == ' ' then
+        if olua.is_cast_type(fi.ret.type) and type_space == ' ' then
             codeset.decl_ret = format('${fi.ret.decltype} &ret = (${fi.ret.decltype} &)')
         else
             olua.assert(fi.ret.decltype:find(fi.ret.type.cppcls), fi.ret.decltype)

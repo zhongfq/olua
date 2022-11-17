@@ -3,22 +3,24 @@ local olua = require "olua"
 local typeinfo_map = {}
 local class_map = {}
 
+local kFLAG_CONST   = 1 << 1  -- is const
+local kFLAG_LVALUE  = 1 << 2  -- is left value
+local kFLAG_RVALUE  = 1 << 3  -- is right value
+local kFLAG_CAST    = 1 << 4  -- is type cast
+
 local format = olua.format
 
 function olua.get_class(cls)
     return cls == '*' and class_map or class_map[cls]
 end
 
-function olua.pretty_typename(tn, trimref)
+function olua.pretty_typename(tn)
     tn = tn:gsub('^ *', '') -- trim head space
     tn = tn:gsub(' *$', '') -- trim tail space
     tn = tn:gsub(' +', ' ') -- remove needless space
     tn = tn:gsub(' *([<>]+) *', '%1') -- remove space around '<>'
     tn = tn:gsub(' *([*&]) *', '%1')  -- remove space around '*&'
     tn = tn:gsub('[*&]+', ' %1')      -- add one space before '*&'
-    if trimref then
-        tn = tn:gsub(' *&+$', '') -- remove '&'
-    end
     return tn
 end
 
@@ -37,36 +39,42 @@ end
         cppcls = std::vector
         rawdecl = const std::vector &
         decltype = std::vector
-        const = 'const '
-        reference = ' &'
-        variant = nil
+        flag = kFLAG_CONST | kFLAG_LVALUE
         subtis = {
             [1] = {
                 cppcls = 'Object *'
                 rawdecl = 'const Object *'
                 decltype = 'Object *'
-                const = 'const '
-                reference = nil
-                variant = nil
+                flag = kFLAG_CONST
             }
         }
     }
 ]]
-function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
-    local tn, ti, subtis, rawdecl, variant, const, reference -- for tn<T, ...>
+function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
+    local tn, ti, subtis, rawdecl -- for tn<T, ...>
+    local flag = 0
 
+    throwerror = throwerror ~= false
+    typecast = typecast ~= false
     errors = errors or olua.newhash()
-    try_variant = try_variant ~= false
     cpptype = olua.pretty_typename(cpptype)
-    reference = cpptype:match(' &+$')
-    const = cpptype:match('^const ')
-    cpptype = cpptype:gsub(' *&+$', '')
+
+    if cpptype:find('^const') then
+        flag = flag | kFLAG_CONST
+    end
+    if cpptype:find('&&$') then
+        flag = flag | kFLAG_RVALUE
+    elseif cpptype:find('&$') then
+        flag = flag | kFLAG_LVALUE
+    end
+    
+    cpptype = cpptype:gsub('[ &]+$', '')
 
     -- parse template args
     if cpptype:find('<') then
         subtis = {}
         for subcpptype in cpptype:match('<(.*)>'):gmatch(' *([^,]+)') do
-            local subti = olua.typeinfo(subcpptype, cls, silence)
+            local subti = olua.typeinfo(subcpptype, cls, throwerror)
             if subti.smartptr then
                 subti.cppcls = olua.decltype(subti, true)
                 subti.decltype = subti.cppcls
@@ -81,7 +89,7 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
             end
             subtis[#subtis + 1] = subti
         end
-        if not silence then
+        if throwerror then
             olua.assert(next(subtis), 'not found subtype: ' .. cpptype)
         end
         cpptype = olua.pretty_typename(cpptype:gsub('<.*>', ''))
@@ -93,25 +101,24 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
 
     if ti then
         ti = setmetatable({}, {__index = ti})
-        const = not tn:find('^const ') and const or nil
     else
         repeat
             -- try pointee
-            if try_variant and not cpptype:find('%*$') then
-                ti = olua.typeinfo(cpptype .. ' *', nil, true, false, errors)
+            if typecast and not cpptype:find('%*$') then
+                ti = olua.typeinfo(cpptype .. ' *', nil, false, false, errors)
                 if ti then
                     rawdecl = cpptype
-                    variant = true
+                    flag = flag | kFLAG_CAST
                     goto done
                 end
             end
     
             -- try reference type
-            if try_variant and cpptype:find('%*$') then
-                ti = olua.typeinfo(cpptype:gsub('[ *]+$', ''), nil, true, false, errors)
+            if typecast and cpptype:find('%*$') then
+                ti = olua.typeinfo(cpptype:gsub('[ *]+$', ''), nil, false, false, errors)
                 if ti then
                     rawdecl = cpptype
-                    variant = true
+                    flag = flag | kFLAG_CAST
                     goto done
                 end
             end
@@ -125,8 +132,8 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
                 while #nsarr > 0 do
                     -- const Object * => const ns::Object *
                     local ns = table.concat(nsarr, "::")
-                    tn = olua.pretty_typename(cpptype:gsub('[%w:_]+ *%**$', ns .. '::%1'), true)
-                    ti = olua.typeinfo(tn, nil, true, false, errors)
+                    tn = olua.pretty_typename(cpptype:gsub('[%w:_]+ *%**$', ns .. '::%1'))
+                    ti = olua.typeinfo(tn, nil, false, false, errors)
                     nsarr[#nsarr] = nil
                     if ti then
                         cpptype = tn
@@ -140,7 +147,7 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
             if not ti and cls and cls.supercls then
                 local super = typeinfo_map[cls.supercls .. ' *']
                 olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
-                ti, tn = olua.typeinfo(cpptype, super, true, false, errors)
+                ti, tn = olua.typeinfo(cpptype, super, false, false, errors)
                 if ti then
                     cpptype = tn
                     rawdecl = cpptype
@@ -152,36 +159,38 @@ function olua.typeinfo(cpptype, cls, silence, try_variant, errors)
     end
 
     if not ti then
-        if not silence then
+        if throwerror then
             print('try type:')
             print('    ' .. table.concat(errors.values, '\n    '))
+            local rawtn = cpptype:gsub(' [*&]+$', '')
             olua.error([[
                 type info not found: ${cpptype}
                 you should do one of:
                     * if has the type convertor, use typedef '${cpptype}'
-                    * if type is pointer or enum, use typeconf '${cpptype}'
-                    * if type is struct value, use typeconv '${cpptype}'
-                    * if type not wanted, use exclude '${cpptype}' or '${cpptype} *'
+                    * if type is pointer or enum, use typeconf '${rawtn}'
+                    * if type is struct value, use typeconv '${rawtn}'
+                    * if type not wanted, use excludeany '${rawtn}'
             ]])
         end
         return
     end
 
-    ti.subtypes = subtis
-    ti.const = const
-    ti.reference = reference
-    ti.variant = variant
-    ti.rawdecl = rawdecl:gsub('<.*>', '')
-
-    if ti.rawdecl:find('^const ') then
-        ti.const = nil
+    if rawdecl:find('^const ') then
+        flag = flag & (~kFLAG_CONST)
     end
+
+    ti.subtypes = subtis
+    ti.rawdecl = rawdecl:gsub('<.*>', '')
+    ti.flag = flag
 
     if ti.subtypes then
         local ttn = olua.decltype(ti, true)
         local tti = typeinfo_map[ttn]
         if tti then
-            return tti, ttn
+            tn = ttn
+            ti = setmetatable({}, {__index = tti})
+            ti.flag = flag
+            ti.rawdecl = olua.decltype(ti)
         end
     end
     
@@ -201,8 +210,8 @@ end
 ]]
 function olua.decltype(ti, checkvalue)
     local exps = olua.newarray('')
-    if not checkvalue and ti.const then
-        exps:push(ti.const)
+    if not checkvalue and olua.is_const_type(ti) then
+        exps:push('const ')
     end
     if ti.subtypes then
         local cppcls
@@ -216,7 +225,7 @@ function olua.decltype(ti, checkvalue)
         exps:push('<')
         for i, v in ipairs(ti.subtypes) do
             exps:push(i > 1 and ', ' or '')
-            exps:push(v.const and 'const ' or '')
+            exps:push(olua.is_const_type(v) and 'const ' or '')
             exps:push(v.rawdecl)
         end
         exps:push('>')
@@ -224,8 +233,12 @@ function olua.decltype(ti, checkvalue)
     else
         exps:push(ti.rawdecl)
     end
-    if not checkvalue and ti.reference then
-        exps:push(ti.reference)
+    if not checkvalue then
+        if olua.is_lvalue_type(ti) then
+            exps:push(' &')
+        elseif olua.is_rvalue_type(ti) then
+            exps:push(' &&')
+        end
     end
     return tostring(exps)
 end
@@ -629,6 +642,22 @@ function olua.is_func_type(tn, cls)
         local ti = olua.typeinfo(tn, cls)
         return ti and ti.declfunc
     end
+end
+
+function olua.is_cast_type(ti)
+    return (ti.flag & kFLAG_CAST) ~= 0
+end
+
+function olua.is_rvalue_type(ti)
+    return (ti.flag & kFLAG_RVALUE) ~= 0
+end
+
+function olua.is_lvalue_type(ti)
+    return (ti.flag & kFLAG_LVALUE) ~= 0
+end
+
+function olua.is_const_type(ti)
+    return (ti.flag & kFLAG_CONST) ~= 0
 end
 
 function olua.is_pointer_type(ti)

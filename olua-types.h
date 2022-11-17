@@ -44,8 +44,9 @@ public:
     pointer &operator=(const pointer &) = delete;
     
     pointer() {}
-    ~pointer() {
-        if (_len > 0) {
+    ~pointer()
+    {
+        if (_owner) {
             delete[] _data;
         }
     }
@@ -55,54 +56,115 @@ public:
     ,_data(v)
     {}
     
-    static pointer<T> *array(size_t len) {
+    static pointer<T> *array(size_t len)
+    {
         pointer<T> *ret = new pointer<T>();
         ret->_len = len;
         ret->_data = new T[len]();
         return ret;
     }
-    
-    OLUA_NAME(__index) T get(unsigned idx) {
-         olua_assert(idx >= 1 && idx <= _len, "index out of range");
-         return _data[idx - 1];
-    }
-    
-    OLUA_NAME(__newindex) void set(unsigned idx, const T &v)
+
+    OLUA_NAME(new) static pointer<T>* create(const T& v)
     {
-        olua_assert(idx >= 1 && idx <= _len, "index out of range");
-        _data[idx - 1] = v;
-    }
-    
-    OLUA_NAME(new) static pointer<T> *create(const T &v) {
-        pointer<T> *ret = new pointer<T>();
+        pointer<T>* ret = new pointer<T>();
         ret->_len = 1;
         ret->_data = new T[1]();
         ret->_data[0] = v;
         return ret;
     }
     
+    T __index(unsigned idx)
+    {
+         olua_assert(idx >= 1 && idx <= _len, "index out of range");
+         return _data[idx - 1];
+    }
+    
+    void __newindex(unsigned idx, const T &v)
+    {
+        olua_assert(idx >= 1 && idx <= _len, "index out of range");
+        _data[idx - 1] = v;
+    }
+
+    olua_Return tostring(lua_State* L, size_t len = -1)
+    {
+        olua_assert(_len > 0, "length <= 0");
+        if (len == -1) {
+            len = _len;
+        }
+        olua_assert(len <= _len, "length too long");
+        lua_pushlstring(L, (const char*)_data, len * sizeof(T));
+        return 1;
+    }
+
+    OLUA_GETTER OLUA_NAME(length) size_t getLength() {return _len;}
+    OLUA_SETTER OLUA_NAME(length) void setLength(size_t len)
+    {
+        olua_assert(!_owner, "not allow set length when own the data");
+        _len = len;
+    }
+
+    void copyfrom(pointer<T> *obj, size_t from = 1, size_t len = -1, size_t to = 1)
+    {
+        from--;
+        to--;
+        olua_assert(from < obj->_len, "invalid 'from' position");
+        if (len == -1) {
+            len = obj->_len - from;
+        }
+        olua_assert(from + len <= obj->_len, "data not enough to copy ");
+        olua_assert(to + len <= _len, "no enough space to store data");
+        for (size_t i = 0; i < len; i++) {
+            _data[to++] = obj->_data[from++];
+        }
+    }
+
+    void fill(const char *data, size_t len)
+    {
+        olua_assert(sizeof(T) == sizeof(char), "miss match sizeof");
+        olua_assert(len <= _len, "data too long");
+        strncpy((char *)_data, data, len);
+    }
+
+    pointer<T> *sub(size_t from, size_t to = -1)
+    {
+        if (to == -1) {
+            to = _len;
+        }
+        from--;
+        to--;
+        olua_assert(from < _len, "invalid 'from' position");
+        olua_assert(to < _len, "invalid 'to' position");
+        olua_assert(from <= to, "invalid 'from' position");
+        pointer<T> *ret = array(to - from + 1);
+        for (size_t i = 0; i < ret->_len; i++) {
+            ret->_data[i] = _data[from + i];
+        }
+        return ret;
+    }
+    
     OLUA_GETTER const T &value() {return *_data;}
-    OLUA_GETTER size_t length() {return _len;}
     OLUA_EXCLUDE T *data() {return _data;}
-    OLUA_EXCLUDE const char *name() {return typeid(T).name();}
+    OLUA_EXCLUDE size_t length() {return _len;}
 private:
     T *_data = nullptr;
     size_t _len = 0;
+    bool _owner = true;
 };
 }
 
+typedef olua::pointer<bool> olua_bool;
 typedef olua::pointer<std::string> olua_string;
-typedef olua::pointer<int8_t> olua_int8_t;
-typedef olua::pointer<uint8_t> olua_uint8_t;
-typedef olua::pointer<int16_t> olua_int16_t;
-typedef olua::pointer<uint16_t> olua_uint16_t;
-typedef olua::pointer<int32_t> olua_int32_t;
-typedef olua::pointer<uint32_t> olua_uint32_t;
-typedef olua::pointer<int64_t> olua_int64_t;
-typedef olua::pointer<uint64_t> olua_uint64_t;
-typedef olua::pointer<float> olua_float_t;
-typedef olua::pointer<double> olua_double_t;
-typedef olua::pointer<long double> olua_long_double_t;
+typedef olua::pointer<int8_t> olua_int8;
+typedef olua::pointer<uint8_t> olua_uint8;
+typedef olua::pointer<int16_t> olua_int16;
+typedef olua::pointer<uint16_t> olua_uint16;
+typedef olua::pointer<int32_t> olua_int32;
+typedef olua::pointer<uint32_t> olua_uint32;
+typedef olua::pointer<int64_t> olua_int64;
+typedef olua::pointer<uint64_t> olua_uint64;
+typedef olua::pointer<float> olua_float;
+typedef olua::pointer<double> olua_double;
+typedef olua::pointer<long double> olua_long_double;
 typedef olua::pointer<size_t> olua_size_t;
 typedef olua::pointer<ssize_t> olua_ssize_t;
 typedef olua::pointer<time_t> olua_time_t;
