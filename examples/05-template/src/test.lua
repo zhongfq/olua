@@ -47,6 +47,9 @@ v[1] = 20
 print(v[1])
 
 local arr = int32_t.array(10)
+for i = 1, 10 do
+    print(i, arr[i])
+end
 print(arr[9])
 arr[9] = 90
 print(arr[9])

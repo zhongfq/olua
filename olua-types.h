@@ -28,6 +28,13 @@
 
 #include "olua.h"
 
+
+#if defined(_MSC_VER) && !defined(_SSIZE_T)
+#include <BaseTsd.h>
+#define _SSIZE_T
+typedef SSIZE_T ssize_t;
+#endif
+
 namespace olua {
 
 template<class T>
@@ -51,7 +58,7 @@ public:
     static pointer<T> *array(size_t len) {
         pointer<T> *ret = new pointer<T>();
         ret->_len = len;
-        ret->_data = new T[len];
+        ret->_data = new T[len]();
         return ret;
     }
     
@@ -69,7 +76,7 @@ public:
     OLUA_NAME(new) static pointer<T> *create(const T &v) {
         pointer<T> *ret = new pointer<T>();
         ret->_len = 1;
-        ret->_data = new T[1];
+        ret->_data = new T[1]();
         ret->_data[0] = v;
         return ret;
     }
@@ -82,23 +89,23 @@ private:
     T *_data = nullptr;
     size_t _len = 0;
 };
-
-typedef pointer<std::string> string;
-typedef pointer<int8_t> int8_t;
-typedef pointer<uint8_t> uint8_t;
-typedef pointer<int16_t> int16_t;
-typedef pointer<uint16_t> uint16_t;
-typedef pointer<int32_t> int32_t;
-typedef pointer<uint32_t> uint32_t;
-typedef pointer<int64_t> int64_t;
-typedef pointer<uint64_t> uint64_t;
-typedef pointer<float> float_t;
-typedef pointer<double> double_t;
-typedef pointer<long double> long_double_t;
-typedef pointer<size_t> size_t;
-typedef pointer<ssize_t> ssize_t;
-typedef pointer<time_t> time_t;
 }
+
+typedef olua::pointer<std::string> olua_string;
+typedef olua::pointer<int8_t> olua_int8_t;
+typedef olua::pointer<uint8_t> olua_uint8_t;
+typedef olua::pointer<int16_t> olua_int16_t;
+typedef olua::pointer<uint16_t> olua_uint16_t;
+typedef olua::pointer<int32_t> olua_int32_t;
+typedef olua::pointer<uint32_t> olua_uint32_t;
+typedef olua::pointer<int64_t> olua_int64_t;
+typedef olua::pointer<uint64_t> olua_uint64_t;
+typedef olua::pointer<float> olua_float_t;
+typedef olua::pointer<double> olua_double_t;
+typedef olua::pointer<long double> olua_long_double_t;
+typedef olua::pointer<size_t> olua_size_t;
+typedef olua::pointer<ssize_t> olua_ssize_t;
+typedef olua::pointer<time_t> olua_time_t;
 
 static inline int olua_is_pointer(lua_State *L, int idx, const char *cls)
 {

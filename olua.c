@@ -326,6 +326,7 @@ OLUA_API int olua_pushobj(lua_State *L, void *obj, const char *cls)
     
     if (olua_unlikely(!cls || olua_getmetatable(L, cls) != LUA_TTABLE)) {
         luaL_error(L, "class metatable '%s' not found", cls ? cls : "NULL");
+        return status;
     }
     
     aux_pushobjtable(L);
@@ -1469,7 +1470,7 @@ static int l_objpool(lua_State *L)
         olua_disable_objpool(L);
     } else if strequal(action, "push") {
         size_t position = olua_push_objpool(L);
-        lua_pushnumber(L, (lua_Integer)position);
+        lua_pushinteger(L, (lua_Integer)position);
         return 1;
     } else if strequal(action, "pop") {
         size_t position = (size_t)olua_checkinteger(L, 2);
