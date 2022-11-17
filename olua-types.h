@@ -85,6 +85,8 @@ public:
         _data[idx - 1] = v;
     }
 
+    void take() {_owner = false;}
+
     olua_Return tostring(lua_State* L, size_t len = -1)
     {
         olua_assert(_len > 0, "length <= 0");
