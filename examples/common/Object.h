@@ -10,7 +10,9 @@
 #include <algorithm>
 #include <functional>
 
+extern "C" {
 extern bool assert_script_compatible(const char *msg);
+}
 
 #define ASSERT(cond, msg) do {                              \
 if (!(cond)) {                                              \

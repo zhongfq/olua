@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 
 set(source
     src/Example.h
@@ -14,6 +14,12 @@ target_compile_definitions(smartptr
   PUBLIC
     LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
 )
+if(WIN32)
+    add_custom_command(TARGET smartptr POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:smartptr> $<TARGET_FILE_DIR:smartptr>
+      COMMAND_EXPAND_LISTS
+    )
+endif()
 add_test(NAME test_smartptr COMMAND smartptr)
 
 execute_process(
