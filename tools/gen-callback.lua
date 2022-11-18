@@ -36,7 +36,7 @@ end
 
 local function gen_callback_tag(cls, fi)
     if not string.find(fi.callback.tag_maker, '[()]+') then
-        return olua.stringify(fi.callback.tag_maker)
+        return format([["${fi.callback.tag_maker}"]]), nil
     end
     -- tag_maker: makeTag(#1) or makeTag(#-1)
     return string.gsub(fi.callback.tag_maker, '#(%-?%d+)', function (n)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.21)
 
 set(source
     AutoreleasePool.h
@@ -9,6 +9,7 @@ set(source
     Object.cpp
     olua-custom.h
     olua-custom.cpp
+    ../../olua-types.h
     ../../olua.h
     ../../olua.c
 )

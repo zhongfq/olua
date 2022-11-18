@@ -3,6 +3,7 @@
 
 #include "luauser.h"
 #include "olua.h"
+#include "olua-types.h"
 #include "Object.h"
 
 extern lua_State *olua_invokingstate;
