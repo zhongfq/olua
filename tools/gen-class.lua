@@ -57,7 +57,7 @@ local function check_gen_class_func(cls, fis, write)
     end
 
     local cppfunc = fis[1].cppfunc
-    local fn = format([[_${{cls.cppcls}}_${cppfunc}]])
+    local fn = format([[_${cls.cppcls#}_${cppfunc}]])
     if symbols[fn] then
         return
     end
@@ -123,7 +123,8 @@ local function gen_class_open(cls, write)
     local luaopen = cls.luaopen or ''
 
     if cls.supercls then
-        supercls = olua.stringify(olua.luacls(cls.supercls))
+        supercls = olua.luacls(cls.supercls)
+        supercls = format([["${supercls}"]])
     end
 
     if cls.indexerror then
@@ -140,7 +141,7 @@ local function gen_class_open(cls, write)
         local luafunc = fis[1].luafunc
         local macro = cls.macros[cppfunc]
         funcs:push(macro)
-        funcs:pushf('oluacls_func(L, "${luafunc}", _${{cls.cppcls}}_${cppfunc});')
+        funcs:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
         funcs:push(macro and '#endif' or nil)
     end
 
@@ -150,22 +151,22 @@ local function gen_class_open(cls, write)
         local macro = cls.macros[pi.get.cppfunc]
         funcs:push(macro)
         if pi.get then
-            func_get = format('_${{cls.cppcls}}_${pi.get.cppfunc}')
+            func_get = format('_${cls.cppcls#}_${pi.get.cppfunc}')
         end
         if pi.set then
-            func_set = format('_${{cls.cppcls}}_${pi.set.cppfunc}')
+            func_set = format('_${cls.cppcls#}_${pi.set.cppfunc}')
         end
         funcs:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
         funcs:push(macro and '#endif' or nil)
     end
 
     for _, vi in ipairs(cls.vars) do
-        local func_get = format('_${{cls.cppcls}}_${vi.get.cppfunc}')
+        local func_get = format('_${cls.cppcls#}_${vi.get.cppfunc}')
         local func_set = "nullptr"
         local macro = cls.macros[vi.get.varname]
         funcs:push(macro)
         if vi.set and vi.set.cppfunc then
-           func_set = format('_${{cls.cppcls}}_${vi.set.cppfunc}')
+           func_set = format('_${cls.cppcls#}_${vi.set.cppfunc}')
         end
         funcs:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
         funcs:push(macro and '#endif' or nil)
@@ -205,7 +206,7 @@ local function gen_class_open(cls, write)
 
     write(format([[
         OLUA_BEGIN_DECLS
-        OLUA_LIB int luaopen_${{cls.cppcls}}(lua_State *L)
+        OLUA_LIB int luaopen_${cls.cppcls#}(lua_State *L)
         {
             oluacls_class(L, "${cls.luacls}", ${supercls});
             ${funcs}
@@ -319,7 +320,7 @@ local function gen_luaopen(module, write)
             end
             last_macro = macro
         end
-        requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${{cls.cppcls}});')
+        requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${cls.cppcls#});')
     end
     requires:push(last_macro and '#endif' or nil)
 

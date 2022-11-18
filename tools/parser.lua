@@ -33,6 +33,81 @@ local function lookup_typeinfo(tn)
     return ti, tn
 end
 
+local function throw_type_error(cpptype, errors)
+    print('try type:')
+    print('    ' .. table.concat(errors.values, '\n    '))
+    local rawtn = cpptype:gsub(' [*&]+$', '')
+    olua.error([[
+        type info not found: ${cpptype}
+        you should do one of:
+            * if has the type convertor, use typedef '${cpptype}'
+            * if type is pointer or enum, use typeconf '${rawtn}'
+            * if type is struct value, use typeconv '${rawtn}'
+            * if type not wanted, use excludeany '${rawtn}'
+    ]])
+end
+
+local function search_type_from_class(cls, cpptype, errors)
+    if cls and cls.cppcls then
+        local nsarr = {}
+        for ns in cls.cppcls:gmatch('[^:]+') do
+            nsarr[#nsarr + 1] = ns:match('[^ *&]+') -- remove * &
+        end
+        while #nsarr > 0 do
+            -- const Object * => const ns::Object *
+            local ns = table.concat(nsarr, "::")
+            local tn = olua.pretty_typename(cpptype:gsub('[%w:_]+ *[*&]*$', ns .. '::%1'))
+            local ti = olua.typeinfo(tn, nil, false, false, errors)
+            nsarr[#nsarr] = nil
+            if ti then
+                return ti, tn
+            end
+        end
+    end
+
+    if cls and cls.supercls then
+        local super = typeinfo_map[cls.supercls .. ' *']
+        olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
+        return olua.typeinfo(cpptype, super, false, false, errors)
+    end
+end
+
+local function search_type_from_cast(cpptype, typecast, errors)
+    if not typecast then
+        return
+    elseif not cpptype:find('%*$') then
+        -- try pointee
+        return olua.typeinfo(cpptype .. ' *', nil, false, false, errors)
+    elseif cpptype:find('%*$') then
+        -- try reference type
+        return olua.typeinfo(cpptype:gsub('[ *]+$', ''), nil, false, false, errors)
+    end
+end
+
+local function subtype_typeinfo(cls, cpptype, throwerror)
+    local subtis = {}
+    for subcpptype in cpptype:match('<(.*)>'):gmatch(' *([^,]+)') do
+        local subti = olua.typeinfo(subcpptype, cls, throwerror)
+        if subti.smartptr then
+            subti.cppcls = olua.decltype(subti, true)
+            subti.decltype = subti.cppcls
+            subti.rawdecl = subcpptype
+            subti.luacls = subti.subtypes[1].luacls
+        elseif subcpptype:find('<') then
+            olua.error([[
+                unsupport template class as template args:
+                       type: ${cpptype}
+                    subtype: ${subcpptype}
+            ]])
+        end
+        subtis[#subtis + 1] = subti
+    end
+    if throwerror then
+        olua.assert(next(subtis), 'not found subtype: ' .. cpptype)
+    end
+    return subtis
+end
+
 --[[
     func: void addChild(const std::vector<const Object *> &child)
     ti = {
@@ -72,26 +147,7 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
 
     -- parse template args
     if cpptype:find('<') then
-        subtis = {}
-        for subcpptype in cpptype:match('<(.*)>'):gmatch(' *([^,]+)') do
-            local subti = olua.typeinfo(subcpptype, cls, throwerror)
-            if subti.smartptr then
-                subti.cppcls = olua.decltype(subti, true)
-                subti.decltype = subti.cppcls
-                subti.rawdecl = subcpptype
-                subti.luacls = subti.subtypes[1].luacls
-            elseif subcpptype:find('<') then
-                olua.error([[
-                    unsupport template class as template args:
-                           type: ${cpptype}
-                        subtype: ${subcpptype}
-                ]])
-            end
-            subtis[#subtis + 1] = subti
-        end
-        if throwerror then
-            olua.assert(next(subtis), 'not found subtype: ' .. cpptype)
-        end
+        subtis = subtype_typeinfo(cls, cpptype, throwerror)
         cpptype = olua.pretty_typename(cpptype:gsub('<.*>', ''))
     end
 
@@ -103,76 +159,31 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
         ti = setmetatable({}, {__index = ti})
     else
         repeat
-            -- try pointee
-            if typecast and not cpptype:find('%*$') then
-                ti = olua.typeinfo(cpptype .. ' *', nil, false, false, errors)
-                if ti then
-                    rawdecl = cpptype
-                    flag = flag | kFLAG_CAST
-                    goto done
-                end
-            end
-    
-            -- try reference type
-            if typecast and cpptype:find('%*$') then
-                ti = olua.typeinfo(cpptype:gsub('[ *]+$', ''), nil, false, false, errors)
-                if ti then
-                    rawdecl = cpptype
-                    flag = flag | kFLAG_CAST
-                    goto done
-                end
+            -- try type cast
+            ti = search_type_from_cast(cpptype, typecast, errors)
+            if ti then
+                flag = flag | kFLAG_CAST
+                rawdecl = cpptype
+                goto found
             end
 
             -- search in class namespace
-            if cls and cls.cppcls then
-                local nsarr = {}
-                for ns in cls.cppcls:gmatch('[^:]+') do
-                    nsarr[#nsarr + 1] = ns:match('[^ *&]+') -- remove * &
-                end
-                while #nsarr > 0 do
-                    -- const Object * => const ns::Object *
-                    local ns = table.concat(nsarr, "::")
-                    tn = olua.pretty_typename(cpptype:gsub('[%w:_]+ *%**$', ns .. '::%1'))
-                    ti = olua.typeinfo(tn, nil, false, false, errors)
-                    nsarr[#nsarr] = nil
-                    if ti then
-                        cpptype = tn
-                        rawdecl = cpptype
-                        goto done
-                    end
-                end
+            ti, tn = search_type_from_class(cls, cpptype, errors)
+            if ti then
+                cpptype = tn
+                rawdecl = cpptype
+                goto found
             end
 
-            -- search in super class namespace
-            if not ti and cls and cls.supercls then
-                local super = typeinfo_map[cls.supercls .. ' *']
-                olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
-                ti, tn = olua.typeinfo(cpptype, super, false, false, errors)
-                if ti then
-                    cpptype = tn
-                    rawdecl = cpptype
-                    goto done
-                end
+            -- type not found
+            if throwerror then
+                throw_type_error(cpptype, errors)
+            else
+                return
             end
-            ::done::
+
+            ::found::
         until true
-    end
-
-    if not ti then
-        if throwerror then
-            print('try type:')
-            print('    ' .. table.concat(errors.values, '\n    '))
-            local rawtn = cpptype:gsub(' [*&]+$', '')
-            olua.error([[
-                type info not found: ${cpptype}
-                you should do one of:
-                    * if has the type convertor, use typedef '${cpptype}'
-                    * if type is pointer or enum, use typeconf '${rawtn}'
-                    * if type is struct value, use typeconv '${rawtn}'
-                    * if type not wanted, use excludeany '${rawtn}'
-            ]])
-        end
-        return
     end
 
     if rawdecl:find('^const ') then
@@ -191,6 +202,14 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
             ti = setmetatable({}, {__index = tti})
             ti.flag = flag
             ti.rawdecl = olua.decltype(ti)
+        elseif not ti.smartptr then
+            for _, subtype in ipairs(subtis) do
+                if olua.is_cast_type(subtype) then
+                    errors:clear()
+                    errors:push(subtype.rawdecl, subtype.rawdecl)
+                    throw_type_error(subtype.rawdecl, errors)
+                end
+            end
         end
     end
     

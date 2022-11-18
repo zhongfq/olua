@@ -124,7 +124,7 @@ function pairs(t)
 end
 
 function olua.write(path, content)
-    local f = io.open(path, 'r')
+    local f = io.open(path, 'rb')
     if f then
         local flag = f:read("*a") == content
         f:close()
@@ -136,20 +136,11 @@ function olua.write(path, content)
 
     print("write: " .. path)
 
-    f = io.open(path, "w")
+    f = io.open(path, "w+b")
     assert(f, path)
     f:write(content)
     f:flush()
     f:close()
-end
-
-function olua.stringify(value, quote)
-    if value then
-        quote = quote or '"'
-        return quote .. tostring(value) .. quote
-    else
-        return nil
-    end
 end
 
 function olua.sort(arr, field)
@@ -392,6 +383,7 @@ local function lookup(level, key, upvalue)
 end
 
 local function eval(line)
+    local drop = false
     local function replace(str)
         -- search caller file path
         local level = 1
@@ -416,7 +408,7 @@ local function eval(line)
         local indent = string.match(line, ' *')
         local key = string.match(str, '[%w_]+')
         local opt = string.match(str, '%?+')
-        local fix = string.match(str, '{{')
+        local fix = string.match(str, '#')
         local value = lookup(level + 1, key, true) or _G[key]
         for field in string.gmatch(string.match(str, "[%w_.]+"), '[^.]+') do
             if not value then
@@ -440,6 +432,7 @@ local function eval(line)
                 throw_error("no meta method '__tostring' for " .. str)
             end
         elseif value == nil then
+            drop = opt == "??"
             value = 'nil'
         elseif type(value) == 'string' then
             value = value:gsub('[\n]*$', '')
@@ -466,9 +459,8 @@ local function eval(line)
 
         return prefix .. value:gsub('\n', '\n' .. indent) .. posfix
     end
-    line = line:gsub('${[%w_.?]+}', replace)
-    line = line:gsub('${{[%w_.?]+}}', replace)
-    return line
+    line = line:gsub('${[%w_.?#]+}', replace)
+    return not drop and line or nil
 end
 
 local function doeval(expr)

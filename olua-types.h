@@ -53,6 +53,7 @@ public:
     
     pointer(const T *v)
     :_len(0)
+    ,_owner(false)
     ,_data(v)
     {}
     
@@ -64,9 +65,9 @@ public:
         return ret;
     }
 
-    OLUA_NAME(new) static pointer<T>* create(const T& v)
+    OLUA_NAME(new) static pointer<T> *create(const T &v)
     {
-        pointer<T>* ret = new pointer<T>();
+        pointer<T> *ret = new pointer<T>();
         ret->_len = 1;
         ret->_data = new T[1]();
         ret->_data[0] = v;
@@ -87,7 +88,7 @@ public:
 
     void take() {_owner = false;}
 
-    olua_Return tostring(lua_State* L, size_t len = -1)
+    olua_Return tostring(lua_State *L, size_t len = -1)
     {
         olua_assert(_len > 0, "length <= 0");
         if (len == -1) {

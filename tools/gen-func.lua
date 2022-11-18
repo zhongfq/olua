@@ -15,13 +15,13 @@ local function gen_func_snippet(cls, fi, write)
         ]]), nil
     end)
     write(format([[
-        static int _${{cls.cppcls}}_${fi.cppfunc}(lua_State *L)
+        static int _${cls.cppcls#}_${fi.cppfunc}(lua_State *L)
         ${snippet}
     ]]))
 end
 
 function olua.gen_decl_exp(arg, name, codeset)
-    local type_space = olua.typespace(arg.type.decltype)
+    local typespace = olua.typespace(arg.type.decltype)
     local argname = name
     local varname = ""
     if arg.varname then
@@ -30,7 +30,7 @@ function olua.gen_decl_exp(arg, name, codeset)
     if arg.type.subtypes then
         -- arg.decltype = std::vector<std::string>
         -- arg.type.decltype = std::vector
-        codeset.decl_args:pushf('${arg.decltype}${type_space}${argname};       ${varname}')
+        codeset.decl_args:pushf('${arg.decltype}${typespace}${argname};       ${varname}')
     else
         local decltype = arg.type.decltype
         if arg.attr.ret then
@@ -48,7 +48,7 @@ function olua.gen_decl_exp(arg, name, codeset)
             end
         end
         codeset.decl_args:pushf([[
-            ${decltype}${type_space}${argname}${initial_value};       ${varname}
+            ${decltype}${typespace}${argname}${initial_value};       ${varname}
         ]])
     end
 end
@@ -88,31 +88,31 @@ function olua.gen_check_exp(arg, name, i, codeset)
             ]])
         elseif #arg.type.subtypes == 1 then
             local subtype = arg.type.subtypes[1]
-            local type_space = olua.typespace(subtype.decltype)
+            local typespace = olua.typespace(subtype.decltype)
             local subtype_func_check = olua.conv_func(subtype, 'check')
             if subtype.smartptr then
                 codeset.check_args:pushf([[
-                    ${func_check}<${subtype.cppcls}>(L, ${argn}, &${argname}, [L](${subtype.cppcls} *value) {
+                    ${func_check}<${subtype.rawdecl}>(L, ${argn}, &${argname}, [L](${subtype.cppcls} *value) {
                         ${subtype_func_check}(L, -1, value, "${subtype.luacls}");
                     });
                 ]])
-            elseif olua.is_pointer_type(subtype) or subtype.smartptr then
+            elseif olua.is_pointer_type(subtype) and not olua.is_cast_type(subtype) then
                 codeset.check_args:pushf([[
-                    ${func_check}<${subtype.cppcls}>(L, ${argn}, &${argname}, [L](${subtype.cppcls}*value) {
+                    ${func_check}<${subtype.rawdecl}>(L, ${argn}, &${argname}, [L](${subtype.cppcls}*value) {
                         ${subtype_func_check}(L, -1, value, "${subtype.luacls}");
                     });
                 ]])
             else
                 if subtype.cppcls == subtype.decltype then
                     codeset.check_args:pushf([[
-                        ${func_check}<${subtype.cppcls}>(L, ${argn}, &${argname}, [L](${subtype.cppcls} *value) {
+                        ${func_check}<${subtype.rawdecl}>(L, ${argn}, &${argname}, [L](${subtype.cppcls} *value) {
                             ${subtype_func_check}(L, -1, value);
                         });
                     ]])
                 else
                     codeset.check_args:pushf([[
-                        ${func_check}<${subtype.cppcls}>(L, ${argn}, &${argname}, [L](${subtype.cppcls} *value) {
-                            ${subtype.decltype}${type_space}obj;
+                        ${func_check}<${subtype.rawdecl}>(L, ${argn}, &${argname}, [L](${subtype.cppcls} *value) {
+                            ${subtype.decltype}${typespace}obj;
                             ${subtype_func_check}(L, -1, &obj);
                             *value = (${subtype.cppcls})obj;
                         });
@@ -127,7 +127,7 @@ function olua.gen_check_exp(arg, name, i, codeset)
             local idx = -1
             for ii, subtype in ipairs(arg.type.subtypes) do
                 local subtype_func_check = olua.conv_func(subtype, 'check')
-                local type_space = olua.typespace(subtype.decltype)
+                local typespace = olua.typespace(subtype.decltype)
                 local subtype_name = 'arg' .. ii
                 if subtype.smartptr then
                     subtype_decl_args:pushf('${subtype.rawdecl} *${subtype_name}')
@@ -150,7 +150,7 @@ function olua.gen_check_exp(arg, name, i, codeset)
                         ]])
                     else
                         subtype_check_exp:pushf([[
-                            ${subtype.decltype}${type_space}${subtype_name}obj;
+                            ${subtype.decltype}${typespace}${subtype_name}obj;
                             ${subtype_func_check}(L, ${idx}, &${subtype_name}obj);
                             *${subtype_name} = (${subtype.cppcls})${subtype_name}obj;
                         ]])
@@ -425,7 +425,7 @@ function olua.gen_push_exp(arg, name, codeset)
                 ]])
             end
         else
-            olua.assert(#arg.type.subtypes == 2)
+            olua.assert(#arg.type.subtypes == 2, 'unsupport template arg types > 2 ')
             local subtype_decl_args = olua.newarray(', ')
             local subtype_template_args = olua.newarray(', ')
             local subtype_push_exp = olua.newarray()
@@ -455,12 +455,12 @@ function olua.gen_push_exp(arg, name, codeset)
         end
     else
         local type_cast = ""
-        if not olua.is_value_type(arg.type) then
-            -- push func: olua_push_value(L, T *)
-            -- T *f(), has T conv
-            type_cast = not olua.is_cast_type(arg.type) and '&' or ''
-        elseif olua.is_cast_type(arg.type) and olua.is_pointer_type(arg.decltype) then
-            type_cast = '*'
+        if olua.is_cast_type(arg.type) then
+            if olua.is_value_type(arg.type) then
+                type_cast = '*'
+            end
+        elseif not olua.is_value_type(arg.type) then
+            type_cast = '&'
         elseif arg.type.decltype ~= arg.type.cppcls then
             -- int => lua_Interge
             type_cast = format('(${arg.type.decltype})')
@@ -471,12 +471,13 @@ end
 
 local function gen_func_ret(cls, fi, codeset)
     if fi.ret.type.cppcls ~= 'void' then
-        local type_space = olua.typespace(fi.ret.decltype)
-        if olua.is_cast_type(fi.ret.type) and type_space == ' ' then
-            codeset.decl_ret = format('${fi.ret.decltype} &ret = (${fi.ret.decltype} &)')
+        local typespace = olua.typespace(fi.ret.decltype)
+        local is_pointee = typespace == ''
+        if olua.is_cast_type(fi.ret.type) and not is_pointee and fi.variable then
+            codeset.decl_ret = format('${fi.ret.decltype} &ret =') .. ' '
         else
             olua.assert(fi.ret.decltype:find(fi.ret.type.cppcls), fi.ret.decltype)
-            codeset.decl_ret = format('${fi.ret.decltype}${type_space}ret = ') .. ' '
+            codeset.decl_ret = format('${fi.ret.decltype}${typespace}ret =') .. ' '
         end
 
         local retblock = {push_args = olua.newarray()}
@@ -604,7 +605,7 @@ local function gen_one_func(cls, fi, write, funcidx)
             ]])
         end
         write(format([[
-            static int _${{cls.cppcls}}_${fi.cppfunc}${funcidx}(lua_State *L)
+            static int _${cls.cppcls#}_${fi.cppfunc}${funcidx}(lua_State *L)
             {
                 olua_startinvoke(L);
 
@@ -629,7 +630,7 @@ local function gen_one_func(cls, fi, write, funcidx)
         ]]))
     else
         write(format([[
-            static int _${{cls.cppcls}}_${fi.cppfunc}${funcidx}(lua_State *L)
+            static int _${cls.cppcls#}_${fi.cppfunc}${funcidx}(lua_State *L)
             {
                 olua_startinvoke(L);
 
@@ -715,13 +716,13 @@ local function gen_test_and_call(cls, fns)
                 exp1 = format([[
                     // if (${test_exps}) {
                         // ${fi.funcdesc}
-                        return _${{cls.cppcls}}_${fi.cppfunc}${fi.index}(L);
+                        return _${cls.cppcls#}_${fi.cppfunc}${fi.index}(L);
                     // }
                 ]]),
                 exp2 = format([[
                     if (${test_exps}) {
                         // ${fi.funcdesc}
-                        return _${{cls.cppcls}}_${fi.cppfunc}${fi.index}(L);
+                        return _${cls.cppcls#}_${fi.cppfunc}${fi.index}(L);
                     }
                 ]]),
             }
@@ -736,7 +737,7 @@ local function gen_test_and_call(cls, fns)
                 max_vars = 1,
                 exp1 = format([[
                     // ${fi.funcdesc}
-                    return _${{cls.cppcls}}_${fi.cppfunc}${fi.index}(L);
+                    return _${cls.cppcls#}_${fi.cppfunc}${fi.index}(L);
                 ]])
             }
         end
@@ -787,13 +788,13 @@ local function gen_multi_func(cls, funcs, write)
         ifblock:pushf([[
             if (num_args > 0) {
                 // ${pack_fi.funcdesc}
-                return _${{cls.cppcls}}_${pack_fi.cppfunc}${pack_fi.index}(L);
+                return _${cls.cppcls#}_${pack_fi.cppfunc}${pack_fi.index}(L);
             }
         ]])
     end
 
     write(format([[
-        static int _${{cls.cppcls}}_${cppfunc}(lua_State *L)
+        static int _${cls.cppcls#}_${cppfunc}(lua_State *L)
         {
             int num_args = lua_gettop(L)${subone};
 
