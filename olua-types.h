@@ -51,7 +51,7 @@ public:
         }
     }
     
-    pointer(const T *v)
+    pointer(T *v)
     :_len(0)
     ,_owner(false)
     ,_data(v)
@@ -86,7 +86,12 @@ public:
         _data[idx - 1] = v;
     }
 
-    void take() {_owner = false;}
+    olua_Return __gc(lua_State *L)
+    {
+        olua_setrawobj(L, 1, nullptr);
+        delete this;
+        return 0;
+    }
 
     olua_Return tostring(lua_State *L, size_t len = -1)
     {
@@ -98,6 +103,8 @@ public:
         lua_pushlstring(L, (const char*)_data, len * sizeof(T));
         return 1;
     }
+
+    void take() {_owner = false;}
 
     OLUA_GETTER OLUA_NAME(length) size_t getLength() {return _len;}
     OLUA_SETTER OLUA_NAME(length) void setLength(size_t len)
@@ -165,9 +172,17 @@ typedef olua::pointer<int32_t> olua_int32;
 typedef olua::pointer<uint32_t> olua_uint32;
 typedef olua::pointer<int64_t> olua_int64;
 typedef olua::pointer<uint64_t> olua_uint64;
+typedef olua::pointer<short> olua_short;
+typedef olua::pointer<unsigned short> olua_ushort;
+typedef olua::pointer<int> olua_int;
+typedef olua::pointer<unsigned int> olua_uint;
+typedef olua::pointer<long> olua_long;
+typedef olua::pointer<unsigned long> olua_ulong;
+typedef olua::pointer<long long> olua_llong;
+typedef olua::pointer<unsigned long long> olua_ullong;
 typedef olua::pointer<float> olua_float;
 typedef olua::pointer<double> olua_double;
-typedef olua::pointer<long double> olua_long_double;
+typedef olua::pointer<long double> olua_ldouble;
 typedef olua::pointer<size_t> olua_size_t;
 typedef olua::pointer<ssize_t> olua_ssize_t;
 typedef olua::pointer<time_t> olua_time_t;
@@ -191,6 +206,26 @@ int olua_push_pointer(lua_State *L, T *value, const char *cls)
     olua_pushobj<olua::pointer<T>>(L, obj, cls);
     olua_postnew(L, obj);
     return 1;
+}
+
+template <class T>
+int olua_pushobj(lua_State *L, const olua::pointer<T> *value, const char *cls)
+{
+    olua_postpush(L, (olua::pointer<T> *)value, olua_pushobj(L, (void *)value, cls));
+    return 1;
+}
+
+template <class T>
+inline int olua_pushobj(lua_State *L, const olua::pointer<T> *value)
+{
+    luaL_error(L, "push olua::pointer object must specify the lua class");
+    return 0;
+}
+
+template <class T>
+inline int olua_push_obj(lua_State *L, const olua::pointer<T> *value, const char *cls)
+{
+    return olua_pushobj<T>(L, value, cls);
 }
 
 #endif

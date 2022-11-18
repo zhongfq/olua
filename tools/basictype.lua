@@ -19,7 +19,6 @@ typedef {
 typedef {
     cppcls = [[
         void *
-        GLvoid *
     ]],
     luacls = 'void *',
     conv = 'olua_$$_obj',
@@ -32,13 +31,10 @@ typedef {
 
 typedef {
     cppcls = [[
-        uint8_t *
         char *
         const char *
         unsigned char *
         const unsigned char *
-        GLchar *
-        const GLchar *
     ]],
     decltype = 'const char *',
     conv = 'olua_$$_string',
@@ -90,7 +86,6 @@ typedef {
         float
         double
         long double
-        GLfloat
         lua_Number
     ]],
     decltype = 'lua_Number',
@@ -99,35 +94,24 @@ typedef {
 
 typedef {
     cppcls = [[
-        byte
-        GLint
-        GLshort
-        GLsizei
+        intptr_t
         ssize_t
-        int8_t
-        int16_t
-        int32_t
-        int64_t
         time_t
-        std::int8_t
-        std::int16_t
-        std::int32_t
-        std::int64_t
         char
-        signed char
         short
         short int
-        signed short
-        signed short int
         int
-        signed
-        signed int
         long
         long int
-        signed long
-        signed long int
         long long
         long long int
+        signed char
+        signed short
+        signed short int
+        signed
+        signed int
+        signed long
+        signed long int
         signed long long
         signed long long int
         lua_Integer
@@ -138,22 +122,8 @@ typedef {
 
 typedef {
     cppcls = [[
-        GLboolean
-        GLenum
-        GLubyte
-        GLuint
-        size_t
-        std::size_t
-        std::string::size_type
-        uint8_t
-        uint16_t
-        uint32_t
-        uint64_t
         uintptr_t
-        std::uint8_t
-        std::uint16_t
-        std::uint32_t
-        std::uint64_t
+        size_t
         unsigned char
         unsigned short
         unsigned short int
