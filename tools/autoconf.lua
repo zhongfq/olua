@@ -16,6 +16,11 @@ if OLUA_AUTO_BUILD == nil then
     OLUA_AUTO_BUILD = true
 end
 
+-- print more debug info
+if OLUA_VERBOSE == nil then
+    OLUA_VERBOSE = false
+end
+
 -- auto generate property
 if OLUA_AUTO_GEN_PROP == nil then
     OLUA_AUTO_GEN_PROP = true
@@ -256,6 +261,18 @@ local function check_alias_typename(tn, underlying)
     end
 end
 
+local function get_pointee_type(type)
+    local kind = type.kind
+    if kind == TypeKind.LValueReference
+        or kind == TypeKind.RValueReference
+        or kind == TypeKind.Pointer
+    then
+        return get_pointee_type(type.pointeeType)
+    else
+        return type
+    end
+end
+
 function typename(type, template_types, level, willcheck)
     local tn = parse_from_type(type, template_types, false, level, willcheck)
     local rawtn = raw_type(tn, KEEP_POINTER)
@@ -292,6 +309,7 @@ function typename(type, template_types, level, willcheck)
         type_checker:push({
             type = raw_type(tn, KEEP_POINTER),
             from = willcheck,
+            kind = get_pointee_type(type).declaration.kindSpelling
         })
     end
 
@@ -309,18 +327,6 @@ local function is_excluded_typename(name)
     end
 end
 
-local function get_template_type(type)
-    local kind = type.kind
-    if kind == TypeKind.LValueReference
-        or kind == TypeKind.RValueReference
-        or kind == TypeKind.Pointer
-    then
-        return get_template_type(type.pointeeType)
-    else
-        return type
-    end
-end
-
 local function is_excluded_type(type)
     if type.kind == TypeKind.IncompleteArray then
         return true
@@ -329,7 +335,7 @@ local function is_excluded_type(type)
     local tn = typename(type)
     local rawtn = raw_type(tn, KEEP_POINTER)
     if is_templdate_type(tn) then
-        for _, subtype in ipairs(get_template_type(type).templateArgumentTypes) do
+        for _, subtype in ipairs(get_pointee_type(type).templateArgumentTypes) do
             if is_excluded_type(subtype) then
                 return true
             end
@@ -755,7 +761,7 @@ function M:visit_class(cppcls, cur, template_types)
             end
             cls.template_types:push(c.name, tn)
         elseif kind == CursorKind.CXXBaseSpecifier then
-            local supercls = typename(c.type)
+            local supercls = parse_from_type(c.type)
             local rawsupercls = raw_type(supercls)
             local supercursor = type_cursors:get(rawsupercls)
 
@@ -998,6 +1004,7 @@ local function write_module_typedef(module)
                 decltype = ${td.decltype??},
                 conv = '${td.conv}',
                 num_vars = ${td.num_vars??},
+                smartptr = ${td.smartptr??},
             }
         ]])
         t:push('')
@@ -1466,6 +1473,19 @@ end
 
 local function parse_types()
     for _, m in ipairs(deferred.modules) do
+        for _, cls in ipairs(m.typedef_types:clone()) do
+            if cls.cppcls:find('[;\n\r]') then
+                m.typedef_types:take(cls.cppcls)
+                for c in cls.cppcls:gmatch('[^;\n\r]+') do
+                    c = olua.pretty_typename(c)
+                    local t = setmetatable({cppcls = c}, {__index = cls})
+                    m.typedef_types:push(c, t)
+                end
+            end
+        end
+    end
+
+    for _, m in ipairs(deferred.modules) do
         for _, cls in ipairs(m.typedef_types) do
             add_type_conv_func(cls)
         end
@@ -1519,16 +1539,24 @@ local function check_errors()
 
     -- check type info
     table.sort(type_checker, function (e1, e2) return e1.type < e2.type end)
+    local filter = {}
     for _, entry in ipairs(type_checker) do
         local rawtn = raw_type(entry.type)
         local has_conv = type_convs:has(rawtn)
         local has_ti = olua.typeinfo(rawtn, nil, false)
         local has_alias = alias_types:has(rawtn)
         if not (has_conv or has_ti or has_alias) then
-            type_not_found:pushf([[
-                => ${entry.type}
-                    from: ${entry.from}
-            ]])
+            if OLUA_VERBOSE then
+                type_not_found:pushf([[
+                    => ${entry.type} (${entry.kind})
+                            from: ${entry.from}
+                ]])
+            elseif not filter[entry.type] then
+                filter[entry.type] = true
+                type_not_found:pushf([[
+                    => ${entry.type} (${entry.kind})
+                ]])
+            end
         end
     end
 
@@ -2106,6 +2134,7 @@ function M.__call(_, path)
     end
 
     function CMD.typeconf(classname, kind)
+        classname = olua.pretty_typename(classname)
         local cls = {
             cppcls = assert(classname, 'not specify classname'),
             luacls = module.luacls(classname),
@@ -2176,6 +2205,7 @@ function M.__call(_, path)
     end
 
     function CMD.typedef(classname)
+        classname = olua.pretty_typename(classname)
         local cls = {cppcls = classname}
         module.typedef_types:push(classname, cls)
         return make_typedef_command(cls)
