@@ -86,10 +86,6 @@ local function is_templdate_type(cppcls)
     return cppcls:find('<')
 end
 
-local function create_conv_func(cppcls)
-    return 'olua_$$_' .. cppcls:gsub('::', '_'):gsub('[ *]', '')
-end
-
 local function raw_type(cppcls, keep_pointer)
     local from, to = cppcls:find('^const ')
     if from then
@@ -107,7 +103,10 @@ local function raw_type(cppcls, keep_pointer)
     return cppcls
 end
 
-local function add_type_conv_func(cls)
+local function add_conv_func(cls)
+    local function convertor(cppcls)
+        return 'olua_$$_' .. cppcls:gsub('::', '_'):gsub('[ *]', '')
+    end
     if not cls.includes then
         -- typedef type
         if not cls.conv then
@@ -118,16 +117,17 @@ local function add_type_conv_func(cls)
                 end
                 cls.conv = ti.conv
             else
-                cls.conv = create_conv_func(cls.cppcls)
+                cls.conv = convertor(cls.cppcls)
             end
         end
         for cppcls in string.gmatch(cls.cppcls, '[^ ;]+') do
             type_convs:replace(cppcls, cls.conv)
         end
     elseif has_kflag(cls, kFLAG_CONV) then
-        type_convs:replace(cls.cppcls, create_conv_func(cls.cppcls))
+        type_convs:replace(cls.cppcls, convertor(cls.cppcls))
     else
         type_convs:replace(cls.cppcls, true)
+        type_convs:replace(cls.cppcls .. ' *', true)
     end
 end
 
@@ -689,6 +689,15 @@ end
 
 function M:will_visit(cppcls)
     local cls = self.class_types:get(cppcls)
+    if visited_types:has(cppcls) then
+        olua.error([[
+            ${cppcls} already visited
+            you should do one of:
+                * if you set OLUA_AUTO_EXPORT_PARENT = true, remove "typeconf '${cppcls}'"
+                    or move "typeconf '${cppcls}'" before subclass
+                * check whether "typeconf '${cppcls}'" in multi config file
+        ]])
+    end
     visited_types:replace(cppcls, cls)
     return cls
 end
@@ -1145,9 +1154,13 @@ local function search_using_func(module, cls)
                 supercls = super.supercls
             end
         end
-        search_parent(arr, name, supercls)
-        for _, func in ipairs(arr) do
-            cls.funcs:push_if_not_exist(func.prototype, func)
+        if supercls then
+            search_parent(arr, name, supercls)
+            for _, func in ipairs(arr) do
+                cls.funcs:push_if_not_exist(func.prototype, func)
+            end
+        elseif not cls.supers:has(where) then
+            olua.error([[unexpect copy using error: using ${where}:${name}]])
         end
     end
 end
@@ -1487,10 +1500,10 @@ local function parse_types()
 
     for _, m in ipairs(deferred.modules) do
         for _, cls in ipairs(m.typedef_types) do
-            add_type_conv_func(cls)
+            add_conv_func(cls)
         end
         for _, cls in ipairs(m.class_types) do
-            add_type_conv_func(cls)
+            add_conv_func(cls)
         end
     end
 
@@ -2134,7 +2147,6 @@ function M.__call(_, path)
     end
 
     function CMD.typeconf(classname, kind)
-        classname = olua.pretty_typename(classname)
         local cls = {
             cppcls = assert(classname, 'not specify classname'),
             luacls = module.luacls(classname),
