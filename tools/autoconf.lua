@@ -486,7 +486,6 @@ function M:visit_method(cls, cur)
         or cur.isCXXMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
         or cur.name == 'as'  -- 'as used to cast object'
-        or is_excluded_type(cur.resultType)
         or has_exclude_attr(cur)
     then
         return
@@ -495,6 +494,8 @@ function M:visit_method(cls, cur)
     local fn = cur.name
     local display_name = cur.displayName
     local luaname = fn
+    local arguments = cur.arguments
+    local result_type = cur.resultType
     local typefrom = format('${cls.cppcls} -> ${cur.prettyPrinted}')
     local attr = get_attr_copy(cls, fn)
     local callback = cls.callbacks:get(fn) or {}
@@ -503,10 +504,16 @@ function M:visit_method(cls, cur)
     local protoexps = olua.newarray('')
 
     parse_attr_from_annotate(attr, cur)
-    
-    for i, arg in ipairs(cur.arguments) do
-        local v = (attr['arg' .. i]) or ''
-        if not v:find('@ret') and is_excluded_type(arg.type) then
+
+    for i, c in ipairs({{type = result_type}, table.unpack(arguments)}) do
+        local mark = (attr['arg' .. (i - 1)]) or ''
+        if not mark:find('@ret') and is_excluded_type(c.type) then
+            if cls.includes:has(fn) then
+                print(format([=[
+                    [WARNING]: function '${fn}' included in class '${cls.cppcls}' will be ignored
+                                   because '${c.type.name}' has been excluded
+                ]=], 1))
+            end
             return
         end
     end
@@ -521,8 +528,8 @@ function M:visit_method(cls, cur)
     local cb_kind
 
     if cur.kind ~= CursorKind.Constructor then
-        local tn = typename(cur.resultType, cls.template_types, nil, typefrom)
-        if is_func_type(cur.resultType) then
+        local tn = typename(result_type, cls.template_types, nil, typefrom)
+        if is_func_type(result_type) then
             cb_kind = 'ret'
             if callback.localvar ~= false then
                 declexps:push('@localvar ')
@@ -541,7 +548,6 @@ function M:visit_method(cls, cur)
 
     local optional = false
     local min_args = 0
-    local arguments = cur.arguments
     local num_args = #arguments
     declexps:push(fn .. '(')
     protoexps:push(fn .. '(')
@@ -595,7 +601,7 @@ function M:visit_method(cls, cur)
 
     local decl = tostring(declexps)
     local prototype =  tostring(protoexps)
-    cls.excludes:replace(cur.displayName, true)
+    cls.excludes:replace(display_name, true)
     cls.excludes:replace(prototype, true)
     if cur.kind == CursorKind.FunctionDecl then
         decl = 'static ' .. decl
@@ -910,13 +916,22 @@ local function try_add_wildcard_type(cppcls, cur)
         return
     end
     for _, m in ipairs(deferred.modules) do
-        if not m.class_types:has(cppcls) then
-            for type, conf in pairs(m.wildcard_types) do
-                if cppcls:find(type) then
+        if m.class_types:has(cppcls) then
+            goto continue
+        end
+        for type, conf in pairs(m.wildcard_types) do
+            if cppcls:find(type) then
+                if exclude_types:has(cppcls .. ' *') then
+                    print(format([=[
+                        [WARNING]: '${cppcls}' matched by '${type}' will be ignored
+                                       because '${cppcls} *' has been excluded
+                    ]=], 1))
+                else
                     m.CMD._typefrom(cppcls, conf)
                 end
             end
         end
+        ::continue::
     end
 end
 
