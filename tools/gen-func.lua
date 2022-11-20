@@ -473,8 +473,15 @@ local function gen_func_ret(cls, fi, codeset)
     if fi.ret.type.cppcls ~= 'void' then
         local typespace = olua.typespace(fi.ret.decltype)
         local is_pointee = typespace == ''
-        if olua.is_cast_type(fi.ret.type) and not is_pointee and fi.variable then
-            codeset.decl_ret = format('${fi.ret.decltype} &ret =') .. ' '
+        if olua.is_cast_type(fi.ret.type) and not is_pointee then
+            if fi.variable then
+                codeset.decl_ret = format('${fi.ret.decltype} &ret =') .. ' '
+            else
+                olua.error([[
+                    type cast not unsupport for '${fi.ret.type.rawdecl}'
+                        cast to '${fi.ret.type.cppcls}' is not safety
+                ]])
+            end
         else
             olua.assert(fi.ret.decltype:find(fi.ret.type.cppcls), fi.ret.decltype)
             codeset.decl_ret = format('${fi.ret.decltype}${typespace}ret =') .. ' '

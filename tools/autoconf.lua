@@ -16,6 +16,11 @@ if OLUA_AUTO_BUILD == nil then
     OLUA_AUTO_BUILD = true
 end
 
+-- print more debug info
+if OLUA_VERBOSE == nil then
+    OLUA_VERBOSE = false
+end
+
 -- auto generate property
 if OLUA_AUTO_GEN_PROP == nil then
     OLUA_AUTO_GEN_PROP = true
@@ -62,47 +67,57 @@ local metamethod = {
     __concat = true, __call = true, __close = true
 }
 
-local kFLAG_POINTEE = 1 << 1     -- pointee type
-local kFLAG_ENUM = 1 << 2        -- enum type
-local kFLAG_ALIAS = 1 << 3       -- alias type
-local kFLAG_CONV = 1 << 4        -- conv type
-local kFLAG_FUNC = 1 << 5        -- function type
-local kFLAG_STRUCT = 1 << 6      -- struct type
-local kFLAG_TEMPLATE = 1 << 7    -- template type
-local kFLAG_SKIP = 1 << 8        -- don't export
+local TYPFLAG_POINTEE = 1 << 1     -- pointee type
+local TYPFLAG_ENUM = 1 << 2        -- enum type
+local TYPFLAG_ALIAS = 1 << 3       -- alias type
+local TYPFLAG_CONV = 1 << 4        -- conv type
+local TYPFLAG_FUNC = 1 << 5        -- function type
+local TYPFLAG_TEMPLATE = 1 << 6    -- template type
+local TYPFLAG_SKIP = 1 << 7        -- don't export
 
-local KEEP_POINTER = true
+local KEEP_POINTER = 1 << 1
+local KEEP_CONST = 1 << 2
 
-local function has_kflag(cls, kind)
-    return ((cls.kind or 0) & kind) ~= 0
+local function has_flag(flag, k)
+    return (flag & k) ~= 0
+end
+
+local function has_type_flag(cls, kind)
+    return has_flag(cls.kind or 0, kind)
 end
 
 local function is_templdate_type(cppcls)
     return cppcls:find('<')
 end
 
-local function create_conv_func(cppcls)
-    return 'olua_$$_' .. cppcls:gsub('::', '_'):gsub('[ *]', '')
-end
-
-local function raw_type(cppcls, keep_pointer)
-    local from, to = cppcls:find('^const ')
-    if from then
-        cppcls = cppcls:sub(to + 1)
-    end
-    if keep_pointer and cppcls:find('%*$') then
-        cppcls = cppcls:gsub('<.*>', '')
-    elseif cppcls:find('^struct ') then
-        cppcls = cppcls:match('^struct [^< %[]+')
-    elseif cppcls:find('^enum ') then
-        cppcls = cppcls:match('^enum [^< %[]+')
+local function raw_typename(cppcls, flag)
+    if cppcls == '' then
+        return ''
     else
-        cppcls = cppcls:match('[^< %[]+')
+        flag = flag or 0
+        if not has_flag(flag, KEEP_CONST) then
+            cppcls = cppcls:gsub('^const ', '')
+        end
+        if has_flag(flag, KEEP_POINTER)  and cppcls:find('%*$') then
+            cppcls = cppcls:gsub('<.*>', '')
+        else
+            cppcls = cppcls:match('[^<%[&*]+')
+        end
+        return olua.pretty_typename(cppcls)
     end
-    return cppcls
 end
 
-local function add_type_conv_func(cls)
+local function add_type_conv(cppcls, try_pointee)
+    type_convs:push_if_not_exist(cppcls, true)
+    if try_pointee and not cppcls:find('%*') then
+        type_convs:push_if_not_exist(cppcls .. ' *', true)
+    end
+end
+
+local function init_conv_func(cls)
+    local function convertor(cppcls)
+        return 'olua_$$_' .. cppcls:gsub('::', '_'):gsub('[ *]', '')
+    end
     if not cls.includes then
         -- typedef type
         if not cls.conv then
@@ -113,16 +128,17 @@ local function add_type_conv_func(cls)
                 end
                 cls.conv = ti.conv
             else
-                cls.conv = create_conv_func(cls.cppcls)
+                cls.conv = convertor(cls.cppcls)
             end
         end
         for cppcls in string.gmatch(cls.cppcls, '[^ ;]+') do
-            type_convs:replace(cppcls, cls.conv)
+            add_type_conv(cppcls, true)
         end
-    elseif has_kflag(cls, kFLAG_CONV) then
-        type_convs:replace(cls.cppcls, create_conv_func(cls.cppcls))
+    elseif has_type_flag(cls, TYPFLAG_CONV) then
+        cls.conv = convertor(cls.cppcls)
+        add_type_conv(cls.cppcls, false)
     else
-        type_convs:replace(cls.cppcls, true)
+        add_type_conv(cls.cppcls, true)
     end
 end
 
@@ -144,7 +160,7 @@ local function parse_from_ast(type)
 
     local exps = olua.newarray('::')
     while cur and cur.kind ~= CursorKind.TranslationUnit do
-        local value = raw_type(cur.name)
+        local value = raw_typename(cur.name)
         if cur.isInlineNamespace then
             cur = cur.parent
         elseif value then
@@ -161,20 +177,20 @@ local typename
 
 local function parse_from_type(type, template_types, try_underlying, level, willcheck)
     local kind = type.kind
-    local name = trim_prefix_colon(type.name)
-    local rawname = raw_type(name)
+    local tn = trim_prefix_colon(type.name)
+    local rawtn = raw_typename(tn)
     local template_arg_types = type.templateArgumentTypes
     local decl = type.declaration
     local underlying = decl.underlyingType
     local pointee = type.pointeeType
     if level and level > 4 then
-        return name
+        return tn
     elseif #template_arg_types > 0 and (not try_underlying or not underlying) then
         local exps = olua.newarray('')
         local astname = parse_from_ast(type)
         exps:push(type.isConstQualified and 'const ' or nil)
         exps:push(astname)
-        if is_templdate_type(name) then
+        if is_templdate_type(tn) then
             level = (level or 0) + 1
             exps:push('<')
             for i, v in ipairs(template_arg_types) do
@@ -205,18 +221,18 @@ local function parse_from_type(type, template_types, try_underlying, level, will
         exps:push(')')
         return tostring(exps)
     elseif try_underlying and underlying then
-        local const = name:match('^const ') or ''
+        local const = tn:match('^const ') or ''
         return const .. parse_from_type(underlying, template_types, false, level)
-    elseif template_types and template_types:has(rawname) then
+    elseif template_types and template_types:has(rawtn) then
         --[[
             kind: Unexposed
             name: const T
         ]]
-        return name:gsub('[^ ]+$', template_types:get(rawname))
+        return tn:gsub('[^ ]+$', template_types:get(rawtn))
     elseif kind >= TypeKind.FirstBuiltin and kind <= TypeKind.LastBuiltin then
-        return name
+        return tn
     elseif kind == TypeKind.Typedef or kind == TypeKind.Unexposed then
-        return name
+        return tn
     else
         --[[
             name: size_t
@@ -231,22 +247,39 @@ local function parse_from_type(type, template_types, try_underlying, level, will
              raw: EventType
              ast: olua::test::EventType
         ]]
-        local rawtype = name:match('[^ ]+$')
+        local rawtn2 = tn:match('[^ ]+$')
         local astname = parse_from_ast(type)
-        if name == astname or not olua.is_end_with(astname, rawtype) then
-            return name
+        if tn == astname or not olua.is_end_with(astname, rawtn2) then
+            return tn
         else
-            return name:gsub('[^ ]+$', astname)
+            return tn:gsub(rawtn2, astname)
         end
     end
 end
 
 local function check_alias_typename(tn, underlying)
-    local rawtn = raw_type(tn)
-    local raw_underlying = raw_type(underlying)
+    local rawtn = raw_typename(tn, KEEP_POINTER)
+    local raw_underlying = raw_typename(underlying, KEEP_POINTER)
     local has_conv = type_convs:has(raw_underlying)
     local has_ti = olua.typeinfo(raw_underlying, nil, false)
-    if has_conv or (has_ti and not is_templdate_type(underlying)) then
+    if rawtn == raw_underlying then
+        return tn, false
+    elseif has_conv or (has_ti and not is_templdate_type(underlying)) then
+        if underlying:find('^const ') then
+            --[[
+                typedef char GLchar;
+                void set(const GLchar *);
+                        tn: const GLchar *
+                underlying: const char *
+
+                basictype.lua has register 'const char *' and 'char *'
+            ]]
+            local const_raw_underlying = raw_typename(underlying, KEEP_POINTER | KEEP_CONST)
+            if olua.typeinfo(const_raw_underlying, nil, false) then
+                local const_rawtn = raw_typename(tn, KEEP_POINTER | KEEP_CONST)
+                alias_types:replace(const_rawtn, const_raw_underlying)
+            end
+        end
         alias_types:replace(rawtn, raw_underlying)
         return tn, true
     elseif has_ti then
@@ -256,15 +289,26 @@ local function check_alias_typename(tn, underlying)
     end
 end
 
+local function get_pointee_type(type)
+    local kind = type.kind
+    if kind == TypeKind.LValueReference
+        or kind == TypeKind.RValueReference
+        or kind == TypeKind.Pointer
+    then
+        return get_pointee_type(type.pointeeType)
+    else
+        return type
+    end
+end
+
 function typename(type, template_types, level, willcheck)
     local tn = parse_from_type(type, template_types, false, level, willcheck)
-    local rawtn = raw_type(tn, KEEP_POINTER)
+    local rawtn = raw_typename(tn, KEEP_POINTER)
 
     if exclude_types:has(rawtn) then
         return tn
     end
 
-    rawtn = raw_type(tn)
     if not type_convs:has(rawtn) and not olua.typeinfo(rawtn, nil, false) then
         --[[
             typedef std::function<void()> ClickEvent;
@@ -288,10 +332,11 @@ function typename(type, template_types, level, willcheck)
         end
     end
 
-    if willcheck then
+    if willcheck and type.kind ~= TypeKind.FunctionProto then
         type_checker:push({
-            type = raw_type(tn, KEEP_POINTER),
+            type = raw_typename(tn, KEEP_POINTER),
             from = willcheck,
+            kind = get_pointee_type(type).declaration.kindSpelling
         })
     end
 
@@ -309,27 +354,15 @@ local function is_excluded_typename(name)
     end
 end
 
-local function get_template_type(type)
-    local kind = type.kind
-    if kind == TypeKind.LValueReference
-        or kind == TypeKind.RValueReference
-        or kind == TypeKind.Pointer
-    then
-        return get_template_type(type.pointeeType)
-    else
-        return type
-    end
-end
-
 local function is_excluded_type(type)
     if type.kind == TypeKind.IncompleteArray then
         return true
     end
 
     local tn = typename(type)
-    local rawtn = raw_type(tn, KEEP_POINTER)
+    local rawtn = raw_typename(tn, KEEP_POINTER)
     if is_templdate_type(tn) then
-        for _, subtype in ipairs(get_template_type(type).templateArgumentTypes) do
+        for _, subtype in ipairs(get_pointee_type(type).templateArgumentTypes) do
             if is_excluded_type(subtype) then
                 return true
             end
@@ -480,7 +513,6 @@ function M:visit_method(cls, cur)
         or cur.isCXXMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
         or cur.name == 'as'  -- 'as used to cast object'
-        or is_excluded_type(cur.resultType)
         or has_exclude_attr(cur)
     then
         return
@@ -489,6 +521,8 @@ function M:visit_method(cls, cur)
     local fn = cur.name
     local display_name = cur.displayName
     local luaname = fn
+    local arguments = cur.arguments
+    local result_type = cur.resultType
     local typefrom = format('${cls.cppcls} -> ${cur.prettyPrinted}')
     local attr = get_attr_copy(cls, fn)
     local callback = cls.callbacks:get(fn) or {}
@@ -497,10 +531,16 @@ function M:visit_method(cls, cur)
     local protoexps = olua.newarray('')
 
     parse_attr_from_annotate(attr, cur)
-    
-    for i, arg in ipairs(cur.arguments) do
-        local v = (attr['arg' .. i]) or ''
-        if not v:find('@ret') and is_excluded_type(arg.type) then
+
+    for i, c in ipairs({{type = result_type}, table.unpack(arguments)}) do
+        local mark = (attr['arg' .. (i - 1)]) or ''
+        if not mark:find('@ret') and is_excluded_type(c.type) then
+            if cls.includes:has(fn) then
+                print(format([=[
+                    [WARNING]: function '${fn}' included in class '${cls.cppcls}' will be ignored
+                                   because '${c.type.name}' has been excluded
+                ]=], 1))
+            end
             return
         end
     end
@@ -515,8 +555,8 @@ function M:visit_method(cls, cur)
     local cb_kind
 
     if cur.kind ~= CursorKind.Constructor then
-        local tn = typename(cur.resultType, cls.template_types, nil, typefrom)
-        if is_func_type(cur.resultType) then
+        local tn = typename(result_type, cls.template_types, nil, typefrom)
+        if is_func_type(result_type) then
             cb_kind = 'ret'
             if callback.localvar ~= false then
                 declexps:push('@localvar ')
@@ -535,7 +575,6 @@ function M:visit_method(cls, cur)
 
     local optional = false
     local min_args = 0
-    local arguments = cur.arguments
     local num_args = #arguments
     declexps:push(fn .. '(')
     protoexps:push(fn .. '(')
@@ -589,7 +628,7 @@ function M:visit_method(cls, cur)
 
     local decl = tostring(declexps)
     local prototype =  tostring(protoexps)
-    cls.excludes:replace(cur.displayName, true)
+    cls.excludes:replace(display_name, true)
     cls.excludes:replace(prototype, true)
     if cur.kind == CursorKind.FunctionDecl then
         decl = 'static ' .. decl
@@ -683,6 +722,15 @@ end
 
 function M:will_visit(cppcls)
     local cls = self.class_types:get(cppcls)
+    if visited_types:has(cppcls) then
+        olua.error([[
+            ${cppcls} already visited
+            you should do one of:
+                * if you set OLUA_AUTO_EXPORT_PARENT = true, remove "typeconf '${cppcls}'"
+                    or move "typeconf '${cppcls}'" before subclass
+                * check whether "typeconf '${cppcls}'" in multi config file
+        ]])
+    end
     visited_types:replace(cppcls, cls)
     return cls
 end
@@ -698,18 +746,18 @@ function M:visit_enum(cppcls, cur)
         })
     end
     cls.indexerror = 'rw'
-    cls.kind = cls.kind or kFLAG_ENUM
+    cls.kind = cls.kind or TYPFLAG_ENUM
 end
 
 function M:visit_alias_class(alias, cppcls)
     local cls = self:will_visit(alias)
-    cls.kind = cls.kind or kFLAG_POINTEE
+    cls.kind = cls.kind or TYPFLAG_POINTEE
     if is_func_type(cppcls) then
-        cls.kind = cls.kind | kFLAG_FUNC
+        cls.kind = cls.kind | TYPFLAG_FUNC
         cls.decltype = cppcls
         cls.luacls = self.luacls(alias)
     else
-        cls.kind = cls.kind | kFLAG_ALIAS
+        cls.kind = cls.kind | TYPFLAG_ALIAS
         cls.supercls = cppcls
         cls.luacls = self.luacls(cppcls)
     end
@@ -719,17 +767,15 @@ function M:visit_class(cppcls, cur, template_types)
     local cls = self:will_visit(cppcls)
     local skipsuper = false
 
-    cls.kind = cls.kind or kFLAG_POINTEE
+    cls.kind = cls.kind or TYPFLAG_POINTEE
 
     if cur.kind == CursorKind.ClassTemplate then
-        type_convs:push_if_not_exist(cppcls:gsub('<.*>', ''), cppcls)
+        add_type_conv(raw_typename(cppcls), true)
         olua.assert(template_types, [[
             don't config template class:
                 you should remove: typeconf '${cls.cppcls}'
         ]])
-        cls.kind = cls.kind | kFLAG_TEMPLATE
-    elseif cur.kind == CursorKind.StructDecl then
-        cls.kind = cls.kind | kFLAG_STRUCT
+        cls.kind = cls.kind | TYPFLAG_TEMPLATE
     elseif cur.kind == CursorKind.Namespace then
         cls.reg_luatype = false
     end
@@ -755,8 +801,8 @@ function M:visit_class(cppcls, cur, template_types)
             end
             cls.template_types:push(c.name, tn)
         elseif kind == CursorKind.CXXBaseSpecifier then
-            local supercls = typename(c.type)
-            local rawsupercls = raw_type(supercls)
+            local supercls = parse_from_type(c.type)
+            local rawsupercls = raw_typename(supercls)
             local supercursor = type_cursors:get(rawsupercls)
 
             if is_excluded_typename(rawsupercls)
@@ -863,22 +909,31 @@ function M:visit(cur, cppcls)
             local decl = cur.underlyingType.declaration
             local specialized = decl.specializedTemplate
             if specialized then
+                --[[
+                    typedef olua::pointer<int> olua_int;
+
+                    specialized: olua::pointer<int>
+                         cppcls: olua_int
+                      packedcls: int
+                ]]
                 local arg_types = {}
                 for i, v in ipairs(cur.type.templateArgumentTypes) do
                     arg_types[i] = parse_from_type(v)
                 end
                 local specializedcls = parse_from_type(cur.underlyingType)
                 self:visit_class(cppcls, specialized, arg_types)
-                type_convs:push_if_not_exist(raw_type(specializedcls), true)
-
+                
                 local typedef = self.CMD.typedef
+                add_type_conv(raw_typename(specializedcls), true)
                 typedef(specializedcls .. ' *')
                     .decltype(cppcls .. ' *')
                     .luacls(self.luacls(cppcls))
                     .conv('olua_$$_obj')
 
                 if specializedcls:find('^olua::pointer') then
-                    typedef(specializedcls:match('<(.*)>') .. ' *')
+                    local packedcls = specializedcls:match('<(.*)>') .. ' *'
+                    add_type_conv(packedcls)
+                    typedef(packedcls)
                         .luacls(self.luacls(cppcls))
                         .conv('olua_$$_pointer')
                 end
@@ -895,13 +950,22 @@ local function try_add_wildcard_type(cppcls, cur)
         return
     end
     for _, m in ipairs(deferred.modules) do
-        if not m.class_types:has(cppcls) then
-            for type, conf in pairs(m.wildcard_types) do
-                if cppcls:find(type) then
+        if m.class_types:has(cppcls) then
+            goto continue
+        end
+        for type, conf in pairs(m.wildcard_types) do
+            if cppcls:find(type) then
+                if exclude_types:has(cppcls .. ' *') then
+                    print(format([=[
+                        [WARNING]: '${cppcls}' matched by '${type}' will be ignored
+                                       because '${cppcls} *' has been excluded
+                    ]=], 1))
+                else
                     m.CMD._typefrom(cppcls, conf)
                 end
             end
         end
+        ::continue::
     end
 end
 
@@ -962,7 +1026,7 @@ local function write_module_metadata(module, append)
     append('')
 
     for _, cls in ipairs(module.class_types) do
-        if not has_kflag(cls, kFLAG_CONV) then
+        if not has_type_flag(cls, TYPFLAG_CONV) then
             goto continue
         end
 
@@ -998,6 +1062,7 @@ local function write_module_typedef(module)
                 decltype = ${td.decltype??},
                 conv = '${td.conv}',
                 num_vars = ${td.num_vars??},
+                smartptr = ${td.smartptr??},
             }
         ]])
         t:push('')
@@ -1008,30 +1073,18 @@ local function write_module_typedef(module)
             goto continue
         end
 
-        local conv
         local cppcls = cls.cppcls
-        local supercls, decltype, luacls, num_vars
-
-        if cls.supercls then
-            supercls = cls.supercls
-        end
-        if has_kflag(cls, kFLAG_FUNC) then
-            luacls = cls.luacls
+        local conv, decltype, num_vars
+        if has_type_flag(cls, TYPFLAG_FUNC) then
             decltype = cls.decltype
             conv = 'olua_$$_callback'
-        elseif has_kflag(cls, kFLAG_ENUM) then
+        elseif has_type_flag(cls, TYPFLAG_ENUM) then
             conv = 'olua_$$_uint'
-            luacls = cls.luacls
             decltype = 'lua_Unsigned'
-        elseif has_kflag(cls, kFLAG_POINTEE) then
-            if has_kflag(cls, kFLAG_STRUCT) then
-                cppcls = format('${cppcls} *; struct ${cppcls} *')
-            else
-                cppcls = cppcls .. ' *'
-            end
-            luacls = cls.luacls
+        elseif has_type_flag(cls, TYPFLAG_POINTEE) then
+            cppcls = cppcls .. ' *'
             conv = 'olua_$$_obj'
-        elseif has_kflag(cls, kFLAG_CONV) then
+        elseif has_type_flag(cls, TYPFLAG_CONV) then
             conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
             num_vars = #cls.vars
         else
@@ -1041,30 +1094,13 @@ local function write_module_typedef(module)
         t:pushf([[
             typedef {
                 cppcls = '${cppcls}',
-                luacls = ${luacls??},
-                supercls = ${supercls??},
+                luacls = ${cls.luacls??},
+                supercls = ${cls.supercls??},
                 decltype = ${decltype??},
                 conv = '${conv}',
                 num_vars = ${num_vars??},
             }
         ]])
-
-        if has_kflag(cls, kFLAG_POINTEE) and has_kflag(cls, kFLAG_CONV) then
-            cppcls = cppcls:gsub('[ *]+', '')
-            luacls = nil
-            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
-            num_vars =  #cls.vars
-            t:pushf([[
-                typedef {
-                    cppcls = '${cppcls}',
-                    luacls = ${luacls??},
-                    supercls = ${supercls??},
-                    decltype = ${decltype??},
-                    conv = '${conv}',
-                    num_vars = ${num_vars??},
-                }
-            ]])
-        end
 
         ::continue::
     end
@@ -1138,9 +1174,13 @@ local function search_using_func(module, cls)
                 supercls = super.supercls
             end
         end
-        search_parent(arr, name, supercls)
-        for _, func in ipairs(arr) do
-            cls.funcs:push_if_not_exist(func.prototype, func)
+        if supercls then
+            search_parent(arr, name, supercls)
+            for _, func in ipairs(arr) do
+                cls.funcs:push_if_not_exist(func.prototype, func)
+            end
+        elseif not cls.supers:has(where) then
+            olua.error([[unexpect copy using error: using ${where}:${name}]])
         end
     end
 end
@@ -1322,6 +1362,12 @@ end
 
 local function write_cls_alias(module, cls, append)
     for _, v in ipairs(cls.aliases) do
+        if not v.alias then
+            olua.error([[
+                alias not found for '${v.name}'
+                    from: ${cls.cppcls}
+            ]])
+        end
         append(format(".alias('${v.name}', '${v.alias}')", 4))
     end
 end
@@ -1346,9 +1392,9 @@ local function write_module_classes(module, append)
         end
     end
     for _, cls in ipairs(module.class_types) do
-        if (has_kflag(cls, kFLAG_CONV) and not has_kflag(cls, kFLAG_POINTEE))
-            or has_kflag(cls, kFLAG_ALIAS)
-            or has_kflag(cls, kFLAG_SKIP)
+        if (has_type_flag(cls, TYPFLAG_CONV) and not has_type_flag(cls, TYPFLAG_POINTEE))
+            or has_type_flag(cls, TYPFLAG_ALIAS)
+            or has_type_flag(cls, TYPFLAG_SKIP)
             or cls.maincls
         then
             goto continue
@@ -1467,10 +1513,10 @@ end
 local function parse_types()
     for _, m in ipairs(deferred.modules) do
         for _, cls in ipairs(m.typedef_types) do
-            add_type_conv_func(cls)
+            init_conv_func(cls)
         end
         for _, cls in ipairs(m.class_types) do
-            add_type_conv_func(cls)
+            init_conv_func(cls)
         end
     end
 
@@ -1519,16 +1565,24 @@ local function check_errors()
 
     -- check type info
     table.sort(type_checker, function (e1, e2) return e1.type < e2.type end)
+    local filter = {}
     for _, entry in ipairs(type_checker) do
-        local rawtn = raw_type(entry.type)
+        local rawtn = raw_typename(entry.type, KEEP_POINTER)
         local has_conv = type_convs:has(rawtn)
         local has_ti = olua.typeinfo(rawtn, nil, false)
         local has_alias = alias_types:has(rawtn)
         if not (has_conv or has_ti or has_alias) then
-            type_not_found:pushf([[
-                => ${entry.type}
-                    from: ${entry.from}
-            ]])
+            if OLUA_VERBOSE then
+                type_not_found:pushf([[
+                    => ${entry.type} (${entry.kind})
+                            from: ${entry.from}
+                ]])
+            elseif not filter[entry.type] then
+                filter[entry.type] = true
+                type_not_found:pushf([[
+                    => ${entry.type} (${entry.kind})
+                ]])
+            end
         end
     end
 
@@ -1575,7 +1629,7 @@ end
 
 local function copy_super_funcs()
     local function copy_funcs(cls, super)
-        local rawsuper = raw_type(super.cppcls)
+        local rawsuper = raw_typename(super.cppcls)
         for _, func in ipairs(super.funcs) do
             if func.name == '__gc' then
                 goto continue
@@ -1599,7 +1653,7 @@ local function copy_super_funcs()
     end
 
     local function copy_vars(cls, super)
-        local rawsuper = raw_type(super.cppcls)
+        local rawsuper = raw_typename(super.cppcls)
         for _, var in ipairs(super.vars) do
             if not cls.vars:has(var.name)
                 and not cls.excludes:has(var.name)
@@ -1612,7 +1666,7 @@ local function copy_super_funcs()
     end
 
     local function copy_props(cls, super)
-        local rawsuper = raw_type(super.cppcls)
+        local rawsuper = raw_typename(super.cppcls)
         for _, prop in ipairs(super.props) do
             if not cls.excludes:has(prop.name) and not cls.props:has(prop.name) then
                 local get = prop.get
@@ -1649,7 +1703,7 @@ local function copy_super_funcs()
                 if #cls.supers == 1 and is_templdate_type(super.cppcls) then
                     -- see find 'find_as_cls'
                     -- no 'as' func, no need to export
-                    super.kind = super.kind | kFLAG_SKIP
+                    super.kind = super.kind | TYPFLAG_SKIP
                 end
                 ::continue::
             end
@@ -1675,7 +1729,7 @@ local function find_as()
                 local function remove_first_as_cls(c)
                     local supercls = c.supercls
                     if supercls then
-                        local rawsuper = raw_type(supercls, KEEP_POINTER)
+                        local rawsuper = raw_typename(supercls, KEEP_POINTER)
                         ascls:take(rawsuper)
                         remove_first_as_cls(visited_types:get(supercls))
                     end
@@ -1734,33 +1788,40 @@ end
 local function write_alias_types()
     local types = olua.newarray('\n')
     for alias, cppcls in pairs(alias_types) do
-        if visited_types:get(alias) then
+        if visited_types:get(raw_typename(alias)) then
             goto continue
         end
-        local cls = visited_types:get(cppcls)
+        local cls = visited_types:get(raw_typename(cppcls))
         if not cls then
             local ti = olua.typeinfo(cppcls)
             types:push({
                 cppcls = alias,
                 decltype = ti.decltype,
                 conv = ti.conv,
+                luacls = ti.luacls,
             })
-        elseif has_kflag(cls, kFLAG_ENUM) then
+        elseif has_type_flag(cls, TYPFLAG_ENUM) then
             types:push({
                 cppcls = alias,
                 decltype = 'lua_Unsigned',
                 conv = 'olua_$$_uint',
             })
-        elseif type(type_convs:get(cppcls)) == 'string' then
+        elseif has_type_flag(cls, TYPFLAG_CONV) then
             types:push({
                 cppcls = alias,
                 decltype = alias,
-                conv = type_convs:get(cppcls),
+                conv = cls.conv,
             })
-        elseif has_kflag(cls, kFLAG_STRUCT) then
-            goto continue
         else
-            error('TODO: ' .. alias .. ' => ' .. cppcls)
+            olua.assert(has_type_flag(cls, TYPFLAG_POINTEE), [[
+                '${cls.cppcls}' not a pointee type
+            ]])
+            types:push({
+                cppcls = alias,
+                decltype = alias,
+                luacls = cls.luacls,
+                conv = "olua_$$_obj"
+            })
         end
         ::continue::
     end
@@ -1771,6 +1832,7 @@ local function write_alias_types()
                 cppcls = '${v.cppcls}',
                 decltype = '${v.decltype}',
                 conv = '${v.conv}',
+                luacls = ${v.luacls??},
             }
         ]])
         typedefs:push('')
@@ -1902,7 +1964,7 @@ local function make_typeconf_command(cls, ModuleCMD)
     add_value_command(CMD, 'indexerror', cls)
     add_value_command(CMD, '_maincls', cls, "maincls", totable)
 
-    if has_kflag(cls, kFLAG_CONV) then
+    if has_type_flag(cls, TYPFLAG_CONV) then
         cls.export = false
         add_value_command(CMD, 'export', cls, nil, tobool)
     end
@@ -2020,10 +2082,12 @@ local function make_typeconf_command(cls, ModuleCMD)
         return olua.command_proxy(SubCMD, CMD)
     end
 
-    function CMD.alias(value)
-        local name, alias = string.match(value, '([^ ]+) *-> *([^ ]+)')
-        assert(name, value)
-        cls.aliases:push(name, {name = name, alias = alias})
+    function CMD.alias(name)
+        local entry = {name = name}
+        local SubCMD = {}
+        add_value_command(SubCMD, 'to', entry, 'alias')
+        cls.aliases:push(name, entry)
+        return olua.command_proxy(SubCMD, CMD)
     end
 
     return olua.command_proxy(CMD)
@@ -2092,7 +2156,7 @@ function M.__call(_, path)
         exclude_types:replace(tn, true)
     end
 
-    function CMD.include(filepath)
+    function CMD.import(filepath)
         assert(loadfile(filepath, nil, CMD))()
     end
 
@@ -2105,10 +2169,10 @@ function M.__call(_, path)
         end
     end
 
-    function CMD.typeconf(classname, kind)
+    function CMD.typeconf(cppcls, kind)
         local cls = {
-            cppcls = assert(classname, 'not specify classname'),
-            luacls = module.luacls(classname),
+            cppcls = assert(cppcls, 'not specify cppcls'),
+            luacls = module.luacls(cppcls),
             extends = olua.newhash(),
             excludes = olua.newhash(),
             wildcards = olua.newhash(), -- exclude wildcards
@@ -2127,23 +2191,21 @@ function M.__call(_, path)
             kind = kind,
             supers = olua.newhash(),
             reg_luatype = true,
+            conv = false,
             template_types = olua.newhash(),
             luaname = function (n) return n end,
         }
-        local last = module.class_types:get(classname)
-        if last then
-            if last.kind == kind then
-                olua.error('class conflict: ${classname}')
-            else
-                if kind == kFLAG_CONV then
-                    cls = last
-                end
-                cls.kind = cls.kind or kFLAG_POINTEE
-                cls.kind = cls.kind | kFLAG_CONV
-                module.class_types:take(classname)
+        if has_type_flag(cls, TYPFLAG_CONV) then
+            cls.luacls = nil
+            if exclude_types:has(cls.cppcls) then
+                olua.error([[
+                    typeconv '${cls.cppcls}' will not configured
+                    you should do one of:
+                        * remove excludeany '${cls.cppcls}'
+                        * remove excludetype '${cls.cppcls}'
+                ]])
             end
-        end
-        if has_kflag(cls, kFLAG_POINTEE) and exclude_types:has(cls.cppcls .. ' *') then
+        elseif exclude_types:has(cls.cppcls .. ' *') then
             olua.error([[
                 typeconf '${cls.cppcls}' will not configured
                 you should do one of:
@@ -2151,17 +2213,10 @@ function M.__call(_, path)
                     * remove excludetype '${cls.cppcls} *'
             ]])
         end
-        if has_kflag(cls, kFLAG_CONV) and exclude_types:has(cls.cppcls) then
-            olua.error([[
-                typeconv '${cls.cppcls}' will not configured
-                you should do one of:
-                    * remove excludeany '${cls.cppcls}'
-                    * remove excludetype '${cls.cppcls}'
-            ]])        end
-        if classname:find('[%^%%%$%*%+]') then -- ^%$*+
-            module.wildcard_types:push(classname, cls)
+        if cppcls:find('[%^%%%$%*%+]') then -- ^%$*+
+            module.wildcard_types:push(cppcls, cls)
         else
-            module.class_types:push(classname, cls)
+            module.class_types:push(cppcls, cls)
         end
         if macro then
             cls.macros:push('*', {name = '*', value = macro})
@@ -2169,25 +2224,29 @@ function M.__call(_, path)
         return make_typeconf_command(cls, CMD)
     end
 
-    function CMD.typeonly(classname)
-        local cls = CMD.typeconf(classname)
+    function CMD.typeonly(cppcls)
+        local cls = CMD.typeconf(cppcls)
         cls.exclude '*'
         return cls
     end
 
-    function CMD.typedef(classname)
-        local cls = {cppcls = classname}
-        module.typedef_types:push(classname, cls)
+    function CMD.typedef(cppcls)
+        local cls = {}
+        for c in cppcls:gmatch('[^;\n\r]+') do
+            c = olua.pretty_typename(c)
+            local t = setmetatable({cppcls = c}, {__index = cls})
+            module.typedef_types:push(c, t)
+        end
         return make_typedef_command(cls)
     end
 
-    function CMD.typeconv(classname)
-        return CMD.typeconf(classname, kFLAG_CONV)
+    function CMD.typeconv(cppcls)
+        return CMD.typeconf(cppcls, TYPFLAG_CONV)
     end
 
-    function CMD._typefrom(classname, fromcls)
-        CMD.typeconf(classname)
-        local cls = module.class_types:get(classname)
+    function CMD._typefrom(cppcls, fromcls)
+        CMD.typeconf(cppcls)
+        local cls = module.class_types:get(cppcls)
         for k, v in pairs(fromcls) do
             if k == 'cppcls' or k == 'luacls' then
                 goto continue

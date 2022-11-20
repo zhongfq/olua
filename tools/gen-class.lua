@@ -90,7 +90,7 @@ local function gen_class_funcs(cls, write)
 
     if cls.supercls then
         if not prototypes[cls.supercls] then
-            error(format("super class '${cls.supercls}' must be exported befor '${cls.cppcls}'"))
+            error(format("super class '${cls.supercls}' must be exported before '${cls.cppcls}'"))
         end
         pts = setmetatable(pts, {__index = prototypes[cls.supercls]})
     end
