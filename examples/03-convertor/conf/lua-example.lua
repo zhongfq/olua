@@ -7,7 +7,7 @@ headers [[
 #include "olua-custom.h"
 ]]
 
-include "../common/lua-object.lua"
+import "../common/lua-object.lua"
 
 typedef "example::Identifier"
     .decltype "std::string"
