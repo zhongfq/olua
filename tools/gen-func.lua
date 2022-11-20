@@ -723,13 +723,13 @@ local function gen_test_and_call(cls, fns)
                 exp1 = format([[
                     // if (${test_exps}) {
                         // ${fi.funcdesc}
-                        return _${cls.cppcls#}_${fi.cppfunc}${fi.index}(L);
+                        return _${cls.cppcls#}_${fi.cppfunc}$${fi.index}(L);
                     // }
                 ]]),
                 exp2 = format([[
                     if (${test_exps}) {
                         // ${fi.funcdesc}
-                        return _${cls.cppcls#}_${fi.cppfunc}${fi.index}(L);
+                        return _${cls.cppcls#}_${fi.cppfunc}$${fi.index}(L);
                     }
                 ]]),
             }
@@ -744,7 +744,7 @@ local function gen_test_and_call(cls, fns)
                 max_vars = 1,
                 exp1 = format([[
                     // ${fi.funcdesc}
-                    return _${cls.cppcls#}_${fi.cppfunc}${fi.index}(L);
+                    return _${cls.cppcls#}_${fi.cppfunc}$${fi.index}(L);
                 ]])
             }
         end
@@ -769,7 +769,7 @@ local function gen_multi_func(cls, funcs, write)
     local pack_fi
 
     for i, fi in ipairs(funcs) do
-        gen_one_func(cls, fi, write, fi.index)
+        gen_one_func(cls, fi, write, '$' .. fi.index)
         write('')
         for _, arg in ipairs(fi.args) do
             if arg.attr.pack and not arg.type.num_vars then

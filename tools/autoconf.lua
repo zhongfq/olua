@@ -618,7 +618,7 @@ function M:visit_method(cls, cur)
                 declexps:push(attr[argn] and (attr[argn] .. ' ') or nil)
                 declexps:push(tn)
                 declexps:push(olua.typespace(tn))
-                declexps:pushf("${arg.name}_variadic_${vi}")
+                declexps:pushf("${arg.name}_$${vi}")
             end
         end
     end
