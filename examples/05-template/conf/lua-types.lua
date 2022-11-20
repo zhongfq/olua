@@ -6,4 +6,4 @@ headers [[
 #include "olua-custom.h"
 ]]
 
-include "../../lua-types.lua"
+import "../../lua-types.lua"

@@ -37,7 +37,8 @@ util.dumpUserValue(test:as('example.GC'))
 
 local int32 = require "olua.int32"
 
-local v = int32.new(10)
+local v = int32.new()
+v.value = 10
 print('#1', v, v.length, v.value)
 
 sg:checkValue(v)
@@ -46,15 +47,15 @@ print(v[1])
 v[1] = 20
 print(v[1])
 
-local arr = int32.array(10)
+local arr = int32.new(10)
 arr[9] = 90
 
-local newarr = int32.array(5)
+local newarr = int32.new(5)
 newarr:copyfrom(arr, 6, 5)
 print(newarr[4])
 
 local int8 = require "olua.int8"
-local str = int8.array(10)
+local str = int8.new(10)
 str:fill('hello', 4)
 print(str:tostring(4))
 print(str:sub(2):tostring(4))

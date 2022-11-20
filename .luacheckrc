@@ -17,6 +17,7 @@ new_globals = {
     "export",
     "headers",
     "include",
+    "import",
     "ipairs",
     "luacls",
     "luaopen",
