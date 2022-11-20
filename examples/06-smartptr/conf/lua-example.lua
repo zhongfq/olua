@@ -7,6 +7,6 @@ headers [[
 #include "olua-custom.h"
 ]]
 
-include "../common/lua-object.lua"
+import "../common/lua-object.lua"
 
 typeconf "example::Hello"
