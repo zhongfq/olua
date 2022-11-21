@@ -808,6 +808,7 @@ function M:visit_class(cppcls, cur, template_types)
             if is_excluded_typename(rawsupercls)
                 or is_excluded_typename(rawsupercls .. ' *')
             then
+                skipsuper = true
                 goto continue
             end
 
@@ -838,6 +839,7 @@ function M:visit_class(cppcls, cur, template_types)
             end
 
             if not cls.supercls and not skipsuper then
+                skipsuper = true
                 cls.supercls = supercls
             end
             cls.supers:push(supercls, supercls)
