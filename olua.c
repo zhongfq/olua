@@ -1193,6 +1193,8 @@ OLUA_API void oluacls_class(lua_State *L, const char *cls, const char *supercls)
             oluacls_const(L, "super"); // class.super = super
         }
         olua_rawsetf(L, metaclass, OLUA_CKEY_CLASS); // metaclass.class = class
+    } else {
+        luaL_error(L, "class '%s' already created", cls);
     }
     olua_rawgetf(L, -1, OLUA_CKEY_CLASS);
     lua_replace(L, super);
