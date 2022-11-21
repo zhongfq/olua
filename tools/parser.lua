@@ -585,7 +585,7 @@ function olua.parse_func(cls, name, ...)
             fi.funcdesc = declfunc
             fi.insert = {}
             if olua.is_func_type(tn, fromcls) then
-                local cb = parse_callback(fromcls, tn, nil)
+                local cb = parse_callback(fromcls, tn)
                 fi.ret = {
                     type = setmetatable({
                         decltype = cb.decltype,
@@ -847,8 +847,8 @@ local function typeconf(...)
             apply_insert(pi.set)
         end
         for _, vi in ipairs(cls.vars) do
-            apply_insert(vi.get, true)
-            apply_insert(vi.set, true)
+            apply_insert(vi.get)
+            apply_insert(vi.set)
         end
 
         olua.assert(found, 'function not found: ${cls.cppcls}::${name}')

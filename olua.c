@@ -406,6 +406,14 @@ OLUA_API void *olua_toobj(lua_State *L, int idx, const char *cls)
 #endif
 }
 
+OLUA_API void olua_delobj(lua_State *L, void *obj)
+{
+    if (olua_getrawobj(L, obj)) {
+        olua_setrawobj(L, -1, NULL);
+        lua_pop(L, 1);
+    }
+}
+
 OLUA_API const char *olua_objstring(lua_State *L, int idx)
 {
     const void *ud = lua_topointer(L, idx);

@@ -1441,7 +1441,7 @@ local function write_module(module)
 
     write_module_metadata(module, append)
     write_module_classes(module, append)
-    write_module_typedef(module, append)
+    write_module_typedef(module)
 
     olua.write(module.class_file, tostring(t))
 end
