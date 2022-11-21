@@ -805,9 +805,7 @@ function M:visit_class(cppcls, cur, template_types)
             local rawsupercls = raw_typename(supercls)
             local supercursor = type_cursors:get(rawsupercls)
 
-            if is_excluded_typename(rawsupercls)
-                or is_excluded_typename(rawsupercls .. ' *')
-            then
+            if is_excluded_typename(rawsupercls .. ' *') then
                 skipsuper = true
                 goto continue
             end
