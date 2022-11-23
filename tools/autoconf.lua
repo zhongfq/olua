@@ -178,17 +178,17 @@ local typename
 local function parse_from_type(type, template_types, try_underlying, level, willcheck)
     local kind = type.kind
     local tn = trim_prefix_colon(type.name)
-    local rawtn = raw_typename(tn)
     local template_arg_types = type.templateArgumentTypes
-    local decl = type.declaration
-    local underlying = decl.underlyingType
+    local underlying = type.declaration.underlyingType
     local pointee = type.pointeeType
     if level and level > 4 then
         return tn
+    elseif type.isConstQualified then
+        pointee = type.unqualifiedType
+        return 'const ' .. parse_from_type(pointee, template_types, try_underlying, level, willcheck)
     elseif #template_arg_types > 0 and (not try_underlying or not underlying) then
         local exps = olua.newarray('')
         local astname = parse_from_ast(type)
-        exps:push(type.isConstQualified and 'const ' or nil)
         exps:push(astname)
         if is_templdate_type(tn) then
             level = (level or 0) + 1
@@ -199,7 +199,8 @@ local function parse_from_type(type, template_types, try_underlying, level, will
             end
             exps:push('>')
         end
-        return tostring(exps)
+        tn = tostring(exps)
+        return template_types and template_types:get(tn) or tn
     elseif kind == TypeKind.LValueReference then
         return parse_from_type(pointee, template_types, try_underlying, level) .. ' &'
     elseif kind == TypeKind.RValueReference then
@@ -212,7 +213,7 @@ local function parse_from_type(type, template_types, try_underlying, level, will
         local exps = olua.newarray('')
         local result_type = typename(type.resultType, template_types, level, willcheck)
         exps:push(result_type)
-        exps:push(result_type:find('[%*&]') and '' or ' ')
+        exps:push(result_type:find('[*&]') and '' or ' ')
         exps:push('(')
         for i, v in ipairs(type.argTypes) do
             exps:push(i > 1 and ', ' or nil)
@@ -221,38 +222,33 @@ local function parse_from_type(type, template_types, try_underlying, level, will
         exps:push(')')
         return tostring(exps)
     elseif try_underlying and underlying then
-        local const = tn:match('^const ') or ''
-        return const .. parse_from_type(underlying, template_types, false, level)
-    elseif template_types and template_types:has(rawtn) then
-        --[[
-            kind: Unexposed
-            name: const T
-        ]]
-        return tn:gsub('[^ ]+$', template_types:get(rawtn))
+        return parse_from_type(underlying, template_types, false, level)
+    elseif template_types and template_types:has(tn) then
+        return template_types:get(tn)
     elseif kind >= TypeKind.FirstBuiltin and kind <= TypeKind.LastBuiltin then
         return tn
     elseif kind == TypeKind.Typedef or kind == TypeKind.Unexposed then
         return tn
     else
         --[[
-            name: size_t
-             raw: size_t
-             ast: size_t
+               tn: size_t
+            rawrn: size_t
+              ast: size_t
 
-            name: const std::string::size_type
-             raw: std::string::size_type
-             ast: std::basic_string::size_type
+               tn: std::string::size_type
+            rawrn: std::string::size_type
+              ast: std::basic_string::size_type
 
-            name: enum EventType
-             raw: EventType
-             ast: olua::test::EventType
+               tn: enum EventType
+            rawrn: EventType
+              ast: olua::test::EventType
         ]]
-        local rawtn2 = tn:match('[^ ]+$')
+        local rawtn = tn:match('[^ ]+$')
         local astname = parse_from_ast(type)
-        if tn == astname or not olua.is_end_with(astname, rawtn2) then
+        if tn == astname or not olua.is_end_with(astname, rawtn) then
             return tn
         else
-            return tn:gsub(rawtn2, astname)
+            return tn:gsub(rawtn, astname)
         end
     end
 end
@@ -763,7 +759,7 @@ function M:visit_alias_class(alias, cppcls)
     end
 end
 
-function M:visit_class(cppcls, cur, template_types)
+function M:visit_class(cppcls, cur, template_types, specializedcls)
     local cls = self:will_visit(cppcls)
     local skipsuper = false
 
@@ -776,6 +772,9 @@ function M:visit_class(cppcls, cur, template_types)
                 you should remove: typeconf '${cls.cppcls}'
         ]])
         cls.kind = cls.kind | TYPFLAG_TEMPLATE
+        if specializedcls then
+            cls.template_types:push(specializedcls, cppcls)
+        end
     elseif cur.kind == CursorKind.Namespace then
         cls.reg_luatype = false
     end
@@ -921,16 +920,10 @@ function M:visit(cur, cppcls)
                     arg_types[i] = parse_from_type(v)
                 end
                 local specializedcls = parse_from_type(cur.underlyingType)
-                self:visit_class(cppcls, specialized, arg_types)
+                self:visit_class(cppcls, specialized, arg_types, specializedcls)
                 
-                local typedef = self.CMD.typedef
-                add_type_conv(raw_typename(specializedcls), true)
-                typedef(specializedcls .. ' *')
-                    .decltype(cppcls .. ' *')
-                    .luacls(self.luacls(cppcls))
-                    .conv('olua_$$_obj')
-
                 if specializedcls:find('^olua::pointer') then
+                    local typedef = self.CMD.typedef
                     local packedcls = specializedcls:match('<(.*)>') .. ' *'
                     add_type_conv(packedcls)
                     typedef(packedcls)

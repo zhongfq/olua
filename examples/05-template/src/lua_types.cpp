@@ -87,8 +87,8 @@ static int _olua_bool_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<bool> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -105,8 +105,8 @@ static int _olua_bool_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.bool");
     olua_check_obj(L, 2, &arg1, "olua.bool");
 
-    // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<bool> *)arg1);
+    // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -125,8 +125,8 @@ static int _olua_bool_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.bool");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<bool> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -147,8 +147,8 @@ static int _olua_bool_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<bool> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -161,28 +161,28 @@ static int _olua_bool_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.bool"))) {
-            // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_bool_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.bool")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_bool_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.bool")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_bool_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.bool")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<bool> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_bool *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_bool_copyfrom$1(L);
         // }
     }
@@ -220,8 +220,8 @@ static int _olua_bool_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<bool> *create(@optional size_t len)
-    olua::pointer<bool> *ret = olua_bool::create((size_t)arg1);
+    // @name(new) static olua_bool *create(@optional size_t len)
+    olua_bool *ret = olua_bool::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.bool");
 
     olua_endinvoke(L);
@@ -233,8 +233,8 @@ static int _olua_bool_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<bool> *create(@optional size_t len)
-    olua::pointer<bool> *ret = olua_bool::create();
+    // @name(new) static olua_bool *create(@optional size_t len)
+    olua_bool *ret = olua_bool::create();
     int num_ret = olua_push_obj(L, ret, "olua.bool");
 
     olua_endinvoke(L);
@@ -247,13 +247,13 @@ static int _olua_bool_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<bool> *create(@optional size_t len)
+        // @name(new) static olua_bool *create(@optional size_t len)
         return _olua_bool_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<bool> *create(@optional size_t len)
+            // @name(new) static olua_bool *create(@optional size_t len)
             return _olua_bool_create$1(L);
         // }
     }
@@ -275,8 +275,8 @@ static int _olua_bool_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<bool> *sub(size_t from, @optional size_t to)
-    olua::pointer<bool> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_bool *sub(size_t from, @optional size_t to)
+    olua_bool *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.bool");
 
     olua_endinvoke(L);
@@ -294,8 +294,8 @@ static int _olua_bool_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.bool");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<bool> *sub(size_t from, @optional size_t to)
-    olua::pointer<bool> *ret = self->sub((size_t)arg1);
+    // olua_bool *sub(size_t from, @optional size_t to)
+    olua_bool *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.bool");
 
     olua_endinvoke(L);
@@ -309,14 +309,14 @@ static int _olua_bool_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<bool> *sub(size_t from, @optional size_t to)
+            // olua_bool *sub(size_t from, @optional size_t to)
             return _olua_bool_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<bool> *sub(size_t from, @optional size_t to)
+            // olua_bool *sub(size_t from, @optional size_t to)
             return _olua_bool_sub$1(L);
         // }
     }
@@ -575,8 +575,8 @@ static int _olua_string_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<std::string> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -593,8 +593,8 @@ static int _olua_string_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.string");
     olua_check_obj(L, 2, &arg1, "olua.string");
 
-    // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<std::string> *)arg1);
+    // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -613,8 +613,8 @@ static int _olua_string_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.string");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<std::string> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -635,8 +635,8 @@ static int _olua_string_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<std::string> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -649,28 +649,28 @@ static int _olua_string_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.string"))) {
-            // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_string_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.string")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_string_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.string")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_string_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.string")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<std::string> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_string *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_string_copyfrom$1(L);
         // }
     }
@@ -708,8 +708,8 @@ static int _olua_string_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<std::string> *create(@optional size_t len)
-    olua::pointer<std::string> *ret = olua_string::create((size_t)arg1);
+    // @name(new) static olua_string *create(@optional size_t len)
+    olua_string *ret = olua_string::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.string");
 
     olua_endinvoke(L);
@@ -721,8 +721,8 @@ static int _olua_string_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<std::string> *create(@optional size_t len)
-    olua::pointer<std::string> *ret = olua_string::create();
+    // @name(new) static olua_string *create(@optional size_t len)
+    olua_string *ret = olua_string::create();
     int num_ret = olua_push_obj(L, ret, "olua.string");
 
     olua_endinvoke(L);
@@ -735,13 +735,13 @@ static int _olua_string_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<std::string> *create(@optional size_t len)
+        // @name(new) static olua_string *create(@optional size_t len)
         return _olua_string_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<std::string> *create(@optional size_t len)
+            // @name(new) static olua_string *create(@optional size_t len)
             return _olua_string_create$1(L);
         // }
     }
@@ -763,8 +763,8 @@ static int _olua_string_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<std::string> *sub(size_t from, @optional size_t to)
-    olua::pointer<std::string> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_string *sub(size_t from, @optional size_t to)
+    olua_string *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.string");
 
     olua_endinvoke(L);
@@ -782,8 +782,8 @@ static int _olua_string_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.string");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<std::string> *sub(size_t from, @optional size_t to)
-    olua::pointer<std::string> *ret = self->sub((size_t)arg1);
+    // olua_string *sub(size_t from, @optional size_t to)
+    olua_string *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.string");
 
     olua_endinvoke(L);
@@ -797,14 +797,14 @@ static int _olua_string_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<std::string> *sub(size_t from, @optional size_t to)
+            // olua_string *sub(size_t from, @optional size_t to)
             return _olua_string_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<std::string> *sub(size_t from, @optional size_t to)
+            // olua_string *sub(size_t from, @optional size_t to)
             return _olua_string_sub$1(L);
         // }
     }
@@ -1063,8 +1063,8 @@ static int _olua_int8_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int8_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -1081,8 +1081,8 @@ static int _olua_int8_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int8");
     olua_check_obj(L, 2, &arg1, "olua.int8");
 
-    // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int8_t> *)arg1);
+    // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -1101,8 +1101,8 @@ static int _olua_int8_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.int8");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int8_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -1123,8 +1123,8 @@ static int _olua_int8_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int8_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -1137,28 +1137,28 @@ static int _olua_int8_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.int8"))) {
-            // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int8_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.int8")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int8_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.int8")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int8_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.int8")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<int8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int8_copyfrom$1(L);
         // }
     }
@@ -1196,8 +1196,8 @@ static int _olua_int8_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<int8_t> *create(@optional size_t len)
-    olua::pointer<int8_t> *ret = olua_int8::create((size_t)arg1);
+    // @name(new) static olua_int8 *create(@optional size_t len)
+    olua_int8 *ret = olua_int8::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int8");
 
     olua_endinvoke(L);
@@ -1209,8 +1209,8 @@ static int _olua_int8_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<int8_t> *create(@optional size_t len)
-    olua::pointer<int8_t> *ret = olua_int8::create();
+    // @name(new) static olua_int8 *create(@optional size_t len)
+    olua_int8 *ret = olua_int8::create();
     int num_ret = olua_push_obj(L, ret, "olua.int8");
 
     olua_endinvoke(L);
@@ -1223,13 +1223,13 @@ static int _olua_int8_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<int8_t> *create(@optional size_t len)
+        // @name(new) static olua_int8 *create(@optional size_t len)
         return _olua_int8_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<int8_t> *create(@optional size_t len)
+            // @name(new) static olua_int8 *create(@optional size_t len)
             return _olua_int8_create$1(L);
         // }
     }
@@ -1251,8 +1251,8 @@ static int _olua_int8_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<int8_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int8_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_int8 *sub(size_t from, @optional size_t to)
+    olua_int8 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.int8");
 
     olua_endinvoke(L);
@@ -1270,8 +1270,8 @@ static int _olua_int8_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int8");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<int8_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int8_t> *ret = self->sub((size_t)arg1);
+    // olua_int8 *sub(size_t from, @optional size_t to)
+    olua_int8 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int8");
 
     olua_endinvoke(L);
@@ -1285,14 +1285,14 @@ static int _olua_int8_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<int8_t> *sub(size_t from, @optional size_t to)
+            // olua_int8 *sub(size_t from, @optional size_t to)
             return _olua_int8_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<int8_t> *sub(size_t from, @optional size_t to)
+            // olua_int8 *sub(size_t from, @optional size_t to)
             return _olua_int8_sub$1(L);
         // }
     }
@@ -1551,8 +1551,8 @@ static int _olua_uint8_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint8_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -1569,8 +1569,8 @@ static int _olua_uint8_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint8");
     olua_check_obj(L, 2, &arg1, "olua.uint8");
 
-    // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint8_t> *)arg1);
+    // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -1589,8 +1589,8 @@ static int _olua_uint8_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.uint8");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint8_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -1611,8 +1611,8 @@ static int _olua_uint8_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint8_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -1625,28 +1625,28 @@ static int _olua_uint8_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.uint8"))) {
-            // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint8_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.uint8")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint8_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.uint8")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint8_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.uint8")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<uint8_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint8 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint8_copyfrom$1(L);
         // }
     }
@@ -1684,8 +1684,8 @@ static int _olua_uint8_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<uint8_t> *create(@optional size_t len)
-    olua::pointer<uint8_t> *ret = olua_uint8::create((size_t)arg1);
+    // @name(new) static olua_uint8 *create(@optional size_t len)
+    olua_uint8 *ret = olua_uint8::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint8");
 
     olua_endinvoke(L);
@@ -1697,8 +1697,8 @@ static int _olua_uint8_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<uint8_t> *create(@optional size_t len)
-    olua::pointer<uint8_t> *ret = olua_uint8::create();
+    // @name(new) static olua_uint8 *create(@optional size_t len)
+    olua_uint8 *ret = olua_uint8::create();
     int num_ret = olua_push_obj(L, ret, "olua.uint8");
 
     olua_endinvoke(L);
@@ -1711,13 +1711,13 @@ static int _olua_uint8_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<uint8_t> *create(@optional size_t len)
+        // @name(new) static olua_uint8 *create(@optional size_t len)
         return _olua_uint8_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<uint8_t> *create(@optional size_t len)
+            // @name(new) static olua_uint8 *create(@optional size_t len)
             return _olua_uint8_create$1(L);
         // }
     }
@@ -1739,8 +1739,8 @@ static int _olua_uint8_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<uint8_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint8_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_uint8 *sub(size_t from, @optional size_t to)
+    olua_uint8 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.uint8");
 
     olua_endinvoke(L);
@@ -1758,8 +1758,8 @@ static int _olua_uint8_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint8");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<uint8_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint8_t> *ret = self->sub((size_t)arg1);
+    // olua_uint8 *sub(size_t from, @optional size_t to)
+    olua_uint8 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint8");
 
     olua_endinvoke(L);
@@ -1773,14 +1773,14 @@ static int _olua_uint8_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<uint8_t> *sub(size_t from, @optional size_t to)
+            // olua_uint8 *sub(size_t from, @optional size_t to)
             return _olua_uint8_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<uint8_t> *sub(size_t from, @optional size_t to)
+            // olua_uint8 *sub(size_t from, @optional size_t to)
             return _olua_uint8_sub$1(L);
         // }
     }
@@ -2039,8 +2039,8 @@ static int _olua_int16_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int16_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -2057,8 +2057,8 @@ static int _olua_int16_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int16");
     olua_check_obj(L, 2, &arg1, "olua.int16");
 
-    // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int16_t> *)arg1);
+    // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -2077,8 +2077,8 @@ static int _olua_int16_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.int16");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int16_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -2099,8 +2099,8 @@ static int _olua_int16_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int16_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -2113,28 +2113,28 @@ static int _olua_int16_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.int16"))) {
-            // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int16_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.int16")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int16_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.int16")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int16_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.int16")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<int16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int16_copyfrom$1(L);
         // }
     }
@@ -2172,8 +2172,8 @@ static int _olua_int16_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<int16_t> *create(@optional size_t len)
-    olua::pointer<int16_t> *ret = olua_int16::create((size_t)arg1);
+    // @name(new) static olua_int16 *create(@optional size_t len)
+    olua_int16 *ret = olua_int16::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int16");
 
     olua_endinvoke(L);
@@ -2185,8 +2185,8 @@ static int _olua_int16_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<int16_t> *create(@optional size_t len)
-    olua::pointer<int16_t> *ret = olua_int16::create();
+    // @name(new) static olua_int16 *create(@optional size_t len)
+    olua_int16 *ret = olua_int16::create();
     int num_ret = olua_push_obj(L, ret, "olua.int16");
 
     olua_endinvoke(L);
@@ -2199,13 +2199,13 @@ static int _olua_int16_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<int16_t> *create(@optional size_t len)
+        // @name(new) static olua_int16 *create(@optional size_t len)
         return _olua_int16_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<int16_t> *create(@optional size_t len)
+            // @name(new) static olua_int16 *create(@optional size_t len)
             return _olua_int16_create$1(L);
         // }
     }
@@ -2227,8 +2227,8 @@ static int _olua_int16_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<int16_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int16_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_int16 *sub(size_t from, @optional size_t to)
+    olua_int16 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.int16");
 
     olua_endinvoke(L);
@@ -2246,8 +2246,8 @@ static int _olua_int16_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int16");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<int16_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int16_t> *ret = self->sub((size_t)arg1);
+    // olua_int16 *sub(size_t from, @optional size_t to)
+    olua_int16 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int16");
 
     olua_endinvoke(L);
@@ -2261,14 +2261,14 @@ static int _olua_int16_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<int16_t> *sub(size_t from, @optional size_t to)
+            // olua_int16 *sub(size_t from, @optional size_t to)
             return _olua_int16_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<int16_t> *sub(size_t from, @optional size_t to)
+            // olua_int16 *sub(size_t from, @optional size_t to)
             return _olua_int16_sub$1(L);
         // }
     }
@@ -2527,8 +2527,8 @@ static int _olua_uint16_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint16_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -2545,8 +2545,8 @@ static int _olua_uint16_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint16");
     olua_check_obj(L, 2, &arg1, "olua.uint16");
 
-    // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint16_t> *)arg1);
+    // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -2565,8 +2565,8 @@ static int _olua_uint16_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.uint16");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint16_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -2587,8 +2587,8 @@ static int _olua_uint16_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint16_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -2601,28 +2601,28 @@ static int _olua_uint16_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.uint16"))) {
-            // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint16_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.uint16")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint16_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.uint16")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint16_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.uint16")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<uint16_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint16 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint16_copyfrom$1(L);
         // }
     }
@@ -2660,8 +2660,8 @@ static int _olua_uint16_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<uint16_t> *create(@optional size_t len)
-    olua::pointer<uint16_t> *ret = olua_uint16::create((size_t)arg1);
+    // @name(new) static olua_uint16 *create(@optional size_t len)
+    olua_uint16 *ret = olua_uint16::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint16");
 
     olua_endinvoke(L);
@@ -2673,8 +2673,8 @@ static int _olua_uint16_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<uint16_t> *create(@optional size_t len)
-    olua::pointer<uint16_t> *ret = olua_uint16::create();
+    // @name(new) static olua_uint16 *create(@optional size_t len)
+    olua_uint16 *ret = olua_uint16::create();
     int num_ret = olua_push_obj(L, ret, "olua.uint16");
 
     olua_endinvoke(L);
@@ -2687,13 +2687,13 @@ static int _olua_uint16_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<uint16_t> *create(@optional size_t len)
+        // @name(new) static olua_uint16 *create(@optional size_t len)
         return _olua_uint16_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<uint16_t> *create(@optional size_t len)
+            // @name(new) static olua_uint16 *create(@optional size_t len)
             return _olua_uint16_create$1(L);
         // }
     }
@@ -2715,8 +2715,8 @@ static int _olua_uint16_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<uint16_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint16_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_uint16 *sub(size_t from, @optional size_t to)
+    olua_uint16 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.uint16");
 
     olua_endinvoke(L);
@@ -2734,8 +2734,8 @@ static int _olua_uint16_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint16");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<uint16_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint16_t> *ret = self->sub((size_t)arg1);
+    // olua_uint16 *sub(size_t from, @optional size_t to)
+    olua_uint16 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint16");
 
     olua_endinvoke(L);
@@ -2749,14 +2749,14 @@ static int _olua_uint16_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<uint16_t> *sub(size_t from, @optional size_t to)
+            // olua_uint16 *sub(size_t from, @optional size_t to)
             return _olua_uint16_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<uint16_t> *sub(size_t from, @optional size_t to)
+            // olua_uint16 *sub(size_t from, @optional size_t to)
             return _olua_uint16_sub$1(L);
         // }
     }
@@ -3015,8 +3015,8 @@ static int _olua_int32_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int32_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -3033,8 +3033,8 @@ static int _olua_int32_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int32");
     olua_check_obj(L, 2, &arg1, "olua.int32");
 
-    // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int32_t> *)arg1);
+    // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -3053,8 +3053,8 @@ static int _olua_int32_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.int32");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int32_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -3075,8 +3075,8 @@ static int _olua_int32_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int32_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -3089,28 +3089,28 @@ static int _olua_int32_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.int32"))) {
-            // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int32_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.int32")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int32_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.int32")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int32_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.int32")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<int32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int32_copyfrom$1(L);
         // }
     }
@@ -3148,8 +3148,8 @@ static int _olua_int32_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<int32_t> *create(@optional size_t len)
-    olua::pointer<int32_t> *ret = olua_int32::create((size_t)arg1);
+    // @name(new) static olua_int32 *create(@optional size_t len)
+    olua_int32 *ret = olua_int32::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int32");
 
     olua_endinvoke(L);
@@ -3161,8 +3161,8 @@ static int _olua_int32_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<int32_t> *create(@optional size_t len)
-    olua::pointer<int32_t> *ret = olua_int32::create();
+    // @name(new) static olua_int32 *create(@optional size_t len)
+    olua_int32 *ret = olua_int32::create();
     int num_ret = olua_push_obj(L, ret, "olua.int32");
 
     olua_endinvoke(L);
@@ -3175,13 +3175,13 @@ static int _olua_int32_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<int32_t> *create(@optional size_t len)
+        // @name(new) static olua_int32 *create(@optional size_t len)
         return _olua_int32_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<int32_t> *create(@optional size_t len)
+            // @name(new) static olua_int32 *create(@optional size_t len)
             return _olua_int32_create$1(L);
         // }
     }
@@ -3203,8 +3203,8 @@ static int _olua_int32_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<int32_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int32_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_int32 *sub(size_t from, @optional size_t to)
+    olua_int32 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.int32");
 
     olua_endinvoke(L);
@@ -3222,8 +3222,8 @@ static int _olua_int32_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int32");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<int32_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int32_t> *ret = self->sub((size_t)arg1);
+    // olua_int32 *sub(size_t from, @optional size_t to)
+    olua_int32 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int32");
 
     olua_endinvoke(L);
@@ -3237,14 +3237,14 @@ static int _olua_int32_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<int32_t> *sub(size_t from, @optional size_t to)
+            // olua_int32 *sub(size_t from, @optional size_t to)
             return _olua_int32_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<int32_t> *sub(size_t from, @optional size_t to)
+            // olua_int32 *sub(size_t from, @optional size_t to)
             return _olua_int32_sub$1(L);
         // }
     }
@@ -3503,8 +3503,8 @@ static int _olua_uint32_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint32_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -3521,8 +3521,8 @@ static int _olua_uint32_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint32");
     olua_check_obj(L, 2, &arg1, "olua.uint32");
 
-    // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint32_t> *)arg1);
+    // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -3541,8 +3541,8 @@ static int _olua_uint32_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.uint32");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint32_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -3563,8 +3563,8 @@ static int _olua_uint32_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint32_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -3577,28 +3577,28 @@ static int _olua_uint32_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.uint32"))) {
-            // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint32_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.uint32")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint32_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.uint32")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint32_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.uint32")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<uint32_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint32 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint32_copyfrom$1(L);
         // }
     }
@@ -3636,8 +3636,8 @@ static int _olua_uint32_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<uint32_t> *create(@optional size_t len)
-    olua::pointer<uint32_t> *ret = olua_uint32::create((size_t)arg1);
+    // @name(new) static olua_uint32 *create(@optional size_t len)
+    olua_uint32 *ret = olua_uint32::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint32");
 
     olua_endinvoke(L);
@@ -3649,8 +3649,8 @@ static int _olua_uint32_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<uint32_t> *create(@optional size_t len)
-    olua::pointer<uint32_t> *ret = olua_uint32::create();
+    // @name(new) static olua_uint32 *create(@optional size_t len)
+    olua_uint32 *ret = olua_uint32::create();
     int num_ret = olua_push_obj(L, ret, "olua.uint32");
 
     olua_endinvoke(L);
@@ -3663,13 +3663,13 @@ static int _olua_uint32_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<uint32_t> *create(@optional size_t len)
+        // @name(new) static olua_uint32 *create(@optional size_t len)
         return _olua_uint32_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<uint32_t> *create(@optional size_t len)
+            // @name(new) static olua_uint32 *create(@optional size_t len)
             return _olua_uint32_create$1(L);
         // }
     }
@@ -3691,8 +3691,8 @@ static int _olua_uint32_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<uint32_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint32_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_uint32 *sub(size_t from, @optional size_t to)
+    olua_uint32 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.uint32");
 
     olua_endinvoke(L);
@@ -3710,8 +3710,8 @@ static int _olua_uint32_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint32");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<uint32_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint32_t> *ret = self->sub((size_t)arg1);
+    // olua_uint32 *sub(size_t from, @optional size_t to)
+    olua_uint32 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint32");
 
     olua_endinvoke(L);
@@ -3725,14 +3725,14 @@ static int _olua_uint32_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<uint32_t> *sub(size_t from, @optional size_t to)
+            // olua_uint32 *sub(size_t from, @optional size_t to)
             return _olua_uint32_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<uint32_t> *sub(size_t from, @optional size_t to)
+            // olua_uint32 *sub(size_t from, @optional size_t to)
             return _olua_uint32_sub$1(L);
         // }
     }
@@ -3991,8 +3991,8 @@ static int _olua_int64_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int64_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -4009,8 +4009,8 @@ static int _olua_int64_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int64");
     olua_check_obj(L, 2, &arg1, "olua.int64");
 
-    // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int64_t> *)arg1);
+    // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -4029,8 +4029,8 @@ static int _olua_int64_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.int64");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int64_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -4051,8 +4051,8 @@ static int _olua_int64_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int64_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -4065,28 +4065,28 @@ static int _olua_int64_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.int64"))) {
-            // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int64_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.int64")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int64_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.int64")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int64_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.int64")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<int64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int64_copyfrom$1(L);
         // }
     }
@@ -4124,8 +4124,8 @@ static int _olua_int64_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<int64_t> *create(@optional size_t len)
-    olua::pointer<int64_t> *ret = olua_int64::create((size_t)arg1);
+    // @name(new) static olua_int64 *create(@optional size_t len)
+    olua_int64 *ret = olua_int64::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int64");
 
     olua_endinvoke(L);
@@ -4137,8 +4137,8 @@ static int _olua_int64_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<int64_t> *create(@optional size_t len)
-    olua::pointer<int64_t> *ret = olua_int64::create();
+    // @name(new) static olua_int64 *create(@optional size_t len)
+    olua_int64 *ret = olua_int64::create();
     int num_ret = olua_push_obj(L, ret, "olua.int64");
 
     olua_endinvoke(L);
@@ -4151,13 +4151,13 @@ static int _olua_int64_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<int64_t> *create(@optional size_t len)
+        // @name(new) static olua_int64 *create(@optional size_t len)
         return _olua_int64_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<int64_t> *create(@optional size_t len)
+            // @name(new) static olua_int64 *create(@optional size_t len)
             return _olua_int64_create$1(L);
         // }
     }
@@ -4179,8 +4179,8 @@ static int _olua_int64_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<int64_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int64_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_int64 *sub(size_t from, @optional size_t to)
+    olua_int64 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.int64");
 
     olua_endinvoke(L);
@@ -4198,8 +4198,8 @@ static int _olua_int64_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int64");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<int64_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<int64_t> *ret = self->sub((size_t)arg1);
+    // olua_int64 *sub(size_t from, @optional size_t to)
+    olua_int64 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int64");
 
     olua_endinvoke(L);
@@ -4213,14 +4213,14 @@ static int _olua_int64_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<int64_t> *sub(size_t from, @optional size_t to)
+            // olua_int64 *sub(size_t from, @optional size_t to)
             return _olua_int64_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<int64_t> *sub(size_t from, @optional size_t to)
+            // olua_int64 *sub(size_t from, @optional size_t to)
             return _olua_int64_sub$1(L);
         // }
     }
@@ -4479,8 +4479,8 @@ static int _olua_uint64_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint64_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -4497,8 +4497,8 @@ static int _olua_uint64_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint64");
     olua_check_obj(L, 2, &arg1, "olua.uint64");
 
-    // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint64_t> *)arg1);
+    // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -4517,8 +4517,8 @@ static int _olua_uint64_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.uint64");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint64_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -4539,8 +4539,8 @@ static int _olua_uint64_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<uint64_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -4553,28 +4553,28 @@ static int _olua_uint64_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.uint64"))) {
-            // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint64_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.uint64")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint64_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.uint64")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint64_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.uint64")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<uint64_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint64 *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint64_copyfrom$1(L);
         // }
     }
@@ -4612,8 +4612,8 @@ static int _olua_uint64_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<uint64_t> *create(@optional size_t len)
-    olua::pointer<uint64_t> *ret = olua_uint64::create((size_t)arg1);
+    // @name(new) static olua_uint64 *create(@optional size_t len)
+    olua_uint64 *ret = olua_uint64::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint64");
 
     olua_endinvoke(L);
@@ -4625,8 +4625,8 @@ static int _olua_uint64_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<uint64_t> *create(@optional size_t len)
-    olua::pointer<uint64_t> *ret = olua_uint64::create();
+    // @name(new) static olua_uint64 *create(@optional size_t len)
+    olua_uint64 *ret = olua_uint64::create();
     int num_ret = olua_push_obj(L, ret, "olua.uint64");
 
     olua_endinvoke(L);
@@ -4639,13 +4639,13 @@ static int _olua_uint64_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<uint64_t> *create(@optional size_t len)
+        // @name(new) static olua_uint64 *create(@optional size_t len)
         return _olua_uint64_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<uint64_t> *create(@optional size_t len)
+            // @name(new) static olua_uint64 *create(@optional size_t len)
             return _olua_uint64_create$1(L);
         // }
     }
@@ -4667,8 +4667,8 @@ static int _olua_uint64_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<uint64_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint64_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_uint64 *sub(size_t from, @optional size_t to)
+    olua_uint64 *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.uint64");
 
     olua_endinvoke(L);
@@ -4686,8 +4686,8 @@ static int _olua_uint64_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint64");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<uint64_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<uint64_t> *ret = self->sub((size_t)arg1);
+    // olua_uint64 *sub(size_t from, @optional size_t to)
+    olua_uint64 *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint64");
 
     olua_endinvoke(L);
@@ -4701,14 +4701,14 @@ static int _olua_uint64_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<uint64_t> *sub(size_t from, @optional size_t to)
+            // olua_uint64 *sub(size_t from, @optional size_t to)
             return _olua_uint64_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<uint64_t> *sub(size_t from, @optional size_t to)
+            // olua_uint64 *sub(size_t from, @optional size_t to)
             return _olua_uint64_sub$1(L);
         // }
     }
@@ -4967,8 +4967,8 @@ static int _olua_short_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<short> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -4985,8 +4985,8 @@ static int _olua_short_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.short");
     olua_check_obj(L, 2, &arg1, "olua.short");
 
-    // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<short> *)arg1);
+    // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -5005,8 +5005,8 @@ static int _olua_short_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.short");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<short> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -5027,8 +5027,8 @@ static int _olua_short_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<short> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -5041,28 +5041,28 @@ static int _olua_short_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.short"))) {
-            // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_short_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.short")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_short_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.short")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_short_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.short")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_short *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_short_copyfrom$1(L);
         // }
     }
@@ -5100,8 +5100,8 @@ static int _olua_short_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<short> *create(@optional size_t len)
-    olua::pointer<short> *ret = olua_short::create((size_t)arg1);
+    // @name(new) static olua_short *create(@optional size_t len)
+    olua_short *ret = olua_short::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.short");
 
     olua_endinvoke(L);
@@ -5113,8 +5113,8 @@ static int _olua_short_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<short> *create(@optional size_t len)
-    olua::pointer<short> *ret = olua_short::create();
+    // @name(new) static olua_short *create(@optional size_t len)
+    olua_short *ret = olua_short::create();
     int num_ret = olua_push_obj(L, ret, "olua.short");
 
     olua_endinvoke(L);
@@ -5127,13 +5127,13 @@ static int _olua_short_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<short> *create(@optional size_t len)
+        // @name(new) static olua_short *create(@optional size_t len)
         return _olua_short_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<short> *create(@optional size_t len)
+            // @name(new) static olua_short *create(@optional size_t len)
             return _olua_short_create$1(L);
         // }
     }
@@ -5155,8 +5155,8 @@ static int _olua_short_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<short> *sub(size_t from, @optional size_t to)
-    olua::pointer<short> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_short *sub(size_t from, @optional size_t to)
+    olua_short *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.short");
 
     olua_endinvoke(L);
@@ -5174,8 +5174,8 @@ static int _olua_short_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.short");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<short> *sub(size_t from, @optional size_t to)
-    olua::pointer<short> *ret = self->sub((size_t)arg1);
+    // olua_short *sub(size_t from, @optional size_t to)
+    olua_short *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.short");
 
     olua_endinvoke(L);
@@ -5189,14 +5189,14 @@ static int _olua_short_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<short> *sub(size_t from, @optional size_t to)
+            // olua_short *sub(size_t from, @optional size_t to)
             return _olua_short_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<short> *sub(size_t from, @optional size_t to)
+            // olua_short *sub(size_t from, @optional size_t to)
             return _olua_short_sub$1(L);
         // }
     }
@@ -5455,8 +5455,8 @@ static int _olua_ushort_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned short> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -5473,8 +5473,8 @@ static int _olua_ushort_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ushort");
     olua_check_obj(L, 2, &arg1, "olua.ushort");
 
-    // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned short> *)arg1);
+    // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -5493,8 +5493,8 @@ static int _olua_ushort_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.ushort");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned short> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -5515,8 +5515,8 @@ static int _olua_ushort_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned short> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -5529,28 +5529,28 @@ static int _olua_ushort_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.ushort"))) {
-            // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ushort_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.ushort")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ushort_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.ushort")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ushort_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.ushort")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<unsigned short> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ushort *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ushort_copyfrom$1(L);
         // }
     }
@@ -5588,8 +5588,8 @@ static int _olua_ushort_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<unsigned short> *create(@optional size_t len)
-    olua::pointer<unsigned short> *ret = olua_ushort::create((size_t)arg1);
+    // @name(new) static olua_ushort *create(@optional size_t len)
+    olua_ushort *ret = olua_ushort::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ushort");
 
     olua_endinvoke(L);
@@ -5601,8 +5601,8 @@ static int _olua_ushort_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<unsigned short> *create(@optional size_t len)
-    olua::pointer<unsigned short> *ret = olua_ushort::create();
+    // @name(new) static olua_ushort *create(@optional size_t len)
+    olua_ushort *ret = olua_ushort::create();
     int num_ret = olua_push_obj(L, ret, "olua.ushort");
 
     olua_endinvoke(L);
@@ -5615,13 +5615,13 @@ static int _olua_ushort_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<unsigned short> *create(@optional size_t len)
+        // @name(new) static olua_ushort *create(@optional size_t len)
         return _olua_ushort_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<unsigned short> *create(@optional size_t len)
+            // @name(new) static olua_ushort *create(@optional size_t len)
             return _olua_ushort_create$1(L);
         // }
     }
@@ -5643,8 +5643,8 @@ static int _olua_ushort_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<unsigned short> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned short> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_ushort *sub(size_t from, @optional size_t to)
+    olua_ushort *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.ushort");
 
     olua_endinvoke(L);
@@ -5662,8 +5662,8 @@ static int _olua_ushort_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ushort");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<unsigned short> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned short> *ret = self->sub((size_t)arg1);
+    // olua_ushort *sub(size_t from, @optional size_t to)
+    olua_ushort *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ushort");
 
     olua_endinvoke(L);
@@ -5677,14 +5677,14 @@ static int _olua_ushort_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<unsigned short> *sub(size_t from, @optional size_t to)
+            // olua_ushort *sub(size_t from, @optional size_t to)
             return _olua_ushort_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<unsigned short> *sub(size_t from, @optional size_t to)
+            // olua_ushort *sub(size_t from, @optional size_t to)
             return _olua_ushort_sub$1(L);
         // }
     }
@@ -5943,8 +5943,8 @@ static int _olua_int_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -5961,8 +5961,8 @@ static int _olua_int_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int");
     olua_check_obj(L, 2, &arg1, "olua.int");
 
-    // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int> *)arg1);
+    // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -5981,8 +5981,8 @@ static int _olua_int_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.int");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -6003,8 +6003,8 @@ static int _olua_int_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<int> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -6017,28 +6017,28 @@ static int _olua_int_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.int"))) {
-            // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.int")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.int")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.int")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_int *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_int_copyfrom$1(L);
         // }
     }
@@ -6076,8 +6076,8 @@ static int _olua_int_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<int> *create(@optional size_t len)
-    olua::pointer<int> *ret = olua_int::create((size_t)arg1);
+    // @name(new) static olua_int *create(@optional size_t len)
+    olua_int *ret = olua_int::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int");
 
     olua_endinvoke(L);
@@ -6089,8 +6089,8 @@ static int _olua_int_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<int> *create(@optional size_t len)
-    olua::pointer<int> *ret = olua_int::create();
+    // @name(new) static olua_int *create(@optional size_t len)
+    olua_int *ret = olua_int::create();
     int num_ret = olua_push_obj(L, ret, "olua.int");
 
     olua_endinvoke(L);
@@ -6103,13 +6103,13 @@ static int _olua_int_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<int> *create(@optional size_t len)
+        // @name(new) static olua_int *create(@optional size_t len)
         return _olua_int_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<int> *create(@optional size_t len)
+            // @name(new) static olua_int *create(@optional size_t len)
             return _olua_int_create$1(L);
         // }
     }
@@ -6131,8 +6131,8 @@ static int _olua_int_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<int> *sub(size_t from, @optional size_t to)
-    olua::pointer<int> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_int *sub(size_t from, @optional size_t to)
+    olua_int *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.int");
 
     olua_endinvoke(L);
@@ -6150,8 +6150,8 @@ static int _olua_int_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.int");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<int> *sub(size_t from, @optional size_t to)
-    olua::pointer<int> *ret = self->sub((size_t)arg1);
+    // olua_int *sub(size_t from, @optional size_t to)
+    olua_int *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.int");
 
     olua_endinvoke(L);
@@ -6165,14 +6165,14 @@ static int _olua_int_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<int> *sub(size_t from, @optional size_t to)
+            // olua_int *sub(size_t from, @optional size_t to)
             return _olua_int_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<int> *sub(size_t from, @optional size_t to)
+            // olua_int *sub(size_t from, @optional size_t to)
             return _olua_int_sub$1(L);
         // }
     }
@@ -6431,8 +6431,8 @@ static int _olua_uint_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned int> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -6449,8 +6449,8 @@ static int _olua_uint_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint");
     olua_check_obj(L, 2, &arg1, "olua.uint");
 
-    // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned int> *)arg1);
+    // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -6469,8 +6469,8 @@ static int _olua_uint_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.uint");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned int> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -6491,8 +6491,8 @@ static int _olua_uint_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned int> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -6505,28 +6505,28 @@ static int _olua_uint_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.uint"))) {
-            // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.uint")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.uint")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.uint")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<unsigned int> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_uint *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_uint_copyfrom$1(L);
         // }
     }
@@ -6564,8 +6564,8 @@ static int _olua_uint_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<unsigned int> *create(@optional size_t len)
-    olua::pointer<unsigned int> *ret = olua_uint::create((size_t)arg1);
+    // @name(new) static olua_uint *create(@optional size_t len)
+    olua_uint *ret = olua_uint::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint");
 
     olua_endinvoke(L);
@@ -6577,8 +6577,8 @@ static int _olua_uint_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<unsigned int> *create(@optional size_t len)
-    olua::pointer<unsigned int> *ret = olua_uint::create();
+    // @name(new) static olua_uint *create(@optional size_t len)
+    olua_uint *ret = olua_uint::create();
     int num_ret = olua_push_obj(L, ret, "olua.uint");
 
     olua_endinvoke(L);
@@ -6591,13 +6591,13 @@ static int _olua_uint_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<unsigned int> *create(@optional size_t len)
+        // @name(new) static olua_uint *create(@optional size_t len)
         return _olua_uint_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<unsigned int> *create(@optional size_t len)
+            // @name(new) static olua_uint *create(@optional size_t len)
             return _olua_uint_create$1(L);
         // }
     }
@@ -6619,8 +6619,8 @@ static int _olua_uint_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<unsigned int> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned int> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_uint *sub(size_t from, @optional size_t to)
+    olua_uint *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.uint");
 
     olua_endinvoke(L);
@@ -6638,8 +6638,8 @@ static int _olua_uint_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.uint");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<unsigned int> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned int> *ret = self->sub((size_t)arg1);
+    // olua_uint *sub(size_t from, @optional size_t to)
+    olua_uint *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.uint");
 
     olua_endinvoke(L);
@@ -6653,14 +6653,14 @@ static int _olua_uint_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<unsigned int> *sub(size_t from, @optional size_t to)
+            // olua_uint *sub(size_t from, @optional size_t to)
             return _olua_uint_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<unsigned int> *sub(size_t from, @optional size_t to)
+            // olua_uint *sub(size_t from, @optional size_t to)
             return _olua_uint_sub$1(L);
         // }
     }
@@ -6919,8 +6919,8 @@ static int _olua_long_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -6937,8 +6937,8 @@ static int _olua_long_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.long");
     olua_check_obj(L, 2, &arg1, "olua.long");
 
-    // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long> *)arg1);
+    // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -6957,8 +6957,8 @@ static int _olua_long_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.long");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -6979,8 +6979,8 @@ static int _olua_long_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -6993,28 +6993,28 @@ static int _olua_long_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.long"))) {
-            // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_long_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.long")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_long_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.long")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_long_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.long")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_long *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_long_copyfrom$1(L);
         // }
     }
@@ -7052,8 +7052,8 @@ static int _olua_long_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<long> *create(@optional size_t len)
-    olua::pointer<long> *ret = olua_long::create((size_t)arg1);
+    // @name(new) static olua_long *create(@optional size_t len)
+    olua_long *ret = olua_long::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.long");
 
     olua_endinvoke(L);
@@ -7065,8 +7065,8 @@ static int _olua_long_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<long> *create(@optional size_t len)
-    olua::pointer<long> *ret = olua_long::create();
+    // @name(new) static olua_long *create(@optional size_t len)
+    olua_long *ret = olua_long::create();
     int num_ret = olua_push_obj(L, ret, "olua.long");
 
     olua_endinvoke(L);
@@ -7079,13 +7079,13 @@ static int _olua_long_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<long> *create(@optional size_t len)
+        // @name(new) static olua_long *create(@optional size_t len)
         return _olua_long_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<long> *create(@optional size_t len)
+            // @name(new) static olua_long *create(@optional size_t len)
             return _olua_long_create$1(L);
         // }
     }
@@ -7107,8 +7107,8 @@ static int _olua_long_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<long> *sub(size_t from, @optional size_t to)
-    olua::pointer<long> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_long *sub(size_t from, @optional size_t to)
+    olua_long *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.long");
 
     olua_endinvoke(L);
@@ -7126,8 +7126,8 @@ static int _olua_long_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.long");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<long> *sub(size_t from, @optional size_t to)
-    olua::pointer<long> *ret = self->sub((size_t)arg1);
+    // olua_long *sub(size_t from, @optional size_t to)
+    olua_long *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.long");
 
     olua_endinvoke(L);
@@ -7141,14 +7141,14 @@ static int _olua_long_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<long> *sub(size_t from, @optional size_t to)
+            // olua_long *sub(size_t from, @optional size_t to)
             return _olua_long_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<long> *sub(size_t from, @optional size_t to)
+            // olua_long *sub(size_t from, @optional size_t to)
             return _olua_long_sub$1(L);
         // }
     }
@@ -7407,8 +7407,8 @@ static int _olua_ulong_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -7425,8 +7425,8 @@ static int _olua_ulong_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ulong");
     olua_check_obj(L, 2, &arg1, "olua.ulong");
 
-    // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long> *)arg1);
+    // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -7445,8 +7445,8 @@ static int _olua_ulong_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.ulong");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -7467,8 +7467,8 @@ static int _olua_ulong_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -7481,28 +7481,28 @@ static int _olua_ulong_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.ulong"))) {
-            // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ulong_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.ulong")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ulong_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.ulong")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ulong_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.ulong")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<unsigned long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ulong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ulong_copyfrom$1(L);
         // }
     }
@@ -7540,8 +7540,8 @@ static int _olua_ulong_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<unsigned long> *create(@optional size_t len)
-    olua::pointer<unsigned long> *ret = olua_ulong::create((size_t)arg1);
+    // @name(new) static olua_ulong *create(@optional size_t len)
+    olua_ulong *ret = olua_ulong::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ulong");
 
     olua_endinvoke(L);
@@ -7553,8 +7553,8 @@ static int _olua_ulong_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<unsigned long> *create(@optional size_t len)
-    olua::pointer<unsigned long> *ret = olua_ulong::create();
+    // @name(new) static olua_ulong *create(@optional size_t len)
+    olua_ulong *ret = olua_ulong::create();
     int num_ret = olua_push_obj(L, ret, "olua.ulong");
 
     olua_endinvoke(L);
@@ -7567,13 +7567,13 @@ static int _olua_ulong_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<unsigned long> *create(@optional size_t len)
+        // @name(new) static olua_ulong *create(@optional size_t len)
         return _olua_ulong_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<unsigned long> *create(@optional size_t len)
+            // @name(new) static olua_ulong *create(@optional size_t len)
             return _olua_ulong_create$1(L);
         // }
     }
@@ -7595,8 +7595,8 @@ static int _olua_ulong_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<unsigned long> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned long> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_ulong *sub(size_t from, @optional size_t to)
+    olua_ulong *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.ulong");
 
     olua_endinvoke(L);
@@ -7614,8 +7614,8 @@ static int _olua_ulong_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ulong");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<unsigned long> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned long> *ret = self->sub((size_t)arg1);
+    // olua_ulong *sub(size_t from, @optional size_t to)
+    olua_ulong *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ulong");
 
     olua_endinvoke(L);
@@ -7629,14 +7629,14 @@ static int _olua_ulong_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<unsigned long> *sub(size_t from, @optional size_t to)
+            // olua_ulong *sub(size_t from, @optional size_t to)
             return _olua_ulong_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<unsigned long> *sub(size_t from, @optional size_t to)
+            // olua_ulong *sub(size_t from, @optional size_t to)
             return _olua_ulong_sub$1(L);
         // }
     }
@@ -7895,8 +7895,8 @@ static int _olua_llong_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long long> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -7913,8 +7913,8 @@ static int _olua_llong_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.llong");
     olua_check_obj(L, 2, &arg1, "olua.llong");
 
-    // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long long> *)arg1);
+    // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -7933,8 +7933,8 @@ static int _olua_llong_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.llong");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long long> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -7955,8 +7955,8 @@ static int _olua_llong_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long long> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -7969,28 +7969,28 @@ static int _olua_llong_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.llong"))) {
-            // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_llong_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.llong")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_llong_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.llong")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_llong_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.llong")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_llong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_llong_copyfrom$1(L);
         // }
     }
@@ -8028,8 +8028,8 @@ static int _olua_llong_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<long long> *create(@optional size_t len)
-    olua::pointer<long long> *ret = olua_llong::create((size_t)arg1);
+    // @name(new) static olua_llong *create(@optional size_t len)
+    olua_llong *ret = olua_llong::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.llong");
 
     olua_endinvoke(L);
@@ -8041,8 +8041,8 @@ static int _olua_llong_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<long long> *create(@optional size_t len)
-    olua::pointer<long long> *ret = olua_llong::create();
+    // @name(new) static olua_llong *create(@optional size_t len)
+    olua_llong *ret = olua_llong::create();
     int num_ret = olua_push_obj(L, ret, "olua.llong");
 
     olua_endinvoke(L);
@@ -8055,13 +8055,13 @@ static int _olua_llong_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<long long> *create(@optional size_t len)
+        // @name(new) static olua_llong *create(@optional size_t len)
         return _olua_llong_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<long long> *create(@optional size_t len)
+            // @name(new) static olua_llong *create(@optional size_t len)
             return _olua_llong_create$1(L);
         // }
     }
@@ -8083,8 +8083,8 @@ static int _olua_llong_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<long long> *sub(size_t from, @optional size_t to)
-    olua::pointer<long long> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_llong *sub(size_t from, @optional size_t to)
+    olua_llong *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.llong");
 
     olua_endinvoke(L);
@@ -8102,8 +8102,8 @@ static int _olua_llong_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.llong");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<long long> *sub(size_t from, @optional size_t to)
-    olua::pointer<long long> *ret = self->sub((size_t)arg1);
+    // olua_llong *sub(size_t from, @optional size_t to)
+    olua_llong *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.llong");
 
     olua_endinvoke(L);
@@ -8117,14 +8117,14 @@ static int _olua_llong_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<long long> *sub(size_t from, @optional size_t to)
+            // olua_llong *sub(size_t from, @optional size_t to)
             return _olua_llong_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<long long> *sub(size_t from, @optional size_t to)
+            // olua_llong *sub(size_t from, @optional size_t to)
             return _olua_llong_sub$1(L);
         // }
     }
@@ -8383,8 +8383,8 @@ static int _olua_ullong_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long long> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -8401,8 +8401,8 @@ static int _olua_ullong_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ullong");
     olua_check_obj(L, 2, &arg1, "olua.ullong");
 
-    // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long long> *)arg1);
+    // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -8421,8 +8421,8 @@ static int _olua_ullong_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.ullong");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long long> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -8443,8 +8443,8 @@ static int _olua_ullong_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<unsigned long long> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -8457,28 +8457,28 @@ static int _olua_ullong_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.ullong"))) {
-            // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ullong_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.ullong")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ullong_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.ullong")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ullong_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.ullong")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<unsigned long long> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ullong *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ullong_copyfrom$1(L);
         // }
     }
@@ -8516,8 +8516,8 @@ static int _olua_ullong_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<unsigned long long> *create(@optional size_t len)
-    olua::pointer<unsigned long long> *ret = olua_ullong::create((size_t)arg1);
+    // @name(new) static olua_ullong *create(@optional size_t len)
+    olua_ullong *ret = olua_ullong::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ullong");
 
     olua_endinvoke(L);
@@ -8529,8 +8529,8 @@ static int _olua_ullong_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<unsigned long long> *create(@optional size_t len)
-    olua::pointer<unsigned long long> *ret = olua_ullong::create();
+    // @name(new) static olua_ullong *create(@optional size_t len)
+    olua_ullong *ret = olua_ullong::create();
     int num_ret = olua_push_obj(L, ret, "olua.ullong");
 
     olua_endinvoke(L);
@@ -8543,13 +8543,13 @@ static int _olua_ullong_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<unsigned long long> *create(@optional size_t len)
+        // @name(new) static olua_ullong *create(@optional size_t len)
         return _olua_ullong_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<unsigned long long> *create(@optional size_t len)
+            // @name(new) static olua_ullong *create(@optional size_t len)
             return _olua_ullong_create$1(L);
         // }
     }
@@ -8571,8 +8571,8 @@ static int _olua_ullong_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<unsigned long long> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned long long> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_ullong *sub(size_t from, @optional size_t to)
+    olua_ullong *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.ullong");
 
     olua_endinvoke(L);
@@ -8590,8 +8590,8 @@ static int _olua_ullong_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ullong");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<unsigned long long> *sub(size_t from, @optional size_t to)
-    olua::pointer<unsigned long long> *ret = self->sub((size_t)arg1);
+    // olua_ullong *sub(size_t from, @optional size_t to)
+    olua_ullong *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ullong");
 
     olua_endinvoke(L);
@@ -8605,14 +8605,14 @@ static int _olua_ullong_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<unsigned long long> *sub(size_t from, @optional size_t to)
+            // olua_ullong *sub(size_t from, @optional size_t to)
             return _olua_ullong_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<unsigned long long> *sub(size_t from, @optional size_t to)
+            // olua_ullong *sub(size_t from, @optional size_t to)
             return _olua_ullong_sub$1(L);
         // }
     }
@@ -8871,8 +8871,8 @@ static int _olua_float_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<float> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -8889,8 +8889,8 @@ static int _olua_float_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.float");
     olua_check_obj(L, 2, &arg1, "olua.float");
 
-    // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<float> *)arg1);
+    // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -8909,8 +8909,8 @@ static int _olua_float_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.float");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<float> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -8931,8 +8931,8 @@ static int _olua_float_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<float> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -8945,28 +8945,28 @@ static int _olua_float_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.float"))) {
-            // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_float_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.float")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_float_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.float")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_float_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.float")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<float> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_float *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_float_copyfrom$1(L);
         // }
     }
@@ -9004,8 +9004,8 @@ static int _olua_float_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<float> *create(@optional size_t len)
-    olua::pointer<float> *ret = olua_float::create((size_t)arg1);
+    // @name(new) static olua_float *create(@optional size_t len)
+    olua_float *ret = olua_float::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.float");
 
     olua_endinvoke(L);
@@ -9017,8 +9017,8 @@ static int _olua_float_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<float> *create(@optional size_t len)
-    olua::pointer<float> *ret = olua_float::create();
+    // @name(new) static olua_float *create(@optional size_t len)
+    olua_float *ret = olua_float::create();
     int num_ret = olua_push_obj(L, ret, "olua.float");
 
     olua_endinvoke(L);
@@ -9031,13 +9031,13 @@ static int _olua_float_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<float> *create(@optional size_t len)
+        // @name(new) static olua_float *create(@optional size_t len)
         return _olua_float_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<float> *create(@optional size_t len)
+            // @name(new) static olua_float *create(@optional size_t len)
             return _olua_float_create$1(L);
         // }
     }
@@ -9059,8 +9059,8 @@ static int _olua_float_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<float> *sub(size_t from, @optional size_t to)
-    olua::pointer<float> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_float *sub(size_t from, @optional size_t to)
+    olua_float *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.float");
 
     olua_endinvoke(L);
@@ -9078,8 +9078,8 @@ static int _olua_float_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.float");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<float> *sub(size_t from, @optional size_t to)
-    olua::pointer<float> *ret = self->sub((size_t)arg1);
+    // olua_float *sub(size_t from, @optional size_t to)
+    olua_float *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.float");
 
     olua_endinvoke(L);
@@ -9093,14 +9093,14 @@ static int _olua_float_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<float> *sub(size_t from, @optional size_t to)
+            // olua_float *sub(size_t from, @optional size_t to)
             return _olua_float_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<float> *sub(size_t from, @optional size_t to)
+            // olua_float *sub(size_t from, @optional size_t to)
             return _olua_float_sub$1(L);
         // }
     }
@@ -9359,8 +9359,8 @@ static int _olua_double_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<double> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -9377,8 +9377,8 @@ static int _olua_double_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.double");
     olua_check_obj(L, 2, &arg1, "olua.double");
 
-    // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<double> *)arg1);
+    // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -9397,8 +9397,8 @@ static int _olua_double_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.double");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<double> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -9419,8 +9419,8 @@ static int _olua_double_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<double> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -9433,28 +9433,28 @@ static int _olua_double_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.double"))) {
-            // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_double_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.double")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_double_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.double")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_double_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.double")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_double *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_double_copyfrom$1(L);
         // }
     }
@@ -9492,8 +9492,8 @@ static int _olua_double_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<double> *create(@optional size_t len)
-    olua::pointer<double> *ret = olua_double::create((size_t)arg1);
+    // @name(new) static olua_double *create(@optional size_t len)
+    olua_double *ret = olua_double::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.double");
 
     olua_endinvoke(L);
@@ -9505,8 +9505,8 @@ static int _olua_double_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<double> *create(@optional size_t len)
-    olua::pointer<double> *ret = olua_double::create();
+    // @name(new) static olua_double *create(@optional size_t len)
+    olua_double *ret = olua_double::create();
     int num_ret = olua_push_obj(L, ret, "olua.double");
 
     olua_endinvoke(L);
@@ -9519,13 +9519,13 @@ static int _olua_double_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<double> *create(@optional size_t len)
+        // @name(new) static olua_double *create(@optional size_t len)
         return _olua_double_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<double> *create(@optional size_t len)
+            // @name(new) static olua_double *create(@optional size_t len)
             return _olua_double_create$1(L);
         // }
     }
@@ -9547,8 +9547,8 @@ static int _olua_double_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<double> *sub(size_t from, @optional size_t to)
-    olua::pointer<double> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_double *sub(size_t from, @optional size_t to)
+    olua_double *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.double");
 
     olua_endinvoke(L);
@@ -9566,8 +9566,8 @@ static int _olua_double_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.double");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<double> *sub(size_t from, @optional size_t to)
-    olua::pointer<double> *ret = self->sub((size_t)arg1);
+    // olua_double *sub(size_t from, @optional size_t to)
+    olua_double *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.double");
 
     olua_endinvoke(L);
@@ -9581,14 +9581,14 @@ static int _olua_double_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<double> *sub(size_t from, @optional size_t to)
+            // olua_double *sub(size_t from, @optional size_t to)
             return _olua_double_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<double> *sub(size_t from, @optional size_t to)
+            // olua_double *sub(size_t from, @optional size_t to)
             return _olua_double_sub$1(L);
         // }
     }
@@ -9847,8 +9847,8 @@ static int _olua_ldouble_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long double> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -9865,8 +9865,8 @@ static int _olua_ldouble_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ldouble");
     olua_check_obj(L, 2, &arg1, "olua.ldouble");
 
-    // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long double> *)arg1);
+    // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -9885,8 +9885,8 @@ static int _olua_ldouble_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.ldouble");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long double> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -9907,8 +9907,8 @@ static int _olua_ldouble_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<long double> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -9921,28 +9921,28 @@ static int _olua_ldouble_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.ldouble"))) {
-            // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ldouble_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.ldouble")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ldouble_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.ldouble")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ldouble_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.ldouble")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<long double> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ldouble *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ldouble_copyfrom$1(L);
         // }
     }
@@ -9980,8 +9980,8 @@ static int _olua_ldouble_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<long double> *create(@optional size_t len)
-    olua::pointer<long double> *ret = olua_ldouble::create((size_t)arg1);
+    // @name(new) static olua_ldouble *create(@optional size_t len)
+    olua_ldouble *ret = olua_ldouble::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ldouble");
 
     olua_endinvoke(L);
@@ -9993,8 +9993,8 @@ static int _olua_ldouble_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<long double> *create(@optional size_t len)
-    olua::pointer<long double> *ret = olua_ldouble::create();
+    // @name(new) static olua_ldouble *create(@optional size_t len)
+    olua_ldouble *ret = olua_ldouble::create();
     int num_ret = olua_push_obj(L, ret, "olua.ldouble");
 
     olua_endinvoke(L);
@@ -10007,13 +10007,13 @@ static int _olua_ldouble_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<long double> *create(@optional size_t len)
+        // @name(new) static olua_ldouble *create(@optional size_t len)
         return _olua_ldouble_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<long double> *create(@optional size_t len)
+            // @name(new) static olua_ldouble *create(@optional size_t len)
             return _olua_ldouble_create$1(L);
         // }
     }
@@ -10035,8 +10035,8 @@ static int _olua_ldouble_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<long double> *sub(size_t from, @optional size_t to)
-    olua::pointer<long double> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_ldouble *sub(size_t from, @optional size_t to)
+    olua_ldouble *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.ldouble");
 
     olua_endinvoke(L);
@@ -10054,8 +10054,8 @@ static int _olua_ldouble_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ldouble");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<long double> *sub(size_t from, @optional size_t to)
-    olua::pointer<long double> *ret = self->sub((size_t)arg1);
+    // olua_ldouble *sub(size_t from, @optional size_t to)
+    olua_ldouble *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ldouble");
 
     olua_endinvoke(L);
@@ -10069,14 +10069,14 @@ static int _olua_ldouble_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<long double> *sub(size_t from, @optional size_t to)
+            // olua_ldouble *sub(size_t from, @optional size_t to)
             return _olua_ldouble_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<long double> *sub(size_t from, @optional size_t to)
+            // olua_ldouble *sub(size_t from, @optional size_t to)
             return _olua_ldouble_sub$1(L);
         // }
     }
@@ -10335,8 +10335,8 @@ static int _olua_size_t_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<size_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -10353,8 +10353,8 @@ static int _olua_size_t_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.size_t");
     olua_check_obj(L, 2, &arg1, "olua.size_t");
 
-    // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<size_t> *)arg1);
+    // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -10373,8 +10373,8 @@ static int _olua_size_t_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.size_t");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<size_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -10395,8 +10395,8 @@ static int _olua_size_t_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<size_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -10409,28 +10409,28 @@ static int _olua_size_t_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.size_t"))) {
-            // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_size_t_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.size_t")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_size_t_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.size_t")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_size_t_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.size_t")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<size_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_size_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_size_t_copyfrom$1(L);
         // }
     }
@@ -10468,8 +10468,8 @@ static int _olua_size_t_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<size_t> *create(@optional size_t len)
-    olua::pointer<size_t> *ret = olua_size_t::create((size_t)arg1);
+    // @name(new) static olua_size_t *create(@optional size_t len)
+    olua_size_t *ret = olua_size_t::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.size_t");
 
     olua_endinvoke(L);
@@ -10481,8 +10481,8 @@ static int _olua_size_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<size_t> *create(@optional size_t len)
-    olua::pointer<size_t> *ret = olua_size_t::create();
+    // @name(new) static olua_size_t *create(@optional size_t len)
+    olua_size_t *ret = olua_size_t::create();
     int num_ret = olua_push_obj(L, ret, "olua.size_t");
 
     olua_endinvoke(L);
@@ -10495,13 +10495,13 @@ static int _olua_size_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<size_t> *create(@optional size_t len)
+        // @name(new) static olua_size_t *create(@optional size_t len)
         return _olua_size_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<size_t> *create(@optional size_t len)
+            // @name(new) static olua_size_t *create(@optional size_t len)
             return _olua_size_t_create$1(L);
         // }
     }
@@ -10523,8 +10523,8 @@ static int _olua_size_t_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<size_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<size_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_size_t *sub(size_t from, @optional size_t to)
+    olua_size_t *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.size_t");
 
     olua_endinvoke(L);
@@ -10542,8 +10542,8 @@ static int _olua_size_t_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.size_t");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<size_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<size_t> *ret = self->sub((size_t)arg1);
+    // olua_size_t *sub(size_t from, @optional size_t to)
+    olua_size_t *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.size_t");
 
     olua_endinvoke(L);
@@ -10557,14 +10557,14 @@ static int _olua_size_t_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<size_t> *sub(size_t from, @optional size_t to)
+            // olua_size_t *sub(size_t from, @optional size_t to)
             return _olua_size_t_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<size_t> *sub(size_t from, @optional size_t to)
+            // olua_size_t *sub(size_t from, @optional size_t to)
             return _olua_size_t_sub$1(L);
         // }
     }
@@ -10823,8 +10823,8 @@ static int _olua_ssize_t_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<ssize_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -10841,8 +10841,8 @@ static int _olua_ssize_t_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ssize_t");
     olua_check_obj(L, 2, &arg1, "olua.ssize_t");
 
-    // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<ssize_t> *)arg1);
+    // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -10861,8 +10861,8 @@ static int _olua_ssize_t_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.ssize_t");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<ssize_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -10883,8 +10883,8 @@ static int _olua_ssize_t_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<ssize_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -10897,28 +10897,28 @@ static int _olua_ssize_t_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.ssize_t"))) {
-            // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ssize_t_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.ssize_t")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ssize_t_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.ssize_t")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ssize_t_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.ssize_t")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<ssize_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_ssize_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_ssize_t_copyfrom$1(L);
         // }
     }
@@ -10956,8 +10956,8 @@ static int _olua_ssize_t_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<ssize_t> *create(@optional size_t len)
-    olua::pointer<ssize_t> *ret = olua_ssize_t::create((size_t)arg1);
+    // @name(new) static olua_ssize_t *create(@optional size_t len)
+    olua_ssize_t *ret = olua_ssize_t::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ssize_t");
 
     olua_endinvoke(L);
@@ -10969,8 +10969,8 @@ static int _olua_ssize_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<ssize_t> *create(@optional size_t len)
-    olua::pointer<ssize_t> *ret = olua_ssize_t::create();
+    // @name(new) static olua_ssize_t *create(@optional size_t len)
+    olua_ssize_t *ret = olua_ssize_t::create();
     int num_ret = olua_push_obj(L, ret, "olua.ssize_t");
 
     olua_endinvoke(L);
@@ -10983,13 +10983,13 @@ static int _olua_ssize_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<ssize_t> *create(@optional size_t len)
+        // @name(new) static olua_ssize_t *create(@optional size_t len)
         return _olua_ssize_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<ssize_t> *create(@optional size_t len)
+            // @name(new) static olua_ssize_t *create(@optional size_t len)
             return _olua_ssize_t_create$1(L);
         // }
     }
@@ -11011,8 +11011,8 @@ static int _olua_ssize_t_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<ssize_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<ssize_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_ssize_t *sub(size_t from, @optional size_t to)
+    olua_ssize_t *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.ssize_t");
 
     olua_endinvoke(L);
@@ -11030,8 +11030,8 @@ static int _olua_ssize_t_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.ssize_t");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<ssize_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<ssize_t> *ret = self->sub((size_t)arg1);
+    // olua_ssize_t *sub(size_t from, @optional size_t to)
+    olua_ssize_t *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.ssize_t");
 
     olua_endinvoke(L);
@@ -11045,14 +11045,14 @@ static int _olua_ssize_t_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<ssize_t> *sub(size_t from, @optional size_t to)
+            // olua_ssize_t *sub(size_t from, @optional size_t to)
             return _olua_ssize_t_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<ssize_t> *sub(size_t from, @optional size_t to)
+            // olua_ssize_t *sub(size_t from, @optional size_t to)
             return _olua_ssize_t_sub$1(L);
         // }
     }
@@ -11311,8 +11311,8 @@ static int _olua_time_t_copyfrom$1(lua_State *L)
     olua_check_uint(L, 4, &arg3);
     olua_check_uint(L, 5, &arg4);
 
-    // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<time_t> *)arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
+    // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3, (size_t)arg4);
 
     olua_endinvoke(L);
 
@@ -11329,8 +11329,8 @@ static int _olua_time_t_copyfrom$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.time_t");
     olua_check_obj(L, 2, &arg1, "olua.time_t");
 
-    // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<time_t> *)arg1);
+    // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1);
 
     olua_endinvoke(L);
 
@@ -11349,8 +11349,8 @@ static int _olua_time_t_copyfrom$3(lua_State *L)
     olua_check_obj(L, 2, &arg1, "olua.time_t");
     olua_check_uint(L, 3, &arg2);
 
-    // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<time_t> *)arg1, (size_t)arg2);
+    // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2);
 
     olua_endinvoke(L);
 
@@ -11371,8 +11371,8 @@ static int _olua_time_t_copyfrom$4(lua_State *L)
     olua_check_uint(L, 3, &arg2);
     olua_check_uint(L, 4, &arg3);
 
-    // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
-    self->copyfrom((olua::pointer<time_t> *)arg1, (size_t)arg2, (size_t)arg3);
+    // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+    self->copyfrom(arg1, (size_t)arg2, (size_t)arg3);
 
     olua_endinvoke(L);
 
@@ -11385,28 +11385,28 @@ static int _olua_time_t_copyfrom(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_obj(L, 2, "olua.time_t"))) {
-            // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_time_t_copyfrom$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_obj(L, 2, "olua.time_t")) && (olua_is_uint(L, 3))) {
-            // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_time_t_copyfrom$3(L);
         // }
     }
 
     if (num_args == 3) {
         // if ((olua_is_obj(L, 2, "olua.time_t")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4))) {
-            // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_time_t_copyfrom$4(L);
         // }
     }
 
     if (num_args == 4) {
         // if ((olua_is_obj(L, 2, "olua.time_t")) && (olua_is_uint(L, 3)) && (olua_is_uint(L, 4)) && (olua_is_uint(L, 5))) {
-            // void copyfrom(olua::pointer<time_t> *obj, @optional size_t from, @optional size_t len, @optional size_t to)
+            // void copyfrom(olua_time_t *obj, @optional size_t from, @optional size_t len, @optional size_t to)
             return _olua_time_t_copyfrom$1(L);
         // }
     }
@@ -11444,8 +11444,8 @@ static int _olua_time_t_create$1(lua_State *L)
 
     olua_check_uint(L, 1, &arg1);
 
-    // @name(new) static olua::pointer<time_t> *create(@optional size_t len)
-    olua::pointer<time_t> *ret = olua_time_t::create((size_t)arg1);
+    // @name(new) static olua_time_t *create(@optional size_t len)
+    olua_time_t *ret = olua_time_t::create((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.time_t");
 
     olua_endinvoke(L);
@@ -11457,8 +11457,8 @@ static int _olua_time_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua::pointer<time_t> *create(@optional size_t len)
-    olua::pointer<time_t> *ret = olua_time_t::create();
+    // @name(new) static olua_time_t *create(@optional size_t len)
+    olua_time_t *ret = olua_time_t::create();
     int num_ret = olua_push_obj(L, ret, "olua.time_t");
 
     olua_endinvoke(L);
@@ -11471,13 +11471,13 @@ static int _olua_time_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua::pointer<time_t> *create(@optional size_t len)
+        // @name(new) static olua_time_t *create(@optional size_t len)
         return _olua_time_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 1))) {
-            // @name(new) static olua::pointer<time_t> *create(@optional size_t len)
+            // @name(new) static olua_time_t *create(@optional size_t len)
             return _olua_time_t_create$1(L);
         // }
     }
@@ -11499,8 +11499,8 @@ static int _olua_time_t_sub$1(lua_State *L)
     olua_check_uint(L, 2, &arg1);
     olua_check_uint(L, 3, &arg2);
 
-    // olua::pointer<time_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<time_t> *ret = self->sub((size_t)arg1, (size_t)arg2);
+    // olua_time_t *sub(size_t from, @optional size_t to)
+    olua_time_t *ret = self->sub((size_t)arg1, (size_t)arg2);
     int num_ret = olua_push_obj(L, ret, "olua.time_t");
 
     olua_endinvoke(L);
@@ -11518,8 +11518,8 @@ static int _olua_time_t_sub$2(lua_State *L)
     olua_to_obj(L, 1, &self, "olua.time_t");
     olua_check_uint(L, 2, &arg1);
 
-    // olua::pointer<time_t> *sub(size_t from, @optional size_t to)
-    olua::pointer<time_t> *ret = self->sub((size_t)arg1);
+    // olua_time_t *sub(size_t from, @optional size_t to)
+    olua_time_t *ret = self->sub((size_t)arg1);
     int num_ret = olua_push_obj(L, ret, "olua.time_t");
 
     olua_endinvoke(L);
@@ -11533,14 +11533,14 @@ static int _olua_time_t_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_uint(L, 2))) {
-            // olua::pointer<time_t> *sub(size_t from, @optional size_t to)
+            // olua_time_t *sub(size_t from, @optional size_t to)
             return _olua_time_t_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_uint(L, 2)) && (olua_is_uint(L, 3))) {
-            // olua::pointer<time_t> *sub(size_t from, @optional size_t to)
+            // olua_time_t *sub(size_t from, @optional size_t to)
             return _olua_time_t_sub$1(L);
         // }
     }
