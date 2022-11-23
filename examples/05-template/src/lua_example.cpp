@@ -75,6 +75,22 @@ static int _example_TestWildcardListener___olua_move(lua_State *L)
     return 1;
 }
 
+static int _example_TestWildcardListener_hello(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::TestWildcardListener *self = nullptr;
+
+    olua_to_obj(L, 1, &self, "example.TestWildcardListener");
+
+    // void hello()
+    self->hello();
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_TestWildcardListener_onClick(lua_State *L)
 {
     olua_startinvoke(L);
@@ -96,10 +112,10 @@ OLUA_LIB int luaopen_example_TestWildcardListener(lua_State *L)
 {
     oluacls_class(L, "example.TestWildcardListener", nullptr);
     oluacls_func(L, "__olua_move", _example_TestWildcardListener___olua_move);
+    oluacls_func(L, "hello", _example_TestWildcardListener_hello);
     oluacls_func(L, "onClick", _example_TestWildcardListener_onClick);
 
     olua_registerluatype<example::TestWildcardListener>(L, "example.TestWildcardListener");
-    printf("test wildcard luaopen\n");
 
     return 1;
 }
@@ -379,6 +395,22 @@ static int _example_Hello_getSingleton(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_hello(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+
+    olua_to_obj(L, 1, &self, "example.Hello");
+
+    // @copyfrom(example::TestWildcardListener) void hello()
+    self->hello();
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_new(lua_State *L)
 {
     olua_startinvoke(L);
@@ -508,6 +540,7 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "getBool", _example_Hello_getBool);
     oluacls_func(L, "getName", _example_Hello_getName);
     oluacls_func(L, "getSingleton", _example_Hello_getSingleton);
+    oluacls_func(L, "hello", _example_Hello_hello);
     oluacls_func(L, "new", _example_Hello_new);
     oluacls_func(L, "onClick", _example_Hello_onClick);
     oluacls_func(L, "printSingleton", _example_Hello_printSingleton);

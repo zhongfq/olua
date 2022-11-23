@@ -21,16 +21,15 @@ local function check_meta_method(cls)
     for _, v in ipairs(cls.funcs) do
         if v[1].ctor then
             has_ctor = true
+            break
         end
     end
-    if has_ctor then
-        if not has_method(cls, '__gc', true) then
-            cls.funcs:push(olua.parse_func(cls, '__gc', format([[
-            {
-                olua_postgc<${cls.cppcls}>(L, 1);
-                return 0;
-            }]])))
-        end
+    if has_ctor and not has_method(cls, '__gc', true) then
+        cls.funcs:push(olua.parse_func(cls, '__gc', format([[
+        {
+            olua_postgc<${cls.cppcls}>(L, 1);
+            return 0;
+        }]])))
     end
     if olua.is_func_type(cls) then
         cls.funcs:push(olua.parse_func(cls, '__call', format([[
