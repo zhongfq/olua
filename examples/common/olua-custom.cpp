@@ -51,7 +51,7 @@ lua_State *olua_new()
     lua_State *L = luaL_newstate();
     luaL_openlibs(L);
     lua_pushcfunction(L, _errorfunc);
-    lua_setglobal(L, "__TRACEBACK__");
+    olua_setglobal(L, "__TRACEBACK__");
     GL = L;
     _thread = std::this_thread::get_id();
     return L;
@@ -112,7 +112,7 @@ OLUA_API void olua_startcmpref(lua_State *L, int idx, const char *refname)
                 auto obj = olua_toobj<Object>(L, -2);
                 lua_pushvalue(L, -2);
                 lua_pushinteger(L, obj->getReferenceCount());
-                lua_rawset(L, -5);
+                olua_rawset(L, -5);
             }
             lua_pop(L, 1);
         }

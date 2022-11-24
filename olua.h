@@ -141,36 +141,41 @@ OLUA_API size_t olua_objcount(lua_State *L);
 OLUA_API bool olua_isdebug(lua_State *L);
     
 // compare raw type of value
-#define olua_isfunction(L,n)        (lua_type(L, (n)) == LUA_TFUNCTION)
-#define olua_istable(L,n)           (lua_type(L, (n)) == LUA_TTABLE)
-#define olua_islightuserdata(L,n)   (lua_type(L, (n)) == LUA_TLIGHTUSERDATA)
-#define olua_isuserdata(L,n)        (lua_type(L, (n)) == LUA_TUSERDATA)
-#define olua_isnil(L,n)             (lua_type(L, (n)) == LUA_TNIL)
-#define olua_isnoneornil(L, n)      (lua_type(L, (n)) <= 0)
-#define olua_isboolean(L,n)         (lua_type(L, (n)) == LUA_TBOOLEAN)
-#define olua_isstring(L,n)          (lua_type(L, (n)) == LUA_TSTRING)
-#define olua_isnumber(L,n)          (lua_type(L, (n)) == LUA_TNUMBER)
-#define olua_isthread(L,n)          (lua_type(L, (n)) == LUA_TTHREAD)
+#define olua_isfunction(L, i)       (lua_type(L, (i)) == LUA_TFUNCTION)
+#define olua_istable(L, i)          (lua_type(L, (i)) == LUA_TTABLE)
+#define olua_islightuserdata(L, i)  (lua_type(L, (i)) == LUA_TLIGHTUSERDATA)
+#define olua_isuserdata(L, i)       (lua_type(L, (i)) == LUA_TUSERDATA)
+#define olua_isnil(L, i)            (lua_type(L, (i)) == LUA_TNIL)
+#define olua_isnoneornil(L, i)      (lua_type(L, (i)) <= 0)
+#define olua_isbool(L, i)           (lua_type(L, (i)) == LUA_TBOOLEAN)
+#define olua_isstring(L, i)         (lua_type(L, (i)) == LUA_TSTRING)
+#define olua_isnumber(L, i)         (lua_type(L, (i)) == LUA_TNUMBER)
+#define olua_isthread(L, i)         (lua_type(L, (i)) == LUA_TTHREAD)
 OLUA_API bool olua_isinteger(lua_State *L, int idx);
 
 #define olua_strequal(s1, s2)       (strcmp((s1), (s2)) == 0)
     
-// check or get raw value
+// push, check or get raw value
+#define olua_pushbool(L, v)         (lua_pushboolean(L, (bool)(v)))
+#define olua_pushinteger(L, v)      (lua_pushinteger(L, (lua_Integer)(v)))
+#define olua_pushnumber(L, v)       (lua_pushnumber(L, (lua_Number)(v)))
+#define olua_pushstring(L, v)       (lua_pushstring(L, (v)))
+#define olua_pushlstring(L, v, l)   (lua_pushlstring(L, (v), (l)))
 #define olua_tonumber(L, i)         (lua_tonumber(L, (i)))
 #define olua_tointeger(L, i)        (lua_tointeger(L, (i)))
 #define olua_tostring(L, i)         (lua_tostring(L, (i)))
 #define olua_tolstring(L, i, l)     (lua_tolstring(L, (i), (l)))
-#define olua_toboolean(L, i)        (lua_toboolean(L, (i)))
+#define olua_tobool(L, i)           (lua_toboolean(L, (i)))
 #define olua_checkstring(L, i)      (olua_checklstring(L, (i), NULL))
 #define olua_optinteger(L, i, d)    (luaL_opt(L, olua_checkinteger, (i), (d)))
 #define olua_optstring(L, i, d)     (luaL_opt(L, olua_checkstring, (i), (d)))
 #define olua_optlstring(L, i, d, l) (luaL_opt(L, olua_checklstring, (i), (d), (l)))
 #define olua_optnumber(L, i, d)     (luaL_opt(L, olua_checknumber, (i), (d)))
-#define olua_optboolean(L, i, d)    (olua_isnoneornil(L, (i)) ? (d) : olua_toboolean(L, (i)) != 0)
+#define olua_optbool(L, i, d)       (olua_isnoneornil(L, (i)) ? (d) : olua_tobool(L, (i)) != 0)
 OLUA_API lua_Integer olua_checkinteger(lua_State *L, int idx);
 OLUA_API lua_Number olua_checknumber(lua_State *L, int idx);
 OLUA_API const char *olua_checklstring (lua_State *L, int arg, size_t *len);
-OLUA_API bool olua_checkboolean(lua_State *L, int idx);
+OLUA_API bool olua_checkbool(lua_State *L, int idx);
 
 // raw set or get value with field
 OLUA_API int olua_rawgetf(lua_State *L, int idx, const char *field);
@@ -205,7 +210,8 @@ OLUA_API int olua_newindexerror(lua_State *L);
 // ownership
 #define OLUA_OWNERSHIP_NONE     0
 #define OLUA_OWNERSHIP_VM       1
-#define OLUA_OWNERSHIP_ALIAS    2
+#define OLUA_OWNERSHIP_USERDATA 2
+#define OLUA_OWNERSHIP_ALIAS    3
 OLUA_API void olua_setownership(lua_State *L, int idx, int owner);
 OLUA_API int olua_getownership(lua_State *L, int idx);
     
@@ -312,24 +318,24 @@ OLUA_API void oluacls_prop(lua_State *L, const char *name, lua_CFunction getter,
 OLUA_API void oluacls_func(lua_State *L, const char *name, lua_CFunction func);
 OLUA_API void oluacls_const(lua_State *L, const char *name);
 #define oluacls_const_value(L, k, v)    (lua_pushvalue(L, (v)), oluacls_const(L, (k)))
-#define oluacls_const_bool(L, k, v)     (lua_pushboolean(L, (v)), oluacls_const(L, (k)))
-#define oluacls_const_number(L, k, v)   (lua_pushnumber(L, (v)), oluacls_const(L, (k)))
-#define oluacls_const_integer(L, k, v)  (lua_pushinteger(L, (v)), oluacls_const(L, (k)))
-#define oluacls_const_string(L, k, v)   (lua_pushstring(L, (v)), oluacls_const(L, (k)))
+#define oluacls_const_bool(L, k, v)     (olua_pushbool(L, (v)), oluacls_const(L, (k)))
+#define oluacls_const_number(L, k, v)   (olua_pushnumber(L, (v)), oluacls_const(L, (k)))
+#define oluacls_const_integer(L, k, v)  (olua_pushinteger(L, (v)), oluacls_const(L, (k)))
+#define oluacls_const_string(L, k, v)   (olua_pushstring(L, (v)), oluacls_const(L, (k)))
     
 // get or set value for table
 OLUA_API const char *olua_checkfieldstring(lua_State *L, int idx, const char *field);
 OLUA_API lua_Number olua_checkfieldnumber(lua_State *L, int idx, const char *field);
 OLUA_API lua_Integer olua_checkfieldinteger(lua_State *L, int idx, const char *field);
-OLUA_API bool olua_checkfieldboolean(lua_State *L, int idx, const char *field);
+OLUA_API bool olua_checkfieldbool(lua_State *L, int idx, const char *field);
 OLUA_API void olua_setfieldnumber(lua_State *L, int idx, const char *field, lua_Number value);
 OLUA_API void olua_setfieldinteger(lua_State *L, int idx, const char *field, lua_Integer value);
 OLUA_API void olua_setfieldstring(lua_State *L, int idx, const char *field, const char *value);
-OLUA_API void olua_setfieldboolean(lua_State *L, int idx, const char *field, bool value);
+OLUA_API void olua_setfieldbool(lua_State *L, int idx, const char *field, bool value);
 OLUA_API const char *olua_optfieldstring(lua_State *L, int idx, const char *field, const char *def);
 OLUA_API lua_Number olua_optfieldnumber(lua_State *L, int idx, const char *field, lua_Number def);
 OLUA_API lua_Integer olua_optfieldinteger(lua_State *L, int idx, const char *field, lua_Integer def);
-OLUA_API bool olua_optfieldboolean(lua_State *L, int idx, const char *field, bool def);
+OLUA_API bool olua_optfieldbool(lua_State *L, int idx, const char *field, bool def);
 OLUA_API bool olua_hasfield(lua_State *L, int idx, const char *field);
     
 OLUA_API int luaopen_olua(lua_State *L);
@@ -361,6 +367,7 @@ OLUA_API void olua_initcompat(lua_State *L);
 OLUA_API void olua_rawsetp(lua_State *L, int idx, const void *p);
 OLUA_API int olua_rawgetp(lua_State *L, int idx, const void *p);
 #define olua_getglobal(L, k)        (lua_getglobal(L, (k)), lua_type(L, -1))
+#define olua_setglobal(L, k)        (lua_setglobal(L, (k)))
 #define olua_getmetatable(L, k)     (luaL_getmetatable(L, (k)), lua_type(L, -1))
 #define olua_setmetatable(L, k)     (luaL_getmetatable(L, (k)), lua_setmetatable(L, -2))
 #define olua_rawset(L, i)           (lua_rawset(L, (i)))
@@ -374,6 +381,7 @@ OLUA_API int olua_rawgetp(lua_State *L, int idx, const void *p);
 #else
 #define LUA_LOADER_TABLE "searchers"
 #define olua_getglobal(L, k)        (lua_getglobal(L, (k)))
+#define olua_setglobal(L, k)        (lua_setglobal(L, (k)))
 #define olua_getmetatable(L, k)     (luaL_getmetatable(L, (k)))
 #define olua_setmetatable(L, k)     (luaL_setmetatable(L, (k)))
 #define olua_rawsetp(L, i, p)       (lua_rawsetp(L, (i), (p)))
@@ -696,8 +704,8 @@ inline int olua_pushobjstub(lua_State *L, T *value, void *stub)
 
 // convertor between c and lua, use for code generation
 #define olua_push_bool(L, v)        (lua_pushboolean(L, (v)), 1)
-#define olua_check_bool(L, i, v)    (*(v) = olua_checkboolean(L, (i)))
-#define olua_is_bool(L, i)          (olua_isboolean(L, (i)))
+#define olua_check_bool(L, i, v)    (*(v) = olua_checkbool(L, (i)))
+#define olua_is_bool(L, i)          (olua_isbool(L, (i)))
 
 #define olua_push_string(L, v)      (lua_pushstring(L, (v)), 1)
 #define olua_check_string(L, i, v)  (*(v) = olua_checkstring(L, (i)))
@@ -874,7 +882,7 @@ int olua_push_map(lua_State *L, const Map<K, V, Ts...> *map, const std::function
     lua_newtable(L);
     olua_foreach_map<K, V>(map, [=](K &key, V &value) {
         push(key, value);
-        lua_rawset(L, -3);
+        olua_rawset(L, -3);
     });
     return 1;
 }
