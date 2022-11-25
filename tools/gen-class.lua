@@ -17,20 +17,6 @@ local function has_method(cls, fn, check_super)
 end
 
 local function check_meta_method(cls)
-    local has_ctor = false
-    for _, v in ipairs(cls.funcs) do
-        if v[1].ctor then
-            has_ctor = true
-            break
-        end
-    end
-    if has_ctor and not has_method(cls, '__gc', true) then
-        cls.funcs:push(olua.parse_func(cls, '__gc', format([[
-        {
-            olua_postgc<${cls.cppcls}>(L, 1);
-            return 0;
-        }]])))
-    end
     if olua.is_func_type(cls) then
         cls.funcs:push(olua.parse_func(cls, '__call', format([[
         {
@@ -38,15 +24,31 @@ local function check_meta_method(cls)
             olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.luacls}");
             return 1;
         }]])))
-    elseif not olua.is_enum_type(cls) and cls.reg_luatype
-        and not has_method(cls, '__olua_move', false)
-    then
-        cls.funcs:push(olua.parse_func(cls, '__olua_move', format([[
-        {
-            auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
-            olua_push_obj(L, self, "${cls.luacls}");
-            return 1;
-        }]])))
+    elseif not olua.is_enum_type(cls) and cls.reg_luatype then
+        if not has_method(cls, '__gc', true) then
+            cls.funcs:push(olua.parse_func(cls, '__gc', format([[
+            {
+                olua_postgc<${cls.cppcls}>(L, 1);
+                return 0;
+            }]])))
+        end
+        if not has_method(cls, '__olua_move', true) then
+            cls.funcs:push(olua.parse_func(cls, '__olua_move', format([[
+            {
+                auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
+                olua_push_object(L, self, "${cls.luacls}");
+                return 1;
+            }]])))
+        end
+        if cls.packable then
+            cls.funcs:push(olua.parse_func(cls, '__call', format([[
+            {
+                ${cls.cppcls} self;
+                olua_fill_object(L, -1, &self);
+                olua_pushcopy_object(L, self, "${cls.luacls}");
+                return 1;
+            }]])))
+        end
     end
 end
 
@@ -94,6 +96,10 @@ local function gen_class_funcs(cls, write)
         pts = setmetatable(pts, {__index = prototypes[cls.supercls]})
     end
     prototypes[cls.cppcls] = pts
+
+    if cls.packable then
+        olua.gen_class_fill(cls, write)
+    end
 
     table.sort(cls.funcs, function (a, b)
         return a[1].luafunc < b[1].luafunc
@@ -173,25 +179,29 @@ local function gen_class_open(cls, write)
 
     olua.sort(cls.consts, 'name')
     for _, ci in ipairs(cls.consts) do
-        local decltype = ci.type.decltype
+        local conv = ci.type.conv
         local value = ci.value
         local const_func
-        if decltype == 'bool' then
+        local cast
+        if conv == 'olua_$$_bool' then
             const_func = 'oluacls_const_bool'
-        elseif decltype == 'lua_Integer' or decltype == 'lua_Unsigned' then
+            cast = 'bool'
+        elseif conv == 'olua_$$_integer' then
             const_func = 'oluacls_const_integer'
-        elseif decltype == 'lua_Number' then
+            cast = 'lua_Integer'
+        elseif conv == 'olua_$$_number' then
             const_func = 'oluacls_const_number'
-        elseif decltype == 'const char *' then
+            cast = 'lua_Number'
+        elseif conv == 'olua_$$_string' then
             const_func = 'oluacls_const_string'
-        elseif decltype == 'std::string' then
-            const_func = 'oluacls_const_string'
-            decltype = 'const char *'
-            value = value .. '.c_str()'
+            cast = 'const char *'
+            if ci.type.cppcls == 'std::string' then
+                value = value .. '.c_str()'
+            end
         else
-            error(ci.type.decltype)
+            error(ci.type.cppcls)
         end
-        funcs:pushf('${const_func}(L, "${ci.name}", (${decltype})${value});')
+        funcs:pushf('${const_func}(L, "${ci.name}", (${cast})${value});')
     end
 
     olua.sort(cls.enums, 'name')

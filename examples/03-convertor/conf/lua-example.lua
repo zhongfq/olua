@@ -9,13 +9,12 @@ headers [[
 
 import "../common/lua-object.lua"
 
-typedef "example::Identifier"
-    .decltype "std::string"
 typedef "example::Color"
 typedef "example::vector"
     .conv "olua_$$_array"
 
-typeconv "example::Point"
+typeconf "example::Point"
+    .packable 'true'
 
 typeconf "example::Node"
     .extend 'example::NodeExtend'

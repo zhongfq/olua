@@ -3,10 +3,12 @@ local olua = require "olua"
 local typeinfo_map = {}
 local class_map = {}
 
-local kFLAG_CONST   = 1 << 1  -- is const
-local kFLAG_LVALUE  = 1 << 2  -- is left value
-local kFLAG_RVALUE  = 1 << 3  -- is right value
-local kFLAG_CAST    = 1 << 4  -- is type cast
+local kFLAG_CONST       = 1 << 1  -- is const
+local kFLAG_LVALUE      = 1 << 2  -- is left value
+local kFLAG_RVALUE      = 1 << 3  -- is right value
+local kFLAG_POINTER     = 1 << 4  -- is pointer
+local kFLAG_POINTEE     = 1 << 5  -- is pointer or reference
+local kFLAG_CALLBACK    = 1 << 6  -- is callback
 
 local format = olua.format
 
@@ -24,11 +26,15 @@ function olua.pretty_typename(tn)
     return tn
 end
 
-local function lookup_typeinfo(tn)
+local function lookup_typeinfo(cpptype)
+    local tn = cpptype
     local ti = typeinfo_map[tn]
     if not ti then
         tn = tn:gsub('^const ', '')
         ti = typeinfo_map[tn]
+    end
+    if not ti and cpptype:find('[*]$') then
+        ti, tn = lookup_typeinfo(cpptype:gsub('[ *]+$', ''))
     end
     return ti, tn
 end
@@ -72,26 +78,12 @@ local function search_type_from_class(cls, cpptype, errors)
     end
 end
 
-local function search_type_from_cast(cpptype, typecast, errors)
-    if not typecast then
-        return
-    elseif not cpptype:find('%*$') then
-        -- try pointee
-        return olua.typeinfo(cpptype .. ' *', nil, false, false, errors)
-    elseif cpptype:find('%*$') then
-        -- try reference type
-        return olua.typeinfo(cpptype:gsub('[ *]+$', ''), nil, false, false, errors)
-    end
-end
-
 local function subtype_typeinfo(cls, cpptype, throwerror)
     local subtis = {}
     for subcpptype in cpptype:match('<(.*)>'):gmatch(' *([^,]+)') do
         local subti = olua.typeinfo(subcpptype, cls, throwerror)
         if subti.smartptr then
-            subti.cppcls = olua.decltype(subti, true)
-            subti.decltype = subti.cppcls
-            subti.rawdecl = subcpptype
+            subti.cppcls = olua.decltype(subti)
             subti.luacls = subti.subtypes[1].luacls
         elseif subcpptype:find('<') then
             olua.error([[
@@ -112,21 +104,17 @@ end
     func: void addChild(const std::vector<const Object *> &child)
     ti = {
         cppcls = std::vector
-        rawdecl = const std::vector &
-        decltype = std::vector
         flag = kFLAG_CONST | kFLAG_LVALUE
         subtis = {
             [1] = {
                 cppcls = 'Object *'
-                rawdecl = 'const Object *'
-                decltype = 'Object *'
                 flag = kFLAG_CONST
             }
         }
     }
 ]]
 function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
-    local tn, ti, subtis, rawdecl -- for tn<T, ...>
+    local tn, ti, subtis -- for tn<T, ...>
     local flag = 0
 
     throwerror = throwerror ~= false
@@ -137,10 +125,14 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
     if cpptype:find('^const') then
         flag = flag | kFLAG_CONST
     end
-    if cpptype:find('&&$') then
-        flag = flag | kFLAG_RVALUE
+    if cpptype:find('%*%*+$') then
+        olua.error('type not support: ${cpptype}')
+    elseif cpptype:find('%*$') then
+        flag = flag | kFLAG_POINTER | kFLAG_POINTEE
+    elseif cpptype:find('&&$') then
+        flag = flag | kFLAG_RVALUE | kFLAG_POINTEE
     elseif cpptype:find('&$') then
-        flag = flag | kFLAG_LVALUE
+        flag = flag | kFLAG_LVALUE | kFLAG_POINTEE
     end
     
     cpptype = cpptype:gsub('[ &]+$', '')
@@ -151,7 +143,6 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
         cpptype = olua.pretty_typename(cpptype:gsub('<.*>', ''))
     end
 
-    rawdecl = cpptype
     ti, tn = lookup_typeinfo(cpptype)
     errors:replace(cpptype, cpptype)
 
@@ -159,19 +150,10 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
         ti = setmetatable({}, {__index = ti})
     else
         repeat
-            -- try type cast
-            ti = search_type_from_cast(cpptype, typecast, errors)
-            if ti then
-                flag = flag | kFLAG_CAST
-                rawdecl = cpptype
-                goto found
-            end
-
             -- search in class namespace
             ti, tn = search_type_from_class(cls, cpptype, errors)
             if ti then
                 cpptype = tn
-                rawdecl = cpptype
                 goto found
             end
 
@@ -186,34 +168,22 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
         until true
     end
 
-    if rawdecl:find('^const ') then
+    if tn:find('^const ') then
         flag = flag & (~kFLAG_CONST)
     end
 
     ti.subtypes = subtis
-    ti.rawdecl = rawdecl:gsub('<.*>', '')
     ti.flag = flag
 
     if ti.subtypes then
-        local ttn = olua.decltype(ti, true)
-        local tti = typeinfo_map[ttn]
+        local tti = lookup_typeinfo(olua.decltype(ti, true))
         if tti then
-            tn = ttn
             ti = setmetatable({}, {__index = tti})
             ti.flag = flag
-            ti.rawdecl = olua.decltype(ti)
-        elseif not ti.smartptr then
-            for _, subtype in ipairs(subtis) do
-                if olua.is_cast_type(subtype) then
-                    errors:clear()
-                    errors:push(subtype.rawdecl, subtype.rawdecl)
-                    throw_type_error(subtype.rawdecl, errors)
-                end
-            end
         end
     end
     
-    return ti, cpptype
+    return ti
 end
 
 --[[
@@ -227,37 +197,59 @@ end
     olua_check_std_vector(L, 2, arg1, "A");
     self->call(arg1);
 ]]
-function olua.decltype(ti, checkvalue)
+local function should_add_pointer(ti)
+    return olua.has_pointer_flag(ti) and not olua.is_pointer_type(ti.cppcls)
+end
+
+local function build_decltype(exps, ti, addspace)
+    exps:push(olua.has_const_flag(ti) and 'const ' or nil)
+    exps:push(ti.cppcls)
+    exps:push(olua.has_lvalue_flag(ti) and ' &' or nil)
+    exps:push(olua.has_rvalue_flag(ti) and ' &&' or nil)
+    exps:push(should_add_pointer(ti) and ' *' or nil)
+    if addspace and not olua.has_pointee_flag(ti) then
+        exps:push(' ')
+    end
+end
+
+function olua.decltype(ti, checkvalue, addspace)
+    if type(ti) == 'string' then
+        if addspace and not ti:find('[*&]$') then
+            ti = ti .. ' '
+        end
+        return ti
+    end
+
     local exps = olua.newarray('')
-    if not checkvalue and olua.is_const_type(ti) then
+    if not checkvalue and olua.has_const_flag(ti) then
         exps:push('const ')
     end
-    if ti.subtypes then
-        local cppcls
-        if checkvalue then
-            cppcls= ti.cppcls
-        else
-            cppcls = ti.rawdecl
-        end
-        local ptr = cppcls:match(' [*]+$') or ''
-        exps:push(ptr and cppcls:gsub(' [*]+$', '') or cppcls)
+    exps:push(ti.cppcls)
+    if olua.has_callback_flag(ti) then
         exps:push('<')
-        for i, v in ipairs(ti.subtypes) do
-            exps:push(i > 1 and ', ' or '')
-            exps:push(olua.is_const_type(v) and 'const ' or '')
-            exps:push(v.rawdecl)
+        build_decltype(exps, ti.callback[0], true)
+        exps:push('(')
+        for i, ai in ipairs(ti.callback) do
+            exps:push(i > 1 and ', ' or nil)
+            build_decltype(exps, ai)
+        end
+        exps:push(')')
+        exps:push('>')
+    elseif ti.subtypes then
+        exps:push('<')
+        for i, subti in ipairs(ti.subtypes) do
+            exps:push(i > 1 and ', ' or nil)
+            build_decltype(exps, subti)
         end
         exps:push('>')
-        exps:push(ptr)
-    else
-        exps:push(ti.rawdecl)
     end
     if not checkvalue then
-        if olua.is_lvalue_type(ti) then
-            exps:push(' &')
-        elseif olua.is_rvalue_type(ti) then
-            exps:push(' &&')
-        end
+        exps:push(olua.has_lvalue_flag(ti) and ' &' or nil)
+        exps:push(olua.has_rvalue_flag(ti) and ' &&' or nil)
+    end
+    exps:push(should_add_pointer(ti) and ' *' or nil)
+    if addspace and not exps[#exps]:find('[*&]$') then
+        exps:push(' ')
     end
     return tostring(exps)
 end
@@ -348,12 +340,21 @@ local function parse_type(str)
     return olua.pretty_typename(tn), attr, str
 end
 
-local function type_func_info(tn, cls)
+local function type_func_info(tn, cls, cb)
+    local ti
     if not tn:find('std::function') then
-        return olua.typeinfo(tn, cls)
+        ti = olua.typeinfo(tn, cls)
     else
-        return olua.typeinfo('std::function', cls)
+        ti = olua.typeinfo('std::function', cls)
+        if cb then
+            ti.flag = ti.flag | kFLAG_CALLBACK
+            ti.callback = {[0] = cb.ret.type}
+            for i, arg in ipairs(cb.args) do
+                ti.callback[i] = arg.type
+            end
+        end
     end
+    return ti
 end
 
 local parse_args
@@ -364,24 +365,12 @@ local function parse_callback(cls, tn)
     local declstr = (ti.declfunc or tn):match('<(.*)>') -- match callback function prototype
     rtn, rtattr, declstr = parse_type(declstr)
     declstr = declstr:gsub('^[^(]+', '') -- match callback args
-
     local ret = {}
     ret.type = olua.typeinfo(rtn, cls)
-    ret.decltype = olua.decltype(ret.type)
     ret.attr = rtattr
-
-    local args = parse_args(cls, declstr)
-    local decltype = {}
-    for _, ai in ipairs(args) do
-        decltype[#decltype + 1] = ai.declarg
-    end
-    decltype = table.concat(decltype, ", ")
-    decltype = ('std::function<%s(%s)>'):format(olua.decltype(ret.type), decltype)
-
     return {
-        args = args,
+        args = parse_args(cls, declstr),
         ret = ret,
-        decltype = ti.declfunc and ti.decltype or decltype,
     }
 end
 
@@ -389,14 +378,12 @@ end
     arg struct: void func(@pack const std::vector<int> &points = value)
     {
         type             -- type info
-        decltype         -- decltype: std::vector<int>
         declarg          -- declarg: const std::vector<int> &
         varname          -- var name: points
         attr             -- attr: {pack = true}
         callback = {     -- eg: std::function<void (float, const A *a)>
             args         -- callback functions args: float, A *a
             ret          -- return type info: void type info
-            decltype     -- std::function<void (float, const A *)>
         }
     }
 ]]
@@ -433,10 +420,7 @@ function parse_args(cls, declstr)
         if olua.is_func_type(tn, cls) then
             local cb = parse_callback(cls, tn)
             args[#args + 1] = {
-                type = setmetatable({
-                    decltype = cb.decltype,
-                }, {__index = type_func_info(tn, cls)}),
-                decltype = cb.decltype,
+                type = type_func_info(tn, cls, cb),
                 varname = varname or '',
                 attr = attr,
                 callback = cb,
@@ -445,8 +429,6 @@ function parse_args(cls, declstr)
             local ti = olua.typeinfo(tn, cls)
             args[#args + 1] = {
                 type = ti,
-                decltype = olua.decltype(ti, true),
-                declarg = olua.decltype(ti),
                 varname = varname or '',
                 attr = attr,
             }
@@ -470,14 +452,17 @@ end
 
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
-    local decl_args = olua.newarray(', ')
-    local static = fi.static and "static " or ""
-    for _, v in ipairs(fi.args) do
-        decl_args:push(v.decltype)
+    local exps = olua.newarray('')
+    exps:push(fi.static and "static " or nil)
+    exps:push(olua.decltype(fi.ret.type, nil, true))
+    exps:push(fi.cppfunc)
+    exps:push('(')
+    for i, v in ipairs(fi.args) do
+        exps:push(i > 1 and ', ' or nil)
+        exps:push(olua.decltype(v.type))
     end
-    fi.prototype = format([[
-        ${static}${fi.ret.decltype} ${fi.cppfunc}(${decl_args})
-    ]])
+    exps:push(')')
+    fi.prototype = tostring(exps)
     cls.prototypes[fi.prototype] = true
 end
 
@@ -587,17 +572,16 @@ function olua.parse_func(cls, name, ...)
             if olua.is_func_type(tn, fromcls) then
                 local cb = parse_callback(fromcls, tn)
                 fi.ret = {
-                    type = setmetatable({
-                        decltype = cb.decltype,
-                    }, {__index = type_func_info(tn, fromcls)}),
-                    decltype = cb.decltype,
+                    type = type_func_info(tn, fromcls, cb),
                     attr = attr,
                     callback = cb,
                 }
             else
                 fi.ret.type = olua.typeinfo(tn, fromcls)
-                fi.ret.decltype = olua.decltype(fi.ret.type)
                 fi.ret.attr = attr
+                if fi.ctor then
+                    fi.ret.type.flag = fi.ret.type.flag | kFLAG_POINTER
+                end
             end
             fi.args, fi.max_args = parse_args(fromcls, str:sub(#fi.cppfunc + 1))
             gen_func_prototype(cls, fi)
@@ -663,28 +647,37 @@ function olua.is_func_type(tn, cls)
     end
 end
 
-function olua.is_cast_type(ti)
-    return (ti.flag & kFLAG_CAST) ~= 0
-end
-
-function olua.is_rvalue_type(ti)
+function olua.has_rvalue_flag(ti)
     return (ti.flag & kFLAG_RVALUE) ~= 0
 end
 
-function olua.is_lvalue_type(ti)
+function olua.has_lvalue_flag(ti)
     return (ti.flag & kFLAG_LVALUE) ~= 0
 end
 
-function olua.is_const_type(ti)
+function olua.has_const_flag(ti)
     return (ti.flag & kFLAG_CONST) ~= 0
+end
+
+function olua.has_pointer_flag(ti)
+    return (ti.flag & kFLAG_POINTER) ~= 0
+end
+
+function olua.has_pointee_flag(ti)
+    return (ti.flag & kFLAG_POINTEE) ~= 0
+end
+
+function olua.has_callback_flag(ti)
+    return (ti.flag & kFLAG_CALLBACK) ~= 0
 end
 
 function olua.is_pointer_type(ti)
     if type(ti) == 'string' then
         -- is 'T *'?
-        return ti:find('[*]$')
+        return ti:find('%*$')
     else
-        return ti.luacls and not olua.is_value_type(ti) and not olua.is_func_type(ti)
+        return ti.luacls and not olua.is_value_type(ti)
+            and not olua.is_func_type(ti)
     end
 end
 
@@ -697,34 +690,33 @@ function olua.is_oluaret(fi)
     return fi.ret.type.cppcls == 'olua_Return'
 end
 
-local valuetype = {
-    ['bool'] = 'false',
-    ['const char *'] = 'nullptr',
-    ['std::string'] = '',
-    ['std::function'] = 'nullptr',
-    ['lua_Number'] = '0',
-    ['lua_Integer'] = '0',
-    ['lua_Unsigned'] = '0',
-}
-
-function olua.typespace(ti)
-    if type(ti) ~= 'string' then
-        ti = ti.decltype
-    end
-    return ti:find('[*&]$') and '' or ' '
-end
-
 function olua.initial_value(ti)
-    if olua.is_pointer_type(ti) then
-        return 'nullptr'
+    if olua.has_pointer_flag(ti) then
+        return ' = nullptr'
+    elseif ti.conv == 'olua_$$_bool' then
+        return ' = false'
+    elseif ti.conv == 'olua_$$_integer' or ti.conv == 'olua_$$_number' then
+        if ti.luacls then
+            return format(' = (${ti.cppcls})0', nil, true), nil
+        else
+            return ' = 0'
+        end
     else
-        return valuetype[ti.decltype] or ''
+        return ''
     end
 end
+
+local valuetype = {
+    ['olua_$$_bool'] = true,
+    ['olua_$$_string'] = true,
+    ['olua_$$_callback'] = true,
+    ['olua_$$_integer'] = true,
+    ['olua_$$_number'] = true,
+}
 
 -- enum has cpp cls, but declared as lua_Unsigned
 function olua.is_value_type(ti)
-    return valuetype[ti.decltype]
+    return valuetype[ti.conv]
 end
 
 function olua.conv_func(ti, fn)
@@ -736,13 +728,6 @@ function olua.typedef(typeinfo)
         local ti = setmetatable({}, {__index = typeinfo})
         tn = olua.pretty_typename(tn)
         ti.cppcls = tn
-        ti.rawdecl = tn
-        if ti.decltype and ti.decltype:find('std::function') then
-            ti.declfunc = ti.decltype
-            ti.decltype = tn
-        else
-            ti.decltype = ti.decltype or tn
-        end
         typeinfo_map[tn] = ti
 
         local rawtn = tn:gsub('<.*>', '')
@@ -778,6 +763,10 @@ local function typeconf(...)
 
     function CMD.chunk(chunk)
         cls.chunk = chunk
+    end
+
+    function CMD.packable(packable)
+        cls.packable = packable
     end
 
     function CMD.reg_luatype(reg_luatype)
@@ -965,11 +954,7 @@ local function typeconf(...)
                 funcdesc = rawstr,
                 ret = {
                     type = args[1].type,
-                    decltype = args[1].decltype,
-                    attr = {
-                        addref = args[1].attr.addref,
-                        delref = args[1].attr.delref,
-                    },
+                    attr = args[1].attr,
                 },
                 static = static > 0,
                 variable = true,

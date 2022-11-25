@@ -8,19 +8,19 @@ set(source
     src/main.cpp
 )
 
-add_executable(convertor ${source})
-target_link_libraries(convertor common)
-target_compile_definitions(convertor
+add_executable(03-convertor ${source})
+target_link_libraries(03-convertor common)
+target_compile_definitions(03-convertor
   PUBLIC
     LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
 )
 if(WIN32)
-    add_custom_command(TARGET convertor POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:convertor> $<TARGET_FILE_DIR:convertor>
+    add_custom_command(TARGET 03-convertor POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:03-convertor> $<TARGET_FILE_DIR:03-convertor>
       COMMAND_EXPAND_LISTS
     )
 endif()
-add_test(NAME test_convertor COMMAND convertor)
+add_test(NAME test-03-convertor COMMAND 03-convertor)
 
 execute_process(
   WORKING_DIRECTORY

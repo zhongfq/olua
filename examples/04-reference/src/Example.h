@@ -22,6 +22,8 @@ public:
     void setComponent(Node *value) { _component = value; }
     Node *getComponent() const { return _component; }
 
+    vector<Node *> &getChildren() {return _children;}
+
     void addChild(Node *child);
     void addChild(Node *child, const std::string &name);
     void removeChild(Node *child);

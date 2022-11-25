@@ -166,21 +166,29 @@ function olua.newarray(sep, prefix, posfix)
     end
 
     function mt:push(v)
-        self[#self + 1] = v
+        if v ~= nil then
+            self[#self + 1] = v
+        end
         return self
     end
 
     function mt:pushf(v)
-        self[#self + 1] = olua.format(v)
+        if v ~= nil then
+            self[#self + 1] = olua.format(v)
+        end
         return self
     end
 
     function mt:insert(v)
-        table.insert(self, 1, v)
+        if v ~= nil then
+            table.insert(self, 1, v)
+        end
     end
 
     function mt:insertf(v)
-        table.insert(self, 1, olua.format(v))
+        if v ~= nil then
+            table.insert(self, 1, olua.format(v))
+        end
     end
 
     function mt:merge(t)
@@ -478,23 +486,24 @@ local function doeval(expr)
     return table.concat(arr, '\n')
 end
 
-function olua.trim(expr, indent)
+function olua.trim(expr, indent, keepspace)
     if type(expr) == 'string' then
         expr = expr:gsub('[\n\r]', '\n')
-        expr = expr:gsub('^[\n]*', '') -- trim head '\n'
-        expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
-
-        local space = string.match(expr, '^[ ]*')
-        indent = string.rep(' ', indent or 0)
-        expr = expr:gsub('^[ ]*', '')  -- trim head space
-        expr = expr:gsub('\n' .. space, '\n' .. indent)
-        expr = indent .. expr
+        if not keepspace then
+            expr = expr:gsub('^[\n]*', '') -- trim head '\n'
+            expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
+            local space = string.match(expr, '^[ ]*')
+            indent = string.rep(' ', indent or 0)
+            expr = expr:gsub('^[ ]*', '')  -- trim head space
+            expr = expr:gsub('\n' .. space, '\n' .. indent)
+            expr = indent .. expr
+        end
     end
     return expr
 end
 
-function olua.format(expr, indent)
-    expr = doeval(olua.trim(expr, indent))
+function olua.format(expr, indent, keepspace)
+    expr = doeval(olua.trim(expr, indent, keepspace))
 
     while true do
         local s, n = expr:gsub('\n[ ]+\n', '\n\n')

@@ -216,7 +216,7 @@ inline int olua_pushobj(lua_State *L, const olua::pointer<T> *value)
 }
 
 template <class T>
-inline int olua_push_obj(lua_State *L, const olua::pointer<T> *value, const char *cls)
+inline int olua_push_object(lua_State *L, const olua::pointer<T> *value, const char *cls)
 {
     return olua_pushobj<T>(L, value, cls);
 }

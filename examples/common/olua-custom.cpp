@@ -1,4 +1,5 @@
 #include "olua-custom.h"
+#include "lua_types.h"
 
 #include <unordered_map>
 #include <functional>
@@ -52,6 +53,7 @@ lua_State *olua_new()
     luaL_openlibs(L);
     lua_pushcfunction(L, _errorfunc);
     olua_setglobal(L, "__TRACEBACK__");
+    olua_callfunc(L, luaopen_types);
     GL = L;
     _thread = std::this_thread::get_id();
     return L;
@@ -78,7 +80,7 @@ int olua_objgc(lua_State *L)
         const char *str = olua_objstring(L, 1);
         printf("lua gc: %s(NAME=%s, RC=%d, TC=%d)\n", str,
             name && strlen(name) > 0 ? name : "''",
-            obj->getReferenceCount() - 1, (int)olua_objcount(L));
+            obj->getReferenceCount() - 1, (int)olua_countobj(L, 0));
         lua_settop(L, top);
     }
     obj->release();

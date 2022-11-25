@@ -12,8 +12,8 @@ typedef {
 }
 
 typedef {
-    cppcls = 'lua_State *',
-    conv = 'olua_$$_obj',
+    cppcls = 'lua_State',
+    conv = 'olua_$$_object',
 }
 
 typedef {
@@ -21,7 +21,7 @@ typedef {
         void *
     ]],
     luacls = 'void *',
-    conv = 'olua_$$_obj',
+    conv = 'olua_$$_object',
 }
 
 typedef {
@@ -36,18 +36,17 @@ typedef {
         unsigned char *
         const unsigned char *
     ]],
-    decltype = 'const char *',
     conv = 'olua_$$_string',
 }
 
 typedef {
     cppcls = 'std::string',
-    conv = 'olua_$$_std_string',
+    conv = 'olua_$$_string',
 }
 
 typedef {
     cppcls = 'std::string_view',
-    conv = 'olua_$$_std_string_view',
+    conv = 'olua_$$_string',
 }
 
 typedef {
@@ -78,7 +77,7 @@ typedef {
         std::weak_ptr
     ]],
     smartptr = true,
-    conv = 'olua_$$_obj',
+    conv = 'olua_$$_object',
 }
 
 typedef {
@@ -88,7 +87,6 @@ typedef {
         long double
         lua_Number
     ]],
-    decltype = 'lua_Number',
     conv = 'olua_$$_number',
 }
 
@@ -116,8 +114,7 @@ typedef {
         signed long long int
         lua_Integer
     ]],
-    decltype = 'lua_Integer',
-    conv = 'olua_$$_int',
+    conv = 'olua_$$_integer',
 }
 
 typedef {
@@ -135,6 +132,5 @@ typedef {
         unsigned long long int
         lua_Unsigned
     ]],
-    decltype = 'lua_Unsigned',
-    conv = 'olua_$$_uint',
+    conv = 'olua_$$_integer',
 }

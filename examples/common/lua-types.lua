@@ -1,6 +1,6 @@
 module "types"
 
-path "src"
+path "../common"
 
 headers [[
 #include "olua-custom.h"

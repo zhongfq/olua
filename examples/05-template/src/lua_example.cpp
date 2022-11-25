@@ -11,7 +11,7 @@ static int _example_GC___gc(lua_State *L)
 
     example::GC *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.GC");
+    olua_to_object(L, 1, &self, "example.GC");
 
     // olua_Return __gc(lua_State *L)
     olua_Return ret = self->__gc(L);
@@ -26,7 +26,7 @@ static int _example_GC___olua_move(lua_State *L)
     olua_startinvoke(L);
 
     auto self = (example::GC *)olua_toobj(L, 1, "example.GC");
-    olua_push_obj(L, self, "example.GC");
+    olua_push_object(L, self, "example.GC");
 
     olua_endinvoke(L);
 
@@ -39,7 +39,7 @@ static int _example_GC_gc(lua_State *L)
 
     example::GC *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.GC");
+    olua_to_object(L, 1, &self, "example.GC");
 
     // void gc()
     self->gc();
@@ -63,12 +63,23 @@ OLUA_LIB int luaopen_example_GC(lua_State *L)
 }
 OLUA_END_DECLS
 
+static int _example_TestWildcardListener___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_postgc<example::TestWildcardListener>(L, 1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_TestWildcardListener___olua_move(lua_State *L)
 {
     olua_startinvoke(L);
 
     auto self = (example::TestWildcardListener *)olua_toobj(L, 1, "example.TestWildcardListener");
-    olua_push_obj(L, self, "example.TestWildcardListener");
+    olua_push_object(L, self, "example.TestWildcardListener");
 
     olua_endinvoke(L);
 
@@ -81,7 +92,7 @@ static int _example_TestWildcardListener_hello(lua_State *L)
 
     example::TestWildcardListener *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.TestWildcardListener");
+    olua_to_object(L, 1, &self, "example.TestWildcardListener");
 
     // void hello()
     self->hello();
@@ -97,7 +108,7 @@ static int _example_TestWildcardListener_onClick(lua_State *L)
 
     example::TestWildcardListener *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.TestWildcardListener");
+    olua_to_object(L, 1, &self, "example.TestWildcardListener");
 
     // void onClick()
     self->onClick();
@@ -111,6 +122,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestWildcardListener(lua_State *L)
 {
     oluacls_class(L, "example.TestWildcardListener", nullptr);
+    oluacls_func(L, "__gc", _example_TestWildcardListener___gc);
     oluacls_func(L, "__olua_move", _example_TestWildcardListener___olua_move);
     oluacls_func(L, "hello", _example_TestWildcardListener_hello);
     oluacls_func(L, "onClick", _example_TestWildcardListener_onClick);
@@ -135,7 +147,7 @@ static int _example_Object___olua_move(lua_State *L)
     olua_startinvoke(L);
 
     auto self = (example::Object *)olua_toobj(L, 1, "example.Object");
-    olua_push_obj(L, self, "example.Object");
+    olua_push_object(L, self, "example.Object");
 
     olua_endinvoke(L);
 
@@ -148,11 +160,11 @@ static int _example_Object_autorelease(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Object");
+    olua_to_object(L, 1, &self, "example.Object");
 
     // example::Object *autorelease()
     example::Object *ret = self->autorelease();
-    int num_ret = olua_push_obj(L, ret, "example.Object");
+    int num_ret = olua_push_object(L, ret, "example.Object");
 
     olua_endinvoke(L);
 
@@ -165,11 +177,11 @@ static int _example_Object_getReferenceCount(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Object");
+    olua_to_object(L, 1, &self, "example.Object");
 
     // unsigned int getReferenceCount()
     unsigned int ret = self->getReferenceCount();
-    int num_ret = olua_push_uint(L, (lua_Unsigned)ret);
+    int num_ret = olua_push_integer(L, ret);
 
     olua_endinvoke(L);
 
@@ -182,7 +194,7 @@ static int _example_Object_new(lua_State *L)
 
     // Object()
     example::Object *ret = new example::Object();
-    int num_ret = olua_push_obj(L, ret, "example.Object");
+    int num_ret = olua_push_object(L, ret, "example.Object");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -207,25 +219,13 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _example_ExportParent___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::ExportParent *)olua_toobj(L, 1, "example.ExportParent");
-    olua_push_obj(L, self, "example.ExportParent");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
 static int _example_ExportParent_printExportParent(lua_State *L)
 {
     olua_startinvoke(L);
 
     example::ExportParent *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.ExportParent");
+    olua_to_object(L, 1, &self, "example.ExportParent");
 
     // void printExportParent()
     self->printExportParent();
@@ -242,8 +242,8 @@ static int _example_ExportParent_setObject(lua_State *L)
     example::ExportParent *self = nullptr;
     example::Object *arg1 = nullptr;       /** obj */
 
-    olua_to_obj(L, 1, &self, "example.ExportParent");
-    olua_check_obj(L, 2, &arg1, "example.Object");
+    olua_to_object(L, 1, &self, "example.ExportParent");
+    olua_check_object(L, 2, &arg1, "example.Object");
 
     // void setObject(example::Object *obj)
     self->setObject(arg1);
@@ -257,7 +257,6 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
     oluacls_class(L, "example.ExportParent", "example.Object");
-    oluacls_func(L, "__olua_move", _example_ExportParent___olua_move);
     oluacls_func(L, "printExportParent", _example_ExportParent_printExportParent);
     oluacls_func(L, "setObject", _example_ExportParent_setObject);
 
@@ -267,18 +266,6 @@ OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _example_Hello___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::Hello *)olua_toobj(L, 1, "example.Hello");
-    olua_push_obj(L, self, "example.Hello");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
 static int _example_Hello_as(lua_State *L)
 {
     olua_startinvoke(L);
@@ -286,7 +273,7 @@ static int _example_Hello_as(lua_State *L)
     example::Hello *self = nullptr;
     const char *arg1 = nullptr;       /** cls */
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
     olua_check_string(L, 2, &arg1);
 
     do {
@@ -318,7 +305,7 @@ static int _example_Hello_checkValue(lua_State *L)
     example::Hello *self = nullptr;
     int32_t *arg1 = nullptr;       /** t */
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
     olua_check_pointer(L, 2, &arg1, "olua.int32");
 
     // void checkValue(int32_t *t)
@@ -335,7 +322,7 @@ static int _example_Hello_create(lua_State *L)
 
     // @copyfrom(example::Singleton) static example::Hello *create()
     example::Hello *ret = example::Hello::create();
-    int num_ret = olua_push_obj(L, ret, "example.Hello");
+    int num_ret = olua_push_object(L, ret, "example.Hello");
 
     olua_endinvoke(L);
 
@@ -348,12 +335,12 @@ static int _example_Hello_getBool(lua_State *L)
 
     example::Hello *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
 
     // std::vector<bool> getBool()
     std::vector<bool> ret = self->getBool();
-    int num_ret = olua_push_array<bool>(L, &ret, [L](bool &value) {
-        olua_push_bool(L, (bool)value);
+    int num_ret = olua_push_array<bool>(L, &ret, [L](bool &arg1) {
+        olua_push_bool(L, arg1);
     });
 
     olua_endinvoke(L);
@@ -367,11 +354,11 @@ static int _example_Hello_getName(lua_State *L)
 
     example::Hello *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
 
     // const std::string &getName()
     const std::string &ret = self->getName();
-    int num_ret = olua_push_std_string(L, ret);
+    int num_ret = olua_push_string(L, ret);
 
     olua_endinvoke(L);
 
@@ -384,11 +371,11 @@ static int _example_Hello_getSingleton(lua_State *L)
 
     example::Hello *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
 
     // example::Singleton<example::Hello> *getSingleton()
     example::Singleton<example::Hello> *ret = self->getSingleton();
-    int num_ret = olua_push_obj(L, ret, "example.Singleton<example.Hello>");
+    int num_ret = olua_push_object(L, ret, "example.Singleton<example.Hello>");
 
     olua_endinvoke(L);
 
@@ -401,7 +388,7 @@ static int _example_Hello_hello(lua_State *L)
 
     example::Hello *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
 
     // @copyfrom(example::TestWildcardListener) void hello()
     self->hello();
@@ -417,7 +404,7 @@ static int _example_Hello_new(lua_State *L)
 
     // Hello()
     example::Hello *ret = new example::Hello();
-    int num_ret = olua_push_obj(L, ret, "example.Hello");
+    int num_ret = olua_push_object(L, ret, "example.Hello");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -431,7 +418,7 @@ static int _example_Hello_onClick(lua_State *L)
 
     example::Hello *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
 
     // @copyfrom(example::TestWildcardListener) void onClick()
     self->onClick();
@@ -447,7 +434,7 @@ static int _example_Hello_printSingleton(lua_State *L)
 
     example::Hello *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
 
     // @copyfrom(example::Singleton) void printSingleton()
     self->printSingleton();
@@ -463,7 +450,7 @@ static int _example_Hello_say(lua_State *L)
 
     example::Hello *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Hello");
+    olua_to_object(L, 1, &self, "example.Hello");
 
     // void say()
     self->say();
@@ -480,9 +467,9 @@ static int _example_Hello_setBool(lua_State *L)
     example::Hello *self = nullptr;
     std::vector<bool> arg1;       /** bools */
 
-    olua_to_obj(L, 1, &self, "example.Hello");
-    olua_check_array<bool>(L, 2, &arg1, [L](bool *value) {
-        olua_check_bool(L, -1, value);
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_array<bool>(L, 2, &arg1, [L](bool *arg1) {
+        olua_check_bool(L, -1, arg1);
     });
 
     // void setBool(const std::vector<bool> &bools)
@@ -500,8 +487,8 @@ static int _example_Hello_setName(lua_State *L)
     example::Hello *self = nullptr;
     std::string arg1;       /** value */
 
-    olua_to_obj(L, 1, &self, "example.Hello");
-    olua_check_std_string(L, 2, &arg1);
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_string(L, 2, &arg1);
 
     // void setName(const std::string &value)
     self->setName(arg1);
@@ -518,8 +505,8 @@ static int _example_Hello_setSingleton(lua_State *L)
     example::Hello *self = nullptr;
     example::Singleton<example::Hello> *arg1 = nullptr;       /** sh */
 
-    olua_to_obj(L, 1, &self, "example.Hello");
-    olua_check_obj(L, 2, &arg1, "example.Singleton<example.Hello>");
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Singleton<example.Hello>");
 
     // void setSingleton(example::Singleton<example::Hello> *sh)
     self->setSingleton(arg1);
@@ -533,7 +520,6 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
     oluacls_class(L, "example.Hello", "example.ExportParent");
-    oluacls_func(L, "__olua_move", _example_Hello___olua_move);
     oluacls_func(L, "as", _example_Hello_as);
     oluacls_func(L, "checkValue", _example_Hello_checkValue);
     oluacls_func(L, "create", _example_Hello_create);
@@ -558,29 +544,6 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _example_TestGC___gc(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_postgc<example::TestGC>(L, 1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _example_TestGC___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::TestGC *)olua_toobj(L, 1, "example.TestGC");
-    olua_push_obj(L, self, "example.TestGC");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
 static int _example_TestGC_as(lua_State *L)
 {
     olua_startinvoke(L);
@@ -588,7 +551,7 @@ static int _example_TestGC_as(lua_State *L)
     example::TestGC *self = nullptr;
     const char *arg1 = nullptr;       /** cls */
 
-    olua_to_obj(L, 1, &self, "example.TestGC");
+    olua_to_object(L, 1, &self, "example.TestGC");
     olua_check_string(L, 2, &arg1);
 
     do {
@@ -615,7 +578,7 @@ static int _example_TestGC_gc(lua_State *L)
 
     example::TestGC *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.TestGC");
+    olua_to_object(L, 1, &self, "example.TestGC");
 
     // @copyfrom(example::GC) void gc()
     self->gc();
@@ -631,7 +594,7 @@ static int _example_TestGC_new(lua_State *L)
 
     // TestGC()
     example::TestGC *ret = new example::TestGC();
-    int num_ret = olua_push_obj(L, ret, "example.TestGC");
+    int num_ret = olua_push_object(L, ret, "example.TestGC");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -645,7 +608,7 @@ static int _example_TestGC_testGC(lua_State *L)
 
     example::TestGC *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.TestGC");
+    olua_to_object(L, 1, &self, "example.TestGC");
 
     // void testGC()
     self->testGC();
@@ -659,8 +622,6 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestGC(lua_State *L)
 {
     oluacls_class(L, "example.TestGC", "example.TestWildcardListener");
-    oluacls_func(L, "__gc", _example_TestGC___gc);
-    oluacls_func(L, "__olua_move", _example_TestGC___olua_move);
     oluacls_func(L, "as", _example_TestGC_as);
     oluacls_func(L, "gc", _example_TestGC_gc);
     oluacls_func(L, "new", _example_TestGC_new);
@@ -706,12 +667,23 @@ OLUA_LIB int luaopen_example_TestWildcardTouchEvent(lua_State *L)
 }
 OLUA_END_DECLS
 
+static int _example_Singleton_example_Hello___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_postgc<example::Singleton<example::Hello>>(L, 1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Singleton_example_Hello___olua_move(lua_State *L)
 {
     olua_startinvoke(L);
 
     auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton<example.Hello>");
-    olua_push_obj(L, self, "example.Singleton<example.Hello>");
+    olua_push_object(L, self, "example.Singleton<example.Hello>");
 
     olua_endinvoke(L);
 
@@ -724,7 +696,7 @@ static int _example_Singleton_example_Hello_create(lua_State *L)
 
     // static example::Hello *create()
     example::Hello *ret = example::Singleton<example::Hello>::create();
-    int num_ret = olua_push_obj(L, ret, "example.Hello");
+    int num_ret = olua_push_object(L, ret, "example.Hello");
 
     olua_endinvoke(L);
 
@@ -737,7 +709,7 @@ static int _example_Singleton_example_Hello_printSingleton(lua_State *L)
 
     example::Singleton<example::Hello> *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Singleton<example.Hello>");
+    olua_to_object(L, 1, &self, "example.Singleton<example.Hello>");
 
     // void printSingleton()
     self->printSingleton();
@@ -751,6 +723,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
     oluacls_class(L, "example.Singleton<example.Hello>", nullptr);
+    oluacls_func(L, "__gc", _example_Singleton_example_Hello___gc);
     oluacls_func(L, "__olua_move", _example_Singleton_example_Hello___olua_move);
     oluacls_func(L, "create", _example_Singleton_example_Hello_create);
     oluacls_func(L, "printSingleton", _example_Singleton_example_Hello_printSingleton);

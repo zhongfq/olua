@@ -4,7 +4,6 @@
 #include "AutoreleasePool.h"
 #include "olua-custom.h"
 #include "lua_example.h"
-#include "lua_types.h"
 #include "Example.h"
 
 int main(int argc, const char * argv[])

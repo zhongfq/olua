@@ -30,6 +30,11 @@ scene:addChild(childA)
 scene:addChild(childB)
 scene:addChild(childC)
 scene:addChild(childD)
+
+for i, v in ipairs(scene.children) do
+    print('child:', i, v.name, v)
+end
+
 assert(childC.parent)
 util.dumpUserValue(scene)
 assert(util.hasRef(scene, 'children', childA))

@@ -8,19 +8,19 @@ set(source
     src/main.cpp
 )
 
-add_executable(smartptr ${source})
-target_link_libraries(smartptr common)
-target_compile_definitions(smartptr
+add_executable(06-smartptr ${source})
+target_link_libraries(06-smartptr common)
+target_compile_definitions(06-smartptr
   PUBLIC
     LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
 )
 if(WIN32)
-    add_custom_command(TARGET smartptr POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:smartptr> $<TARGET_FILE_DIR:smartptr>
+    add_custom_command(TARGET 06-smartptr POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:06-smartptr> $<TARGET_FILE_DIR:06-smartptr>
       COMMAND_EXPAND_LISTS
     )
 endif()
-add_test(NAME test_smartptr COMMAND smartptr)
+add_test(NAME test-06-smartptr COMMAND 06-smartptr)
 
 execute_process(
   WORKING_DIRECTORY

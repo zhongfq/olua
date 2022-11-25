@@ -126,9 +126,9 @@ static olua_VMEnv *aux_getvmenv(lua_State *L)
     return env;
 }
 
-OLUA_API size_t olua_objcount(lua_State *L)
+OLUA_API size_t olua_countobj(lua_State *L, int change)
 {
-    return aux_getvmenv(L)->objcount;
+    return aux_getvmenv(L)->objcount += change;
 }
 
 OLUA_API bool olua_isdebug(lua_State *L)
@@ -936,14 +936,16 @@ static int cls_metamethod(lua_State *L)
             lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
             return lua_gettop(L);
         } else if (olua_isuserdata(L, 2)) {
+            if (olua_isa(L, 2, OLUA_VOIDCLS)) {
+                aux_getvmenv(L)->objcount--;
+                // printf("lua gc: %s\n", olua_objstring(L, 2));
+                // lua_pop(L, 1);
+            }
             if (olua_getownership(L, 2) == OLUA_OWNERSHIP_ALIAS) {
                 if (olua_isdebug(L)) {
                     printf("skip gc for alias object: %s\n", olua_objstring(L, 2));
                 }
                 return 0;
-            }
-            if (olua_isa(L, 2, OLUA_VOIDCLS)) {
-                aux_getvmenv(L)->objcount--;
             }
             olua_pusherrorfunc(L);
             lua_insert(L, 1);
@@ -1467,7 +1469,7 @@ static int l_getmetatable(lua_State *L)
 
 static int l_topointer(lua_State *L)
 {
-    olua_pushinteger(L, (uintptr_t)lua_topointer(L, 1));
+    olua_pushinteger(L, (lua_Integer)(uintptr_t)lua_topointer(L, 1));
     return 1;
 }
 
@@ -1480,7 +1482,7 @@ static int l_objpool(lua_State *L)
         olua_disable_objpool(L);
     } else if strequal(action, "push") {
         size_t position = olua_push_objpool(L);
-        olua_pushinteger(L, position);
+        olua_pushinteger(L, (lua_Integer)position);
         return 1;
     } else if strequal(action, "pop") {
         size_t position = (size_t)olua_checkinteger(L, 2);
@@ -1711,27 +1713,6 @@ OLUA_API const char *olua_getluatype(lua_State *L, const char *cpptype)
     return olua_optfieldstring(L, LUA_REGISTRYINDEX, newtype, NULL);
 }
 #endif
-
-OLUA_API int olua_push_obj(lua_State *L, void *obj, const char *cls)
-{
-    olua_pushobj(L, obj, cls);
-    return 1;
-}
-
-OLUA_API void olua_check_obj(lua_State *L, int idx, void **obj, const char *cls)
-{
-    *obj = olua_checkobj(L, idx, cls);
-}
-
-OLUA_API void olua_to_obj(lua_State *L, int idx, void **obj, const char *cls)
-{
-    *obj = olua_toobj(L, idx, cls);
-}
-
-OLUA_API bool olua_is_obj(lua_State *L, int idx, const char *cls)
-{
-    return olua_isa(L, idx, cls);
-}
 
 OLUA_API int olua_callback_wrapper(lua_State *L)
 {

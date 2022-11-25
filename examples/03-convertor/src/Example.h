@@ -77,7 +77,7 @@ public:
 
 // example::Color
 int olua_is_example_Color(lua_State *L, int idx);
-int olua_push_example_Color(lua_State *L, const example::Color *value);
+int olua_push_example_Color(lua_State *L, const example::Color &value);
 void olua_check_example_Color(lua_State *L, int idx, example::Color *value);
 
 #endif

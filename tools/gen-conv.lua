@@ -81,14 +81,14 @@ local function gen_check_func(cv, write)
                 codeset.check_args:pushf([[
                     if (!olua_isnoneornil(L, -1)) {
                         ${subset.check_args}
-                        value->${pi.varname} = (${pi.decltype})${argname};
+                        value->${pi.varname} = ${argname};
                     }
                     lua_pop(L, 1);
                 ]])
             else
                 olua.gen_check_exp(pi, argname, -1, codeset)
                 codeset.check_args:pushf([[
-                    value->${pi.varname} = (${pi.decltype})${argname};
+                    value->${pi.varname} = ${argname};
                     lua_pop(L, 1);
                 ]])
             end
@@ -132,7 +132,7 @@ local function gen_pack_func(cv, write)
         olua.gen_decl_exp(pi, argname, codeset)
         olua.gen_check_exp(pi, argname, 'idx + ' ..  (i - 1), codeset)
         codeset.check_args:pushf([[
-            value->${pi.varname} = (${pi.decltype})${argname};
+            value->${pi.varname} = ${argname};
         ]])
         codeset.check_args:push('')
     end

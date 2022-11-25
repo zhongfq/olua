@@ -19,7 +19,7 @@ static int _example_Object___olua_move(lua_State *L)
     olua_startinvoke(L);
 
     auto self = (example::Object *)olua_toobj(L, 1, "example.Object");
-    olua_push_obj(L, self, "example.Object");
+    olua_push_object(L, self, "example.Object");
 
     olua_endinvoke(L);
 
@@ -32,11 +32,11 @@ static int _example_Object_autorelease(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Object");
+    olua_to_object(L, 1, &self, "example.Object");
 
     // example::Object *autorelease()
     example::Object *ret = self->autorelease();
-    int num_ret = olua_push_obj(L, ret, "example.Object");
+    int num_ret = olua_push_object(L, ret, "example.Object");
 
     olua_endinvoke(L);
 
@@ -49,11 +49,11 @@ static int _example_Object_getReferenceCount(lua_State *L)
 
     example::Object *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Object");
+    olua_to_object(L, 1, &self, "example.Object");
 
     // unsigned int getReferenceCount()
     unsigned int ret = self->getReferenceCount();
-    int num_ret = olua_push_uint(L, (lua_Unsigned)ret);
+    int num_ret = olua_push_integer(L, ret);
 
     olua_endinvoke(L);
 
@@ -66,7 +66,7 @@ static int _example_Object_new(lua_State *L)
 
     // Object()
     example::Object *ret = new example::Object();
-    int num_ret = olua_push_obj(L, ret, "example.Object");
+    int num_ret = olua_push_object(L, ret, "example.Object");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -91,27 +91,15 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _example_Node___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::Node *)olua_toobj(L, 1, "example.Node");
-    olua_push_obj(L, self, "example.Node");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
-static int _example_Node_addChild1(lua_State *L)
+static int _example_Node_addChild$1(lua_State *L)
 {
     olua_startinvoke(L);
 
     example::Node *self = nullptr;
     example::Node *arg1 = nullptr;       /** child */
 
-    olua_to_obj(L, 1, &self, "example.Node");
-    olua_check_obj(L, 2, &arg1, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
+    olua_check_object(L, 2, &arg1, "example.Node");
 
     // void addChild(@addref(children |) example::Node *child)
     self->addChild(arg1);
@@ -124,7 +112,7 @@ static int _example_Node_addChild1(lua_State *L)
     return 0;
 }
 
-static int _example_Node_addChild2(lua_State *L)
+static int _example_Node_addChild$2(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -132,9 +120,9 @@ static int _example_Node_addChild2(lua_State *L)
     example::Node *arg1 = nullptr;       /** child */
     std::string arg2;       /** name */
 
-    olua_to_obj(L, 1, &self, "example.Node");
-    olua_check_obj(L, 2, &arg1, "example.Node");
-    olua_check_std_string(L, 3, &arg2);
+    olua_to_object(L, 1, &self, "example.Node");
+    olua_check_object(L, 2, &arg1, "example.Node");
+    olua_check_string(L, 3, &arg2);
 
     // void addChild(@addref(children |) example::Node *child, const std::string &name)
     self->addChild(arg1, arg2);
@@ -152,16 +140,16 @@ static int _example_Node_addChild(lua_State *L)
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 1) {
-        // if ((olua_is_obj(L, 2, "example.Node"))) {
+        // if ((olua_is_object(L, 2, "example.Node"))) {
             // void addChild(@addref(children |) example::Node *child)
-            return _example_Node_addChild1(L);
+            return _example_Node_addChild$1(L);
         // }
     }
 
     if (num_args == 2) {
-        // if ((olua_is_obj(L, 2, "example.Node")) && (olua_is_std_string(L, 3))) {
+        // if ((olua_is_object(L, 2, "example.Node")) && (olua_is_string(L, 3))) {
             // void addChild(@addref(children |) example::Node *child, const std::string &name)
-            return _example_Node_addChild2(L);
+            return _example_Node_addChild$2(L);
         // }
     }
 
@@ -177,15 +165,34 @@ static int _example_Node_getChildByName(lua_State *L)
     example::Node *self = nullptr;
     std::string arg1;       /** name */
 
-    olua_to_obj(L, 1, &self, "example.Node");
-    olua_check_std_string(L, 2, &arg1);
+    olua_to_object(L, 1, &self, "example.Node");
+    olua_check_string(L, 2, &arg1);
 
     // @addref(children |) example::Node *getChildByName(const std::string &name)
     example::Node *ret = self->getChildByName(arg1);
-    int num_ret = olua_push_obj(L, ret, "example.Node");
+    int num_ret = olua_push_object(L, ret, "example.Node");
 
     // insert code after call
     olua_addref(L, 1, "children", -1, OLUA_FLAG_MULTIPLE);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_Node_getChildren(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Node *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.Node");
+
+    // example::vector<example::Node *> &getChildren()
+    example::vector<example::Node *> &ret = self->getChildren();
+    int num_ret = olua_push_array<example::Node *>(L, &ret, [L](example::Node *arg1) {
+        olua_push_object(L, arg1, "example.Node");
+    });
 
     olua_endinvoke(L);
 
@@ -198,11 +205,11 @@ static int _example_Node_getComponent(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
 
     // @addref(component ^) example::Node *getComponent()
     example::Node *ret = self->getComponent();
-    int num_ret = olua_push_obj(L, ret, "example.Node");
+    int num_ret = olua_push_object(L, ret, "example.Node");
 
     // insert code after call
     olua_addref(L, 1, "component", -1, OLUA_FLAG_SINGLE);
@@ -218,11 +225,11 @@ static int _example_Node_getName(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
 
     // const std::string &getName()
     const std::string &ret = self->getName();
-    int num_ret = olua_push_std_string(L, ret);
+    int num_ret = olua_push_string(L, ret);
 
     olua_endinvoke(L);
 
@@ -235,11 +242,11 @@ static int _example_Node_getNumChildren(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
 
     // size_t getNumChildren()
     size_t ret = self->getNumChildren();
-    int num_ret = olua_push_uint(L, (lua_Unsigned)ret);
+    int num_ret = olua_push_integer(L, ret);
 
     olua_endinvoke(L);
 
@@ -252,11 +259,11 @@ static int _example_Node_getParent(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
 
     // example::Node *getParent()
     example::Node *ret = self->getParent();
-    int num_ret = olua_push_obj(L, ret, "example.Node");
+    int num_ret = olua_push_object(L, ret, "example.Node");
 
     olua_endinvoke(L);
 
@@ -269,7 +276,7 @@ static int _example_Node_new(lua_State *L)
 
     // Node()
     example::Node *ret = new example::Node();
-    int num_ret = olua_push_obj(L, ret, "example.Node");
+    int num_ret = olua_push_object(L, ret, "example.Node");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -283,7 +290,7 @@ static int _example_Node_removeAllChildren(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
 
     // @delref(children *) void removeAllChildren()
     self->removeAllChildren();
@@ -303,8 +310,8 @@ static int _example_Node_removeChild(lua_State *L)
     example::Node *self = nullptr;
     example::Node *arg1 = nullptr;       /** child */
 
-    olua_to_obj(L, 1, &self, "example.Node");
-    olua_check_obj(L, 2, &arg1, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
+    olua_check_object(L, 2, &arg1, "example.Node");
 
     // void removeChild(@delref(children |) example::Node *child)
     self->removeChild(arg1);
@@ -324,8 +331,8 @@ static int _example_Node_removeChildByName(lua_State *L)
     example::Node *self = nullptr;
     std::string arg1;       /** name */
 
-    olua_to_obj(L, 1, &self, "example.Node");
-    olua_check_std_string(L, 2, &arg1);
+    olua_to_object(L, 1, &self, "example.Node");
+    olua_check_string(L, 2, &arg1);
 
     // insert code before call
     olua_startcmpref(L, 1, "children");
@@ -347,7 +354,7 @@ static int _example_Node_removeSelf(lua_State *L)
 
     example::Node *self = nullptr;
 
-    olua_to_obj(L, 1, &self, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
 
     // insert code before call
     if (!self->getParent()) {
@@ -374,8 +381,8 @@ static int _example_Node_setComponent(lua_State *L)
     example::Node *self = nullptr;
     example::Node *arg1 = nullptr;       /** value */
 
-    olua_to_obj(L, 1, &self, "example.Node");
-    olua_check_obj(L, 2, &arg1, "example.Node");
+    olua_to_object(L, 1, &self, "example.Node");
+    olua_check_object(L, 2, &arg1, "example.Node");
 
     // void setComponent(@addref(component ^) example::Node *value)
     self->setComponent(arg1);
@@ -395,8 +402,8 @@ static int _example_Node_setName(lua_State *L)
     example::Node *self = nullptr;
     std::string arg1;       /** value */
 
-    olua_to_obj(L, 1, &self, "example.Node");
-    olua_check_std_string(L, 2, &arg1);
+    olua_to_object(L, 1, &self, "example.Node");
+    olua_check_string(L, 2, &arg1);
 
     // void setName(const std::string &value)
     self->setName(arg1);
@@ -410,9 +417,9 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Node(lua_State *L)
 {
     oluacls_class(L, "example.Node", "example.Object");
-    oluacls_func(L, "__olua_move", _example_Node___olua_move);
     oluacls_func(L, "addChild", _example_Node_addChild);
     oluacls_func(L, "getChildByName", _example_Node_getChildByName);
+    oluacls_func(L, "getChildren", _example_Node_getChildren);
     oluacls_func(L, "getComponent", _example_Node_getComponent);
     oluacls_func(L, "getName", _example_Node_getName);
     oluacls_func(L, "getNumChildren", _example_Node_getNumChildren);
@@ -424,6 +431,7 @@ OLUA_LIB int luaopen_example_Node(lua_State *L)
     oluacls_func(L, "removeSelf", _example_Node_removeSelf);
     oluacls_func(L, "setComponent", _example_Node_setComponent);
     oluacls_func(L, "setName", _example_Node_setName);
+    oluacls_prop(L, "children", _example_Node_getChildren, nullptr);
     oluacls_prop(L, "component", _example_Node_getComponent, _example_Node_setComponent);
     oluacls_prop(L, "name", _example_Node_getName, _example_Node_setName);
     oluacls_prop(L, "numChildren", _example_Node_getNumChildren, nullptr);
