@@ -78,9 +78,9 @@ int olua_objgc(lua_State *L)
         lua_getfield(L, 1, "name");
         const char *name = lua_tostring(L, -1);
         const char *str = olua_objstring(L, 1);
-        printf("lua gc: %s(NAME=%s, RC=%d, TC=%d)\n", str,
+        printf("lua gc: %s(NAME=%s, RC=%d)\n", str,
             name && strlen(name) > 0 ? name : "''",
-            obj->getReferenceCount() - 1, (int)olua_countobj(L, 0));
+            obj->getReferenceCount() - 1);
         lua_settop(L, top);
     }
     obj->release();

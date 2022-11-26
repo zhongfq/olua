@@ -7,8 +7,6 @@
 #include <string>
 #include <vector>
 
-using namespace std;
-
 namespace example {
 
 enum class TestWildcardClickEvent {

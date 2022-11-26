@@ -61,7 +61,6 @@
 
 typedef struct {
     int64_t ctxid;
-    size_t objcount;
     size_t poolsize;
     int64_t refcount;
     bool poolenabled;
@@ -95,7 +94,6 @@ static olua_VMEnv *aux_getvmenv(lua_State *L)
         env->debug = false;
         env->poolenabled = false;
         env->poolsize = 0;
-        env->objcount = 0;
         env->refcount = 0;
         registry_rawsetf(L, OLUA_VMENV);
 #if LUA_VERSION_NUM == 501
@@ -124,11 +122,6 @@ static olua_VMEnv *aux_getvmenv(lua_State *L)
     }
     lua_pop(L, 1);
     return env;
-}
-
-OLUA_API size_t olua_countobj(lua_State *L, int change)
-{
-    return aux_getvmenv(L)->objcount += change;
 }
 
 OLUA_API bool olua_isdebug(lua_State *L)
@@ -263,7 +256,6 @@ OLUA_API void *olua_newobjstub(lua_State *L, const char *cls)
     olua_rawsetp(L, -3, ptr); // objtable[ptr] = stub
     lua_replace(L, -2); // pop objtable
     olua_setmetatable(L, cls);
-    aux_getvmenv(L)->objcount++;
     return ptr;
 }
 
@@ -343,7 +335,6 @@ OLUA_API int olua_pushobj(lua_State *L, void *obj, const char *cls)
             // L: metaclass objtable obj obj
             olua_rawsetp(L, -3, obj); // objtable[obj] = obj
             status = OLUA_OBJ_NEW;
-            env->objcount++;
         }
         // L: metaclass objtable obj
         lua_pushvalue(L, -3);
@@ -936,11 +927,6 @@ static int cls_metamethod(lua_State *L)
             lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
             return lua_gettop(L);
         } else if (olua_isuserdata(L, 2)) {
-            if (olua_isa(L, 2, OLUA_VOIDCLS)) {
-                aux_getvmenv(L)->objcount--;
-                // printf("lua gc: %s\n", olua_objstring(L, 2));
-                // lua_pop(L, 1);
-            }
             if (olua_getownership(L, 2) == OLUA_OWNERSHIP_ALIAS) {
                 if (olua_isdebug(L)) {
                     printf("skip gc for alias object: %s\n", olua_objstring(L, 2));

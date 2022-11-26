@@ -36,12 +36,11 @@ function olua.gen_check_exp(arg, name, i, codeset)
     local func_check = olua.conv_func(arg.type, arg.attr.pack and 'pack' or 'check')
     local check_args = codeset.check_args
     codeset.check_args = olua.newarray()
-    if arg.attr.ret then
-        local attr_ret = arg.attr.ret
-        arg.attr.ret = nil
-        codeset.check_args:pushf([[//'${argname}' with mark '@ret']])
-        olua.gen_check_exp(arg, name, i, codeset)
-        arg.attr.ret = attr_ret
+    if arg.attr.pack then
+        olua.assert(arg.type.packable, [['${arg.type.cppcls}' is not a packable type]])
+        codeset.check_args:pushf([[
+            ${func_check}(L, ${argn}, &${argname});
+        ]])
     elseif olua.is_pointer_type(arg.type) then
         codeset.check_args:pushf([[
             ${func_check}(L, ${argn}, &${argname}, "${arg.type.luacls}");
@@ -104,7 +103,7 @@ function olua.gen_check_exp(arg, name, i, codeset)
         codeset.check_args:pushf('${func_check}(L, ${argn}, &${argname});')
     end
 
-    if arg.attr.nullable or arg.attr.ret then
+    if arg.attr.nullable then
         check_args:pushf([[
             if (!olua_isnoneornil(L, ${argn})) {
                 ${codeset.check_args}
@@ -125,7 +124,11 @@ function olua.gen_push_exp(arg, name, codeset)
     local argname = name
     local func_push = olua.conv_func(arg.type, arg.attr.unpack and 'unpack' or 'push')
     local func_copy = olua.conv_func(arg.type, 'pushcopy')
-    if olua.is_pointer_type(arg.type) then
+
+    if arg.attr.unpack then
+        olua.assert(arg.type.packable, [['${arg.type.cppcls}' is not a packable type]])
+        codeset.push_args:pushf('${func_push}(L, &${argname});')
+    elseif olua.is_pointer_type(arg.type) then
         if olua.has_pointee_flag(arg.type) then
             codeset.push_args:pushf('${func_push}(L, ${argname}, "${arg.type.luacls}");')
         else
@@ -229,7 +232,7 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
 
     if ref_mode == '|' then
         if arg.type.subtypes then
-            if arg.attr.pack or arg.attr.ret then
+            if arg.attr.pack then
                 local subtype = arg.type.subtypes[1]
                 local func_push = olua.conv_func(arg.type, 'push')
                 local subtype_func_push = olua.conv_func(subtype, 'push')
@@ -352,11 +355,8 @@ local function gen_func_args(cls, fi, codeset)
             olua.assert(fi.callback, 'no callback option')
         end
 
-        -- function call args
-        -- see 'basictype.lua'
-        if ai.attr.ret then
-            local type_cast = ai.attr.ret == 'pointee' and '&' or ''
-            codeset.caller_args:pushf('${type_cast}${argname}')
+        if olua.has_cast_flag(ai.type) then
+            codeset.caller_args:pushf('*${argname}')
         else
             codeset.caller_args:pushf('${argname}')
         end
@@ -453,15 +453,6 @@ local function gen_one_func(cls, fi, write, funcidx)
     gen_func_ret(cls, fi, codeset)
 
     for i, arg in ipairs(fi.args) do
-        if arg.attr.ret then
-            local ret = {push_args = olua.newarray()}
-            olua.gen_push_exp(arg, 'arg' .. i, ret)
-            codeset.push_ret = format([[
-                ${codeset.push_ret}
-                ${ret.push_args}
-            ]])
-            codeset.num_ret = format([[${codeset.num_ret} + 1]])
-        end
         if arg.callback then
             olua.assert(not cb_arg, 'not support multi callback')
             cb_arg = arg
@@ -600,9 +591,15 @@ local function gen_test_and_call(cls, fns)
                 end
 
                 if olua.is_pointer_type(ai.type) or olua.is_func_type(ai.type) then
-                    test_exps[#test_exps + 1] = format([[
-                        (${func_is}(L, ${argn}, "${ai.type.luacls}")${test_nil})
-                    ]])
+                    if ai.attr.pack then
+                        test_exps[#test_exps + 1] = format([[
+                            (${func_is}(L, ${argn}, (${ai.type.cppcls} *)nullptr)${test_nil})
+                        ]])
+                    else
+                        test_exps[#test_exps + 1] = format([[
+                            (${func_is}(L, ${argn}, "${ai.type.luacls}")${test_nil})
+                        ]])
+                    end
                 else
                     test_exps[#test_exps + 1] = format([[
                         (${func_is}(L, ${argn})${test_nil})
@@ -694,7 +691,7 @@ local function gen_multi_func(cls, funcs, write)
         ifblock:pushf([[
             if (num_args > 0) {
                 // ${pack_fi.funcdesc}
-                return _${cls.cppcls#}_${pack_fi.cppfunc}${pack_fi.index}(L);
+                return _${cls.cppcls#}_${pack_fi.cppfunc}$${pack_fi.index}(L);
             }
         ]])
     end
@@ -721,72 +718,69 @@ function olua.gen_class_func(cls, funcs, write)
     end
 end
 
-function olua.gen_class_fill(cls, write)
-    local vars = olua.newarray()
+function olua.gen_class_fill(cls, idx, name, codeset)
+    local vars = olua.newhash()
     local function copy_var(c)
         if c.supercls then
             copy_var(olua.get_class(c.supercls))
         end
         for _, v in ipairs(c.vars) do
-            vars:push({name = v.name, varname = v.get.varname, arg = v.get.ret})
+            vars:replace(v.name, {
+                name = v.name,
+                varname = v.get.varname,
+                attr = v.get.ret.attr,
+                type = v.get.ret.type,
+            })
         end
     end
     copy_var(cls)
-    local codeset = {
-        decl_args = olua.newarray(),
-        check_args = olua.newarray(),
-    }
     for i, var in ipairs(vars) do
-        local length = (var.arg.attr.array or {})[1]
-        if length then
-            local subset = {decl_args = olua.newarray(), check_args = olua.newarray()}
-            olua.gen_decl_exp(var.arg, "obj", subset)
-            olua.gen_check_exp(var.arg, "obj", -1, subset)
+        local argname = 'arg' .. i
+        olua.gen_decl_exp(var, argname, codeset)
+        codeset.check_args:pushf([[olua_getfield(L, ${idx}, "${var.varname}");]])
+        if var.attr.optional then
+            local subset = {check_args = olua.newarray()}
+            olua.gen_check_exp(var, argname, -1, subset)
             codeset.check_args:pushf([[
-                if (olua_getfield(L, idx, "${var.varname}") != LUA_TTABLE) {
-                    luaL_error(L, "field '${var.varname}' is not a table");
-                }
-                for (int i = 0; i < ${length}; i++) {
-                    ${subset.decl_args}
-                    olua_rawgeti(L, -1, i + 1);
-                    if (!olua_isnoneornil(L, -1)) {
-                        ${subset.check_args}
-                    }
-                    value->${var.varname}[i] = obj;
-                    lua_pop(L, 1);
+                if (!olua_isnoneornil(L, -1)) {
+                    ${subset.check_args}
+                    ${name}.${var.varname} = ${argname};
                 }
                 lua_pop(L, 1);
             ]])
         else
-            local argname = 'arg' .. i
-            olua.gen_decl_exp(var.arg, argname, codeset)
-            codeset.check_args:pushf([[olua_getfield(L, idx, "${var.varname}");]])
-            if var.arg.attr.optional then
-                local subset = {check_args = olua.newarray()}
-                olua.gen_check_exp(var.arg, argname, -1, subset)
-                codeset.check_args:pushf([[
-                    if (!olua_isnoneornil(L, -1)) {
-                        ${subset.check_args}
-                        value->${var.varname} = ${argname};
-                    }
-                    lua_pop(L, 1);
-                ]])
-            else
-                olua.gen_check_exp(var.arg, argname, -1, codeset)
-                codeset.check_args:pushf([[
-                    value->${var.varname} = ${argname};
-                    lua_pop(L, 1);
-                ]])
-            end
+            olua.gen_check_exp(var, argname, -1, codeset)
+            codeset.check_args:pushf([[
+                ${name}.${var.varname} = ${argname};
+                lua_pop(L, 1);
+            ]])
         end
         codeset.check_args:push('')
     end
 
+end
+
+-- packable object
+local function gen_pack_func(cls, write)
+    local codeset = {
+        decl_args = olua.newarray(),
+        check_args = olua.newarray(),
+    }
+    for i, var in ipairs(cls.vars) do
+        local pi = var.set.args[1]
+        local argname = 'arg' .. i
+        olua.gen_decl_exp(pi, argname, codeset)
+        olua.gen_check_exp(pi, argname, 'idx + ' ..  (i - 1), codeset)
+        codeset.check_args:pushf([[
+            value->${pi.varname} = ${argname};
+        ]])
+        codeset.check_args:push('')
+    end
+
     write(format([[
-        static void olua_fill_object(lua_State *L, int idx, ${cls.cppcls} *value)
+        OLUA_LIB void olua_pack_object(lua_State *L, int idx, ${cls.cppcls} *value)
         {
             idx = lua_absindex(L, idx);
-            luaL_checktype(L, idx, LUA_TTABLE);
 
             ${codeset.decl_args}
 
@@ -794,4 +788,74 @@ function olua.gen_class_fill(cls, write)
         }
     ]]))
     write('')
+end
+
+local function gen_unpack_func(cls, write)
+    local num_args = #cls.vars
+    local codeset = {push_args = olua.newarray():push('')}
+    for _, var in ipairs(cls.vars) do
+        local pi = var.set.args[1]
+        local argname = format('value->${pi.varname}')
+        olua.gen_push_exp(pi, argname, codeset)
+    end
+
+    write(format([[
+        OLUA_LIB int olua_unpack_object(lua_State *L, const ${cls.cppcls} *value)
+        {
+            ${codeset.push_args}
+
+            return ${num_args};
+        }
+    ]]))
+    write('')
+end
+
+local function gen_canpack_func(cls, write)
+    local exps = olua.newarray(' && ')
+    for i, var in ipairs(cls.vars) do
+        local pi = var.set.args[1]
+        local func_is = olua.conv_func(pi.type, 'is')
+        local N = i - 1
+        if olua.is_pointer_type(pi.type) then
+            exps:pushf('${func_is}(L, idx + ${N}, "${pi.type.luacls}")')
+        else
+            exps:pushf('${func_is}(L, idx + ${N})')
+        end
+    end
+    write(format([[
+        OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const ${cls.cppcls} *)
+        {
+            return ${exps};
+        }
+    ]]))
+end
+
+function olua.gen_pack_header(module, write)
+    for _, cls in ipairs(module.class_types) do
+        if cls.packable then
+            write(macro)
+            write(format([[
+                // ${cls.cppcls}
+                OLUA_LIB void olua_pack_object(lua_State *L, int idx, ${cls.cppcls} *value);
+                OLUA_LIB int olua_unpack_object(lua_State *L, const ${cls.cppcls} *value);
+                OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const ${cls.cppcls} *);
+            ]]))
+            write(macro and '#endif' or nil)
+            write("")
+        end
+    end
+end
+
+function olua.gen_pack_source(module, write)
+    for _, cls in ipairs(module.class_types) do
+        if cls.packable then
+            local macro = cls.macros['*']
+            write(macro)
+            gen_pack_func(cls, write)
+            gen_unpack_func(cls, write)
+            gen_canpack_func(cls, write)
+            write(macro and '#endif' or nil)
+            write('')
+        end
+    end
 end

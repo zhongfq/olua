@@ -41,11 +41,20 @@ local function check_meta_method(cls)
             }]])))
         end
         if cls.packable then
+            local codeset = {decl_args = olua.newarray(), check_args = olua.newarray()}
+            olua.gen_class_fill(cls, 2, 'ret', codeset)
+
             cls.funcs:push(olua.parse_func(cls, '__call', format([[
             {
-                ${cls.cppcls} self;
-                olua_fill_object(L, -1, &self);
-                olua_pushcopy_object(L, self, "${cls.luacls}");
+                ${cls.cppcls} ret;
+
+                luaL_checktype(L, 2, LUA_TTABLE);
+
+                ${codeset.decl_args}
+
+                ${codeset.check_args}
+
+                olua_pushcopy_object(L, ret, "${cls.luacls}");
                 return 1;
             }]])))
         end
@@ -96,10 +105,6 @@ local function gen_class_funcs(cls, write)
         pts = setmetatable(pts, {__index = prototypes[cls.supercls]})
     end
     prototypes[cls.cppcls] = pts
-
-    if cls.packable then
-        olua.gen_class_fill(cls, write)
-    end
 
     table.sort(cls.funcs, function (a, b)
         return a[1].luafunc < b[1].luafunc
@@ -236,6 +241,15 @@ local function gen_class_chunk(cls, write)
     end
 end
 
+local function has_packable_class(module)
+    for _, cls in ipairs(module.class_types) do
+        if cls.packable then
+            return true
+        end
+    end
+    return false
+end
+
 function olua.gen_header(module)
     local arr = olua.newarray('\n')
     local function write(value)
@@ -247,7 +261,7 @@ function olua.gen_header(module)
 
     local HEADER = string.upper(module.name)
     local headers = module.headers
-    if not olua.has_exported_conv(module) then
+    if not has_packable_class(module) then
         headers = '#include "olua/olua.h"'
     end
 
@@ -266,7 +280,7 @@ function olua.gen_header(module)
     ]]))
     write('')
 
-    olua.gen_conv_header(module, write, true)
+    olua.gen_pack_header(module, write)
 
     write('#endif')
 
@@ -276,7 +290,7 @@ end
 
 local function gen_include(module, write)
     local headers = ''
-    if not olua.has_exported_conv(module) then
+    if not has_packable_class(module) then
         headers = module.headers
     end
     write(format([[
@@ -288,16 +302,12 @@ local function gen_include(module, write)
     ]]))
     write('')
 
-    if not olua.has_exported_conv(module) then
-        olua.gen_conv_header(module, write, false)
-    end
-
     if module.chunk and #module.chunk > 0 then
         write(format(module.chunk))
         write('')
     end
 
-    olua.gen_conv_source(module, write)
+    olua.gen_pack_source(module, write)
 end
 
 local function gen_classes(module, write)

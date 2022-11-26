@@ -67,13 +67,12 @@ local metamethod = {
     __concat = true, __call = true, __close = true
 }
 
-local TYPFLAG_POINTEE = 1 << 1     -- pointee type
-local TYPFLAG_ENUM = 1 << 2        -- enum type
-local TYPFLAG_ALIAS = 1 << 3       -- alias type
-local TYPFLAG_CONV = 1 << 4        -- conv type
-local TYPFLAG_FUNC = 1 << 5        -- function type
-local TYPFLAG_TEMPLATE = 1 << 6    -- template type
-local TYPFLAG_SKIP = 1 << 7        -- don't export
+local kFLAG_POINTER   = 1 << 1    -- pointer type
+local kFLAG_ENUM      = 1 << 2    -- enum type
+local kFLAG_ALIAS     = 1 << 3    -- alias type
+local kFLAG_FUNC      = 1 << 4    -- function type
+local kFLAG_TEMPLATE  = 1 << 5    -- template type
+local kFLAG_SKIP      = 1 << 6    -- don't export
 
 local KEEP_POINTER = 1 << 1
 local KEEP_CONST = 1 << 2
@@ -238,7 +237,10 @@ local function check_alias_typename(tn, underlying)
     local has_ti = olua.typeinfo(raw_underlying, nil, false)
     if rawtn == raw_underlying then
         return tn, false
-    elseif has_conv or (has_ti and not is_templdate_type(underlying)) then
+    elseif has_conv then
+        alias_types:replace(rawtn, raw_underlying)
+        return tn, true
+    elseif has_ti and not is_templdate_type(underlying) then
         if underlying:find('^const ') then
             --[[
                 typedef char GLchar;
@@ -259,6 +261,9 @@ local function check_alias_typename(tn, underlying)
         return tn, true
     elseif has_ti then
         return underlying, true
+    elseif type_convs:has(raw_typename(underlying)) then
+        alias_types:replace(raw_typename(tn), raw_typename(underlying))
+        return tn, true
     else
         return tn, false
     end
@@ -484,7 +489,6 @@ end
 
 function M:visit_method(cls, cur)
     if has_deprecated_attr(cur)
-        or cur.isCXXCopyConstructor
         or cur.isCXXMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
         or cur.name == 'as'  -- 'as used to cast object'
@@ -509,7 +513,7 @@ function M:visit_method(cls, cur)
 
     for i, c in ipairs({{type = result_type}, table.unpack(arguments)}) do
         local mark = (attr['arg' .. (i - 1)]) or ''
-        if not mark:find('@ret') and is_excluded_type(c.type) then
+        if is_excluded_type(c.type) then
             if cls.includes:has(fn) then
                 print(format([=[
                     [WARNING]: function '${fn}' included in class '${cls.cppcls}' will be ignored
@@ -571,7 +575,7 @@ function M:visit_method(cls, cur)
                 declexps:push('@localvar ')
             end
         end
-        if has_default_value(arg) and not string.find(attr[argn] or '', '@ret') then
+        if has_default_value(arg) then
             declexps:push('@optional ')
             optional = true
         else
@@ -639,6 +643,7 @@ function M:visit_var(cls, cur)
         or is_excluded_type(cur.type)
         or has_exclude_attr(cur)
         or has_deprecated_attr(cur)
+        or cur.type.name:find('%[')
     then
         return
     end
@@ -649,22 +654,13 @@ function M:visit_var(cls, cur)
     local tn = typename(cur.type, cls.template_types, nil, typefrom)
     local cb_kind
 
-    if tn:find('%[') then
-        return
-    end
-
     parse_attr_from_annotate(attr, cur, true)
 
     if attr.readonly then
         exps:push('@readonly ')
     end
 
-    local length = string.match(tn, '%[(%d+)%]$')
-    if length then
-        exps:pushf('@array(${length})')
-        exps:push(' ')
-        tn = string.gsub(tn, ' %[%d+%]$', '')
-    elseif attr.optional or (has_default_value(cur) and attr.optional == nil) then
+    if attr.optional or (has_default_value(cur) and attr.optional == nil) then
         exps:push('@optional ')
     end
 
@@ -717,18 +713,18 @@ function M:visit_enum(cppcls, cur)
         })
     end
     cls.indexerror = 'rw'
-    cls.kind = cls.kind or TYPFLAG_ENUM
+    cls.kind = cls.kind or kFLAG_ENUM
 end
 
 function M:visit_alias_class(alias, cppcls)
     local cls = self:will_visit(alias)
-    cls.kind = cls.kind or TYPFLAG_POINTEE
+    cls.kind = cls.kind or kFLAG_POINTER
     if is_func_type(cppcls) then
-        cls.kind = cls.kind | TYPFLAG_FUNC
+        cls.kind = cls.kind | kFLAG_FUNC
         cls.underlying = cppcls
         cls.luacls = self.luacls(alias)
     else
-        cls.kind = cls.kind | TYPFLAG_ALIAS
+        cls.kind = cls.kind | kFLAG_ALIAS
         cls.supercls = cppcls
         cls.luacls = self.luacls(cppcls)
     end
@@ -738,7 +734,7 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
     local cls = self:will_visit(cppcls)
     local skipsuper = false
 
-    cls.kind = cls.kind or TYPFLAG_POINTEE
+    cls.kind = cls.kind or kFLAG_POINTER
 
     if cur.kind == CursorKind.ClassTemplate then
         type_convs:push_if_not_exist(raw_typename(cppcls), true)
@@ -746,7 +742,7 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
             don't config template class:
                 you should remove: typeconf '${cls.cppcls}'
         ]])
-        cls.kind = cls.kind | TYPFLAG_TEMPLATE
+        cls.kind = cls.kind | kFLAG_TEMPLATE
         if specializedcls then
             cls.template_types:push(specializedcls, cppcls)
         end
@@ -992,25 +988,6 @@ local function write_module_metadata(module, append)
     append(format('chunk = ${module.chunk??}'))
     append(format('luaopen = ${module.luaopen??}'))
     append('')
-
-    for _, cls in ipairs(module.class_types) do
-        if not has_type_flag(cls, TYPFLAG_CONV) then
-            goto continue
-        end
-
-        local macro = (cls.macros:get('*') or {}).value
-        append(format([[typeconv '${cls.cppcls}']]))
-        append(format([[.export(${cls.export})]], 4))
-        for _, v in ipairs(cls.macros) do
-            append(format([[.macro('${v.name}', '${v.value}')]], 4))
-        end
-        for _, v in ipairs(cls.vars) do
-            append(format('.var(${v.name?}, ${v.snippet?})', 4))
-        end
-        append('')
-
-        ::continue::
-    end
 end
 
 local function write_module_typedef(module)
@@ -1028,6 +1005,7 @@ local function write_module_typedef(module)
                 cppcls = '${td.cppcls}',
                 luacls = ${td.luacls??},
                 conv = '${td.conv}',
+                packable = ${td.packable??},
                 num_vars = ${td.num_vars??},
                 smartptr = ${td.smartptr??},
             }
@@ -1042,17 +1020,16 @@ local function write_module_typedef(module)
 
         local cppcls = cls.cppcls
         local conv, declfunc, num_vars
-        if has_type_flag(cls, TYPFLAG_FUNC) then
+        if has_type_flag(cls, kFLAG_FUNC) then
             declfunc = cls.underlying
             conv = 'olua_$$_callback'
-        elseif has_type_flag(cls, TYPFLAG_ENUM) then
+        elseif has_type_flag(cls, kFLAG_ENUM) then
             conv = 'olua_$$_integer'
-        elseif has_type_flag(cls, TYPFLAG_POINTEE) then
-            cppcls = cppcls
+        elseif has_type_flag(cls, kFLAG_POINTER) then
             conv = 'olua_$$_object'
-        elseif has_type_flag(cls, TYPFLAG_CONV) then
-            conv = 'olua_$$_' .. string.gsub(cls.cppcls, '[.:]+', '_')
-            num_vars = #cls.vars
+            if cls.packable then
+                num_vars = #cls.vars
+            end
         else
             error(cls.cppcls .. ' ' .. cls.kind)
         end
@@ -1064,6 +1041,7 @@ local function write_module_typedef(module)
                 supercls = ${cls.supercls??},
                 declfunc = ${declfunc??},
                 conv = '${conv}',
+                packable = ${cls.packable??},
                 num_vars = ${num_vars??},
             }
         ]])
@@ -1358,9 +1336,8 @@ local function write_module_classes(module, append)
         end
     end
     for _, cls in ipairs(module.class_types) do
-        if (has_type_flag(cls, TYPFLAG_CONV) and not has_type_flag(cls, TYPFLAG_POINTEE))
-            or has_type_flag(cls, TYPFLAG_ALIAS)
-            or has_type_flag(cls, TYPFLAG_SKIP)
+        if has_type_flag(cls, kFLAG_ALIAS)
+            or has_type_flag(cls, kFLAG_SKIP)
             or cls.maincls
         then
             goto continue
@@ -1670,7 +1647,7 @@ local function copy_super_funcs()
                 if #cls.supers == 1 and is_templdate_type(super.cppcls) then
                     -- see find 'find_as_cls'
                     -- no 'as' func, no need to export
-                    super.kind = super.kind | TYPFLAG_SKIP
+                    super.kind = super.kind | kFLAG_SKIP
                 end
                 ::continue::
             end
@@ -1766,23 +1743,32 @@ local function write_alias_types()
                 conv = ti.conv,
                 luacls = ti.luacls,
             })
-        elseif has_type_flag(cls, TYPFLAG_ENUM) then
+        elseif has_type_flag(cls, kFLAG_FUNC) then
+            types:push({
+                cppcls = alias,
+                luacls = cls.luacls,
+                declfunc = cls.underlying,
+                conv = 'olua_$$_callback',
+            })
+        elseif has_type_flag(cls, kFLAG_ENUM) then
             types:push({
                 cppcls = alias,
                 conv = 'olua_$$_integer',
             })
-        elseif has_type_flag(cls, TYPFLAG_CONV) then
-            types:push({
-                cppcls = alias,
-                conv = cls.conv,
-            })
         else
-            olua.assert(has_type_flag(cls, TYPFLAG_POINTEE), [[
+            olua.assert(has_type_flag(cls, kFLAG_POINTER), [[
                 '${cls.cppcls}' not a pointee type
             ]])
+            local num_vars
+            local packable = cls.packable
+            if packable then
+                num_vars = #cls.vars
+            end
             types:push({
                 cppcls = alias,
                 luacls = cls.luacls,
+                num_vars = num_vars,
+                packable = packable,
                 conv = "olua_$$_object"
             })
         end
@@ -1795,6 +1781,9 @@ local function write_alias_types()
                 cppcls = '${v.cppcls}',
                 conv = '${v.conv}',
                 luacls = ${v.luacls??},
+                declfunc = ${v.declfunc??},
+                packable = ${v.packable??},
+                num_vars = ${v.num_vars??},
             }
         ]])
         typedefs:push('')
@@ -1927,11 +1916,6 @@ local function make_typeconf_command(cls, ModuleCMD)
     add_value_command(CMD, 'packable', cls, nil, tobool)
     add_value_command(CMD, '_maincls', cls, "maincls", totable)
 
-    if has_type_flag(cls, TYPFLAG_CONV) then
-        cls.export = false
-        add_value_command(CMD, 'export', cls, nil, tobool)
-    end
-
     function CMD.extend(extcls)
         cls.extends:push(extcls, true)
         ModuleCMD.typeconf(extcls)
@@ -2060,6 +2044,8 @@ local function make_typedef_command(cls)
     local CMD = {}
     add_value_command(CMD, 'vars', cls, 'num_vars', tonum)
     add_value_command(CMD, 'conv', cls)
+    add_value_command(CMD, 'packable', cls, nil, tobool)
+    add_value_command(CMD, 'smartptr', cls, nil, tobool)
     add_value_command(CMD, 'luacls', cls)
     return olua.command_proxy(CMD)
 end

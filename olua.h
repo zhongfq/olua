@@ -106,7 +106,6 @@ OLUA_BEGIN_DECLS
 #define OLUA_OPTIONAL       __attribute__((annotate("@optional")))
 #define OLUA_GETTER         __attribute__((annotate("@getter")))
 #define OLUA_SETTER         __attribute__((annotate("@setter")))
-#define OLUA_RET            __attribute__((annotate("@ret")))
 #else
 #define OLUA_EXCLUDE
 #define OLUA_NAME(name)
@@ -120,7 +119,6 @@ OLUA_BEGIN_DECLS
 #define OLUA_OPTIONAL
 #define OLUA_GETTER
 #define OLUA_SETTER
-#define OLUA_RET
 #endif
 
 // max cpp type size
@@ -145,7 +143,6 @@ OLUA_BEGIN_DECLS
 typedef int olua_Return;
 
 // stat api
-OLUA_API size_t olua_countobj(lua_State *L, int change);
 OLUA_API bool olua_isdebug(lua_State *L);
     
 // compare raw type of value
@@ -550,9 +547,9 @@ void olua_postpush(lua_State *L, T* obj, int status) {}
  *  {
  *      if (std::is_base_of<Object, T>::value) {
  *          ((Object *)obj)->autorelease();
- *      } else {
- *          olua_assert(obj == olua_toobj<T>(L, -1), "must be same object");
+ *      } else if (olua_getrawobj(L, obj)) {
  *          olua_setownership(L, -1, OLUA_OWNERSHIP_VM);
+ *          lua_pop(L, 1);
  *      }
  *  }
  *
@@ -562,8 +559,10 @@ void olua_postnew(lua_State *L, T *obj);
 #ifndef OLUA_HAVE_POSTNEW
 template <class T>
 void olua_postnew(lua_State *L, T *obj) {
-    olua_assert(obj == olua_toobj<T>(L, -1), "must be same object");
-    olua_setownership(L, -1, OLUA_OWNERSHIP_VM);
+    if (olua_getrawobj(L, obj)) {
+        olua_setownership(L, -1, OLUA_OWNERSHIP_VM);
+        lua_pop(L, 1);
+    }
 }
 #endif
 
@@ -685,7 +684,6 @@ int olua_pushobj_as(lua_State *L, int idx, const T *value, const char *ref) {
         olua_setownership(L, -1, OLUA_OWNERSHIP_ALIAS);
         olua_addref(L, idx, ref, -1, OLUA_FLAG_SINGLE);
         olua_addref(L, -1, "as.self", idx, OLUA_FLAG_SINGLE);
-        olua_countobj(L, 1);
     }
     return 1;
 }
@@ -712,19 +710,23 @@ using remove_cv_t = typename remove_cv<T>::type;
 template< class T >
 using remove_reference_t = typename remove_reference<T>::type;
 #endif
+#if __cplusplus < 201703L
+template <bool B>
+using bool_constant = integral_constant<bool, B>;
+#endif
 }
 
 namespace olua {
 template <class T>
 using remove_cvr_t = std::remove_cv_t<std::remove_reference_t<T>>;
 template <class T>
-const bool is_integral_v = std::is_integral<remove_cvr_t<T>>::value || std::is_enum<remove_cvr_t<T>>::value;
+using is_integral = std::bool_constant<std::is_integral<remove_cvr_t<T>>::value || std::is_enum<remove_cvr_t<T>>::value>;
 template <class T>
-const bool is_floating_v = std::is_floating_point<remove_cvr_t<T>>::value;
+using is_floating = std::bool_constant<std::is_floating_point<remove_cvr_t<T>>::value>;
 template <class T>
-const bool is_pointer_v = std::is_pointer<remove_cvr_t<T>>::value;
+using is_pointer = std::bool_constant<std::is_pointer<remove_cvr_t<T>>::value>;
 template <class T>
-const bool is_reference_v = std::is_reference<std::remove_cv_t<T>>::value;
+using is_reference = std::bool_constant<std::is_reference<std::remove_cv_t<T>>::value>;
 }
 
 // bool
@@ -733,12 +735,12 @@ bool olua_is_bool(lua_State *L, int idx) {
     return olua_isbool(L, idx);
 }
 
-template <class T, std::enable_if_t<olua::is_integral_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<olua::is_integral<T>::value, bool> = true> inline
 void olua_check_bool(lua_State *L, int idx, T *value) {
     *value = (T)olua_checkbool(L, idx);
 }
 
-template <class T, std::enable_if_t<olua::is_integral_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<olua::is_integral<T>::value, bool> = true> inline
 int olua_push_bool(lua_State *L, T value) {
     olua_pushbool(L, (bool)value);
     return 1;
@@ -750,12 +752,12 @@ bool olua_is_integer(lua_State *L, int idx) {
     return olua_isinteger(L, idx);
 }
 
-template <class T, std::enable_if_t<olua::is_integral_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<olua::is_integral<T>::value, bool> = true> inline
 void olua_check_integer(lua_State *L, int idx, T *value) {
     *value = (T)olua_checkinteger(L, idx);
 }
 
-template <class T, std::enable_if_t<olua::is_integral_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<olua::is_integral<T>::value, bool> = true> inline
 int olua_push_integer(lua_State *L, T value) {
     olua_pushinteger(L, (lua_Integer)value);
     return 1;
@@ -767,12 +769,12 @@ bool olua_is_number(lua_State *L, int idx) {
     return olua_isnumber(L, idx);
 }
 
-template <class T, std::enable_if_t<olua::is_floating_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<olua::is_floating<T>::value, bool> = true> inline
 void olua_check_number(lua_State *L, int idx, T *value) {
     *value = (T)olua_checknumber(L, idx);
 }
 
-template <class T, std::enable_if_t<olua::is_floating_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<olua::is_floating<T>::value, bool> = true> inline
 int olua_push_number(lua_State *L, T value) {
     olua_pushnumber(L, (lua_Number)value);
     return 1;
@@ -837,12 +839,12 @@ int olua_push_object(lua_State *L, const T *value, const char *cls) {
     return olua_pushobj<T>(L, value, cls);
 }
 
-template <class T, std::enable_if_t<!olua::is_pointer_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<!olua::is_pointer<T>::value, bool> = true> inline
 int olua_push_object(lua_State *L, const T &value, const char *cls) {
     return olua_pushobj<T>(L, &value, cls);
 }
 
-template <class T, std::enable_if_t<!olua::is_reference_v<T> && !olua::is_pointer_v<T>, bool> = true> inline
+template <class T, std::enable_if_t<!olua::is_pointer<T>::value, bool> = true> inline
 int olua_pushcopy_object(lua_State *L, T &value, const char *cls) {
     cls = olua_getluatype<T>(L, nullptr, cls);
     void *ptr = lua_newuserdata(L, sizeof(void *) + sizeof(T));
@@ -850,7 +852,6 @@ int olua_pushcopy_object(lua_State *L, T &value, const char *cls) {
     *(void **)ptr = obj;
     olua_setmetatable(L, cls);
     olua_setownership(L, -1, OLUA_OWNERSHIP_USERDATA);
-    olua_countobj(L, 1);
     return 1;
 }
 

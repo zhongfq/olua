@@ -556,7 +556,6 @@ require "basictype"
 require "gen-class"
 require "gen-func"
 require "gen-callback"
-require "gen-conv"
 require "autoconf"
 
 _G.export = olua.export

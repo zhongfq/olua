@@ -2,8 +2,34 @@
 // AUTO BUILD, DON'T MODIFY!
 //
 #include "lua_example.h"
-#include "Example.h"
-#include "olua-custom.h"
+
+
+OLUA_LIB void olua_pack_object(lua_State *L, int idx, example::Point *value)
+{
+    idx = lua_absindex(L, idx);
+
+    float arg1 = 0;       /** x */
+    float arg2 = 0;       /** y */
+
+    olua_check_number(L, idx + 0, &arg1);
+    value->x = arg1;
+
+    olua_check_number(L, idx + 1, &arg2);
+    value->y = arg2;
+}
+
+OLUA_LIB int olua_unpack_object(lua_State *L, const example::Point *value)
+{
+    olua_push_number(L, value->x);
+    olua_push_number(L, value->y);
+
+    return 2;
+}
+
+OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const example::Point *)
+{
+    return olua_is_number(L, idx + 0) && olua_is_number(L, idx + 1);
+}
 
 static int _example_Object___gc(lua_State *L)
 {
@@ -158,6 +184,38 @@ OLUA_LIB int luaopen_example_Type(lua_State *L)
 }
 OLUA_END_DECLS
 
+static int _example_Point___call(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Point ret;
+
+    luaL_checktype(L, 2, LUA_TTABLE);
+
+    float arg1 = 0;       /** x */
+    float arg2 = 0;       /** y */
+
+    olua_getfield(L, 2, "x");
+    if (!olua_isnoneornil(L, -1)) {
+        olua_check_number(L, -1, &arg1);
+        ret.x = arg1;
+    }
+    lua_pop(L, 1);
+
+    olua_getfield(L, 2, "y");
+    if (!olua_isnoneornil(L, -1)) {
+        olua_check_number(L, -1, &arg2);
+        ret.y = arg2;
+    }
+    lua_pop(L, 1);
+
+    olua_pushcopy_object(L, ret, "example.Point");
+
+    olua_endinvoke(L);
+
+    return 1;
+}
+
 static int _example_Point___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -216,6 +274,24 @@ static int _example_Point_new$2(lua_State *L)
 {
     olua_startinvoke(L);
 
+    example::Point arg1;       /** p */
+
+    olua_check_object(L, 1, &arg1, "example.Point");
+
+    // Point(const example::Point &p)
+    example::Point *ret = new example::Point(arg1);
+    int num_ret = olua_push_object(L, ret, "example.Point");
+    olua_postnew(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_Point_new$3(lua_State *L)
+{
+    olua_startinvoke(L);
+
     float arg1 = 0;       /** x */
     float arg2 = 0;       /** y */
 
@@ -241,10 +317,17 @@ static int _example_Point_new(lua_State *L)
         return _example_Point_new$1(L);
     }
 
+    if (num_args == 1) {
+        // if ((olua_is_object(L, 1, "example.Point"))) {
+            // Point(const example::Point &p)
+            return _example_Point_new$2(L);
+        // }
+    }
+
     if (num_args == 2) {
         // if ((olua_is_number(L, 1)) && (olua_is_number(L, 2))) {
             // Point(float x, float y)
-            return _example_Point_new$2(L);
+            return _example_Point_new$3(L);
         // }
     }
 
@@ -327,6 +410,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Point(lua_State *L)
 {
     oluacls_class(L, "example.Point", nullptr);
+    oluacls_func(L, "__call", _example_Point___call);
     oluacls_func(L, "__gc", _example_Point___gc);
     oluacls_func(L, "__olua_move", _example_Point___olua_move);
     oluacls_func(L, "length", _example_Point_length);
@@ -339,6 +423,84 @@ OLUA_LIB int luaopen_example_Point(lua_State *L)
     return 1;
 }
 OLUA_END_DECLS
+
+static int _example_Hello_convertPoint$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Point arg1;       /** p */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Point");
+
+    // example::Point convertPoint(const example::Point &p)
+    example::Point ret = self->convertPoint(arg1);
+    int num_ret = olua_pushcopy_object(L, ret, "example.Point");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_Hello_convertPoint$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Point arg1;       /** p */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_pack_object(L, 2, &arg1);
+
+    // example::Point convertPoint(@pack const example::Point &p)
+    example::Point ret = self->convertPoint(arg1);
+    int num_ret = olua_unpack_object(L, &ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_Hello_convertPoint(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 1) {
+        // if ((olua_is_object(L, 2, "example.Point"))) {
+            // example::Point convertPoint(const example::Point &p)
+            return _example_Hello_convertPoint$1(L);
+        // }
+    }
+
+    if (num_args == 2) {
+        // if ((olua_canpack_object(L, 2, (example::Point *)nullptr))) {
+            // example::Point convertPoint(@pack const example::Point &p)
+            return _example_Hello_convertPoint$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Hello::convertPoint' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
+static int _example_Hello_getAliasHello(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.Hello");
+
+    // example::HelloAlias *getAliasHello()
+    example::HelloAlias *ret = self->getAliasHello();
+    int num_ret = olua_push_object(L, ret, "example.Hello");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
 
 static int _example_Hello_getCGLchar(lua_State *L)
 {
@@ -463,6 +625,24 @@ static int _example_Hello_getIntPtrs(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_getIntRef(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    int *arg1 = nullptr;       /** ref */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_pointer(L, 2, &arg1, "olua.int");
+
+    // void getIntRef(int &ref)
+    self->getIntRef(*arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_getInts(lua_State *L)
 {
     olua_startinvoke(L);
@@ -554,6 +734,24 @@ static int _example_Hello_getPtr(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_getStringRef(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    std::string *arg1 = nullptr;       /** ref */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_pointer(L, 2, &arg1, "olua.string");
+
+    // void getStringRef(std::string &ref)
+    self->getStringRef(*arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_getType(lua_State *L)
 {
     olua_startinvoke(L);
@@ -565,6 +763,23 @@ static int _example_Hello_getType(lua_State *L)
     // example::Type getType()
     example::Type ret = self->getType();
     int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_Hello_getVec2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.Hello");
+
+    // @unpack example::Vec2 getVec2()
+    example::Vec2 ret = self->getVec2();
+    int num_ret = olua_unpack_object(L, &ret);
 
     olua_endinvoke(L);
 
@@ -602,6 +817,712 @@ static int _example_Hello_new(lua_State *L)
     olua_endinvoke(L);
 
     return num_ret;
+}
+
+static int _example_Hello_run$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+    example::Hello *arg11 = nullptr;       /** obj_$10 */
+    example::Hello *arg12 = nullptr;       /** obj_$11 */
+    example::Hello *arg13 = nullptr;       /** obj_$12 */
+    example::Hello *arg14 = nullptr;       /** obj_$13 */
+    example::Hello *arg15 = nullptr;       /** obj_$14 */
+    example::Hello *arg16 = nullptr;       /** obj_$15 */
+    example::Hello *arg17 = nullptr;       /** obj_$16 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+    olua_check_object(L, 12, &arg11, "example.Hello");
+    olua_check_object(L, 13, &arg12, "example.Hello");
+    olua_check_object(L, 14, &arg13, "example.Hello");
+    olua_check_object(L, 15, &arg14, "example.Hello");
+    olua_check_object(L, 16, &arg15, "example.Hello");
+    olua_check_object(L, 17, &arg16, "example.Hello");
+    olua_check_object(L, 18, &arg17, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$3(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$4(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$5(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$6(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$7(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$8(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$9(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$10(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$11(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$12(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+    example::Hello *arg11 = nullptr;       /** obj_$10 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+    olua_check_object(L, 12, &arg11, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$13(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+    example::Hello *arg11 = nullptr;       /** obj_$10 */
+    example::Hello *arg12 = nullptr;       /** obj_$11 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+    olua_check_object(L, 12, &arg11, "example.Hello");
+    olua_check_object(L, 13, &arg12, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$14(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+    example::Hello *arg11 = nullptr;       /** obj_$10 */
+    example::Hello *arg12 = nullptr;       /** obj_$11 */
+    example::Hello *arg13 = nullptr;       /** obj_$12 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+    olua_check_object(L, 12, &arg11, "example.Hello");
+    olua_check_object(L, 13, &arg12, "example.Hello");
+    olua_check_object(L, 14, &arg13, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$15(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+    example::Hello *arg11 = nullptr;       /** obj_$10 */
+    example::Hello *arg12 = nullptr;       /** obj_$11 */
+    example::Hello *arg13 = nullptr;       /** obj_$12 */
+    example::Hello *arg14 = nullptr;       /** obj_$13 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+    olua_check_object(L, 12, &arg11, "example.Hello");
+    olua_check_object(L, 13, &arg12, "example.Hello");
+    olua_check_object(L, 14, &arg13, "example.Hello");
+    olua_check_object(L, 15, &arg14, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$16(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+    example::Hello *arg11 = nullptr;       /** obj_$10 */
+    example::Hello *arg12 = nullptr;       /** obj_$11 */
+    example::Hello *arg13 = nullptr;       /** obj_$12 */
+    example::Hello *arg14 = nullptr;       /** obj_$13 */
+    example::Hello *arg15 = nullptr;       /** obj_$14 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+    olua_check_object(L, 12, &arg11, "example.Hello");
+    olua_check_object(L, 13, &arg12, "example.Hello");
+    olua_check_object(L, 14, &arg13, "example.Hello");
+    olua_check_object(L, 15, &arg14, "example.Hello");
+    olua_check_object(L, 16, &arg15, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run$17(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::Hello *arg1 = nullptr;       /** obj */
+    example::Hello *arg2 = nullptr;       /** obj_$1 */
+    example::Hello *arg3 = nullptr;       /** obj_$2 */
+    example::Hello *arg4 = nullptr;       /** obj_$3 */
+    example::Hello *arg5 = nullptr;       /** obj_$4 */
+    example::Hello *arg6 = nullptr;       /** obj_$5 */
+    example::Hello *arg7 = nullptr;       /** obj_$6 */
+    example::Hello *arg8 = nullptr;       /** obj_$7 */
+    example::Hello *arg9 = nullptr;       /** obj_$8 */
+    example::Hello *arg10 = nullptr;       /** obj_$9 */
+    example::Hello *arg11 = nullptr;       /** obj_$10 */
+    example::Hello *arg12 = nullptr;       /** obj_$11 */
+    example::Hello *arg13 = nullptr;       /** obj_$12 */
+    example::Hello *arg14 = nullptr;       /** obj_$13 */
+    example::Hello *arg15 = nullptr;       /** obj_$14 */
+    example::Hello *arg16 = nullptr;       /** obj_$15 */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_object(L, 3, &arg2, "example.Hello");
+    olua_check_object(L, 4, &arg3, "example.Hello");
+    olua_check_object(L, 5, &arg4, "example.Hello");
+    olua_check_object(L, 6, &arg5, "example.Hello");
+    olua_check_object(L, 7, &arg6, "example.Hello");
+    olua_check_object(L, 8, &arg7, "example.Hello");
+    olua_check_object(L, 9, &arg8, "example.Hello");
+    olua_check_object(L, 10, &arg9, "example.Hello");
+    olua_check_object(L, 11, &arg10, "example.Hello");
+    olua_check_object(L, 12, &arg11, "example.Hello");
+    olua_check_object(L, 13, &arg12, "example.Hello");
+    olua_check_object(L, 14, &arg13, "example.Hello");
+    olua_check_object(L, 15, &arg14, "example.Hello");
+    olua_check_object(L, 16, &arg15, "example.Hello");
+    olua_check_object(L, 17, &arg16, "example.Hello");
+
+    // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+    self->run(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, nullptr);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_run(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 1) {
+        // if ((olua_is_object(L, 2, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$2(L);
+        // }
+    }
+
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$3(L);
+        // }
+    }
+
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$4(L);
+        // }
+    }
+
+    if (num_args == 4) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$5(L);
+        // }
+    }
+
+    if (num_args == 5) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$6(L);
+        // }
+    }
+
+    if (num_args == 6) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$7(L);
+        // }
+    }
+
+    if (num_args == 7) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$8(L);
+        // }
+    }
+
+    if (num_args == 8) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$9(L);
+        // }
+    }
+
+    if (num_args == 9) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$10(L);
+        // }
+    }
+
+    if (num_args == 10) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$11(L);
+        // }
+    }
+
+    if (num_args == 11) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$12(L);
+        // }
+    }
+
+    if (num_args == 12) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$13(L);
+        // }
+    }
+
+    if (num_args == 13) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$14(L);
+        // }
+    }
+
+    if (num_args == 14) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$15(L);
+        // }
+    }
+
+    if (num_args == 15) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$16(L);
+        // }
+    }
+
+    if (num_args == 16) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello")) && (olua_is_object(L, 17, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$17(L);
+        // }
+    }
+
+    if (num_args == 17) {
+        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello")) && (olua_is_object(L, 17, "example.Hello")) && (olua_is_object(L, 18, "example.Hello"))) {
+            // @variadic void run(example::Hello *obj, @optional example::Hello *obj_$1, @optional example::Hello *obj_$2, @optional example::Hello *obj_$3, @optional example::Hello *obj_$4, @optional example::Hello *obj_$5, @optional example::Hello *obj_$6, @optional example::Hello *obj_$7, @optional example::Hello *obj_$8, @optional example::Hello *obj_$9, @optional example::Hello *obj_$10, @optional example::Hello *obj_$11, @optional example::Hello *obj_$12, @optional example::Hello *obj_$13, @optional example::Hello *obj_$14, @optional example::Hello *obj_$15, @optional example::Hello *obj_$16)
+            return _example_Hello_run$1(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Hello::run' not support '%d' arguments", num_args);
+
+    return 0;
 }
 
 static int _example_Hello_setCGLchar(lua_State *L)
@@ -964,6 +1885,47 @@ static int _example_Hello_setPtr(lua_State *L)
     return 0;
 }
 
+static int _example_Hello_setTouch(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    example::TouchCallback arg1;       /** callback */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_callback(L, 2, &arg1, "example.ClickCallback");
+
+    void *cb_store = (void *)self;
+    std::string cb_tag = "Touch";
+    std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
+    olua_Context cb_ctx = olua_context(L);
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
+        lua_State *L = olua_mainthread(NULL);
+        olua_checkhostthread();
+
+        if (olua_contextequal(L, cb_ctx)) {
+            int top = lua_gettop(L);
+            size_t last = olua_push_objpool(L);
+            olua_enable_objpool(L);
+            olua_push_object(L, arg1, "example.Hello");
+            olua_disable_objpool(L);
+
+            olua_callback(L, cb_store, cb_name.c_str(), 1);
+
+            //pop stack value
+            olua_pop_objpool(L, last);
+            lua_settop(L, top);
+        }
+    };
+
+    // void setTouch(@localvar const example::TouchCallback &callback)
+    self->setTouch(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_setType(lua_State *L)
 {
     olua_startinvoke(L);
@@ -1006,6 +1968,8 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
     oluacls_class(L, "example.Hello", "example.ExportParent");
+    oluacls_func(L, "convertPoint", _example_Hello_convertPoint);
+    oluacls_func(L, "getAliasHello", _example_Hello_getAliasHello);
     oluacls_func(L, "getCGLchar", _example_Hello_getCGLchar);
     oluacls_func(L, "getCName", _example_Hello_getCName);
     oluacls_func(L, "getCStrs", _example_Hello_getCStrs);
@@ -1013,14 +1977,18 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "getGLvoid", _example_Hello_getGLvoid);
     oluacls_func(L, "getID", _example_Hello_getID);
     oluacls_func(L, "getIntPtrs", _example_Hello_getIntPtrs);
+    oluacls_func(L, "getIntRef", _example_Hello_getIntRef);
     oluacls_func(L, "getInts", _example_Hello_getInts);
     oluacls_func(L, "getName", _example_Hello_getName);
     oluacls_func(L, "getPointers", _example_Hello_getPointers);
     oluacls_func(L, "getPoints", _example_Hello_getPoints);
     oluacls_func(L, "getPtr", _example_Hello_getPtr);
+    oluacls_func(L, "getStringRef", _example_Hello_getStringRef);
     oluacls_func(L, "getType", _example_Hello_getType);
+    oluacls_func(L, "getVec2", _example_Hello_getVec2);
     oluacls_func(L, "getVoids", _example_Hello_getVoids);
     oluacls_func(L, "new", _example_Hello_new);
+    oluacls_func(L, "run", _example_Hello_run);
     oluacls_func(L, "setCGLchar", _example_Hello_setCGLchar);
     oluacls_func(L, "setCName", _example_Hello_setCName);
     oluacls_func(L, "setCStrs", _example_Hello_setCStrs);
@@ -1036,8 +2004,10 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "setPointers", _example_Hello_setPointers);
     oluacls_func(L, "setPoints", _example_Hello_setPoints);
     oluacls_func(L, "setPtr", _example_Hello_setPtr);
+    oluacls_func(L, "setTouch", _example_Hello_setTouch);
     oluacls_func(L, "setType", _example_Hello_setType);
     oluacls_func(L, "setVoids", _example_Hello_setVoids);
+    oluacls_prop(L, "aliasHello", _example_Hello_getAliasHello, nullptr);
     oluacls_prop(L, "cName", _example_Hello_getCName, _example_Hello_setCName);
     oluacls_prop(L, "cStrs", _example_Hello_getCStrs, _example_Hello_setCStrs);
     oluacls_prop(L, "cgLchar", _example_Hello_getCGLchar, _example_Hello_setCGLchar);
@@ -1051,6 +2021,7 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_prop(L, "points", _example_Hello_getPoints, _example_Hello_setPoints);
     oluacls_prop(L, "ptr", _example_Hello_getPtr, _example_Hello_setPtr);
     oluacls_prop(L, "type", _example_Hello_getType, _example_Hello_setType);
+    oluacls_prop(L, "vec2", _example_Hello_getVec2, nullptr);
     oluacls_prop(L, "voids", _example_Hello_getVoids, _example_Hello_setVoids);
 
     olua_registerluatype<example::Hello>(L, "example.Hello");

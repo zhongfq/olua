@@ -2,8 +2,34 @@
 // AUTO BUILD, DON'T MODIFY!
 //
 #include "lua_example.h"
-#include "Example.h"
-#include "olua-custom.h"
+
+
+OLUA_LIB void olua_pack_example_Point(lua_State *L, int idx, example::Point *value)
+{
+    idx = lua_absindex(L, idx);
+
+    int arg1 = 0;       /** x */
+    int arg2 = 0;       /** y */
+
+    olua_check_integer(L, idx + 0, &arg1);
+    value->x = arg1;
+
+    olua_check_integer(L, idx + 1, &arg2);
+    value->y = arg2;
+}
+
+OLUA_LIB int olua_unpack_example_Point(lua_State *L, const example::Point *value)
+{
+    olua_push_integer(L, value->x);
+    olua_push_integer(L, value->y);
+
+    return 2;
+}
+
+OLUA_LIB bool olua_canpack_example_Point(lua_State *L, int idx)
+{
+    return olua_is_integer(L, idx + 0) && olua_is_integer(L, idx + 1);
+}
 
 static int _example_Object___gc(lua_State *L)
 {
@@ -91,32 +117,28 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
 }
 OLUA_END_DECLS
 
-static void olua_fill_object(lua_State *L, int idx, example::Point *value)
-{
-    idx = lua_absindex(L, idx);
-    luaL_checktype(L, idx, LUA_TTABLE);
-
-    int arg1 = 0;       /** arg1 */
-    int arg2 = 0;       /** arg2 */
-
-    olua_getfield(L, idx, "x");
-    olua_check_integer(L, -1, &arg1);
-    value->x = arg1;
-    lua_pop(L, 1);
-
-    olua_getfield(L, idx, "y");
-    olua_check_integer(L, -1, &arg2);
-    value->y = arg2;
-    lua_pop(L, 1);
-}
-
 static int _example_Point___call(lua_State *L)
 {
     olua_startinvoke(L);
 
-    example::Point self;
-    olua_fill_object(L, -1, &self);
-    olua_pushcopy_object(L, self, "example.Point");
+    example::Point ret;
+
+    luaL_checktype(L, 2, LUA_TTABLE);
+
+    int arg1 = 0;       /** x */
+    int arg2 = 0;       /** y */
+
+    olua_getfield(L, 2, "x");
+    olua_check_integer(L, -1, &arg1);
+    ret.x = arg1;
+    lua_pop(L, 1);
+
+    olua_getfield(L, 2, "y");
+    olua_check_integer(L, -1, &arg2);
+    ret.y = arg2;
+    lua_pop(L, 1);
+
+    olua_pushcopy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);
 

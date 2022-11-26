@@ -9,8 +9,13 @@ local kFLAG_RVALUE      = 1 << 3  -- is right value
 local kFLAG_POINTER     = 1 << 4  -- is pointer
 local kFLAG_POINTEE     = 1 << 5  -- is pointer or reference
 local kFLAG_CALLBACK    = 1 << 6  -- is callback
+local kFLAG_CAST        = 1 << 7  -- cast ref to pointer
 
 local format = olua.format
+
+local function has_flag(kind, flag)
+    return (kind & flag) ~= 0
+end
 
 function olua.get_class(cls)
     return cls == '*' and class_map or class_map[cls]
@@ -63,7 +68,7 @@ local function search_type_from_class(cls, cpptype, errors)
             -- const Object * => const ns::Object *
             local ns = table.concat(nsarr, "::")
             local tn = olua.pretty_typename(cpptype:gsub('[%w:_]+ *[*&]*$', ns .. '::%1'))
-            local ti = olua.typeinfo(tn, nil, false, false, errors)
+            local ti = olua.typeinfo(tn, nil, false, errors)
             nsarr[#nsarr] = nil
             if ti then
                 return ti, tn
@@ -74,7 +79,7 @@ local function search_type_from_class(cls, cpptype, errors)
     if cls and cls.supercls then
         local super = typeinfo_map[cls.supercls .. ' *']
         olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
-        return olua.typeinfo(cpptype, super, false, false, errors)
+        return olua.typeinfo(cpptype, super, false, errors)
     end
 end
 
@@ -113,12 +118,11 @@ end
         }
     }
 ]]
-function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
+function olua.typeinfo(cpptype, cls, throwerror, errors)
     local tn, ti, subtis -- for tn<T, ...>
     local flag = 0
 
     throwerror = throwerror ~= false
-    typecast = typecast ~= false
     errors = errors or olua.newhash()
     cpptype = olua.pretty_typename(cpptype)
 
@@ -133,6 +137,15 @@ function olua.typeinfo(cpptype, cls, throwerror, typecast, errors)
         flag = flag | kFLAG_RVALUE | kFLAG_POINTEE
     elseif cpptype:find('&$') then
         flag = flag | kFLAG_LVALUE | kFLAG_POINTEE
+    end
+
+    if not has_flag(flag, kFLAG_CONST) and has_flag(flag, kFLAG_LVALUE) then
+        local pti = olua.typeinfo(cpptype:gsub('&+$', '*'), cls, false)
+        if pti.luacls then
+            ti = pti
+            ti.flag = ti.flag | kFLAG_CAST
+            return ti
+        end
     end
     
     cpptype = cpptype:gsub('[ &]+$', '')
@@ -408,14 +421,6 @@ function parse_args(cls, declstr)
 
         declstr = declstr:gsub('^[^,]*,? *', '') -- skip ','
 
-        if attr.ret then
-            if tn:find('%*$') then
-                attr.ret = 'pointee'
-                tn = tn:gsub('%*$', '')
-                tn = olua.pretty_typename(tn)
-            end
-        end
-
         -- is callback
         if olua.is_func_type(tn, cls) then
             local cb = parse_callback(cls, tn)
@@ -648,27 +653,31 @@ function olua.is_func_type(tn, cls)
 end
 
 function olua.has_rvalue_flag(ti)
-    return (ti.flag & kFLAG_RVALUE) ~= 0
+    return has_flag(ti.flag, kFLAG_RVALUE)
 end
 
 function olua.has_lvalue_flag(ti)
-    return (ti.flag & kFLAG_LVALUE) ~= 0
+    return has_flag(ti.flag, kFLAG_LVALUE)
 end
 
 function olua.has_const_flag(ti)
-    return (ti.flag & kFLAG_CONST) ~= 0
+    return has_flag(ti.flag, kFLAG_CONST)
 end
 
 function olua.has_pointer_flag(ti)
-    return (ti.flag & kFLAG_POINTER) ~= 0
+    return has_flag(ti.flag , kFLAG_POINTER)
 end
 
 function olua.has_pointee_flag(ti)
-    return (ti.flag & kFLAG_POINTEE) ~= 0
+    return has_flag(ti.flag, kFLAG_POINTEE)
 end
 
 function olua.has_callback_flag(ti)
-    return (ti.flag & kFLAG_CALLBACK) ~= 0
+    return has_flag(ti.flag, kFLAG_CALLBACK)
+end
+
+function olua.has_cast_flag(ti)
+    return has_flag(ti.flag, kFLAG_CAST)
 end
 
 function olua.is_pointer_type(ti)
