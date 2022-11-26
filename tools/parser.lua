@@ -77,7 +77,7 @@ local function search_type_from_class(cls, cpptype, errors)
     end
 
     if cls and cls.supercls then
-        local super = typeinfo_map[cls.supercls .. ' *']
+        local super = typeinfo_map[cls.supercls]
         olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
         return olua.typeinfo(cpptype, super, false, errors)
     end

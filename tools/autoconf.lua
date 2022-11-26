@@ -106,19 +106,6 @@ local function raw_typename(cppcls, flag)
     end
 end
 
-local function init_conv_func(cls)
-    local function convertor(cppcls)
-        return 'olua_$$_' .. cppcls:gsub('::', '_'):gsub('[ *]', '')
-    end
-    if not cls.includes then
-        -- typedef type
-        if not cls.conv then
-            cls.conv = convertor(cls.cppcls)
-        end
-    end
-    type_convs:push_if_not_exist(cls.cppcls, true)
-end
-
 local function trim_prefix_colon(tn)
     if tn:find(' ::') then
         tn = tn:gsub(' ::', ' ')
@@ -283,7 +270,7 @@ end
 
 function typename(type, template_types, level, willcheck)
     local tn = parse_from_type(type, template_types, false, level, willcheck)
-    local rawtn = raw_typename(tn, KEEP_POINTER)
+    local rawtn = raw_typename(tn)
 
     if exclude_types:has(rawtn) then
         return tn
@@ -324,14 +311,8 @@ function typename(type, template_types, level, willcheck)
 end
 
 local function is_excluded_typename(name)
-    local name2 = name:match(' ([_%w:]+[ &*]*)$')
-    if exclude_types:has(name) then
-        return true
-    elseif name2 and exclude_types:has(name2) then
-        return true
-    elseif name:find('<') then
-        return is_excluded_typename(name:gsub('<.*>', ''))
-    end
+    local rawtn = raw_typename(name):match('[^ ]+$')
+    return exclude_types:has(rawtn)
 end
 
 local function is_excluded_type(type)
@@ -340,7 +321,6 @@ local function is_excluded_type(type)
     end
 
     local tn = typename(type)
-    local rawtn = raw_typename(tn, KEEP_POINTER)
     if is_templdate_type(tn) then
         for _, subtype in ipairs(get_pointee_type(type).templateArgumentTypes) do
             if is_excluded_type(subtype) then
@@ -348,7 +328,7 @@ local function is_excluded_type(type)
             end
         end
     end
-    return is_excluded_typename(rawtn)
+    return is_excluded_typename(tn)
 end
 
 local DEFAULT_ARG_TYPES = {
@@ -397,6 +377,7 @@ local function is_func_type(tn)
         local cur = tn.declaration
         if kind == TypeKind.LValueReference
             or kind == TypeKind.RValueReference
+            or kind == TypeKind.Pointer
         then
             return is_func_type(tn.pointeeType)
         elseif cur.kind == CursorKind.TypedefDecl
@@ -775,7 +756,7 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
             local rawsupercls = raw_typename(supercls)
             local supercursor = type_cursors:get(rawsupercls)
 
-            if is_excluded_typename(rawsupercls .. ' *') then
+            if is_excluded_typename(rawsupercls) then
                 skipsuper = true
                 goto continue
             end
@@ -925,7 +906,7 @@ local function try_add_wildcard_type(cppcls, cur)
                                        because '${cppcls}' has been excluded
                     ]=], 1))
                 else
-                    m.CMD._typefrom(cppcls, conf)
+                    m.CMD._typecopy(cppcls, conf)
                 end
             end
         end
@@ -1452,6 +1433,19 @@ local function parse_headers()
     prepare_cursor(clang_tu.cursor)
     print('     clang: complete prepare cursor')
     os.remove(HEADER_PATH)
+end
+
+local function init_conv_func(cls)
+    local function convertor(cppcls)
+        return 'olua_$$_' .. cppcls:gsub('::', '_'):gsub('[ *]', '')
+    end
+    if not cls.includes then
+        -- typedef type
+        if not cls.conv then
+            cls.conv = convertor(cls.cppcls)
+        end
+    end
+    type_convs:push_if_not_exist(cls.cppcls, true)
 end
 
 local function parse_types()
@@ -2170,7 +2164,7 @@ function M.__call(_, path)
         return make_typedef_command(cls)
     end
 
-    function CMD._typefrom(cppcls, fromcls)
+    function CMD._typecopy(cppcls, fromcls)
         CMD.typeconf(cppcls)
         local cls = module.class_types:get(cppcls)
         for k, v in pairs(fromcls) do

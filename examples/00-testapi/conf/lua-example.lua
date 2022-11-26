@@ -7,6 +7,8 @@ headers [[
 #include "olua-custom.h"
 ]]
 
+excludetype 'example::ExcludeType'
+
 import "../common/lua-object.lua"
 
 typeconf "example::ClickCallback"

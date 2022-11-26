@@ -6,6 +6,11 @@ local Point = require "example.Point"
 local util = require "util"
 print('%%', util)
 
+-- excluded
+assert(not Hello.getExcludeType)
+assert(not Hello.setExcludeType)
+assert(not Hello.setExcludeTypes)
+
 olua.debug(true)
 
 print(Point.new(2, 4), Point {x = 4, y = 8}, Point.new(3, 4):length())

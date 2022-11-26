@@ -13,6 +13,10 @@ typedef char GLchar;
 
 namespace example {
 
+struct ExcludeType {
+    bool flag;
+};
+
 enum class Type {
     VALUE, POINTEE
 };
@@ -51,6 +55,7 @@ class Hello;
 typedef std::function<void (Hello *)> ClickCallback;
 typedef std::function<std::string (Hello *, int)> NotifyCallback;
 typedef ClickCallback TouchCallback;
+typedef TouchCallback DragCallback;
 
 typedef Hello HelloAlias;
 typedef Point Vec2;
@@ -100,11 +105,16 @@ public:
     
     HelloAlias *getAliasHello() {return this;}
     OLUA_UNPACK Vec2 getVec2() {return Vec2();}
+    
+    ExcludeType *getExcludeType() {return nullptr;}
+    void setExcludeType(struct ExcludeType &v) {}
+    void setExcludeTypes(const std::vector<ExcludeType> &v) {}
 
     void setCallback(const std::function<int (Hello *)> &callback) {}
-    void setNotify(const NotifyCallback &callback) {}
-    void setClick(const ClickCallback &callback) {}
-    void setTouch(const TouchCallback &callback) {}
+    void setNotifyCallback(const NotifyCallback &callback) {}
+    void setClickCallback(const ClickCallback &callback) {}
+    void setTouchCallback(const TouchCallback &callback) {}
+    void setDragCallback(const DragCallback &callback) {}
 
     std::vector<Point> getPoints() { return std::vector<Point>(); }
     void setPoints(const std::vector<Point> &v) {};

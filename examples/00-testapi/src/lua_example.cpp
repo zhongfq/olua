@@ -1627,7 +1627,7 @@ static int _example_Hello_setCallback(lua_State *L)
     return 0;
 }
 
-static int _example_Hello_setClick(lua_State *L)
+static int _example_Hello_setClickCallback(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -1638,7 +1638,7 @@ static int _example_Hello_setClick(lua_State *L)
     olua_check_callback(L, 2, &arg1, "example.ClickCallback");
 
     void *cb_store = (void *)self;
-    std::string cb_tag = "Click";
+    std::string cb_tag = "ClickCallback";
     std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
     arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
@@ -1660,8 +1660,49 @@ static int _example_Hello_setClick(lua_State *L)
         }
     };
 
-    // void setClick(@localvar const example::ClickCallback &callback)
-    self->setClick(arg1);
+    // void setClickCallback(@localvar const example::ClickCallback &callback)
+    self->setClickCallback(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_setDragCallback(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    std::function<void (example::Hello *)> arg1;       /** callback */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_callback(L, 2, &arg1, "std.function");
+
+    void *cb_store = (void *)self;
+    std::string cb_tag = "DragCallback";
+    std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
+    olua_Context cb_ctx = olua_context(L);
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
+        lua_State *L = olua_mainthread(NULL);
+        olua_checkhostthread();
+
+        if (olua_contextequal(L, cb_ctx)) {
+            int top = lua_gettop(L);
+            size_t last = olua_push_objpool(L);
+            olua_enable_objpool(L);
+            olua_push_object(L, arg1, "example.Hello");
+            olua_disable_objpool(L);
+
+            olua_callback(L, cb_store, cb_name.c_str(), 1);
+
+            //pop stack value
+            olua_pop_objpool(L, last);
+            lua_settop(L, top);
+        }
+    };
+
+    // void setDragCallback(@localvar const std::function<void (example::Hello *)> &callback)
+    self->setDragCallback(arg1);
 
     olua_endinvoke(L);
 
@@ -1780,7 +1821,7 @@ static int _example_Hello_setName(lua_State *L)
     return 0;
 }
 
-static int _example_Hello_setNotify(lua_State *L)
+static int _example_Hello_setNotifyCallback(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -1791,7 +1832,7 @@ static int _example_Hello_setNotify(lua_State *L)
     olua_check_callback(L, 2, &arg1, "std.function");
 
     void *cb_store = (void *)self;
-    std::string cb_tag = "Notify";
+    std::string cb_tag = "NotifyCallback";
     std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
     arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, int arg2) {
@@ -1819,8 +1860,8 @@ static int _example_Hello_setNotify(lua_State *L)
         return ret;
     };
 
-    // void setNotify(@localvar const std::function<std::string (example::Hello *, int)> &callback)
-    self->setNotify(arg1);
+    // void setNotifyCallback(@localvar const std::function<std::string (example::Hello *, int)> &callback)
+    self->setNotifyCallback(arg1);
 
     olua_endinvoke(L);
 
@@ -1885,7 +1926,7 @@ static int _example_Hello_setPtr(lua_State *L)
     return 0;
 }
 
-static int _example_Hello_setTouch(lua_State *L)
+static int _example_Hello_setTouchCallback(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -1896,7 +1937,7 @@ static int _example_Hello_setTouch(lua_State *L)
     olua_check_callback(L, 2, &arg1, "example.ClickCallback");
 
     void *cb_store = (void *)self;
-    std::string cb_tag = "Touch";
+    std::string cb_tag = "TouchCallback";
     std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
     arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
@@ -1918,8 +1959,8 @@ static int _example_Hello_setTouch(lua_State *L)
         }
     };
 
-    // void setTouch(@localvar const example::TouchCallback &callback)
-    self->setTouch(arg1);
+    // void setTouchCallback(@localvar const example::TouchCallback &callback)
+    self->setTouchCallback(arg1);
 
     olua_endinvoke(L);
 
@@ -1993,18 +2034,19 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "setCName", _example_Hello_setCName);
     oluacls_func(L, "setCStrs", _example_Hello_setCStrs);
     oluacls_func(L, "setCallback", _example_Hello_setCallback);
-    oluacls_func(L, "setClick", _example_Hello_setClick);
+    oluacls_func(L, "setClickCallback", _example_Hello_setClickCallback);
+    oluacls_func(L, "setDragCallback", _example_Hello_setDragCallback);
     oluacls_func(L, "setGLchar", _example_Hello_setGLchar);
     oluacls_func(L, "setGLvoid", _example_Hello_setGLvoid);
     oluacls_func(L, "setID", _example_Hello_setID);
     oluacls_func(L, "setIntPtrs", _example_Hello_setIntPtrs);
     oluacls_func(L, "setInts", _example_Hello_setInts);
     oluacls_func(L, "setName", _example_Hello_setName);
-    oluacls_func(L, "setNotify", _example_Hello_setNotify);
+    oluacls_func(L, "setNotifyCallback", _example_Hello_setNotifyCallback);
     oluacls_func(L, "setPointers", _example_Hello_setPointers);
     oluacls_func(L, "setPoints", _example_Hello_setPoints);
     oluacls_func(L, "setPtr", _example_Hello_setPtr);
-    oluacls_func(L, "setTouch", _example_Hello_setTouch);
+    oluacls_func(L, "setTouchCallback", _example_Hello_setTouchCallback);
     oluacls_func(L, "setType", _example_Hello_setType);
     oluacls_func(L, "setVoids", _example_Hello_setVoids);
     oluacls_prop(L, "aliasHello", _example_Hello_getAliasHello, nullptr);
