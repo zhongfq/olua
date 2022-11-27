@@ -45,6 +45,8 @@ print('name', obj.name, obj.id, obj.ptr)
 
 olua.int = require "olua.int"
 olua.string = require "olua.string"
+olua.char = require "olua.char"
+olua.size_t = require "olua.size_t"
 
 local num = olua.int.new()
 local str = olua.string.new()
@@ -58,3 +60,10 @@ assert(str.value == "120")
 obj:setClickCallback(ClickCallback(function (...)
     print('click', ...)
 end))
+
+-- type repalce
+local result = olua.char.new(12)
+local result_len = olua.size_t.new()
+obj:read(result, result_len)
+assert(result:tostring(11) == 'hello read!')
+assert(result_len.value == 11)

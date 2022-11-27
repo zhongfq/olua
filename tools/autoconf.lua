@@ -1557,7 +1557,6 @@ local function check_errors()
             you should do one of:
                 * if has the type convertor, use typedef 'NotFoundType'
                 * if type is pointer or enum, use typeconf 'NotFoundType'
-                * if type is struct value, use typeconv 'NotFoundType'
                 * if type not wanted, use excludetype 'NotFoundType',
         ]])
     end

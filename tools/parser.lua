@@ -53,8 +53,7 @@ local function throw_type_error(cpptype, errors)
         you should do one of:
             * if has the type convertor, use typedef '${cpptype}'
             * if type is pointer or enum, use typeconf '${rawtn}'
-            * if type is struct value, use typeconv '${rawtn}'
-            * if type not wanted, use excludeany '${rawtn}'
+            * if type not wanted, use excludetype '${rawtn}'
     ]])
 end
 
@@ -350,6 +349,11 @@ local function parse_type(str)
     end
     str = str:sub(#tn + 1)
     str = str:gsub('^ *', '')
+
+    if attr.type then
+        tn = olua.assert(table.concat(attr.type, ' '), "no replaceable type")
+    end
+
     return olua.pretty_typename(tn), attr, str
 end
 
@@ -359,12 +363,10 @@ local function type_func_info(tn, cls, cb)
         ti = olua.typeinfo(tn, cls)
     else
         ti = olua.typeinfo('std::function', cls)
-        if cb then
-            ti.flag = ti.flag | kFLAG_CALLBACK
-            ti.callback = {[0] = cb.ret.type}
-            for i, arg in ipairs(cb.args) do
-                ti.callback[i] = arg.type
-            end
+        ti.flag = ti.flag | kFLAG_CALLBACK
+        ti.callback = {[0] = cb.ret.type}
+        for i, arg in ipairs(cb.args) do
+            ti.callback[i] = arg.type
         end
     end
     return ti
@@ -373,17 +375,17 @@ end
 local parse_args
 
 local function parse_callback(cls, tn)
-    local rtn, rtattr
-    local ti = type_func_info(tn, cls)
-    local declstr = (ti.declfunc or tn):match('<(.*)>') -- match callback function prototype
-    rtn, rtattr, declstr = parse_type(declstr)
-    declstr = declstr:gsub('^[^(]+', '') -- match callback args
-    local ret = {}
-    ret.type = olua.typeinfo(rtn, cls)
-    ret.attr = rtattr
+    if not tn:find('std::function') then
+        tn = olua.typeinfo(tn, cls).declfunc
+    end
+    local rtn, rattr, str = parse_type(tn:match('<(.*)>'))
+    str = str:gsub('^[^(]+', '') -- match callback args
     return {
-        args = parse_args(cls, declstr),
-        ret = ret,
+        ret = {
+            type = olua.typeinfo(rtn, cls),
+            attr = rattr
+        },
+        args = parse_args(cls, str),
     }
 end
 
@@ -1017,10 +1019,7 @@ local function typeconf(...)
 end
 
 function olua.export(path)
-    local m = {
-        class_types = {},
-        convs = {},
-    }
+    local m = {class_types = {}}
 
     local CMD = {}
 
@@ -1030,15 +1029,6 @@ function olua.export(path)
 
     function CMD.__newindex(_, k, v)
         m[k] = v
-    end
-
-    function CMD.typeconv(cppcls)
-        local conv, SubCMD = typeconf(cppcls)
-        m.convs[#m.convs + 1] = conv
-        function SubCMD.export(export)
-            conv.export = export
-        end
-        return olua.command_proxy(SubCMD)
     end
 
     function CMD.typeconf(cppcls)

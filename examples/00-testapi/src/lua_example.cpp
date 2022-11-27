@@ -819,6 +819,26 @@ static int _example_Hello_new(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_read(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    olua_char_t *arg1 = nullptr;       /** result */
+    size_t *arg2 = nullptr;       /** len */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_pointer(L, 2, &arg1, "olua.char");
+    olua_check_pointer(L, 3, &arg2, "olua.size_t");
+
+    // void read(@type(olua_char_t *) char *result, size_t *len)
+    self->read(arg1, arg2);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_run$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -2073,6 +2093,64 @@ static int _example_Hello_setVoids(lua_State *L)
     return 0;
 }
 
+static int _example_Hello_testPointerTypes(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    olua_char_t *arg1 = nullptr;       /**  */
+    olua_uchar_t *arg2 = nullptr;       /**  */
+    short *arg3 = nullptr;       /**  */
+    short *arg4 = nullptr;       /**  */
+    unsigned short *arg5 = nullptr;       /**  */
+    unsigned short *arg6 = nullptr;       /**  */
+    int *arg7 = nullptr;       /**  */
+    int *arg8 = nullptr;       /**  */
+    unsigned int *arg9 = nullptr;       /**  */
+    unsigned int *arg10 = nullptr;       /**  */
+    long *arg11 = nullptr;       /**  */
+    long *arg12 = nullptr;       /**  */
+    unsigned long *arg13 = nullptr;       /**  */
+    unsigned long *arg14 = nullptr;       /**  */
+    long long *arg15 = nullptr;       /**  */
+    long long *arg16 = nullptr;       /**  */
+    unsigned long long *arg17 = nullptr;       /**  */
+    unsigned long long *arg18 = nullptr;       /**  */
+    float *arg19 = nullptr;       /**  */
+    double *arg20 = nullptr;       /**  */
+    long double *arg21 = nullptr;       /**  */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_pointer(L, 2, &arg1, "olua.char");
+    olua_check_pointer(L, 3, &arg2, "olua.uchar");
+    olua_check_pointer(L, 4, &arg3, "olua.short");
+    olua_check_pointer(L, 5, &arg4, "olua.short");
+    olua_check_pointer(L, 6, &arg5, "olua.ushort");
+    olua_check_pointer(L, 7, &arg6, "olua.ushort");
+    olua_check_pointer(L, 8, &arg7, "olua.int");
+    olua_check_pointer(L, 9, &arg8, "olua.int");
+    olua_check_pointer(L, 10, &arg9, "olua.uint");
+    olua_check_pointer(L, 11, &arg10, "olua.uint");
+    olua_check_pointer(L, 12, &arg11, "olua.long");
+    olua_check_pointer(L, 13, &arg12, "olua.long");
+    olua_check_pointer(L, 14, &arg13, "olua.ulong");
+    olua_check_pointer(L, 15, &arg14, "olua.ulong");
+    olua_check_pointer(L, 16, &arg15, "olua.llong");
+    olua_check_pointer(L, 17, &arg16, "olua.llong");
+    olua_check_pointer(L, 18, &arg17, "olua.ullong");
+    olua_check_pointer(L, 19, &arg18, "olua.ullong");
+    olua_check_pointer(L, 20, &arg19, "olua.float");
+    olua_check_pointer(L, 21, &arg20, "olua.double");
+    olua_check_pointer(L, 22, &arg21, "olua.ldouble");
+
+    // void testPointerTypes(@type(olua_char_t *) char *, @type(olua_uchar_t *) unsigned char *, short *, short *, unsigned short *, unsigned short *, int *, int *, unsigned int *, unsigned int *, long *, long *, unsigned long *, unsigned long *, long long *, long long *, unsigned long long *, unsigned long long *, float *, double *, long double *)
+    self->testPointerTypes(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
@@ -2097,6 +2175,7 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "getVec2", _example_Hello_getVec2);
     oluacls_func(L, "getVoids", _example_Hello_getVoids);
     oluacls_func(L, "new", _example_Hello_new);
+    oluacls_func(L, "read", _example_Hello_read);
     oluacls_func(L, "run", _example_Hello_run);
     oluacls_func(L, "setCGLchar", _example_Hello_setCGLchar);
     oluacls_func(L, "setCName", _example_Hello_setCName);
@@ -2117,6 +2196,7 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "setTouchCallback", _example_Hello_setTouchCallback);
     oluacls_func(L, "setType", _example_Hello_setType);
     oluacls_func(L, "setVoids", _example_Hello_setVoids);
+    oluacls_func(L, "testPointerTypes", _example_Hello_testPointerTypes);
     oluacls_prop(L, "aliasHello", _example_Hello_getAliasHello, nullptr);
     oluacls_prop(L, "cName", _example_Hello_getCName, _example_Hello_setCName);
     oluacls_prop(L, "cStrs", _example_Hello_getCStrs, _example_Hello_setCStrs);

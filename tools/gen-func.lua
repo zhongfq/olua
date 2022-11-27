@@ -129,7 +129,9 @@ function olua.gen_push_exp(arg, name, codeset)
         olua.assert(arg.type.packable, [['${arg.type.cppcls}' is not a packable type]])
         codeset.push_args:pushf('${func_push}(L, &${argname});')
     elseif olua.is_pointer_type(arg.type) then
-        if olua.has_pointee_flag(arg.type) then
+        if olua.has_cast_flag(arg.type) then
+            codeset.push_args:pushf('${func_push}(L, &${argname}, "${arg.type.luacls}");')
+        elseif olua.has_pointee_flag(arg.type) then
             codeset.push_args:pushf('${func_push}(L, ${argname}, "${arg.type.luacls}");')
         else
             codeset.push_args:pushf('${func_copy}(L, ${argname}, "${arg.type.luacls}");')
@@ -377,6 +379,9 @@ end
 local function gen_func_ret(cls, fi, codeset)
     if fi.ret.type.cppcls ~= 'void' then
         local decltype = olua.decltype(fi.ret.type, nil, true)
+        if olua.has_cast_flag(fi.ret.type) then
+            decltype = decltype:gsub(' %*$', ' &')
+        end
         if fi.variable
             and not olua.has_pointee_flag(fi.ret.type)
             and not olua.is_value_type(fi.ret.type)
@@ -833,6 +838,7 @@ end
 function olua.gen_pack_header(module, write)
     for _, cls in ipairs(module.class_types) do
         if cls.packable then
+            local macro = cls.macros['*']
             write(macro)
             write(format([[
                 // ${cls.cppcls}

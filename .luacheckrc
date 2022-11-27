@@ -11,8 +11,6 @@ new_globals = {
     "chunk",
     "clang",
     "dofile",
-    "exclude",
-    "excludeany",
     "excludetype",
     "export",
     "headers",
@@ -26,7 +24,6 @@ new_globals = {
     "pairs",
     "path",
     "typeconf",
-    "typeconv",
     "typedef",
     "typeonly",
 }

@@ -11,7 +11,6 @@ set(source
     olua-custom.cpp
     lua_types.h
     lua_types.cpp
-    ../../olua-types.h
     ../../olua.h
     ../../olua.c
 )

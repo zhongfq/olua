@@ -138,6 +138,27 @@ public:
 
     void run(Hello *obj, ...) {}
 
+    void read(OLUA_TYPE(olua_char_t *) char *result, size_t *len) {
+        const char *str = "hello read!";
+        strcpy(result, str);
+        *len = strlen(str);
+    }
+
+    void testPointerTypes(
+        OLUA_TYPE(olua_char_t *) char *,
+        OLUA_TYPE(olua_uchar_t *) unsigned char *,
+        short *, short int *,
+        unsigned short *, unsigned short int *,
+        signed *, int *,
+        unsigned *, unsigned int *,
+        long *, long int *,
+        unsigned long *, unsigned long int *,
+        long long *, long long int *,
+        unsigned long long *, unsigned long long int *,
+        float *,
+        double *,
+        long double *) {}
+
 private:
     std::string _name;
     int _id = 0;
