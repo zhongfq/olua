@@ -620,8 +620,7 @@ function M:visit_method(cls, cur)
 end
 
 function M:visit_var(cls, cur)
-    if cur.type.isConstQualified
-        or is_excluded_type(cur.type)
+    if is_excluded_type(cur.type)
         or has_exclude_attr(cur)
         or has_deprecated_attr(cur)
         or cur.type.name:find('%[')
@@ -637,7 +636,7 @@ function M:visit_var(cls, cur)
 
     parse_attr_from_annotate(attr, cur, true)
 
-    if attr.readonly then
+    if attr.readonly or cur.type.isConstQualified then
         exps:push('@readonly ')
     end
 
@@ -1113,12 +1112,12 @@ end
 local function write_cls_func(module, cls, append)
     search_using_func(module, cls)
 
-    local group_by_name = olua.newhash()
+    local group = olua.newhash()
     for _, func in ipairs(cls.funcs) do
-        local arr = group_by_name:get(func.name)
+        local arr = group:get(func.name)
         if not arr then
             arr = {}
-            group_by_name:push(func.name, arr)
+            group:push(func.name, arr)
         end
         if func.snippet or func.name == 'as'
             or is_new_func(module, cls.supercls, func)
@@ -1132,7 +1131,7 @@ local function write_cls_func(module, cls, append)
         arr[#arr + 1] = func
     end
 
-    for _, arr in ipairs(group_by_name) do
+    for _, arr in ipairs(group) do
         if not arr.has_new then
             goto continue
         end
@@ -1156,6 +1155,10 @@ local function write_cls_func(module, cls, append)
                 for _, f in ipairs(cls.funcs) do
                     if f.name:lower():find(setname) then
                         setfunc = f
+                        --[[
+                            void setName(n)
+                            void setName(n, i)
+                        ]]
                         if f.min_args <= (f.extended and 2 or 1) then
                             lessone = true
                         end
@@ -2127,6 +2130,7 @@ function M.__call(_, path)
             reg_luatype = true,
             underlying = nil,
             packable = nil,
+            indexerror = nil,
             template_types = olua.newhash(),
             luaname = function (n) return n end,
         }

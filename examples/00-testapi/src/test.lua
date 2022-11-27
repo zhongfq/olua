@@ -3,6 +3,7 @@ package.path = path .. package.path
 
 local Hello = require "example.Hello"
 local Point = require "example.Point"
+local ClickCallback = require "example.ClickCallback"
 local util = require "util"
 print('%%', util)
 
@@ -52,3 +53,8 @@ obj:getStringRef(str)
 print('ref', num.value, str.value)
 assert(num.value == 120)
 assert(str.value == "120")
+
+-- callback
+obj:setClickCallback(ClickCallback(function (...)
+    print('click', ...)
+end))

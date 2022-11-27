@@ -53,6 +53,7 @@ public:
 class Hello;
 
 typedef std::function<void (Hello *)> ClickCallback;
+typedef std::function<void (Hello *)> ClickCallback2;
 typedef std::function<std::string (Hello *, int)> NotifyCallback;
 typedef ClickCallback TouchCallback;
 typedef TouchCallback DragCallback;
@@ -112,7 +113,8 @@ public:
 
     void setCallback(const std::function<int (Hello *)> &callback) {}
     void setNotifyCallback(const NotifyCallback &callback) {}
-    void setClickCallback(const ClickCallback &callback) {}
+    void setClickCallback(const ClickCallback &callback) {callback(this);}
+    void setClickCallback(const NotifyCallback &callback) {callback(this, 2);}
     void setTouchCallback(const TouchCallback &callback) {}
     void setDragCallback(const DragCallback &callback) {}
 

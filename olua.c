@@ -1700,7 +1700,7 @@ OLUA_API const char *olua_getluatype(lua_State *L, const char *cpptype)
 }
 #endif
 
-OLUA_API int olua_callback_wrapper(lua_State *L)
+static int olua_callback_wrapper(lua_State *L)
 {
     lua_pushvalue(L, lua_upvalueindex(1));
     lua_insert(L, 1);
@@ -1714,9 +1714,9 @@ OLUA_API bool olua_is_callback(lua_State *L, int idx, const char *cls)
     if (is_wrapper && lua_getupvalue(L, idx, 2)) {
         const char *cb_cls = lua_tostring(L, -1);
         lua_pop(L, 1);
-        return cb_cls && strcmp(cb_cls, cls) == 0;
+        return olua_strequal(cb_cls, cls);
     }
-    return olua_isfunction(L, idx);
+    return olua_isfunction(L, idx) && olua_strequal(cls, "std::function");
 }
 
 OLUA_API int olua_push_callback(lua_State *L, const char *cls)

@@ -1627,7 +1627,7 @@ static int _example_Hello_setCallback(lua_State *L)
     return 0;
 }
 
-static int _example_Hello_setClickCallback(lua_State *L)
+static int _example_Hello_setClickCallback$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -1664,6 +1664,74 @@ static int _example_Hello_setClickCallback(lua_State *L)
     self->setClickCallback(arg1);
 
     olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_setClickCallback$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    std::function<std::string (example::Hello *, int)> arg1;       /** callback */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_callback(L, 2, &arg1, "std.function");
+
+    void *cb_store = (void *)self;
+    std::string cb_tag = "ClickCallback";
+    std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
+    olua_Context cb_ctx = olua_context(L);
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, int arg2) {
+        lua_State *L = olua_mainthread(NULL);
+        olua_checkhostthread();
+        std::string ret;       /** ret */
+        if (olua_contextequal(L, cb_ctx)) {
+            int top = lua_gettop(L);
+            size_t last = olua_push_objpool(L);
+            olua_enable_objpool(L);
+            olua_push_object(L, arg1, "example.Hello");
+            olua_push_integer(L, arg2);
+            olua_disable_objpool(L);
+
+            olua_callback(L, cb_store, cb_name.c_str(), 2);
+
+            if (olua_is_string(L, -1)) {
+                olua_check_string(L, -1, &ret);
+            }
+
+            //pop stack value
+            olua_pop_objpool(L, last);
+            lua_settop(L, top);
+        }
+        return ret;
+    };
+
+    // void setClickCallback(@localvar const std::function<std::string (example::Hello *, int)> &callback)
+    self->setClickCallback(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_setClickCallback(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 1) {
+        if ((olua_is_callback(L, 2, "example.ClickCallback"))) {
+            // void setClickCallback(@localvar const example::ClickCallback &callback)
+            return _example_Hello_setClickCallback$1(L);
+        }
+
+        // if ((olua_is_callback(L, 2, "std.function"))) {
+            // void setClickCallback(@localvar const std::function<std::string (example::Hello *, int)> &callback)
+            return _example_Hello_setClickCallback$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Hello::setClickCallback' not support '%d' arguments", num_args);
 
     return 0;
 }

@@ -4,7 +4,7 @@
 #include "lua_example.h"
 
 
-OLUA_LIB void olua_pack_example_Point(lua_State *L, int idx, example::Point *value)
+OLUA_LIB void olua_pack_object(lua_State *L, int idx, example::Point *value)
 {
     idx = lua_absindex(L, idx);
 
@@ -18,7 +18,7 @@ OLUA_LIB void olua_pack_example_Point(lua_State *L, int idx, example::Point *val
     value->y = arg2;
 }
 
-OLUA_LIB int olua_unpack_example_Point(lua_State *L, const example::Point *value)
+OLUA_LIB int olua_unpack_object(lua_State *L, const example::Point *value)
 {
     olua_push_integer(L, value->x);
     olua_push_integer(L, value->y);
@@ -26,7 +26,7 @@ OLUA_LIB int olua_unpack_example_Point(lua_State *L, const example::Point *value
     return 2;
 }
 
-OLUA_LIB bool olua_canpack_example_Point(lua_State *L, int idx)
+OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const example::Point *)
 {
     return olua_is_integer(L, idx + 0) && olua_is_integer(L, idx + 1);
 }

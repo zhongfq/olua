@@ -17,9 +17,7 @@ typedef {
 }
 
 typedef {
-    cppcls = [[
-        void *
-    ]],
+    cppcls = 'void *',
     luacls = 'void *',
     conv = 'olua_$$_object',
 }
