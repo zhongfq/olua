@@ -639,9 +639,9 @@ OLUA_LIB int luaopen_example_TestWildcardClickEvent(lua_State *L)
     oluacls_class(L, "example.TestWildcardClickEvent", nullptr);
     oluacls_func(L, "__index", olua_indexerror);
     oluacls_func(L, "__newindex", olua_newindexerror);
-    oluacls_const_integer(L, "H1", (lua_Integer)example::TestWildcardClickEvent::H1);
-    oluacls_const_integer(L, "H2", (lua_Integer)example::TestWildcardClickEvent::H2);
-    oluacls_const_integer(L, "H3", (lua_Integer)example::TestWildcardClickEvent::H3);
+    oluacls_enum(L, "H1", (lua_Integer)example::TestWildcardClickEvent::H1);
+    oluacls_enum(L, "H2", (lua_Integer)example::TestWildcardClickEvent::H2);
+    oluacls_enum(L, "H3", (lua_Integer)example::TestWildcardClickEvent::H3);
 
     olua_registerluatype<example::TestWildcardClickEvent>(L, "example.TestWildcardClickEvent");
     printf("test wildcard luaopen\n");
@@ -656,9 +656,9 @@ OLUA_LIB int luaopen_example_TestWildcardTouchEvent(lua_State *L)
     oluacls_class(L, "example.TestWildcardTouchEvent", nullptr);
     oluacls_func(L, "__index", olua_indexerror);
     oluacls_func(L, "__newindex", olua_newindexerror);
-    oluacls_const_integer(L, "T1", (lua_Integer)example::TestWildcardTouchEvent::T1);
-    oluacls_const_integer(L, "T2", (lua_Integer)example::TestWildcardTouchEvent::T2);
-    oluacls_const_integer(L, "T3", (lua_Integer)example::TestWildcardTouchEvent::T3);
+    oluacls_enum(L, "T1", (lua_Integer)example::TestWildcardTouchEvent::T1);
+    oluacls_enum(L, "T2", (lua_Integer)example::TestWildcardTouchEvent::T2);
+    oluacls_enum(L, "T3", (lua_Integer)example::TestWildcardTouchEvent::T3);
 
     olua_registerluatype<example::TestWildcardTouchEvent>(L, "example.TestWildcardTouchEvent");
     printf("test wildcard luaopen\n");
