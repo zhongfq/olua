@@ -61,6 +61,8 @@ typedef TouchCallback DragCallback;
 typedef Hello HelloAlias;
 typedef Point Vec2;
 
+typedef olua::pointer<std::vector<int>> VectorInt;
+
 class Hello : public ExportParent {
 public:
     Hello() {
@@ -135,6 +137,11 @@ public:
 
     std::vector<short *> getIntPtrs() {return std::vector<short *>();}
     void setIntPtrs(const std::vector<short *> &v) {};
+    
+    void checkVectorInt(std::vector<int> &v) {
+        v.push_back(1);
+        v.push_back(2);
+    }
 
     void run(Hello *obj, ...) {}
 
@@ -143,6 +150,7 @@ public:
         strcpy(result, str);
         *len = strlen(str);
     }
+    
 
     void testPointerTypes(
         OLUA_TYPE(olua_char_t *) char *,

@@ -11,9 +11,11 @@ excludetype 'example::ExcludeType'
 
 import "../common/lua-object.lua"
 
-typeconf "example::ClickCallback"
+typeconf 'example::VectorInt'
+
+typeconf 'example::ClickCallback'
 typeconf 'example::Type'
 typeconf 'example::Point'
     .packable 'true'
-typeconf "example::Hello"
+typeconf 'example::Hello'
     .func 'convertPoint' .arg1 '@pack'

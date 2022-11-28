@@ -977,19 +977,19 @@ bool olua_is_map(lua_State *L, int idx) {
 }
 
 template <class K, class V, template<class ...> class Map, class ...Ts>
-void olua_insert_map(Map<K, V, Ts...> *map, const K &key, const V &value) {
-    map->insert(std::make_pair(key, value));
+void olua_insert_map(Map<K, V, Ts...> &map, const K &key, const V &value) {
+    map.insert(std::make_pair(key, value));
 }
 
 template <class K, class V, template<class ...> class Map, class ...Ts>
-void olua_foreach_map(const Map<K, V, Ts...> *map, const std::function<void(K &, V &)> &callback) {
-    for (auto itor : (*map)) {
+void olua_foreach_map(const Map<K, V, Ts...> &map, const std::function<void(K &, V &)> &callback) {
+    for (auto itor : map) {
         callback(const_cast<K &>(itor.first), itor.second);
     }
 }
 
 template <class K, class V, template<class ...> class Map, class ...Ts>
-int olua_push_map(lua_State *L, const Map<K, V, Ts...> *map, const std::function<void(K &, V &)> &push) {
+int olua_push_map(lua_State *L, const Map<K, V, Ts...> &map, const std::function<void(K &, V &)> &push) {
     lua_newtable(L);
     olua_foreach_map<K, V>(map, [=](K &key, V &value) {
         push(key, value);
@@ -999,7 +999,7 @@ int olua_push_map(lua_State *L, const Map<K, V, Ts...> *map, const std::function
 }
 
 template <class K, class V, template<class ...> class Map, class ...Ts>
-void olua_check_map(lua_State *L, int idx, Map<K, V, Ts...> *map, const std::function<void(K *, V *)> &check) {
+void olua_check_map(lua_State *L, int idx, Map<K, V, Ts...> &map, const std::function<void(K *, V *)> &check) {
     idx = lua_absindex(L, idx);
     luaL_checktype(L, idx, LUA_TTABLE);
     lua_pushnil(L);
@@ -1014,25 +1014,25 @@ void olua_check_map(lua_State *L, int idx, Map<K, V, Ts...> *map, const std::fun
 
 // array
 template <class T>
-void olua_insert_array(std::vector<T> *array, const T &value) {
-    array->push_back(value);
+void olua_insert_array(std::vector<T> &array, const T &value) {
+    array.push_back(value);
 }
 
 template <class T>
-void olua_insert_array(std::set<T> *array, const T &value) {
-    array->insert(value);
+void olua_insert_array(std::set<T> &array, const T &value) {
+    array.insert(value);
 }
 
 template <class T, template<class ...> class Array, class ...Ts>
-void olua_foreach_array(const Array<T, Ts...> *array, const std::function<void(T &)> &callback) {
-    for (auto &itor : (*array)) {
+void olua_foreach_array(const Array<T, Ts...> &array, const std::function<void(T &)> &callback) {
+    for (auto &itor : array) {
         callback(const_cast<T &>(itor));
     }
 }
 
 template <> inline
-void olua_foreach_array<bool>(const std::vector<bool> *array, const std::function<void(bool &)> &callback) {
-    for (auto itor : (*array)) {
+void olua_foreach_array<bool>(const std::vector<bool> &array, const std::function<void(bool &)> &callback) {
+    for (auto itor : array) {
         bool v = itor;
         callback(v);
     }
@@ -1044,7 +1044,7 @@ bool olua_is_array(lua_State *L, int idx) {
 }
 
 template <class T, template<class ...> class Array, class ...Ts>
-int olua_push_array(lua_State *L, const Array<T, Ts...> *array, const std::function<void(T &)> &push) {
+int olua_push_array(lua_State *L, const Array<T, Ts...> &array, const std::function<void(T &)> &push) {
     int idx = 0;
     lua_newtable(L);
     olua_foreach_array<T>(array, [=](T &value) mutable {
@@ -1055,7 +1055,7 @@ int olua_push_array(lua_State *L, const Array<T, Ts...> *array, const std::funct
 }
 
 template <class T, template<class ...> class Array, class ...Ts>
-void olua_check_array(lua_State *L, int idx, Array<T, Ts...> *array, const std::function<void(T *)> &check) {
+void olua_check_array(lua_State *L, int idx, Array<T, Ts...> &array, const std::function<void(T *)> &check) {
     idx = lua_absindex(L, idx);
     luaL_checktype(L, idx, LUA_TTABLE);
     int total = (int)lua_rawlen(L, idx);
@@ -1069,7 +1069,7 @@ void olua_check_array(lua_State *L, int idx, Array<T, Ts...> *array, const std::
 }
 
 template <class T, template<class ...> class Array, class ...Ts>
-void olua_pack_array(lua_State *L, int idx, Array<T, Ts...> *array, const std::function<void(T *)> &check) {
+void olua_pack_array(lua_State *L, int idx, Array<T, Ts...> &array, const std::function<void(T *)> &check) {
     idx = lua_absindex(L, idx);
     int total = (int)(lua_gettop(L) - (idx - 1));
     for (int i = 0; i < total; i++) {

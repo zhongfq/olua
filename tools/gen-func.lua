@@ -100,7 +100,7 @@ function olua.gen_check_exp(arg, name, i, codeset)
                 idx = idx - 1
             end
             codeset.check_args:pushf([[
-                ${func_check}<${subtype_template_args}>(L, ${argn}, &${argname}, [L](${subtype_decl_args}) {
+                ${func_check}<${subtype_template_args}>(L, ${argn}, ${argname}, [L](${subtype_decl_args}) {
                     ${subtype_check_exp}
                 });
             ]])
@@ -121,8 +121,8 @@ function olua.gen_check_exp(arg, name, i, codeset)
 
     codeset.check_args = check_args
 
-    if arg.attr.pack and arg.type.num_vars then
-        codeset.idx = codeset.idx + arg.type.num_vars - 1
+    if arg.attr.pack then
+        codeset.idx = codeset.idx + arg.type.packvars - 1
     end
 end
 
@@ -184,7 +184,7 @@ function olua.gen_push_exp(arg, name, codeset)
                 end
             end
             codeset.push_args:pushf([[
-                ${func_push}<${subtype_template_args}>(L, &${argname}, [L](${subtype_decl_args}) {
+                ${func_push}<${subtype_template_args}>(L, ${argname}, [L](${subtype_decl_args}) {
                     ${subtype_push_exp}
                 });
             ]])
@@ -273,7 +273,6 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
     else
         error('no support addref flag: ' .. ref_mode)
     end
-
 end
 
 function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
@@ -601,7 +600,7 @@ local function gen_test_and_call(cls, fns)
 
                 argn = argn + 1
 
-                max_vars = math.max(ai.type.num_vars or 1, max_vars)
+                max_vars = math.max(ai.type.packvars or 1, max_vars)
 
                 if ai.attr.nullable then
                     test_nil = ' ' .. format('|| olua_isnil(L, ${argn})')
@@ -623,8 +622,8 @@ local function gen_test_and_call(cls, fns)
                     ]])
                 end
 
-                if ai.attr.pack and ai.type.num_vars then
-                    argn = argn + ai.type.num_vars - 1
+                if ai.attr.pack then
+                    argn = argn + ai.type.packvars - 1
                 end
 
                 ::continue::
@@ -679,17 +678,9 @@ local function gen_multi_func(cls, funcs, write)
     local subone = funcs[1].static and "" or " - 1"
     local ifblock = olua.newarray('\n\n')
 
-    local pack_fi
-
     for i, fi in ipairs(funcs) do
         gen_one_func(cls, fi, write, '$' .. fi.index)
         write('')
-        for _, arg in ipairs(fi.args) do
-            if arg.attr.pack and not arg.type.num_vars then
-                pack_fi = fi
-                break
-            end
-        end
     end
 
     for i = 0, funcs.max_args do
@@ -702,15 +693,6 @@ local function gen_multi_func(cls, funcs, write)
                 }
             ]])
         end
-    end
-
-    if pack_fi then
-        ifblock:pushf([[
-            if (num_args > 0) {
-                // ${pack_fi.funcdesc}
-                return _${cls.cppcls#}_${pack_fi.cppfunc}$${pack_fi.index}(L);
-            }
-        ]])
     end
 
     write(format([[
@@ -849,7 +831,7 @@ end
 
 function olua.gen_pack_header(module, write)
     for _, cls in ipairs(module.class_types) do
-        if cls.packable then
+        if cls.packable and not cls.packvars then
             local macro = cls.macros['*']
             write(macro)
             write(format([[
@@ -866,7 +848,7 @@ end
 
 function olua.gen_pack_source(module, write)
     for _, cls in ipairs(module.class_types) do
-        if cls.packable then
+        if cls.packable and not cls.packvars then
             local macro = cls.macros['*']
             write(macro)
             gen_pack_func(cls, write)

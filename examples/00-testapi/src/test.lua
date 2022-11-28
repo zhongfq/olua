@@ -75,3 +75,11 @@ assert(olua.enum(Type.RVALUE) == 1)
 obj.type = Type.POINTER
 assert(obj.type == Type.POINTER)
 assert(olua.enum(obj.type) == 2)
+
+-- test vector int
+local VectorInt = require "example.VectorInt"
+local vect = VectorInt.new(4)
+obj:checkVectorInt(vect)
+vect = vect.value
+assert(vect[1] == 1)
+assert(vect[2] == 2)

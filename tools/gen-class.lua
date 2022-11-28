@@ -40,7 +40,7 @@ local function check_meta_method(cls)
                 return 1;
             }]])))
         end
-        if cls.packable then
+        if cls.packable and not cls.packvars then
             local codeset = {decl_args = olua.newarray(), check_args = olua.newarray()}
             olua.gen_class_fill(cls, 2, 'ret', codeset)
 

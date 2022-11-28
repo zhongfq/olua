@@ -140,7 +140,7 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
 
     if not has_flag(flag, kFLAG_CONST) and has_flag(flag, kFLAG_LVALUE) then
         local pti = olua.typeinfo(cpptype:gsub('&+$', '*'), cls, false)
-        if pti.luacls then
+        if pti and pti.luacls then
             ti = pti
             ti.flag = ti.flag | kFLAG_CAST
             return ti
@@ -192,6 +192,16 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
         if tti then
             ti = setmetatable({}, {__index = tti})
             ti.flag = flag
+        end
+        if olua.has_pointer_flag(ti) and not ti.luacls then
+            if throwerror then
+                local decltype = olua.decltype(ti, true)
+                olua.error([[
+                    convertor not found: '${decltype}'
+                ]])
+            else
+                return nil
+            end
         end
     end
     
@@ -441,9 +451,9 @@ function parse_args(cls, declstr)
             }
         end
 
-        local num_vars = args[#args].type.num_vars or 1
-        if attr.pack and num_vars > 0 then
-            count = count + olua.assert(num_vars, args[#args].type.cppcls)
+        local packvars = args[#args].type.packvars or 1
+        if attr.pack and packvars > 0 then
+            count = count + olua.assert(packvars, args[#args].type.cppcls)
         else
             count = count + 1
         end
@@ -500,9 +510,9 @@ local function gen_func_pack(cls, fi, funcs)
                 assert(not packarg, 'too many pack args')
                 packarg = fi.args[i]
                 newfi.args[i].attr.pack = false
-                local num_vars = packarg.type.num_vars
-                if num_vars and num_vars > 1 then
-                    newfi.max_args = newfi.max_args + 1 - num_vars
+                local packvars = packarg.type.packvars
+                if packvars and packvars > 1 then
+                    newfi.max_args = newfi.max_args + 1 - packvars
                 end
             end
         end
@@ -740,7 +750,7 @@ function olua.typedef(typeinfo)
         ti.cppcls = tn
         typeinfo_map[tn] = ti
 
-        local rawtn = tn:gsub('<.*>', '')
+        local rawtn = tn:gsub('<.*>[ *]*', '')
         if tn:find('<') and not typeinfo_map[rawtn]  then
             typeinfo_map[rawtn] = {
                 cppcls = rawtn,
@@ -777,6 +787,10 @@ local function typeconf(...)
 
     function CMD.packable(packable)
         cls.packable = packable
+    end
+
+    function CMD.packvars(packvars)
+        cls.packvars = packvars
     end
 
     function CMD.reg_luatype(reg_luatype)
