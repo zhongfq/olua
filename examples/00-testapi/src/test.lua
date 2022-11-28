@@ -78,8 +78,16 @@ assert(olua.enum(obj.type) == 2)
 
 -- test vector int
 local VectorInt = require "example.VectorInt"
-local vect = VectorInt.new(4)
+local vect = VectorInt.new()
 obj:checkVectorInt(vect)
 vect = vect.value
 assert(vect[1] == 1)
 assert(vect[2] == 2)
+
+-- test vector point
+local VectorPoint = require "example.VectorPoint"
+local vectP = VectorPoint.new()
+obj:checkVectorPoint(vectP)
+vectP = vectP.value
+assert(vectP[1].x == 10)
+assert(vectP[2].y == 100)

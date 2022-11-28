@@ -62,6 +62,7 @@ typedef Hello HelloAlias;
 typedef Point Vec2;
 
 typedef olua::pointer<std::vector<int>> VectorInt;
+typedef olua::pointer<std::vector<Point>> VectorPoint;
 
 class Hello : public ExportParent {
 public:
@@ -141,6 +142,11 @@ public:
     void checkVectorInt(std::vector<int> &v) {
         v.push_back(1);
         v.push_back(2);
+    }
+    
+    void checkVectorPoint(std::vector<Point> &v) {
+        v.push_back(Point(10, 10));
+        v.push_back(Point(10, 100));
     }
 
     void run(Hello *obj, ...) {}

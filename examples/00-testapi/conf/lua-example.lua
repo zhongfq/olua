@@ -12,6 +12,7 @@ excludetype 'example::ExcludeType'
 import "../common/lua-object.lua"
 
 typeconf 'example::VectorInt'
+typeconf 'example::VectorPoint'
 
 typeconf 'example::ClickCallback'
 typeconf 'example::Type'

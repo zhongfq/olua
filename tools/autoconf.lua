@@ -875,9 +875,9 @@ function M:visit(cur, cppcls)
             local specialized = decl.specializedTemplate
             if specialized then
                 --[[
-                    typedef olua::pointer<int> olua_int;
+                    typedef olua::span<int> olua_int;
 
-                    specialized: olua::pointer<int>
+                    specialized: olua::span<int>
                          cppcls: olua_int
                       packedcls: int
                 ]]
@@ -888,13 +888,15 @@ function M:visit(cur, cppcls)
                 local specializedcls = parse_from_type(cur.underlyingType)
                 self:visit_class(cppcls, specialized, arg_types, specializedcls)
                 
-                if specializedcls:find('^olua::pointer') then
+                if specializedcls:find('^olua::span')
+                    or specializedcls:find('^olua::pointer')
+                then
                     local typedef = self.CMD.typedef
                     local packedcls = specializedcls:match('<(.*)>') .. ' *'
                     type_convs:push_if_not_exist(packedcls, true)
                     typedef(packedcls)
                         .luacls(self.luacls(cppcls))
-                        .conv('olua_$$_pointer')
+                        .conv(specializedcls:match('^olua::[^<]+'):gsub('::', '_$$_'))
                 end
             else
                 self:visit(decl, cppcls)
@@ -1535,7 +1537,7 @@ local function check_errors()
             you should do one of:
                 * if has the type convertor, use typedef 'NotFoundType'
                 * if type not wanted, use ".exclude 'MethodName'"
-                * if type you wanted, try 'olua::pointer'
+                * if type you wanted, try 'olua::span' or 'olua::pointer'
             more debug info set 'OLUA_VERBOSE = true'
         ]])
     end
