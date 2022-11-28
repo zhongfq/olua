@@ -693,8 +693,8 @@ function olua.is_pointer_type(ti)
 end
 
 function olua.is_enum_type(cls)
-    local ti = typeinfo_map[cls.cppcls] or typeinfo_map[cls.cppcls .. ' *']
-    return cls.reg_luatype and olua.is_value_type(ti)
+    local ti = typeinfo_map[cls.cppcls]
+    return ti.conv == 'olua_$$_enum'
 end
 
 function olua.is_oluaret(fi)
@@ -707,11 +707,9 @@ function olua.initial_value(ti)
     elseif ti.conv == 'olua_$$_bool' then
         return ' = false'
     elseif ti.conv == 'olua_$$_integer' or ti.conv == 'olua_$$_number' then
-        if ti.luacls then
-            return format(' = (${ti.cppcls})0', nil, true), nil
-        else
-            return ' = 0'
-        end
+        return ' = 0'
+    elseif ti.conv == 'olua_$$_enum' then
+        return format(' = (${ti.cppcls})0', nil, true), nil
     else
         return ''
     end
@@ -723,6 +721,7 @@ local valuetype = {
     ['olua_$$_callback'] = true,
     ['olua_$$_integer'] = true,
     ['olua_$$_number'] = true,
+    ['olua_$$_enum'] = true,
 }
 
 -- enum has cpp cls, but declared as lua_Unsigned

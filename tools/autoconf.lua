@@ -218,13 +218,18 @@ local function parse_from_type(type, template_types, try_underlying, level, will
 end
 
 local function check_alias_typename(tn, underlying)
-    local rawtn = raw_typename(tn, KEEP_POINTER)
-    local raw_underlying = raw_typename(underlying, KEEP_POINTER)
-    local has_conv = type_convs:has(raw_underlying)
-    local has_ti = olua.typeinfo(raw_underlying, nil, false)
-    if rawtn == raw_underlying then
+    local rawtn = raw_typename(tn)
+    local rawptn = raw_typename(tn, KEEP_POINTER)
+    local raw_underlying = raw_typename(underlying)
+    local rawp_underlying = raw_typename(underlying, KEEP_POINTER)
+    local has_ti = olua.typeinfo(rawp_underlying, nil, false)
+
+    if rawptn == rawp_underlying then
         return tn, false
-    elseif has_conv then
+    elseif type_convs:has(rawp_underlying) then
+        alias_types:replace(rawptn, rawp_underlying)
+        return tn, true
+    elseif type_convs:has(raw_underlying) then
         alias_types:replace(rawtn, raw_underlying)
         return tn, true
     elseif has_ti and not is_templdate_type(underlying) then
@@ -244,13 +249,10 @@ local function check_alias_typename(tn, underlying)
                 alias_types:replace(const_rawtn, const_raw_underlying)
             end
         end
-        alias_types:replace(rawtn, raw_underlying)
+        alias_types:replace(rawptn, rawp_underlying)
         return tn, true
     elseif has_ti then
         return underlying, true
-    elseif type_convs:has(raw_typename(underlying)) then
-        alias_types:replace(raw_typename(tn), raw_typename(underlying))
-        return tn, true
     else
         return tn, false
     end
@@ -269,14 +271,24 @@ local function get_pointee_type(type)
 end
 
 function typename(type, template_types, level, willcheck)
+     --[[
+            tn: const uint32_t *
+         rawtn: uint32_t
+        rawptn: uint32_t *
+    ]]
+    
     local tn = parse_from_type(type, template_types, false, level, willcheck)
     local rawtn = raw_typename(tn)
+    local rawptn = raw_typename(tn, KEEP_POINTER)
 
-    if exclude_types:has(rawtn) then
+    if exclude_types:has(rawtn) or exclude_types:has(rawptn) then
         return tn
     end
 
-    if not type_convs:has(rawtn) and not olua.typeinfo(rawtn, nil, false) then
+    if not type_convs:has(rawtn)
+        and not type_convs:has(rawptn)
+        and not olua.typeinfo(rawtn, nil, false)
+    then
         --[[
             typedef std::function<void()> ClickEvent;
               -- type: ClickEvent
@@ -312,7 +324,12 @@ end
 
 local function is_excluded_typename(name)
     local rawtn = raw_typename(name):match('[^ ]+$')
-    return exclude_types:has(rawtn)
+    if exclude_types:has(rawtn) then
+        return true
+    end
+    if name:find('%*%*$') then
+        return true
+    end
 end
 
 local function is_excluded_type(type)
@@ -452,10 +469,7 @@ local M = {}
 
 function M:parse()
     assert(not self.class_file)
-    assert(not self.type_file)
-    local filename = self.name:gsub('_', '-')
-    self.class_file = format('autobuild/autogen-${filename}.lua')
-    self.type_file = format('autobuild/autogen-${filename}-types.lua')
+    self.class_file = format('autobuild/${self.filename}.olua')
 
     module_files:push(self)
 
@@ -970,68 +984,6 @@ local function write_module_metadata(module, append)
     append('')
 end
 
-local function write_module_typedef(module)
-    local t = olua.newarray('\n')
-
-    local function writeLine(fmt, ...)
-        t:push(string.format(fmt, ...))
-    end
-
-    writeLine("-- AUTO BUILD, DON'T MODIFY!")
-    writeLine('')
-    for _, td in ipairs(module.typedef_types) do
-        t:pushf([[
-            typedef {
-                cppcls = '${td.cppcls}',
-                luacls = ${td.luacls??},
-                conv = '${td.conv}',
-                packable = ${td.packable??},
-                num_vars = ${td.num_vars??},
-                smartptr = ${td.smartptr??},
-            }
-        ]])
-        t:push('')
-    end
-
-    for _, cls in ipairs(module.class_types) do
-        if cls.maincls then
-            goto continue
-        end
-
-        local cppcls = cls.cppcls
-        local conv, declfunc, num_vars
-        if has_type_flag(cls, kFLAG_FUNC) then
-            declfunc = cls.underlying
-            conv = 'olua_$$_callback'
-        elseif has_type_flag(cls, kFLAG_ENUM) then
-            conv = 'olua_$$_integer'
-        elseif has_type_flag(cls, kFLAG_POINTER) then
-            conv = 'olua_$$_object'
-            if cls.packable then
-                num_vars = #cls.vars
-            end
-        else
-            error(cls.cppcls .. ' ' .. cls.kind)
-        end
-
-        t:pushf([[
-            typedef {
-                cppcls = '${cppcls}',
-                luacls = ${cls.luacls??},
-                supercls = ${cls.supercls??},
-                declfunc = ${declfunc??},
-                conv = '${conv}',
-                packable = ${cls.packable??},
-                num_vars = ${num_vars??},
-            }
-        ]])
-
-        ::continue::
-    end
-
-    olua.write(module.type_file, tostring(t))
-end
-
 local function is_new_func(module, supercls, func)
     if not supercls or func.static then
         return true
@@ -1360,16 +1312,11 @@ local function write_module(module)
         t:push(str)
     end
 
-    append(format([[
-        -- AUTO BUILD, DON'T MODIFY!
-
-        dofile "${module.type_file}"
-    ]]))
+    append([[-- AUTO BUILD, DON'T MODIFY!]])
     append('')
 
     write_module_metadata(module, append)
     write_module_classes(module, append)
-    write_module_typedef(module)
 
     olua.write(module.class_file, tostring(t))
 end
@@ -1725,22 +1672,84 @@ local function write_ignored_types()
     end
 end
 
-local function write_alias_types()
-    local types = olua.newarray('\n')
+local function write_typedefs()
+    local types = olua.newarray()
+    local typedefs = olua.newarray('\n')
+
+    typedefs:push("-- AUTO BUILD, DON'T MODIFY!\n")
+
+    for _, m in ipairs(deferred.modules) do
+        for _, td in ipairs(m.typedef_types) do
+            typedefs:pushf([[
+                typedef {
+                    from = 'module: ${m.filename}.lua -> typedef "${td.cppcls}"',
+                    cppcls = '${td.cppcls}',
+                    luacls = ${td.luacls??},
+                    conv = '${td.conv}',
+                    packable = ${td.packable??},
+                    num_vars = ${td.num_vars??},
+                    smartptr = ${td.smartptr??},
+                }
+            ]])
+            typedefs:push('')
+        end
+
+        for _, cls in ipairs(m.class_types) do
+            if cls.maincls then
+                goto continue
+            end
+
+            local cppcls = cls.cppcls
+            local conv, declfunc, num_vars
+            if has_type_flag(cls, kFLAG_FUNC) then
+                declfunc = cls.underlying
+                conv = 'olua_$$_callback'
+            elseif has_type_flag(cls, kFLAG_ENUM) then
+                conv = 'olua_$$_enum'
+            elseif has_type_flag(cls, kFLAG_POINTER) then
+                conv = 'olua_$$_object'
+                if cls.packable then
+                    num_vars = #cls.vars
+                end
+            else
+                error(cls.cppcls .. ' ' .. cls.kind)
+            end
+
+            typedefs:pushf([[
+                typedef {
+                    from = 'module: ${m.filename}.lua -> typedef "${cppcls}"',
+                    cppcls = '${cppcls}',
+                    luacls = ${cls.luacls??},
+                    supercls = ${cls.supercls??},
+                    declfunc = ${declfunc??},
+                    conv = '${conv}',
+                    packable = ${cls.packable??},
+                    num_vars = ${num_vars??},
+                }
+            ]])
+            typedefs:push('')
+
+            ::continue::
+        end
+    end
+
     for alias, cppcls in pairs(alias_types) do
         if visited_types:get(raw_typename(alias)) then
             goto continue
         end
         local cls = visited_types:get(raw_typename(cppcls))
+        local from = "alias: ${alias} -> ${cppcls}"
         if not cls then
             local ti = olua.typeinfo(cppcls)
             types:push({
+                from = from,
                 cppcls = alias,
                 conv = ti.conv,
                 luacls = ti.luacls,
             })
         elseif has_type_flag(cls, kFLAG_FUNC) then
             types:push({
+                from = from,
                 cppcls = alias,
                 luacls = cls.luacls,
                 declfunc = cls.underlying,
@@ -1748,8 +1757,9 @@ local function write_alias_types()
             })
         elseif has_type_flag(cls, kFLAG_ENUM) then
             types:push({
+                from = from,
                 cppcls = alias,
-                conv = 'olua_$$_integer',
+                conv = 'olua_$$_enum',
             })
         else
             olua.assert(has_type_flag(cls, kFLAG_POINTER), [[
@@ -1761,6 +1771,7 @@ local function write_alias_types()
                 num_vars = #cls.vars
             end
             types:push({
+                from = from,
                 cppcls = alias,
                 luacls = cls.luacls,
                 num_vars = num_vars,
@@ -1770,10 +1781,11 @@ local function write_alias_types()
         end
         ::continue::
     end
-    local typedefs = olua.newarray('\n')
+    
     for i, v in ipairs(olua.sort(types, 'cppcls')) do
         typedefs:pushf([[
             typedef {
+                from = '${v.from}',
                 cppcls = '${v.cppcls}',
                 conv = '${v.conv}',
                 luacls = ${v.luacls??},
@@ -1785,23 +1797,18 @@ local function write_alias_types()
         typedefs:push('')
     end
 
-    olua.write('autobuild/alias-types.lua', format([[
-        ${typedefs}
-    ]]))
+    olua.write('autobuild/typedefs.olua', table.concat(typedefs, '\n'))
 end
 
 local function write_makefile()
     local class_files = olua.newarray('\n')
-    local type_files = olua.newarray('\n')
-    type_files:push('dofile "autobuild/alias-types.lua"')
     for _, v in ipairs(module_files) do
         class_files:pushf('export "${v.class_file}"')
-        type_files:pushf('dofile "${v.type_file}"')
     end
     olua.write('autobuild/make.lua', format([[
         require "olua.tools"
 
-        ${type_files}
+        dofile "autobuild/typedefs.olua"
 
         ${class_files}
     ]]))
@@ -1810,7 +1817,7 @@ end
 local function deferred_autoconf()
     parse_modules()
     write_ignored_types()
-    write_alias_types()
+    write_typedefs()
     write_makefile()
 
     exclude_types = nil
@@ -2088,7 +2095,6 @@ function M.__call(_, path)
     add_value_command(CMD, 'luacls', module, nil, checkfunc)
 
     function CMD.excludetype(tn)
-        olua.assert(not tn:find('[&*]'), "invalid typename '${tn}'")
         tn = olua.pretty_typename(tn)
         exclude_types:replace(tn, true)
     end
@@ -2199,6 +2205,7 @@ function M.__call(_, path)
     })))()
 
     if module and module.name then
+        module.filename = path:match('([^/\\]+).lua$')
         deferred.modules:push(module.name, module, "(module name)")
     end
 end

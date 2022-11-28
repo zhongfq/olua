@@ -204,14 +204,17 @@ local function gen_class_open(cls, write)
                 value = value .. '.c_str()'
             end
         else
-            error(ci.type.cppcls)
+            -- print('cppcs', cls.cppcls, ci.name)
+            -- error(ci.type.cppcls)
         end
-        funcs:pushf('${const_func}(L, "${ci.name}", (${cast})${value});')
+        if const_func then
+            funcs:pushf('${const_func}(L, "${ci.name}", (${cast})${value});')
+        end
     end
 
     olua.sort(cls.enums, 'name')
     for _, ei in ipairs(cls.enums) do
-        funcs:pushf('oluacls_const_integer(L, "${ei.name}", (lua_Integer)${ei.value});')
+        funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
     if cls.reg_luatype then
@@ -258,7 +261,7 @@ function olua.gen_header(module)
             arr:push(value:gsub('\n *#', '\n#'))
         end
     end
-
+    
     local HEADER = string.upper(module.name)
     local headers = module.headers
     if not has_packable_class(module) then

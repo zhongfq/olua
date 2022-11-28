@@ -9,6 +9,7 @@ new_globals = {
     "OLUA_VERBOSE",
     "autoconf",
     "chunk",
+    "name",
     "clang",
     "dofile",
     "excludetype",

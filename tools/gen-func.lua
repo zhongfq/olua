@@ -37,7 +37,13 @@ function olua.gen_check_exp(arg, name, i, codeset)
     local check_args = codeset.check_args
     codeset.check_args = olua.newarray()
     if arg.attr.pack then
-        olua.assert(arg.type.packable, [['${arg.type.cppcls}' is not a packable type]])
+        olua.assert(arg.type.packable, [[
+            '${arg.type.cppcls}' is not a packable type
+            you should do one of:
+                * remove '@pack' or '@unpack'
+                * typeconf '${arg.type.cppcls}'
+                      .packable 'true'
+        ]])
         codeset.check_args:pushf([[
             ${func_check}(L, ${argn}, &${argname});
         ]])
@@ -126,7 +132,13 @@ function olua.gen_push_exp(arg, name, codeset)
     local func_copy = olua.conv_func(arg.type, 'pushcopy')
 
     if arg.attr.unpack then
-        olua.assert(arg.type.packable, [['${arg.type.cppcls}' is not a packable type]])
+        olua.assert(arg.type.packable, [[
+            '${arg.type.cppcls}' is not a packable type
+            you should do one of:
+                * remove '@pack' or '@unpack'
+                * typeconf '${arg.type.cppcls}'
+                      .packable 'true'
+        ]])
         codeset.push_args:pushf('${func_push}(L, &${argname});')
     elseif olua.is_pointer_type(arg.type) then
         if olua.has_cast_flag(arg.type) then

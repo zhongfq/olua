@@ -18,7 +18,7 @@ struct ExcludeType {
 };
 
 enum class Type {
-    VALUE, POINTEE
+    LVALUE, RVALUE, POINTER
 };
 
 class Point {
@@ -81,8 +81,8 @@ public:
     const char *getCName() const {return _name.c_str();}
     void setCName(const char *value) {_name = value;}
 
-    void setType(Type t) {}
-    Type getType() {return Type::VALUE;}
+    void setType(Type t) {_type = t;}
+    Type getType() {return _type;}
 
     void setGLvoid(GLvoid *) {}
     GLvoid *getGLvoid() { return NULL;}
@@ -164,6 +164,7 @@ private:
     int _id = 0;
     void *_ptr = nullptr;
     Point _p;
+    Type _type = Type::POINTER;
 };
 
 }

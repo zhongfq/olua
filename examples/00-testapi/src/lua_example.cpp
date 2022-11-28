@@ -175,8 +175,9 @@ OLUA_LIB int luaopen_example_Type(lua_State *L)
     oluacls_class(L, "example.Type", nullptr);
     oluacls_func(L, "__index", olua_indexerror);
     oluacls_func(L, "__newindex", olua_newindexerror);
-    oluacls_const_integer(L, "POINTEE", (lua_Integer)example::Type::POINTEE);
-    oluacls_const_integer(L, "VALUE", (lua_Integer)example::Type::VALUE);
+    oluacls_enum(L, "LVALUE", (lua_Integer)example::Type::LVALUE);
+    oluacls_enum(L, "POINTER", (lua_Integer)example::Type::POINTER);
+    oluacls_enum(L, "RVALUE", (lua_Integer)example::Type::RVALUE);
 
     olua_registerluatype<example::Type>(L, "example.Type");
 
@@ -762,7 +763,7 @@ static int _example_Hello_getType(lua_State *L)
 
     // example::Type getType()
     example::Type ret = self->getType();
-    int num_ret = olua_push_integer(L, ret);
+    int num_ret = olua_push_enum(L, ret);
 
     olua_endinvoke(L);
 
@@ -2063,7 +2064,7 @@ static int _example_Hello_setType(lua_State *L)
     example::Type arg1 = (example::Type)0;       /** t */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_integer(L, 2, &arg1);
+    olua_check_enum(L, 2, &arg1);
 
     // void setType(example::Type t)
     self->setType(arg1);

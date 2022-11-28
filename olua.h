@@ -323,6 +323,7 @@ OLUA_API void olua_visitrefs(lua_State *L, int idx, const char *name, olua_RefVi
 OLUA_API void oluacls_class(lua_State *L, const char *cls, const char *supercls);
 OLUA_API void oluacls_prop(lua_State *L, const char *name, lua_CFunction getter, lua_CFunction setter);
 OLUA_API void oluacls_func(lua_State *L, const char *name, lua_CFunction func);
+OLUA_API void oluacls_enum(lua_State *L, const char *name, lua_Integer value);
 OLUA_API void oluacls_const(lua_State *L, const char *name);
 #define oluacls_const_value(L, k, v)    (lua_pushvalue(L, (v)), oluacls_const(L, (k)))
 #define oluacls_const_bool(L, k, v)     (olua_pushbool(L, (v)), oluacls_const(L, (k)))
@@ -720,7 +721,9 @@ using remove_cvr_t = std::remove_cv_t<std::remove_reference_t<T>>;
 template <class T>
 using remove_cvrp_t = std::remove_pointer_t<olua::remove_cvr_t<T>>;
 template <class T>
-using is_integral = std::bool_constant<std::is_integral<remove_cvr_t<T>>::value || std::is_enum<remove_cvr_t<T>>::value>;
+using is_integral = std::bool_constant<std::is_integral<remove_cvr_t<T>>::value>;
+template <class T>
+using is_enum = std::bool_constant<std::is_enum<remove_cvr_t<T>>::value>;
 template <class T>
 using is_floating = std::bool_constant<std::is_floating_point<remove_cvr_t<T>>::value>;
 template <class T>
@@ -830,6 +833,24 @@ int olua_push_string<std::string_view>(lua_State *L, const std::string_view &val
     return 1;
 }
 #endif
+
+// enum
+static inline
+bool olua_is_enum(lua_State *L, int idx) {
+    return olua_islightuserdata(L, idx);
+}
+
+template <class T, std::enable_if_t<olua::is_enum<T>::value, bool> = true> inline
+void olua_check_enum(lua_State *L, int idx, T *value) {
+    luaL_checktype(L, idx, LUA_TLIGHTUSERDATA);
+    *value = (T)(intptr_t)lua_touserdata(L, idx);
+}
+
+template <class T, std::enable_if_t<olua::is_enum<T>::value, bool> = true> inline
+int olua_push_enum(lua_State *L, T value) {
+    lua_pushlightuserdata(L, (void *)(intptr_t)value);
+    return 1;
+}
 
 // object
 static inline
@@ -1222,7 +1243,7 @@ int olua_pushobj(lua_State *L, const olua::pointer<T> *value, const char *cls) {
 
 template <class T> inline
 int olua_pushobj(lua_State *L, const olua::pointer<T> *value) {
-    static_assert(false, "push olua::pointer object must specify the lua class");
+    static_assert(sizeof(T) == 0, "push olua::pointer object must specify the lua class");
     return 0;
 }
 

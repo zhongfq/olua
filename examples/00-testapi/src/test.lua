@@ -67,3 +67,11 @@ local result_len = olua.size_t.new()
 obj:read(result, result_len)
 assert(result:tostring(11) == 'hello read!')
 assert(result_len.value == 11)
+
+-- test enum
+local Type = require "example.Type"
+assert(olua.enum(0) == Type.LVALUE)
+assert(olua.enum(Type.RVALUE) == 1)
+obj.type = Type.POINTER
+assert(obj.type == Type.POINTER)
+assert(olua.enum(obj.type) == 2)

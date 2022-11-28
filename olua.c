@@ -1219,6 +1219,12 @@ OLUA_API void oluacls_func(lua_State *L, const char *name, lua_CFunction func)
     aux_setfunc(L, OLUA_CKEY_FUNC, name, func, 0);
 }
 
+OLUA_API void oluacls_enum(lua_State *L, const char *name, lua_Integer value)
+{
+    lua_pushlightuserdata(L, (void *)(intptr_t)value);
+    oluacls_const(L, name);
+}
+
 OLUA_API void oluacls_const(lua_State *L, const char *name)
 {
     int t = lua_type(L, -1);
@@ -1436,6 +1442,18 @@ static int l_class(lua_State *L)
     return 1;
 }
 
+static int l_enum(lua_State *L)
+{
+    if (lua_isinteger(L, 1)) {
+        lua_pushlightuserdata(L, (void *)(intptr_t)olua_tointeger(L, 1));
+    } else if (lua_islightuserdata(L, 1)) {
+        lua_pushinteger(L, (lua_Integer)(intptr_t)lua_touserdata(L, 1));
+    } else {
+        luaL_error(L, "expect integer or lightuserdata");
+    }
+    return 1;
+}
+
 static int l_setmetatable(lua_State *L)
 {
     luaL_checktype(L, 1, LUA_TUSERDATA);
@@ -1488,6 +1506,7 @@ OLUA_API int luaopen_olua(lua_State *L)
         {"move", l_move},
         {"debug", l_debug},
         {"class", l_class},
+        {"enum", l_enum},
         {"iscfunc", l_iscfunc},
         {"setmetatable", l_setmetatable},
         {"getmetatable", l_getmetatable},
