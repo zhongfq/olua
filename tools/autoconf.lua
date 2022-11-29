@@ -755,7 +755,9 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
                 cls.excludes:replace(c.displayName, true)
             end
             if kind == CursorKind.Destructor then
-                cls.options.disable_gc = true
+                cls.options.disallow_gc = true
+            elseif c.name == 'operator=' then
+                cls.options.disallow_assign = true
             end
             goto continue
         elseif kind == CursorKind.TemplateTypeParameter then

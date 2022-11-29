@@ -25,7 +25,7 @@ local function check_meta_method(cls)
             return 1;
         }]])))
     elseif not olua.is_enum_type(cls) and cls.options.reg_luatype then
-        if not cls.options.disable_gc and not has_method(cls, '__gc', true) then
+        if not cls.options.disallow_gc and not has_method(cls, '__gc', true) then
             cls.funcs:push(olua.parse_func(cls, '__gc', format([[
             {
                 olua_postgc<${cls.cppcls}>(L, 1);
