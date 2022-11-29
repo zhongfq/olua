@@ -2365,49 +2365,91 @@ static int _example_Hello_testPointerTypes(lua_State *L)
     olua_uchar_t *arg2 = nullptr;       /**  */
     short *arg3 = nullptr;       /**  */
     short *arg4 = nullptr;       /**  */
-    unsigned short *arg5 = nullptr;       /**  */
+    std::vector<short> arg5;       /**  */
     unsigned short *arg6 = nullptr;       /**  */
-    int *arg7 = nullptr;       /**  */
-    int *arg8 = nullptr;       /**  */
-    unsigned int *arg9 = nullptr;       /**  */
-    unsigned int *arg10 = nullptr;       /**  */
-    long *arg11 = nullptr;       /**  */
-    long *arg12 = nullptr;       /**  */
-    unsigned long *arg13 = nullptr;       /**  */
-    unsigned long *arg14 = nullptr;       /**  */
-    long long *arg15 = nullptr;       /**  */
-    long long *arg16 = nullptr;       /**  */
-    unsigned long long *arg17 = nullptr;       /**  */
-    unsigned long long *arg18 = nullptr;       /**  */
-    float *arg19 = nullptr;       /**  */
-    double *arg20 = nullptr;       /**  */
-    long double *arg21 = nullptr;       /**  */
+    unsigned short *arg7 = nullptr;       /**  */
+    std::vector<unsigned short> arg8;       /**  */
+    int *arg9 = nullptr;       /**  */
+    int *arg10 = nullptr;       /**  */
+    std::vector<int> *arg11 = nullptr;       /**  */
+    unsigned int *arg12 = nullptr;       /**  */
+    unsigned int *arg13 = nullptr;       /**  */
+    std::vector<unsigned int> arg14;       /**  */
+    long *arg15 = nullptr;       /**  */
+    long *arg16 = nullptr;       /**  */
+    std::vector<long> arg17;       /**  */
+    unsigned long *arg18 = nullptr;       /**  */
+    unsigned long *arg19 = nullptr;       /**  */
+    std::vector<unsigned long> arg20;       /**  */
+    long long *arg21 = nullptr;       /**  */
+    long long *arg22 = nullptr;       /**  */
+    std::vector<long long> arg23;       /**  */
+    unsigned long long *arg24 = nullptr;       /**  */
+    unsigned long long *arg25 = nullptr;       /**  */
+    std::vector<unsigned long long> arg26;       /**  */
+    float *arg27 = nullptr;       /**  */
+    std::vector<float> arg28;       /**  */
+    double *arg29 = nullptr;       /**  */
+    std::vector<double> arg30;       /**  */
+    long double *arg31 = nullptr;       /**  */
+    std::vector<long double> arg32;       /**  */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_span(L, 2, &arg1, "olua.char");
     olua_check_span(L, 3, &arg2, "olua.uchar");
     olua_check_span(L, 4, &arg3, "olua.short");
     olua_check_span(L, 5, &arg4, "olua.short");
-    olua_check_span(L, 6, &arg5, "olua.ushort");
+    olua_check_array<short>(L, 6, arg5, [L](short *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
     olua_check_span(L, 7, &arg6, "olua.ushort");
-    olua_check_span(L, 8, &arg7, "olua.int");
-    olua_check_span(L, 9, &arg8, "olua.int");
-    olua_check_span(L, 10, &arg9, "olua.uint");
-    olua_check_span(L, 11, &arg10, "olua.uint");
-    olua_check_span(L, 12, &arg11, "olua.long");
-    olua_check_span(L, 13, &arg12, "olua.long");
-    olua_check_span(L, 14, &arg13, "olua.ulong");
-    olua_check_span(L, 15, &arg14, "olua.ulong");
-    olua_check_span(L, 16, &arg15, "olua.llong");
-    olua_check_span(L, 17, &arg16, "olua.llong");
-    olua_check_span(L, 18, &arg17, "olua.ullong");
-    olua_check_span(L, 19, &arg18, "olua.ullong");
-    olua_check_span(L, 20, &arg19, "olua.float");
-    olua_check_span(L, 21, &arg20, "olua.double");
-    olua_check_span(L, 22, &arg21, "olua.ldouble");
+    olua_check_span(L, 8, &arg7, "olua.ushort");
+    olua_check_array<unsigned short>(L, 9, arg8, [L](unsigned short *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
+    olua_check_span(L, 10, &arg9, "olua.int");
+    olua_check_span(L, 11, &arg10, "olua.int");
+    olua_check_pointer(L, 12, &arg11, "example.VectorInt");
+    olua_check_span(L, 13, &arg12, "olua.uint");
+    olua_check_span(L, 14, &arg13, "olua.uint");
+    olua_check_array<unsigned int>(L, 15, arg14, [L](unsigned int *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
+    olua_check_span(L, 16, &arg15, "olua.long");
+    olua_check_span(L, 17, &arg16, "olua.long");
+    olua_check_array<long>(L, 18, arg17, [L](long *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
+    olua_check_span(L, 19, &arg18, "olua.ulong");
+    olua_check_span(L, 20, &arg19, "olua.ulong");
+    olua_check_array<unsigned long>(L, 21, arg20, [L](unsigned long *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
+    olua_check_span(L, 22, &arg21, "olua.llong");
+    olua_check_span(L, 23, &arg22, "olua.llong");
+    olua_check_array<long long>(L, 24, arg23, [L](long long *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
+    olua_check_span(L, 25, &arg24, "olua.ullong");
+    olua_check_span(L, 26, &arg25, "olua.ullong");
+    olua_check_array<unsigned long long>(L, 27, arg26, [L](unsigned long long *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
+    olua_check_span(L, 28, &arg27, "olua.float");
+    olua_check_array<float>(L, 29, arg28, [L](float *arg1) {
+        olua_check_number(L, -1, arg1);
+    });
+    olua_check_span(L, 30, &arg29, "olua.double");
+    olua_check_array<double>(L, 31, arg30, [L](double *arg1) {
+        olua_check_number(L, -1, arg1);
+    });
+    olua_check_span(L, 32, &arg31, "olua.ldouble");
+    olua_check_array<long double>(L, 33, arg32, [L](long double *arg1) {
+        olua_check_number(L, -1, arg1);
+    });
 
-    // void testPointerTypes(@type(olua_char_t *) char *, @type(olua_uchar_t *) unsigned char *, short *, short *, unsigned short *, unsigned short *, int *, int *, unsigned int *, unsigned int *, long *, long *, unsigned long *, unsigned long *, long long *, long long *, unsigned long long *, unsigned long long *, float *, double *, long double *)
-    self->testPointerTypes(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21);
+    // void testPointerTypes(@type(olua_char_t *) char *, @type(olua_uchar_t *) unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)
+    self->testPointerTypes(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, *arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31, arg32);
 
     olua_endinvoke(L);
 

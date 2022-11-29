@@ -219,22 +219,7 @@ end
     olua_check_std_vector(L, 2, arg1, "A");
     self->call(arg1);
 ]]
-local function should_add_pointer(ti)
-    return olua.has_pointer_flag(ti) and not olua.is_pointer_type(ti.cppcls)
-end
-
-local function build_decltype(exps, ti, addspace)
-    exps:push(olua.has_const_flag(ti) and 'const ' or nil)
-    exps:push(ti.cppcls)
-    exps:push(olua.has_lvalue_flag(ti) and ' &' or nil)
-    exps:push(olua.has_rvalue_flag(ti) and ' &&' or nil)
-    exps:push(should_add_pointer(ti) and ' *' or nil)
-    if addspace and not olua.has_pointee_flag(ti) then
-        exps:push(' ')
-    end
-end
-
-function olua.decltype(ti, checkvalue, addspace)
+function olua.decltype(ti, checkvalue, addspace, exps)
     if type(ti) == 'string' then
         if addspace and not ti:find('[*&]$') then
             ti = ti .. ' '
@@ -242,18 +227,18 @@ function olua.decltype(ti, checkvalue, addspace)
         return ti
     end
 
-    local exps = olua.newarray('')
+    exps = exps or olua.newarray('')
     if not checkvalue and olua.has_const_flag(ti) then
         exps:push('const ')
     end
     exps:push(ti.cppcls)
     if olua.has_callback_flag(ti) then
         exps:push('<')
-        build_decltype(exps, ti.callback[0], true)
+        olua.decltype(ti.callback[0], false, true, exps)
         exps:push('(')
         for i, ai in ipairs(ti.callback) do
             exps:push(i > 1 and ', ' or nil)
-            build_decltype(exps, ai)
+            olua.decltype(ai, false, false, exps)
         end
         exps:push(')')
         exps:push('>')
@@ -261,7 +246,7 @@ function olua.decltype(ti, checkvalue, addspace)
         exps:push('<')
         for i, subti in ipairs(ti.subtypes) do
             exps:push(i > 1 and ', ' or nil)
-            build_decltype(exps, subti)
+            olua.decltype(subti, false, false, exps)
         end
         exps:push('>')
     end
@@ -269,7 +254,11 @@ function olua.decltype(ti, checkvalue, addspace)
         exps:push(olua.has_lvalue_flag(ti) and ' &' or nil)
         exps:push(olua.has_rvalue_flag(ti) and ' &&' or nil)
     end
-    exps:push(should_add_pointer(ti) and ' *' or nil)
+    if olua.has_pointer_flag(ti)
+        and not olua.is_pointer_type(ti.cppcls)
+    then
+        exps:push(' *')
+    end
     if addspace and not exps[#exps]:find('[*&]$') then
         exps:push(' ')
     end
@@ -745,18 +734,26 @@ end
 
 function olua.typedef(typeinfo)
     for tn in typeinfo.cppcls:gmatch('[^\n\r;]+') do
-        local ti = setmetatable({}, {__index = typeinfo})
         tn = olua.pretty_typename(tn)
-        ti.cppcls = tn
-        typeinfo_map[tn] = ti
+        if #tn > 0 then
+            local previous = typeinfo_map[tn]
+            local ti = setmetatable({}, {__index = typeinfo})
+            ti.cppcls = tn
+            olua.assert(not previous, [[
+                type info conflicted: ${ti.cppcls}
+                    previous: from ${previous.from}
+                    current: from ${typeinfo.from}
+            ]])
+            typeinfo_map[tn] = ti
 
-        local rawtn = tn:gsub('<.*>[ *]*', '')
-        if tn:find('<') and not typeinfo_map[rawtn]  then
-            typeinfo_map[rawtn] = {
-                cppcls = rawtn,
-                luacls = ti.luacls:gsub('<.*>', ''),
-                conv = ti.conv
-            }
+            local rawtn = tn:gsub('<.*>[ *]*', '')
+            if tn:find('<') and not typeinfo_map[rawtn]  then
+                typeinfo_map[rawtn] = {
+                    cppcls = rawtn,
+                    luacls = ti.luacls:gsub('<.*>', ''),
+                    conv = ti.conv
+                }
+            end
         end
     end
 end

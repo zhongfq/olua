@@ -2,11 +2,11 @@ luacls(function (name)
     return name:gsub('olua_', 'olua.')
 end)
 
-typedef 'short;short int *'
+typedef 'short *;short int *'
     .luacls 'olua.short'
     .conv 'olua_$$_span'
 
-typedef 'unsigned short;unsigned short int *'
+typedef 'unsigned short *;unsigned short int *'
     .luacls 'olua.ushort'
     .conv 'olua_$$_span'
 
@@ -18,19 +18,19 @@ typedef 'unsigned *;unsigned int *'
     .luacls 'olua.uint'
     .conv 'olua_$$_span'
 
-typedef 'long;long int *'
+typedef 'long *;long int *'
     .luacls 'olua.long'
     .conv 'olua_$$_span'
 
-typedef 'unsigned long;unsigned long int *'
+typedef 'unsigned long *;unsigned long int *'
     .luacls 'olua.ulong'
     .conv 'olua_$$_span'
 
-typedef 'long long;long long int *'
+typedef 'long long *;long long int *'
     .luacls 'olua.llong'
     .conv 'olua_$$_span'
 
-typedef 'unsigned long long;unsigned long long int *'
+typedef 'unsigned long long *;unsigned long long int *'
     .luacls 'olua.ullong'
     .conv 'olua_$$_span'
 

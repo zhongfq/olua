@@ -1760,7 +1760,7 @@ local function write_typedefs()
 
             typedefs:pushf([[
                 typedef {
-                    from = 'module: ${m.filename}.lua -> typedef "${cppcls}"',
+                    from = 'module: ${m.filename}.lua -> typeconf "${cppcls}"',
                     cppcls = '${cppcls}',
                     luacls = ${cls.luacls??},
                     supercls = ${cls.supercls??},

@@ -161,17 +161,17 @@ public:
     void testPointerTypes(
         OLUA_TYPE(olua_char_t *) char *,
         OLUA_TYPE(olua_uchar_t *) unsigned char *,
-        short *, short int *,
-        unsigned short *, unsigned short int *,
-        signed *, int *,
-        unsigned *, unsigned int *,
-        long *, long int *,
-        unsigned long *, unsigned long int *,
-        long long *, long long int *,
-        unsigned long long *, unsigned long long int *,
-        float *,
-        double *,
-        long double *) {}
+        short *, short int *, std::vector<short> &,
+        unsigned short *, unsigned short int *, std::vector<unsigned short> &,
+        signed *, int *, std::vector<int> &,
+        unsigned *, unsigned int *, std::vector<unsigned int> &,
+        long *, long int *, std::vector<long> &,
+        unsigned long *, unsigned long int *, std::vector<unsigned long> &,
+        long long *, long long int *, std::vector<long long> &,
+        unsigned long long *, unsigned long long int *, std::vector<unsigned long long> &,
+        float *, std::vector<float> &,
+        double *, std::vector<double> &,
+        long double *, std::vector<long double> &) {}
 
 private:
     std::string _name;

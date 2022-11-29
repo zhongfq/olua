@@ -2,32 +2,38 @@ local olua = require "olua"
 local typedef = olua.typedef
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'void',
     conv = '<NONE>',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'olua_Return',
     conv = '<NONE>',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'lua_State',
     conv = 'olua_$$_object',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'void *',
     luacls = 'void *',
     conv = 'olua_$$_object',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'bool',
     conv = 'olua_$$_bool',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = [[
         char *
         const char *
@@ -38,22 +44,26 @@ typedef {
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'std::string',
     conv = 'olua_$$_string',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'std::string_view',
     conv = 'olua_$$_string',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = 'std::function',
     luacls = 'std.function',
     conv = 'olua_$$_callback',
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = [[
         std::unordered_map
         std::map
@@ -62,6 +72,7 @@ typedef {
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = [[
         std::set
         std::vector
@@ -70,6 +81,7 @@ typedef {
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = [[
         std::shared_ptr
         std::weak_ptr
@@ -79,6 +91,7 @@ typedef {
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = [[
         float
         double
@@ -89,6 +102,7 @@ typedef {
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = [[
         intptr_t
         ssize_t
@@ -116,6 +130,7 @@ typedef {
 }
 
 typedef {
+    from = 'olua: basictype',
     cppcls = [[
         uintptr_t
         size_t
