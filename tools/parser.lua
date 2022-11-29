@@ -739,7 +739,7 @@ function olua.typedef(typeinfo)
             local previous = typeinfo_map[tn]
             local ti = setmetatable({}, {__index = typeinfo})
             ti.cppcls = tn
-            olua.assert(not previous, [[
+            olua.assert(ti.replace or not previous, [[
                 type info conflict: ${ti.cppcls}
                     previous: from ${previous.from}
                      current: from ${typeinfo.from}
@@ -769,10 +769,15 @@ local function typeconf(...)
         vars = olua.newarray(),
         macros = {},
         prototypes = {},
+        options = {},
         parsed_funcs = olua.newhash(),
     }
 
     class_map[cls.cppcls] = cls
+
+    function CMD.option(key, value)
+        cls.options[key] = value
+    end
 
     function CMD.supercls(supercls)
         cls.supercls = supercls
@@ -782,24 +787,8 @@ local function typeconf(...)
         cls.chunk = chunk
     end
 
-    function CMD.packable(packable)
-        cls.packable = packable
-    end
-
-    function CMD.packvars(packvars)
-        cls.packvars = packvars
-    end
-
-    function CMD.reg_luatype(reg_luatype)
-        cls.reg_luatype = reg_luatype
-    end
-
     function CMD.luaopen(luaopen)
         cls.luaopen = luaopen
-    end
-
-    function CMD.indexerror(indexerror)
-        cls.indexerror = indexerror
     end
 
     function CMD.macro(name, value)

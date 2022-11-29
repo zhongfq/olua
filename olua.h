@@ -931,10 +931,11 @@ int olua_push_object(lua_State *L, const T &value, const char *cls)
 template <class T, std::enable_if_t<!olua::is_pointer<T>::value, bool> = true> inline
 int olua_pushcopy_object(lua_State *L, T &value, const char *cls)
 {
+    using Type = typename std::remove_const<T>::type;
     olua_debug_assert(cls, "cls is null");
     cls = olua_getluatype<T>(L, nullptr, cls);
     void *ptr = lua_newuserdata(L, sizeof(void *) + sizeof(T));
-    T *obj = new ((char *)ptr + sizeof(void *)) T(value);
+    Type *obj = new ((char *)ptr + sizeof(void *)) Type(value);
     *(void **)ptr = obj;
     olua_setmetatable(L, cls);
     olua_setownership(L, -1, OLUA_OWNERSHIP_USERDATA);
@@ -1245,16 +1246,19 @@ public:
         }
         return ret;
     }
+    
+    OLUA_GETTER OLUA_NAME(rawdata) void *get_rawdata() {return _data;}
+    OLUA_GETTER OLUA_NAME(sizeof) size_t get_sizeof() {return sizeof(T);}
 
-    OLUA_GETTER OLUA_NAME(length) size_t getLength() {return _len;}
-    OLUA_SETTER OLUA_NAME(length) void setLength(size_t len)
+    OLUA_GETTER OLUA_NAME(length) size_t get_length() {return _len;}
+    OLUA_SETTER OLUA_NAME(length) void set_length(size_t len)
     {
         olua_assert(!_owner, "not allow set length when own the data");
         _len = len;
     }
 
-    OLUA_GETTER OLUA_NAME(value) const T &getValue() {return *_data;}
-    OLUA_SETTER OLUA_NAME(value) void setValue(const T &v) {*_data = v;}
+    OLUA_GETTER OLUA_NAME(value) const T &get_value() {return *_data;}
+    OLUA_SETTER OLUA_NAME(value) void set_value(const T &v) {*_data = v;}
     
     OLUA_EXCLUDE T *data() {return _data;}
     OLUA_EXCLUDE size_t length() {return _len;}
@@ -1291,6 +1295,13 @@ public:
         ret->_data = new T();
         return ret;
     }
+    
+    OLUA_POSTNEW OLUA_NAME(new) static pointer<T> *create(const T &v)
+    {
+        pointer<T> *ret = create();
+        *ret->_data = v;
+        return ret;
+    }
 
     olua_Return __gc(lua_State *L)
     {
@@ -1303,9 +1314,12 @@ public:
         _owner = false;
         return this;
     }
+    
+    OLUA_GETTER OLUA_NAME(rawdata) void *get_rawdata() {return _data;}
+    OLUA_GETTER OLUA_NAME(sizeof) size_t get_sizeof() {return sizeof(T);}
    
-    OLUA_GETTER OLUA_NAME(value) const T &getValue() {return *_data;}
-    OLUA_SETTER OLUA_NAME(value) void setValue(const T &v) {*_data = v;}
+    OLUA_GETTER OLUA_NAME(value) const T &get_value() {return *_data;}
+    OLUA_SETTER OLUA_NAME(value) void set_value(const T &v) {*_data = v;}
     
     OLUA_EXCLUDE T *data() {return _data;}
 private:

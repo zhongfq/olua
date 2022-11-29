@@ -707,7 +707,7 @@ function M:visit_enum(cppcls, cur)
             value = format('${cls.cppcls}::${value}'),
         })
     end
-    cls.indexerror = 'rw'
+    cls.options.indexerror = 'rw'
     cls.kind = cls.kind or kFLAG_ENUM
 end
 
@@ -742,7 +742,7 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
             cls.template_types:push(specializedcls, cppcls)
         end
     elseif cur.kind == CursorKind.Namespace then
-        cls.reg_luatype = false
+        cls.options.reg_luatype = false
     end
     
     for _, c in ipairs(cur.children) do
@@ -753,6 +753,9 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
         then
             if kind == CursorKind.FunctionDecl or kind == CursorKind.CXXMethod then
                 cls.excludes:replace(c.displayName, true)
+            end
+            if kind == CursorKind.Destructor then
+                cls.options.disable_gc = true
             end
             goto continue
         elseif kind == CursorKind.TemplateTypeParameter then
@@ -1159,6 +1162,12 @@ local function write_cls_func(module, cls, append)
     end
 end
 
+local function write_cls_options(module, cls, append)
+    for _, v in ipairs(olua.toarray(cls.options)) do
+        append(format([[.option('${v.key}', ${v.value?})]], 4))
+    end
+end
+
 local function write_cls_macro(module, cls, append)
     for _, v in ipairs(cls.macros) do
         append(format([[.macro('${v.name}', '${v.value}')]], 4))
@@ -1285,14 +1294,10 @@ local function write_module_classes(module, append)
         append(format([[
             typeconf '${cls.cppcls}'
                 .supercls(${cls.supercls??})
-                .packable(${cls.packable??})
-                .packvars(${cls.packvars??})
-                .reg_luatype(${cls.reg_luatype?})
                 .chunk(${cls.chunk??})
                 .luaopen(${cls.luaopen??})
-                .indexerror(${cls.indexerror??})
         ]]))
-
+        write_cls_options(module, cls, append)
         write_cls_macro(module, cls, append)
         write_cls_const(module, cls, append)
         write_cls_func(module, cls, append)
@@ -1732,6 +1737,7 @@ local function write_typedefs()
                     packable = ${td.packable??},
                     packvars = ${td.packvars??},
                     smartptr = ${td.smartptr??},
+                    replace = ${td.replace??},
                 }
             ]])
             typedefs:push('')
@@ -1751,8 +1757,8 @@ local function write_typedefs()
                 conv = 'olua_$$_enum'
             elseif has_type_flag(cls, kFLAG_POINTER) then
                 conv = 'olua_$$_object'
-                if cls.packable then
-                    packvars = cls.packvars or #cls.vars
+                if cls.options.packable then
+                    packvars = cls.options.packvars or #cls.vars
                 end
             else
                 error(cls.cppcls .. ' ' .. cls.kind)
@@ -1766,7 +1772,7 @@ local function write_typedefs()
                     supercls = ${cls.supercls??},
                     declfunc = ${declfunc??},
                     conv = '${conv}',
-                    packable = ${cls.packable??},
+                    packable = ${cls.options.packable??},
                     packvars = ${packvars??},
                 }
             ]])
@@ -1809,9 +1815,9 @@ local function write_typedefs()
                 '${cls.cppcls}' not a pointee type
             ]])
             local packvars
-            local packable = cls.packable
+            local packable = cls.options.packable
             if packable then
-                packvars = cls.packvars or #cls.vars
+                packvars = cls.options.packvars or #cls.vars
             end
             types:push({
                 from = from,
@@ -1958,9 +1964,9 @@ local function make_typeconf_command(cls, ModuleCMD)
     add_value_command(CMD, 'luaname', cls, nil, checkfunc)
     add_value_command(CMD, 'supercls', cls)
     add_value_command(CMD, 'luaopen', cls)
-    add_value_command(CMD, 'indexerror', cls)
-    add_value_command(CMD, 'packable', cls, nil, tobool)
-    add_value_command(CMD, 'packvars', cls, nil, tonum)
+    add_value_command(CMD, 'indexerror', cls.options)
+    add_value_command(CMD, 'packable', cls.options, nil, tobool)
+    add_value_command(CMD, 'packvars', cls.options, nil, tonum)
     add_value_command(CMD, '_maincls', cls, "maincls", totable)
 
     function CMD.extend(extcls)
@@ -2094,6 +2100,7 @@ local function make_typedef_command(cls)
     add_value_command(CMD, 'packvars', cls, nil, tonum)
     add_value_command(CMD, 'smartptr', cls, nil, tobool)
     add_value_command(CMD, 'luacls', cls)
+    add_value_command(CMD, 'replace', cls, nil, tobool)
     return olua.command_proxy(CMD)
 end
 
@@ -2176,11 +2183,8 @@ function M.__call(_, path)
             inserts = olua.newhash(),
             macros = olua.newhash(),
             supers = olua.newhash(),
-            reg_luatype = true,
             underlying = nil,
-            packable = nil,
-            packvars = nil,
-            indexerror = nil,
+            options = {reg_luatype = true},
             template_types = olua.newhash(),
             luaname = function (n) return n end,
         }

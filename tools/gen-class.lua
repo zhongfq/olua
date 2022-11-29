@@ -24,8 +24,8 @@ local function check_meta_method(cls)
             olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.luacls}");
             return 1;
         }]])))
-    elseif not olua.is_enum_type(cls) and cls.reg_luatype then
-        if not has_method(cls, '__gc', true) then
+    elseif not olua.is_enum_type(cls) and cls.options.reg_luatype then
+        if not cls.options.disable_gc and not has_method(cls, '__gc', true) then
             cls.funcs:push(olua.parse_func(cls, '__gc', format([[
             {
                 olua_postgc<${cls.cppcls}>(L, 1);
@@ -40,7 +40,7 @@ local function check_meta_method(cls)
                 return 1;
             }]])))
         end
-        if cls.packable and not cls.packvars then
+        if cls.options.packable and not cls.options.packvars then
             local codeset = {decl_args = olua.newarray(), check_args = olua.newarray()}
             olua.gen_class_fill(cls, 2, 'ret', codeset)
 
@@ -137,11 +137,11 @@ local function gen_class_open(cls, write)
         supercls = format([["${supercls}"]])
     end
 
-    if cls.indexerror then
-        if cls.indexerror:find('r') then
+    if cls.options.indexerror then
+        if cls.options.indexerror:find('r') then
             funcs:pushf('oluacls_func(L, "__index", olua_indexerror);')
         end
-        if cls.indexerror:find('w') then
+        if cls.options.indexerror:find('w') then
             funcs:pushf('oluacls_func(L, "__newindex", olua_newindexerror);')
         end
     end
@@ -217,7 +217,7 @@ local function gen_class_open(cls, write)
         funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
-    if cls.reg_luatype then
+    if cls.options.reg_luatype then
         reg_luatype = format('olua_registerluatype<${cls.cppcls}>(L, "${cls.luacls}");')
     end
 
@@ -246,7 +246,7 @@ end
 
 local function has_packable_class(module)
     for _, cls in ipairs(module.class_types) do
-        if cls.packable then
+        if cls.options.packable then
             return true
         end
     end

@@ -265,6 +265,14 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
                 end
                 codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_MULTIPLE | OLUA_FLAG_TABLE);')
             end
+        elseif arg.type.cppcls:find('<') then
+            codeset.insert_after:pushf([[
+                for (auto obj : *${argname}) {
+                    olua_pushobj(L, obj);
+                    olua_addref(L, 1, "${ref_name}", -1, OLUA_FLAG_MULTIPLE);
+                    lua_pop(L, 1);
+                }
+            ]])
         else
             codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_FLAG_MULTIPLE);')
         end
@@ -831,7 +839,7 @@ end
 
 function olua.gen_pack_header(module, write)
     for _, cls in ipairs(module.class_types) do
-        if cls.packable and not cls.packvars then
+        if cls.options.packable and not cls.options.packvars then
             local macro = cls.macros['*']
             write(macro)
             write(format([[
@@ -848,7 +856,7 @@ end
 
 function olua.gen_pack_source(module, write)
     for _, cls in ipairs(module.class_types) do
-        if cls.packable and not cls.packvars then
+        if cls.options.packable and not cls.options.packvars then
             local macro = cls.macros['*']
             write(macro)
             gen_pack_func(cls, write)

@@ -216,6 +216,15 @@ function olua.clone(t, newt)
     return newt
 end
 
+function olua.toarray(map)
+    local arr = {}
+    for k, v in pairs(map) do
+        arr[#arr + 1] = {key = k, value = v}
+    end
+    table.sort(arr, function (a, b) return a.key < b.key end)
+    return arr
+end
+
 function olua.newhash(map_only)
     local hash = {values = {}, map = {}}
 
