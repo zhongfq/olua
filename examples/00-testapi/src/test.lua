@@ -62,6 +62,9 @@ assert(str.value == "120")
 obj:setClickCallback(ClickCallback(function (...)
     print('click', ...)
 end))
+obj:setClickCallback(function (...)
+    print('click', ...)
+end)
 
 -- type repalce
 local result = olua.char.new(12)

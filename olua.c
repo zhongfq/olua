@@ -1735,15 +1735,15 @@ OLUA_API bool olua_is_callback(lua_State *L, int idx, const char *cls)
         lua_pop(L, 1);
         return olua_strequal(cb_cls, cls);
     }
-    return olua_isfunction(L, idx) && olua_strequal(cls, "std::function");
+    return olua_isfunction(L, idx) && olua_strequal(cls, "std.function");
 }
 
 OLUA_API int olua_push_callback(lua_State *L, const char *cls)
 {
     if (!(olua_isfunction(L, -1) || olua_isnil(L, -1))) {
-        luaL_error(L, "execpt 'function' or 'nil'");
+        luaL_error(L, "expect 'function' or 'nil'");
     }
-    if ((cls && strequal(cls, "std.function")) || olua_is_callback(L, -1, cls)) {
+    if (olua_isnil(L, -1) || olua_is_callback(L, -1, cls)) {
         lua_pushvalue(L, -1);
         return 1;
     } else {
