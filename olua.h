@@ -192,6 +192,7 @@ OLUA_API void olua_rawsetf(lua_State *L, int idx, const char *field);
 OLUA_API void olua_require(lua_State *L, const char *name, lua_CFunction func);
 
 #define olua_callfunc(L, fn) (lua_pushcfunction(L, (fn)), lua_call(L, 0, 0))
+#define olua_import(L, fn) olua_callfunc(L, (fn))
 OLUA_API void olua_pusherrorfunc(lua_State *L);
 OLUA_API int olua_pcall(lua_State *L, int nargs, int nresults);
     
@@ -874,7 +875,10 @@ bool olua_is_enum(lua_State *L, int idx)
 template <class T, std::enable_if_t<olua::is_enum<T>::value, bool> = true> inline
 void olua_check_enum(lua_State *L, int idx, T *value)
 {
-    luaL_checktype(L, idx, LUA_TLIGHTUSERDATA);
+    if (!olua_islightuserdata(L, idx)) {
+        luaL_error(L, "expect enum '%s', got '%s'", olua_getluatype<olua::remove_cvrp_t<T>>(L),
+            lua_typename(L, lua_type(L, idx)));
+    }
     *value = (T)(intptr_t)lua_touserdata(L, idx);
 }
 

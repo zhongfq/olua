@@ -2230,7 +2230,11 @@ function M.__call(_, path)
                 goto continue
             end
             if type(v) == 'table' then
-                cls[k] = v:clone()
+                if v.clone then
+                    cls[k] = v:clone()
+                else
+                    cls[k] = olua.clone(v)
+                end
             else
                 cls[k] = v
             end

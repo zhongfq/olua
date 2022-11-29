@@ -53,7 +53,7 @@ lua_State *olua_new()
     luaL_openlibs(L);
     lua_pushcfunction(L, _errorfunc);
     olua_setglobal(L, "__TRACEBACK__");
-    olua_callfunc(L, luaopen_types);
+    olua_import(L, luaopen_types);
     GL = L;
     _thread = std::this_thread::get_id();
     return L;
