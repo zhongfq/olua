@@ -1186,7 +1186,7 @@ public:
     ,_data(v)
     {}
 
-    OLUA_NAME(new) static span<T> *create(size_t len = 1)
+    OLUA_POSTNEW OLUA_NAME(new) static span<T> *create(size_t len = 1)
     {
         span<T> *ret = new span<T>();
         ret->_len = len;
@@ -1208,8 +1208,7 @@ public:
 
     olua_Return __gc(lua_State *L)
     {
-        olua_setrawobj(L, 1, nullptr);
-        delete this;
+        olua_postgc<span<T>>(L, 1);
         return 0;
     }
 
@@ -1285,7 +1284,7 @@ public:
         }
     }
 
-    OLUA_NAME(new) static pointer<T> *create()
+    OLUA_POSTNEW OLUA_NAME(new) static pointer<T> *create()
     {
         pointer<T> *ret = new pointer<T>();
         ret->_owner = true;
@@ -1295,8 +1294,7 @@ public:
 
     olua_Return __gc(lua_State *L)
     {
-        olua_setrawobj(L, 1, nullptr);
-        delete this;
+        olua_postgc<pointer<T>>(L, 1);
         return 0;
     }
     

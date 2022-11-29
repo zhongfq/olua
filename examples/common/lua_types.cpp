@@ -79,9 +79,12 @@ static int _olua_bool_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_bool *create(@optional size_t len)
+    // @postnew @name(new) static olua_bool *create(@optional size_t len)
     olua_bool *ret = olua_bool::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.bool");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -92,9 +95,12 @@ static int _olua_bool_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_bool *create(@optional size_t len)
+    // @postnew @name(new) static olua_bool *create(@optional size_t len)
     olua_bool *ret = olua_bool::create();
     int num_ret = olua_push_object(L, ret, "olua.bool");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -106,13 +112,13 @@ static int _olua_bool_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_bool *create(@optional size_t len)
+        // @postnew @name(new) static olua_bool *create(@optional size_t len)
         return _olua_bool_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_bool *create(@optional size_t len)
+            // @postnew @name(new) static olua_bool *create(@optional size_t len)
             return _olua_bool_create$1(L);
         // }
     }
@@ -407,9 +413,12 @@ static int _olua_string_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_string *create(@optional size_t len)
+    // @postnew @name(new) static olua_string *create(@optional size_t len)
     olua_string *ret = olua_string::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.string");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -420,9 +429,12 @@ static int _olua_string_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_string *create(@optional size_t len)
+    // @postnew @name(new) static olua_string *create(@optional size_t len)
     olua_string *ret = olua_string::create();
     int num_ret = olua_push_object(L, ret, "olua.string");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -434,13 +446,13 @@ static int _olua_string_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_string *create(@optional size_t len)
+        // @postnew @name(new) static olua_string *create(@optional size_t len)
         return _olua_string_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_string *create(@optional size_t len)
+            // @postnew @name(new) static olua_string *create(@optional size_t len)
             return _olua_string_create$1(L);
         // }
     }
@@ -735,9 +747,12 @@ static int _olua_int8_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_int8_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int8_t *create(@optional size_t len)
     olua_int8_t *ret = olua_int8_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.int8_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -748,9 +763,12 @@ static int _olua_int8_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_int8_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int8_t *create(@optional size_t len)
     olua_int8_t *ret = olua_int8_t::create();
     int num_ret = olua_push_object(L, ret, "olua.int8_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -762,13 +780,13 @@ static int _olua_int8_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_int8_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_int8_t *create(@optional size_t len)
         return _olua_int8_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_int8_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_int8_t *create(@optional size_t len)
             return _olua_int8_t_create$1(L);
         // }
     }
@@ -1063,9 +1081,12 @@ static int _olua_int16_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_int16_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int16_t *create(@optional size_t len)
     olua_int16_t *ret = olua_int16_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.int16_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -1076,9 +1097,12 @@ static int _olua_int16_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_int16_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int16_t *create(@optional size_t len)
     olua_int16_t *ret = olua_int16_t::create();
     int num_ret = olua_push_object(L, ret, "olua.int16_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -1090,13 +1114,13 @@ static int _olua_int16_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_int16_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_int16_t *create(@optional size_t len)
         return _olua_int16_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_int16_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_int16_t *create(@optional size_t len)
             return _olua_int16_t_create$1(L);
         // }
     }
@@ -1391,9 +1415,12 @@ static int _olua_int32_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_int32_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int32_t *create(@optional size_t len)
     olua_int32_t *ret = olua_int32_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.int32_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -1404,9 +1431,12 @@ static int _olua_int32_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_int32_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int32_t *create(@optional size_t len)
     olua_int32_t *ret = olua_int32_t::create();
     int num_ret = olua_push_object(L, ret, "olua.int32_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -1418,13 +1448,13 @@ static int _olua_int32_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_int32_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_int32_t *create(@optional size_t len)
         return _olua_int32_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_int32_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_int32_t *create(@optional size_t len)
             return _olua_int32_t_create$1(L);
         // }
     }
@@ -1719,9 +1749,12 @@ static int _olua_int64_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_int64_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int64_t *create(@optional size_t len)
     olua_int64_t *ret = olua_int64_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.int64_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -1732,9 +1765,12 @@ static int _olua_int64_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_int64_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_int64_t *create(@optional size_t len)
     olua_int64_t *ret = olua_int64_t::create();
     int num_ret = olua_push_object(L, ret, "olua.int64_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -1746,13 +1782,13 @@ static int _olua_int64_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_int64_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_int64_t *create(@optional size_t len)
         return _olua_int64_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_int64_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_int64_t *create(@optional size_t len)
             return _olua_int64_t_create$1(L);
         // }
     }
@@ -2047,9 +2083,12 @@ static int _olua_uint8_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_uint8_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint8_t *create(@optional size_t len)
     olua_uint8_t *ret = olua_uint8_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.uint8_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -2060,9 +2099,12 @@ static int _olua_uint8_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_uint8_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint8_t *create(@optional size_t len)
     olua_uint8_t *ret = olua_uint8_t::create();
     int num_ret = olua_push_object(L, ret, "olua.uint8_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -2074,13 +2116,13 @@ static int _olua_uint8_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_uint8_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_uint8_t *create(@optional size_t len)
         return _olua_uint8_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_uint8_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_uint8_t *create(@optional size_t len)
             return _olua_uint8_t_create$1(L);
         // }
     }
@@ -2375,9 +2417,12 @@ static int _olua_uint16_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_uint16_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint16_t *create(@optional size_t len)
     olua_uint16_t *ret = olua_uint16_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.uint16_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -2388,9 +2433,12 @@ static int _olua_uint16_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_uint16_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint16_t *create(@optional size_t len)
     olua_uint16_t *ret = olua_uint16_t::create();
     int num_ret = olua_push_object(L, ret, "olua.uint16_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -2402,13 +2450,13 @@ static int _olua_uint16_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_uint16_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_uint16_t *create(@optional size_t len)
         return _olua_uint16_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_uint16_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_uint16_t *create(@optional size_t len)
             return _olua_uint16_t_create$1(L);
         // }
     }
@@ -2703,9 +2751,12 @@ static int _olua_uint32_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_uint32_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint32_t *create(@optional size_t len)
     olua_uint32_t *ret = olua_uint32_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.uint32_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -2716,9 +2767,12 @@ static int _olua_uint32_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_uint32_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint32_t *create(@optional size_t len)
     olua_uint32_t *ret = olua_uint32_t::create();
     int num_ret = olua_push_object(L, ret, "olua.uint32_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -2730,13 +2784,13 @@ static int _olua_uint32_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_uint32_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_uint32_t *create(@optional size_t len)
         return _olua_uint32_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_uint32_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_uint32_t *create(@optional size_t len)
             return _olua_uint32_t_create$1(L);
         // }
     }
@@ -3031,9 +3085,12 @@ static int _olua_uint64_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_uint64_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint64_t *create(@optional size_t len)
     olua_uint64_t *ret = olua_uint64_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.uint64_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -3044,9 +3101,12 @@ static int _olua_uint64_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_uint64_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint64_t *create(@optional size_t len)
     olua_uint64_t *ret = olua_uint64_t::create();
     int num_ret = olua_push_object(L, ret, "olua.uint64_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -3058,13 +3118,13 @@ static int _olua_uint64_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_uint64_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_uint64_t *create(@optional size_t len)
         return _olua_uint64_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_uint64_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_uint64_t *create(@optional size_t len)
             return _olua_uint64_t_create$1(L);
         // }
     }
@@ -3359,9 +3419,12 @@ static int _olua_char_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_char *create(@optional size_t len)
+    // @postnew @name(new) static olua_char *create(@optional size_t len)
     olua_char *ret = olua_char::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.char");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -3372,9 +3435,12 @@ static int _olua_char_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_char *create(@optional size_t len)
+    // @postnew @name(new) static olua_char *create(@optional size_t len)
     olua_char *ret = olua_char::create();
     int num_ret = olua_push_object(L, ret, "olua.char");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -3386,13 +3452,13 @@ static int _olua_char_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_char *create(@optional size_t len)
+        // @postnew @name(new) static olua_char *create(@optional size_t len)
         return _olua_char_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_char *create(@optional size_t len)
+            // @postnew @name(new) static olua_char *create(@optional size_t len)
             return _olua_char_create$1(L);
         // }
     }
@@ -3687,9 +3753,12 @@ static int _olua_short_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_short *create(@optional size_t len)
+    // @postnew @name(new) static olua_short *create(@optional size_t len)
     olua_short *ret = olua_short::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.short");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -3700,9 +3769,12 @@ static int _olua_short_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_short *create(@optional size_t len)
+    // @postnew @name(new) static olua_short *create(@optional size_t len)
     olua_short *ret = olua_short::create();
     int num_ret = olua_push_object(L, ret, "olua.short");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -3714,13 +3786,13 @@ static int _olua_short_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_short *create(@optional size_t len)
+        // @postnew @name(new) static olua_short *create(@optional size_t len)
         return _olua_short_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_short *create(@optional size_t len)
+            // @postnew @name(new) static olua_short *create(@optional size_t len)
             return _olua_short_create$1(L);
         // }
     }
@@ -4015,9 +4087,12 @@ static int _olua_int_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_int *create(@optional size_t len)
+    // @postnew @name(new) static olua_int *create(@optional size_t len)
     olua_int *ret = olua_int::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.int");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -4028,9 +4103,12 @@ static int _olua_int_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_int *create(@optional size_t len)
+    // @postnew @name(new) static olua_int *create(@optional size_t len)
     olua_int *ret = olua_int::create();
     int num_ret = olua_push_object(L, ret, "olua.int");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -4042,13 +4120,13 @@ static int _olua_int_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_int *create(@optional size_t len)
+        // @postnew @name(new) static olua_int *create(@optional size_t len)
         return _olua_int_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_int *create(@optional size_t len)
+            // @postnew @name(new) static olua_int *create(@optional size_t len)
             return _olua_int_create$1(L);
         // }
     }
@@ -4343,9 +4421,12 @@ static int _olua_long_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_long *create(@optional size_t len)
+    // @postnew @name(new) static olua_long *create(@optional size_t len)
     olua_long *ret = olua_long::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.long");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -4356,9 +4437,12 @@ static int _olua_long_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_long *create(@optional size_t len)
+    // @postnew @name(new) static olua_long *create(@optional size_t len)
     olua_long *ret = olua_long::create();
     int num_ret = olua_push_object(L, ret, "olua.long");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -4370,13 +4454,13 @@ static int _olua_long_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_long *create(@optional size_t len)
+        // @postnew @name(new) static olua_long *create(@optional size_t len)
         return _olua_long_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_long *create(@optional size_t len)
+            // @postnew @name(new) static olua_long *create(@optional size_t len)
             return _olua_long_create$1(L);
         // }
     }
@@ -4671,9 +4755,12 @@ static int _olua_llong_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_llong *create(@optional size_t len)
+    // @postnew @name(new) static olua_llong *create(@optional size_t len)
     olua_llong *ret = olua_llong::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.llong");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -4684,9 +4771,12 @@ static int _olua_llong_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_llong *create(@optional size_t len)
+    // @postnew @name(new) static olua_llong *create(@optional size_t len)
     olua_llong *ret = olua_llong::create();
     int num_ret = olua_push_object(L, ret, "olua.llong");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -4698,13 +4788,13 @@ static int _olua_llong_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_llong *create(@optional size_t len)
+        // @postnew @name(new) static olua_llong *create(@optional size_t len)
         return _olua_llong_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_llong *create(@optional size_t len)
+            // @postnew @name(new) static olua_llong *create(@optional size_t len)
             return _olua_llong_create$1(L);
         // }
     }
@@ -4999,9 +5089,12 @@ static int _olua_uchar_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_uchar *create(@optional size_t len)
+    // @postnew @name(new) static olua_uchar *create(@optional size_t len)
     olua_uchar *ret = olua_uchar::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.uchar");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -5012,9 +5105,12 @@ static int _olua_uchar_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_uchar *create(@optional size_t len)
+    // @postnew @name(new) static olua_uchar *create(@optional size_t len)
     olua_uchar *ret = olua_uchar::create();
     int num_ret = olua_push_object(L, ret, "olua.uchar");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -5026,13 +5122,13 @@ static int _olua_uchar_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_uchar *create(@optional size_t len)
+        // @postnew @name(new) static olua_uchar *create(@optional size_t len)
         return _olua_uchar_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_uchar *create(@optional size_t len)
+            // @postnew @name(new) static olua_uchar *create(@optional size_t len)
             return _olua_uchar_create$1(L);
         // }
     }
@@ -5327,9 +5423,12 @@ static int _olua_ushort_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_ushort *create(@optional size_t len)
+    // @postnew @name(new) static olua_ushort *create(@optional size_t len)
     olua_ushort *ret = olua_ushort::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.ushort");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -5340,9 +5439,12 @@ static int _olua_ushort_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_ushort *create(@optional size_t len)
+    // @postnew @name(new) static olua_ushort *create(@optional size_t len)
     olua_ushort *ret = olua_ushort::create();
     int num_ret = olua_push_object(L, ret, "olua.ushort");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -5354,13 +5456,13 @@ static int _olua_ushort_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_ushort *create(@optional size_t len)
+        // @postnew @name(new) static olua_ushort *create(@optional size_t len)
         return _olua_ushort_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_ushort *create(@optional size_t len)
+            // @postnew @name(new) static olua_ushort *create(@optional size_t len)
             return _olua_ushort_create$1(L);
         // }
     }
@@ -5655,9 +5757,12 @@ static int _olua_uint_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_uint *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint *create(@optional size_t len)
     olua_uint *ret = olua_uint::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.uint");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -5668,9 +5773,12 @@ static int _olua_uint_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_uint *create(@optional size_t len)
+    // @postnew @name(new) static olua_uint *create(@optional size_t len)
     olua_uint *ret = olua_uint::create();
     int num_ret = olua_push_object(L, ret, "olua.uint");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -5682,13 +5790,13 @@ static int _olua_uint_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_uint *create(@optional size_t len)
+        // @postnew @name(new) static olua_uint *create(@optional size_t len)
         return _olua_uint_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_uint *create(@optional size_t len)
+            // @postnew @name(new) static olua_uint *create(@optional size_t len)
             return _olua_uint_create$1(L);
         // }
     }
@@ -5983,9 +6091,12 @@ static int _olua_ulong_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_ulong *create(@optional size_t len)
+    // @postnew @name(new) static olua_ulong *create(@optional size_t len)
     olua_ulong *ret = olua_ulong::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.ulong");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -5996,9 +6107,12 @@ static int _olua_ulong_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_ulong *create(@optional size_t len)
+    // @postnew @name(new) static olua_ulong *create(@optional size_t len)
     olua_ulong *ret = olua_ulong::create();
     int num_ret = olua_push_object(L, ret, "olua.ulong");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -6010,13 +6124,13 @@ static int _olua_ulong_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_ulong *create(@optional size_t len)
+        // @postnew @name(new) static olua_ulong *create(@optional size_t len)
         return _olua_ulong_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_ulong *create(@optional size_t len)
+            // @postnew @name(new) static olua_ulong *create(@optional size_t len)
             return _olua_ulong_create$1(L);
         // }
     }
@@ -6311,9 +6425,12 @@ static int _olua_ullong_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_ullong *create(@optional size_t len)
+    // @postnew @name(new) static olua_ullong *create(@optional size_t len)
     olua_ullong *ret = olua_ullong::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.ullong");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -6324,9 +6441,12 @@ static int _olua_ullong_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_ullong *create(@optional size_t len)
+    // @postnew @name(new) static olua_ullong *create(@optional size_t len)
     olua_ullong *ret = olua_ullong::create();
     int num_ret = olua_push_object(L, ret, "olua.ullong");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -6338,13 +6458,13 @@ static int _olua_ullong_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_ullong *create(@optional size_t len)
+        // @postnew @name(new) static olua_ullong *create(@optional size_t len)
         return _olua_ullong_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_ullong *create(@optional size_t len)
+            // @postnew @name(new) static olua_ullong *create(@optional size_t len)
             return _olua_ullong_create$1(L);
         // }
     }
@@ -6639,9 +6759,12 @@ static int _olua_float_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_float *create(@optional size_t len)
+    // @postnew @name(new) static olua_float *create(@optional size_t len)
     olua_float *ret = olua_float::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.float");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -6652,9 +6775,12 @@ static int _olua_float_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_float *create(@optional size_t len)
+    // @postnew @name(new) static olua_float *create(@optional size_t len)
     olua_float *ret = olua_float::create();
     int num_ret = olua_push_object(L, ret, "olua.float");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -6666,13 +6792,13 @@ static int _olua_float_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_float *create(@optional size_t len)
+        // @postnew @name(new) static olua_float *create(@optional size_t len)
         return _olua_float_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_float *create(@optional size_t len)
+            // @postnew @name(new) static olua_float *create(@optional size_t len)
             return _olua_float_create$1(L);
         // }
     }
@@ -6967,9 +7093,12 @@ static int _olua_double_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_double *create(@optional size_t len)
+    // @postnew @name(new) static olua_double *create(@optional size_t len)
     olua_double *ret = olua_double::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.double");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -6980,9 +7109,12 @@ static int _olua_double_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_double *create(@optional size_t len)
+    // @postnew @name(new) static olua_double *create(@optional size_t len)
     olua_double *ret = olua_double::create();
     int num_ret = olua_push_object(L, ret, "olua.double");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -6994,13 +7126,13 @@ static int _olua_double_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_double *create(@optional size_t len)
+        // @postnew @name(new) static olua_double *create(@optional size_t len)
         return _olua_double_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_double *create(@optional size_t len)
+            // @postnew @name(new) static olua_double *create(@optional size_t len)
             return _olua_double_create$1(L);
         // }
     }
@@ -7295,9 +7427,12 @@ static int _olua_ldouble_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_ldouble *create(@optional size_t len)
+    // @postnew @name(new) static olua_ldouble *create(@optional size_t len)
     olua_ldouble *ret = olua_ldouble::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.ldouble");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -7308,9 +7443,12 @@ static int _olua_ldouble_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_ldouble *create(@optional size_t len)
+    // @postnew @name(new) static olua_ldouble *create(@optional size_t len)
     olua_ldouble *ret = olua_ldouble::create();
     int num_ret = olua_push_object(L, ret, "olua.ldouble");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -7322,13 +7460,13 @@ static int _olua_ldouble_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_ldouble *create(@optional size_t len)
+        // @postnew @name(new) static olua_ldouble *create(@optional size_t len)
         return _olua_ldouble_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_ldouble *create(@optional size_t len)
+            // @postnew @name(new) static olua_ldouble *create(@optional size_t len)
             return _olua_ldouble_create$1(L);
         // }
     }
@@ -7623,9 +7761,12 @@ static int _olua_size_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_size_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_size_t *create(@optional size_t len)
     olua_size_t *ret = olua_size_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.size_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -7636,9 +7777,12 @@ static int _olua_size_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_size_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_size_t *create(@optional size_t len)
     olua_size_t *ret = olua_size_t::create();
     int num_ret = olua_push_object(L, ret, "olua.size_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -7650,13 +7794,13 @@ static int _olua_size_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_size_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_size_t *create(@optional size_t len)
         return _olua_size_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_size_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_size_t *create(@optional size_t len)
             return _olua_size_t_create$1(L);
         // }
     }
@@ -7951,9 +8095,12 @@ static int _olua_ssize_t_create$1(lua_State *L)
 
     olua_check_integer(L, 1, &arg1);
 
-    // @name(new) static olua_ssize_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_ssize_t *create(@optional size_t len)
     olua_ssize_t *ret = olua_ssize_t::create(arg1);
     int num_ret = olua_push_object(L, ret, "olua.ssize_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -7964,9 +8111,12 @@ static int _olua_ssize_t_create$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static olua_ssize_t *create(@optional size_t len)
+    // @postnew @name(new) static olua_ssize_t *create(@optional size_t len)
     olua_ssize_t *ret = olua_ssize_t::create();
     int num_ret = olua_push_object(L, ret, "olua.ssize_t");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -7978,13 +8128,13 @@ static int _olua_ssize_t_create(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 0) {
-        // @name(new) static olua_ssize_t *create(@optional size_t len)
+        // @postnew @name(new) static olua_ssize_t *create(@optional size_t len)
         return _olua_ssize_t_create$2(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 1))) {
-            // @name(new) static olua_ssize_t *create(@optional size_t len)
+            // @postnew @name(new) static olua_ssize_t *create(@optional size_t len)
             return _olua_ssize_t_create$1(L);
         // }
     }

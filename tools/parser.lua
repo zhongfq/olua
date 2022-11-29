@@ -740,9 +740,9 @@ function olua.typedef(typeinfo)
             local ti = setmetatable({}, {__index = typeinfo})
             ti.cppcls = tn
             olua.assert(not previous, [[
-                type info conflicted: ${ti.cppcls}
+                type info conflict: ${ti.cppcls}
                     previous: from ${previous.from}
-                    current: from ${typeinfo.from}
+                     current: from ${typeinfo.from}
             ]])
             typeinfo_map[tn] = ti
 

@@ -177,9 +177,12 @@ static int _example_VectorInt_create(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static example::VectorInt *create()
+    // @postnew @name(new) static example::VectorInt *create()
     example::VectorInt *ret = example::VectorInt::create();
     int num_ret = olua_push_object(L, ret, "example.VectorInt");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -290,9 +293,12 @@ static int _example_VectorPoint_create(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @name(new) static example::VectorPoint *create()
+    // @postnew @name(new) static example::VectorPoint *create()
     example::VectorPoint *ret = example::VectorPoint::create();
     int num_ret = olua_push_object(L, ret, "example.VectorPoint");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
