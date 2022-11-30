@@ -132,7 +132,11 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
         flag = flag | kFLAG_CONST
     end
     if cpptype:find('%*%*+$') then
-        olua.error('type not support: ${cpptype}')
+        if throwerror then
+            olua.error('type not support: ${cpptype}')
+        else
+            return nil
+        end
     elseif cpptype:find('%*$') then
         flag = flag | kFLAG_POINTER
     elseif cpptype:find('&&$') then
@@ -388,7 +392,7 @@ local parse_args
 
 local function parse_callback(cls, tn)
     if not tn:find('std::function') then
-        tn = olua.typeinfo(tn, cls).declfunc
+        tn = olua.typeinfo(tn, cls).funcdecl
     end
     local rtn, rattr, str = parse_type(tn:match('<(.*)>'))
     str = str:gsub('^[^(]+', '') -- match callback args
@@ -463,8 +467,8 @@ function parse_args(cls, declstr)
     return args, count
 end
 
-function olua.func_name(declfunc)
-    local _, _, str = parse_type(declfunc)
+function olua.func_name(funcdecl)
+    local _, _, str = parse_type(funcdecl)
     return str:match('[^ ()]+')
 end
 
@@ -551,17 +555,17 @@ end
 
 function olua.parse_func(cls, name, ...)
     local arr = {max_args = 0}
-    for _, declfunc in ipairs({...}) do
+    for _, funcdecl in ipairs({...}) do
         local fi = {ret = {}}
         olua.willdo([[
             parse func:
                 class = ${cls.cppcls}
-                func = ${declfunc}
+                func = ${funcdecl}
         ]])
-        if declfunc:find('{') then
+        if funcdecl:find('{') then
             fi.luafunc = assert(name)
             fi.cppfunc = name
-            fi.snippet = olua.trim(declfunc)
+            fi.snippet = olua.trim(funcdecl)
             fi.funcdesc = '<function snippet>'
             fi.ret.type = olua.typeinfo('void', cls)
             fi.ret.attr = {}
@@ -570,7 +574,7 @@ function olua.parse_func(cls, name, ...)
             fi.prototype = false
             fi.max_args = #fi.args
         else
-            local tn, attr, str = parse_type(declfunc)
+            local tn, attr, str = parse_type(funcdecl)
             local ctor = cls.cppcls:match('[^:]+$')
             local fromcls = cls
             if attr.copyfrom then
@@ -585,7 +589,7 @@ function olua.parse_func(cls, name, ...)
             fi.cppfunc = olua.assert(str:match('[^ ()]+'), 'invalid func')
             fi.luafunc = name or fi.cppfunc
             fi.static = attr.static
-            fi.funcdesc = declfunc
+            fi.funcdesc = funcdecl
             fi.insert = {}
             if olua.is_func_type(tn, fromcls) then
                 local cb = parse_callback(fromcls, tn)
@@ -604,7 +608,7 @@ function olua.parse_func(cls, name, ...)
             fi.args, fi.max_args = parse_args(fromcls, str:sub(#fi.cppfunc + 1))
             gen_func_prototype(cls, fi)
             gen_func_pack(cls, fi, arr)
-            cls.parsed_funcs:push(declfunc, fi)
+            cls.parsed_funcs:push(funcdecl, fi)
         end
         arr[#arr + 1] = fi
         arr.max_args = math.max(arr.max_args, fi.max_args)
@@ -661,7 +665,7 @@ function olua.is_func_type(tn, cls)
         return true
     else
         local ti = olua.typeinfo(tn, cls)
-        return ti and ti.declfunc
+        return ti and ti.funcdecl
     end
 end
 
@@ -701,6 +705,10 @@ function olua.is_pointer_type(ti)
         return ti.luacls and not olua.is_value_type(ti)
             and not olua.is_func_type(ti)
     end
+end
+
+function olua.is_templdate_type(cppcls)
+    return cppcls:find('<')
 end
 
 function olua.is_enum_type(cls)

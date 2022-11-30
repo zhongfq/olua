@@ -249,7 +249,7 @@ static int _example_VectorInt_take(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorInt_get_rawdata(lua_State *L)
+static int _example_VectorInt_data(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -257,8 +257,25 @@ static int _example_VectorInt_get_rawdata(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorInt");
 
-    // @getter @name(rawdata) void *get_rawdata()
-    void *ret = self->get_rawdata();
+    // @getter @name(data) std::vector<int> *data()
+    std::vector<int> *ret = self->data();
+    int num_ret = olua_push_pointer(L, ret, "example.VectorInt");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_VectorInt_rawdata(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::VectorInt *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.VectorInt");
+
+    // @getter @name(rawdata) void *rawdata()
+    void *ret = self->rawdata();
     int num_ret = olua_push_object(L, ret, "void *");
 
     olua_endinvoke(L);
@@ -266,7 +283,7 @@ static int _example_VectorInt_get_rawdata(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorInt_get_sizeof(lua_State *L)
+static int _example_VectorInt_size(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -274,8 +291,8 @@ static int _example_VectorInt_get_sizeof(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorInt");
 
-    // @getter @name(sizeof) size_t get_sizeof()
-    size_t ret = self->get_sizeof();
+    // @getter @name(sizeof) size_t size()
+    size_t ret = self->size();
     int num_ret = olua_push_integer(L, ret);
 
     olua_endinvoke(L);
@@ -283,7 +300,7 @@ static int _example_VectorInt_get_sizeof(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorInt_get_value(lua_State *L)
+static int _example_VectorInt_value(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -291,8 +308,8 @@ static int _example_VectorInt_get_value(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorInt");
 
-    // @getter @name(value) const std::vector<int> &get_value()
-    const std::vector<int> &ret = self->get_value();
+    // @getter @name(value) const std::vector<int> &value()
+    const std::vector<int> &ret = self->value();
     int num_ret = olua_push_array<int>(L, ret, [L](int &arg1) {
         olua_push_integer(L, arg1);
     });
@@ -300,26 +317,6 @@ static int _example_VectorInt_get_value(lua_State *L)
     olua_endinvoke(L);
 
     return num_ret;
-}
-
-static int _example_VectorInt_set_value(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    example::VectorInt *self = nullptr;
-    std::vector<int> arg1;       /** v */
-
-    olua_to_object(L, 1, &self, "example.VectorInt");
-    olua_check_array<int>(L, 2, arg1, [L](int *arg1) {
-        olua_check_integer(L, -1, arg1);
-    });
-
-    // @setter @name(value) void set_value(const std::vector<int> &v)
-    self->set_value(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
 }
 
 OLUA_BEGIN_DECLS
@@ -330,9 +327,10 @@ OLUA_LIB int luaopen_example_VectorInt(lua_State *L)
     oluacls_func(L, "__olua_move", _example_VectorInt___olua_move);
     oluacls_func(L, "new", _example_VectorInt_create);
     oluacls_func(L, "take", _example_VectorInt_take);
-    oluacls_prop(L, "rawdata", _example_VectorInt_get_rawdata, nullptr);
-    oluacls_prop(L, "sizeof", _example_VectorInt_get_sizeof, nullptr);
-    oluacls_prop(L, "value", _example_VectorInt_get_value, _example_VectorInt_set_value);
+    oluacls_prop(L, "data", _example_VectorInt_data, nullptr);
+    oluacls_prop(L, "rawdata", _example_VectorInt_rawdata, nullptr);
+    oluacls_prop(L, "sizeof", _example_VectorInt_size, nullptr);
+    oluacls_prop(L, "value", _example_VectorInt_value, _example_VectorInt_value);
 
     olua_registerluatype<example::VectorInt>(L, "example.VectorInt");
 
@@ -444,7 +442,7 @@ static int _example_VectorPoint_take(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorPoint_get_rawdata(lua_State *L)
+static int _example_VectorPoint_data(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -452,8 +450,25 @@ static int _example_VectorPoint_get_rawdata(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorPoint");
 
-    // @getter @name(rawdata) void *get_rawdata()
-    void *ret = self->get_rawdata();
+    // @getter @name(data) std::vector<example::Point> *data()
+    std::vector<example::Point> *ret = self->data();
+    int num_ret = olua_push_pointer(L, ret, "example.VectorPoint");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_VectorPoint_rawdata(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::VectorPoint *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.VectorPoint");
+
+    // @getter @name(rawdata) void *rawdata()
+    void *ret = self->rawdata();
     int num_ret = olua_push_object(L, ret, "void *");
 
     olua_endinvoke(L);
@@ -461,7 +476,7 @@ static int _example_VectorPoint_get_rawdata(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorPoint_get_sizeof(lua_State *L)
+static int _example_VectorPoint_size(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -469,8 +484,8 @@ static int _example_VectorPoint_get_sizeof(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorPoint");
 
-    // @getter @name(sizeof) size_t get_sizeof()
-    size_t ret = self->get_sizeof();
+    // @getter @name(sizeof) size_t size()
+    size_t ret = self->size();
     int num_ret = olua_push_integer(L, ret);
 
     olua_endinvoke(L);
@@ -478,7 +493,7 @@ static int _example_VectorPoint_get_sizeof(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorPoint_get_value(lua_State *L)
+static int _example_VectorPoint_value(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -486,8 +501,8 @@ static int _example_VectorPoint_get_value(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorPoint");
 
-    // @getter @name(value) const std::vector<example::Point> &get_value()
-    const std::vector<example::Point> &ret = self->get_value();
+    // @getter @name(value) const std::vector<example::Point> &value()
+    const std::vector<example::Point> &ret = self->value();
     int num_ret = olua_push_array<example::Point>(L, ret, [L](example::Point &arg1) {
         olua_pushcopy_object(L, arg1, "example.Point");
     });
@@ -495,26 +510,6 @@ static int _example_VectorPoint_get_value(lua_State *L)
     olua_endinvoke(L);
 
     return num_ret;
-}
-
-static int _example_VectorPoint_set_value(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    example::VectorPoint *self = nullptr;
-    std::vector<example::Point> arg1;       /** v */
-
-    olua_to_object(L, 1, &self, "example.VectorPoint");
-    olua_check_array<example::Point>(L, 2, arg1, [L](example::Point *arg1) {
-        olua_check_object(L, -1, arg1, "example.Point");
-    });
-
-    // @setter @name(value) void set_value(const std::vector<example::Point> &v)
-    self->set_value(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
 }
 
 OLUA_BEGIN_DECLS
@@ -525,9 +520,10 @@ OLUA_LIB int luaopen_example_VectorPoint(lua_State *L)
     oluacls_func(L, "__olua_move", _example_VectorPoint___olua_move);
     oluacls_func(L, "new", _example_VectorPoint_create);
     oluacls_func(L, "take", _example_VectorPoint_take);
-    oluacls_prop(L, "rawdata", _example_VectorPoint_get_rawdata, nullptr);
-    oluacls_prop(L, "sizeof", _example_VectorPoint_get_sizeof, nullptr);
-    oluacls_prop(L, "value", _example_VectorPoint_get_value, _example_VectorPoint_set_value);
+    oluacls_prop(L, "data", _example_VectorPoint_data, nullptr);
+    oluacls_prop(L, "rawdata", _example_VectorPoint_rawdata, nullptr);
+    oluacls_prop(L, "sizeof", _example_VectorPoint_size, nullptr);
+    oluacls_prop(L, "value", _example_VectorPoint_value, _example_VectorPoint_value);
 
     olua_registerluatype<example::VectorPoint>(L, "example.VectorPoint");
 
@@ -639,7 +635,7 @@ static int _example_VectorString_take(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorString_get_rawdata(lua_State *L)
+static int _example_VectorString_data(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -647,8 +643,25 @@ static int _example_VectorString_get_rawdata(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorString");
 
-    // @getter @name(rawdata) void *get_rawdata()
-    void *ret = self->get_rawdata();
+    // @getter @name(data) std::vector<std::string> *data()
+    std::vector<std::string> *ret = self->data();
+    int num_ret = olua_push_pointer(L, ret, "example.VectorString");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_VectorString_rawdata(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::VectorString *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.VectorString");
+
+    // @getter @name(rawdata) void *rawdata()
+    void *ret = self->rawdata();
     int num_ret = olua_push_object(L, ret, "void *");
 
     olua_endinvoke(L);
@@ -656,7 +669,7 @@ static int _example_VectorString_get_rawdata(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorString_get_sizeof(lua_State *L)
+static int _example_VectorString_size(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -664,8 +677,8 @@ static int _example_VectorString_get_sizeof(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorString");
 
-    // @getter @name(sizeof) size_t get_sizeof()
-    size_t ret = self->get_sizeof();
+    // @getter @name(sizeof) size_t size()
+    size_t ret = self->size();
     int num_ret = olua_push_integer(L, ret);
 
     olua_endinvoke(L);
@@ -673,7 +686,7 @@ static int _example_VectorString_get_sizeof(lua_State *L)
     return num_ret;
 }
 
-static int _example_VectorString_get_value(lua_State *L)
+static int _example_VectorString_value(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -681,8 +694,8 @@ static int _example_VectorString_get_value(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorString");
 
-    // @getter @name(value) const std::vector<std::string> &get_value()
-    const std::vector<std::string> &ret = self->get_value();
+    // @getter @name(value) const std::vector<std::string> &value()
+    const std::vector<std::string> &ret = self->value();
     int num_ret = olua_push_array<std::string>(L, ret, [L](std::string &arg1) {
         olua_push_string(L, arg1);
     });
@@ -690,26 +703,6 @@ static int _example_VectorString_get_value(lua_State *L)
     olua_endinvoke(L);
 
     return num_ret;
-}
-
-static int _example_VectorString_set_value(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    example::VectorString *self = nullptr;
-    std::vector<std::string> arg1;       /** v */
-
-    olua_to_object(L, 1, &self, "example.VectorString");
-    olua_check_array<std::string>(L, 2, arg1, [L](std::string *arg1) {
-        olua_check_string(L, -1, arg1);
-    });
-
-    // @setter @name(value) void set_value(const std::vector<std::string> &v)
-    self->set_value(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
 }
 
 OLUA_BEGIN_DECLS
@@ -720,9 +713,10 @@ OLUA_LIB int luaopen_example_VectorString(lua_State *L)
     oluacls_func(L, "__olua_move", _example_VectorString___olua_move);
     oluacls_func(L, "new", _example_VectorString_create);
     oluacls_func(L, "take", _example_VectorString_take);
-    oluacls_prop(L, "rawdata", _example_VectorString_get_rawdata, nullptr);
-    oluacls_prop(L, "sizeof", _example_VectorString_get_sizeof, nullptr);
-    oluacls_prop(L, "value", _example_VectorString_get_value, _example_VectorString_set_value);
+    oluacls_prop(L, "data", _example_VectorString_data, nullptr);
+    oluacls_prop(L, "rawdata", _example_VectorString_rawdata, nullptr);
+    oluacls_prop(L, "sizeof", _example_VectorString_size, nullptr);
+    oluacls_prop(L, "value", _example_VectorString_value, _example_VectorString_value);
 
     olua_registerluatype<example::VectorString>(L, "example.VectorString");
 

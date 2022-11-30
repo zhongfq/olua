@@ -41,9 +41,22 @@ else
     olua.OLUA_HOME = os.getenv('HOME') .. '/.olua'
 end
 
+local time = os.time()
+function olua.print(fmt, ...)
+    local str = string.format(fmt, ...)
+    local idx = str:find(':')
+    if idx and idx < 11 then
+        idx = 11 - idx
+    else
+        idx = 0
+    end
+    local t = os.time() - time
+    print(string.format('[%02s:%02s] %s%s', t // 60, t % 60, string.rep(' ', idx), str))
+end
+
 -- version
 olua.OLUA_HOME = olua.OLUA_HOME .. '/v5'
-print(' olua home: ' .. olua.OLUA_HOME)
+olua.print('olua home: %s', olua.OLUA_HOME)
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
@@ -102,10 +115,6 @@ function olua.assert(cond, exp)
     return cond
 end
 
-function olua.print(exp)
-    print(olua.format(exp))
-end
-
 function olua.is_end_with(str, substr)
     local _, e = str:find(substr, #str - #substr + 1, true)
     return e == #str
@@ -129,12 +138,12 @@ function olua.write(path, content)
         local flag = f:read("*a") == content
         f:close()
         if flag then
-            print("up-to-date: " .. path)
+            olua.print("up-to-date: %s", path)
             return
         end
     end
 
-    print("write: " .. path)
+    olua.print("write: %s", path)
 
     f = io.open(path, "w+b")
     assert(f, path)
@@ -152,6 +161,18 @@ function olua.sort(arr, field)
         table.sort(arr)
     end
     return arr
+end
+
+function olua.ipairs(t, walk)
+    for i, v in ipairs(t) do
+        walk(i, v)
+    end
+end
+
+function olua.pairs(t, walk)
+    for k, v in pairs(t) do
+        walk(k, v)
+    end
 end
 
 function olua.newarray(sep, prefix, posfix)
