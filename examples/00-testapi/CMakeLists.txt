@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.21)
 
 set(source
     src/Example.h
+    src/Example.cpp
     src/lua_example.h
     src/lua_example.cpp
     src/main.cpp

@@ -55,6 +55,8 @@
 #define aux_pushrefkey(L, n)    (lua_pushfstring(L, ".olua.ref.%s", (n)))
 #define aux_pushcbkey(L, ...)   (lua_pushfstring(L, ".olua.cb#%s$%s@%s", __VA_ARGS__))
 
+#define const_value(L, k, v)    (lua_pushvalue(L, (v)), oluacls_const(L, (k)))
+#define const_string(L, k, v)   (olua_pushstring(L, (v)), oluacls_const(L, (k)))
 #define const_from_metaclass(L, k, metaclass) \
     olua_rawgetf(L, (metaclass), (k)); \
     oluacls_const(L, k)
@@ -1166,9 +1168,9 @@ OLUA_API void oluacls_class(lua_State *L, const char *cls, const char *supercls)
         lua_pushvalue(L, metaclass);
         // L: .metaclass class .metaclass
         lua_setmetatable(L, -2);  // class.metatable = metaclass
-        oluacls_const_value(L, "class", -1); // class.class = class
-        oluacls_const_string(L, "classname", cls); // class.classname = cls
-        oluacls_const_string(L, "classtype", "native"); // class.classtype = native
+        const_value(L, "class", -1); // class.class = class
+        const_string(L, "classname", cls); // class.classname = cls
+        const_string(L, "classtype", "native"); // class.classtype = native
         // const value from metaclass: class[k] = metaclass[k]
         const_from_metaclass(L, ".classobj", metaclass);
         const_from_metaclass(L, ".isa", metaclass);

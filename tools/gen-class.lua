@@ -184,32 +184,11 @@ local function gen_class_open(cls, write)
 
     olua.sort(cls.consts, 'name')
     for _, ci in ipairs(cls.consts) do
-        local conv = ci.type.conv
-        local value = ci.value
-        local const_func
-        local cast
-        if conv == 'olua_$$_bool' then
-            const_func = 'oluacls_const_bool'
-            cast = 'bool'
-        elseif conv == 'olua_$$_integer' then
-            const_func = 'oluacls_const_integer'
-            cast = 'lua_Integer'
-        elseif conv == 'olua_$$_number' then
-            const_func = 'oluacls_const_number'
-            cast = 'lua_Number'
-        elseif conv == 'olua_$$_string' then
-            const_func = 'oluacls_const_string'
-            cast = 'const char *'
-            if ci.type.cppcls == 'std::string' then
-                value = value .. '.c_str()'
-            end
-        else
-            -- print('cppcs', cls.cppcls, ci.name)
-            -- error(ci.type.cppcls)
+        local cast = ''
+        if olua.is_pointer_type(ci.type) and not olua.has_pointer_flag(ci.type) then
+            cast = '&'
         end
-        if const_func then
-            funcs:pushf('${const_func}(L, "${ci.name}", (${cast})${value});')
-        end
+        funcs:pushf('oluacls_const(L, "${ci.name}", ${cast}${ci.value});')
     end
 
     olua.sort(cls.enums, 'name')

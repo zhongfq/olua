@@ -98,3 +98,13 @@ print('sizeof(VectorPoint)', vectP.sizeof)
 vectP = vectP.value
 assert(vectP[1].x == 10)
 assert(vectP[2].y == 100)
+
+-- test ptr
+assert(obj.intPtr == nil)
+assert(obj.vectorIntPtr.value[1] == 100)
+
+-- test const
+local Const = require "example.Const"
+assert(Const.BOOL == true)
+assert(Const.INT == -1)
+assert(Const.ULLONG == 1)

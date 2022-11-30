@@ -9,6 +9,13 @@ typedef {
 
 typedef {
     from = 'olua: basictype',
+    cppcls = 'void *',
+    luacls = 'void *',
+    conv = 'olua_$$_object',
+}
+
+typedef {
+    from = 'olua: basictype',
     cppcls = 'olua_Return',
     conv = '<NONE>',
 }
@@ -16,14 +23,8 @@ typedef {
 typedef {
     from = 'olua: basictype',
     cppcls = 'lua_State',
-    conv = 'olua_$$_object',
-}
-
-typedef {
-    from = 'olua: basictype',
-    cppcls = 'void *',
-    luacls = 'void *',
-    conv = 'olua_$$_object',
+    luacls = 'lua_State',
+    conv = '<NONE>',
 }
 
 typedef {

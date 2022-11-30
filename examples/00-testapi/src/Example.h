@@ -10,6 +10,7 @@
 
 typedef void GLvoid;
 typedef char GLchar;
+typedef float GLfloat;
 
 namespace example {
 
@@ -27,25 +28,40 @@ public:
     float y = 0;
 
     Point() {}
-    
-    Point(const Point &p):x(p.x), y(p.y) {
-        
-    }
-
+    Point(const Point &p):x(p.x), y(p.y) {}
     Point(float x, float y):x(x), y(y) {}
 
-    ~Point() {
-        printf("~Point\n");
-    }
+    ~Point() {printf("~Point\n");}
 
-    float length() {
-        return (float)sqrt(x * x + y * y);
-    }
+    float length() {return (float)sqrt(x * x + y * y);}
+};
+
+class Const {
+public:
+    static const bool BOOL;
+    static const char CHAR;
+    static const short SHORT;
+    static const int INT;
+    static const long LONG;
+    static const long long LLONG;
+    static const unsigned char UCHAR;
+    static const unsigned short USHORT;
+    static const unsigned int UINT;
+    static const unsigned long ULONG;
+    static const unsigned long long ULLONG;
+    static const float FLOAT;
+    static const double DOUBLE;
+    static const long double LDOUBLE;
+    static const std::string STRING;
+    static const Point POINT;
+    static const Type ENUM;
+    static const char *CONST_CHAR;
 };
 
 class ExportParent : public Object {
 public:
-    void printExportParent() {
+    void printExportParent()
+    {
         printf("printExportParent: %s\n", typeid(*this).name());
     }
 };
@@ -63,17 +79,40 @@ typedef Point Vec2;
 
 typedef olua::pointer<std::vector<int>> VectorInt;
 typedef olua::pointer<std::vector<Point>> VectorPoint;
+typedef olua::pointer<std::vector<std::string>> VectorString;
 
-class Hello : public ExportParent {
+template<class T> class Singleton {
 public:
-    Hello() {
+    static T *create()
+    {
+        T *ret = new T();
+        return ret;
+    }
+    
+    inline explicit Singleton() {}
+
+    virtual void printSingleton()
+    {
+        printf("printSingleton: %s\n", typeid(*this).name());
+    }
+
+    template<class N> void printN(N *n) {}
+protected:
+    int i = 0;
+};
+
+class Hello : public ExportParent, public Singleton<Hello> {
+public:
+    Hello()
+    {
         printf("Hello() '%s': %p\n", typeid(*this).name(), this);
         _ptr = malloc(sizeof(void *));
         _p.x = 34;
         _p.y = 50;
     };
 
-    virtual ~Hello() {
+    virtual ~Hello()
+    {
         free(_ptr);
         printf("~Hello() '%s': %p\n", typeid(*this).name(), this);
     }
@@ -92,6 +131,8 @@ public:
 
     void setGLchar(GLchar *) {}
     GLchar *getGLchar() { return NULL;}
+    
+    void setGLfloat(GLfloat *) {}
 
     void setCGLchar(const GLchar *) {}
     const GLchar *getCGLchar() { return NULL;}
@@ -139,19 +180,24 @@ public:
     std::vector<short *> getIntPtrs() {return std::vector<short *>();}
     void setIntPtrs(const std::vector<short *> &v) {};
     
-    void checkVectorInt(std::vector<int> &v) {
+    void checkString(std::vector<std::string> *) {}
+    
+    void checkVectorInt(std::vector<int> &v)
+    {
         v.push_back(1);
         v.push_back(2);
     }
     
-    void checkVectorPoint(std::vector<Point> &v) {
+    void checkVectorPoint(std::vector<Point> &v)
+    {
         v.push_back(Point(10, 10));
         v.push_back(Point(10, 100));
     }
 
     void run(Hello *obj, ...) {}
 
-    void read(OLUA_TYPE(olua_char_t *) char *result, size_t *len) {
+    void read(OLUA_TYPE(olua_char_t *) char *result, size_t *len)
+    {
         const char *str = "hello read!";
         strcpy(result, str);
         *len = strlen(str);
@@ -172,6 +218,31 @@ public:
         float *, std::vector<float> &,
         double *, std::vector<double> &,
         long double *, std::vector<long double> &) {}
+    
+    void testPointerTypes(const std::function<void (
+        OLUA_TYPE(olua_char_t *) char *,
+        OLUA_TYPE(olua_uchar_t *) unsigned char *,
+        short *, short int *, std::vector<short> &,
+        unsigned short *, unsigned short int *, std::vector<unsigned short> &,
+        signed *, int *, std::vector<int> &,
+        unsigned *, unsigned int *, std::vector<unsigned int> &,
+        long *, long int *, std::vector<long> &,
+        unsigned long *, unsigned long int *, std::vector<unsigned long> &,
+        long long *, long long int *, std::vector<long long> &,
+        unsigned long long *, unsigned long long int *, std::vector<unsigned long long> &,
+        float *, std::vector<float> &,
+        double *, std::vector<double> &,
+        long double *, std::vector<long double> &)> &) {}
+    
+    int *getIntPtr() {return nullptr;}
+    
+    std::vector<int> *getVectorIntPtr()
+    {
+        auto v = new std::vector<int>();
+        v->push_back(100);
+        v->push_back(101);
+        return v;
+    }
 
 private:
     std::string _name;
@@ -179,6 +250,34 @@ private:
     void *_ptr = nullptr;
     Point _p;
     Type _type = Type::POINTER;
+};
+
+class SharedHello : public std::enable_shared_from_this<SharedHello> {
+public:
+    SharedHello() {
+        printf("new '%s': %p\n", typeid(*this).name(), this);
+    };
+    
+    ~SharedHello() {
+        printf("del '%s': %p\n", typeid(*this).name(), this);
+    }
+
+    void say() {}
+
+    const std::string &getName() const {return _name;}
+    void setName(const std::string &value) {_name = value;}
+    
+    std::shared_ptr<SharedHello> getThis()
+    {
+        return std::shared_ptr<SharedHello>(this);
+    }
+    
+    void setThis(const std::shared_ptr<SharedHello> &sp)
+    {
+        printf("set this: %p %p\n", this, sp.get());
+    }
+private:
+    std::string _name;
 };
 
 }

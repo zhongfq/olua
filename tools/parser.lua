@@ -7,9 +7,8 @@ local kFLAG_CONST       = 1 << 1  -- is const
 local kFLAG_LVALUE      = 1 << 2  -- is left value
 local kFLAG_RVALUE      = 1 << 3  -- is right value
 local kFLAG_POINTER     = 1 << 4  -- is pointer
-local kFLAG_POINTEE     = 1 << 5  -- is pointer or reference
-local kFLAG_CALLBACK    = 1 << 6  -- is callback
-local kFLAG_CAST        = 1 << 7  -- cast ref to pointer
+local kFLAG_CALLBACK    = 1 << 5  -- is callback
+local kFLAG_CAST        = 1 << 6  -- cast ref to pointer
 
 local format = olua.format
 
@@ -105,16 +104,20 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
 end
 
 --[[
-    func: void addChild(const std::vector<const Object *> &child)
-    ti = {
+    func: void addChild(const std::vector<const Object *> &child, const char *name)
+    child = {
         cppcls = std::vector
         flag = kFLAG_CONST | kFLAG_LVALUE
         subtis = {
             [1] = {
                 cppcls = 'Object *'
-                flag = kFLAG_CONST
+                flag = kFLAG_CONST | kFLAG_POINTER
             }
         }
+    }
+    name {
+        cppcls = const char *          -- basictype.lua
+        flag = kFLAG_POINTER
     }
 ]]
 function olua.typeinfo(cpptype, cls, throwerror, errors)
@@ -131,11 +134,11 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
     if cpptype:find('%*%*+$') then
         olua.error('type not support: ${cpptype}')
     elseif cpptype:find('%*$') then
-        flag = flag | kFLAG_POINTER | kFLAG_POINTEE
+        flag = flag | kFLAG_POINTER
     elseif cpptype:find('&&$') then
-        flag = flag | kFLAG_RVALUE | kFLAG_POINTEE
+        flag = flag | kFLAG_RVALUE
     elseif cpptype:find('&$') then
-        flag = flag | kFLAG_LVALUE | kFLAG_POINTEE
+        flag = flag | kFLAG_LVALUE
     end
 
     if not has_flag(flag, kFLAG_CONST) and has_flag(flag, kFLAG_LVALUE) then
@@ -193,15 +196,19 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
             ti = setmetatable({}, {__index = tti})
             ti.flag = flag
         end
-        if olua.has_pointer_flag(ti) and not ti.luacls then
-            if throwerror then
-                local decltype = olua.decltype(ti, true)
-                olua.error([[
-                    convertor not found: '${decltype}'
-                ]])
-            else
-                return nil
-            end
+    end
+
+    if not olua.is_pointer_type(ti.cppcls)
+        and olua.has_pointer_flag(ti)
+        and not ti.luacls
+    then
+        if throwerror then
+            local decltype = olua.decltype(ti, true)
+            olua.error([[
+                convertor not found: '${decltype}'
+            ]])
+        else
+            return nil
         end
     end
     
@@ -211,12 +218,12 @@ end
 --[[
     function arg variable must declared with no const type
 
-    eg: Object::call(const std::vector<A *> arg1)
+    eg: Object::call(const int arg1)
 
     Object *self = nullptr;
-    std::vector<int> arg1;
+    int arg1;
     olua_to_obj(L, 1, &self, "Object");
-    olua_check_std_vector(L, 2, arg1, "A");
+    olua_check_integer(L, 2, &arg1);
     self->call(arg1);
 ]]
 function olua.decltype(ti, checkvalue, addspace, exps)
@@ -231,7 +238,11 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     if not checkvalue and olua.has_const_flag(ti) then
         exps:push('const ')
     end
-    exps:push(ti.cppcls)
+    if not checkvalue and olua.has_cast_flag(ti) then
+        exps:push(ti.cppcls:gsub('[ *]+$', ''))
+    else
+        exps:push(ti.cppcls)
+    end
     if olua.has_callback_flag(ti) then
         exps:push('<')
         olua.decltype(ti.callback[0], false, true, exps)
@@ -254,7 +265,9 @@ function olua.decltype(ti, checkvalue, addspace, exps)
         exps:push(olua.has_lvalue_flag(ti) and ' &' or nil)
         exps:push(olua.has_rvalue_flag(ti) and ' &&' or nil)
     end
-    if olua.has_pointer_flag(ti)
+    if not checkvalue and olua.has_cast_flag(ti) then
+        exps:push(' &')
+    elseif olua.has_pointer_flag(ti)
         and not olua.is_pointer_type(ti.cppcls)
     then
         exps:push(' *')
@@ -392,7 +405,6 @@ end
     arg struct: void func(@pack const std::vector<int> &points = value)
     {
         type             -- type info
-        declarg          -- declarg: const std::vector<int> &
         varname          -- var name: points
         attr             -- attr: {pack = true}
         callback = {     -- eg: std::function<void (float, const A *a)>
@@ -670,7 +682,7 @@ function olua.has_pointer_flag(ti)
 end
 
 function olua.has_pointee_flag(ti)
-    return has_flag(ti.flag, kFLAG_POINTEE)
+    return has_flag(ti.flag, kFLAG_RVALUE | kFLAG_LVALUE | kFLAG_POINTER)
 end
 
 function olua.has_callback_flag(ti)
@@ -1000,6 +1012,11 @@ local function typeconf(...)
     end
 
     function CMD.const(name, value, typename)
+        olua.willdo([[
+            parse const:
+                class = ${cls.cppcls}
+                const = ${typename} ${name}
+        ]])
         cls.consts:push({
             name = assert(name),
             value = value,
