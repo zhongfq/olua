@@ -77,15 +77,13 @@ static int _example_Object_new(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    oluacls_class(L, "example.Object", nullptr);
+    oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
     oluacls_func(L, "__olua_move", _example_Object___olua_move);
     oluacls_func(L, "autorelease", _example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _example_Object_getReferenceCount);
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
-
-    olua_registerluatype<example::Object>(L, "example.Object");
 
     return 1;
 }
@@ -190,7 +188,7 @@ static int _example_Node_getChildren(lua_State *L)
 
     // example::vector<example::Node *> &getChildren()
     example::vector<example::Node *> &ret = self->getChildren();
-    int num_ret = olua_push_array<example::Node *>(L, ret, [L](example::Node *arg1) {
+    int num_ret = olua_push_vector<example::Node *>(L, ret, [L](example::Node *arg1) {
         olua_push_object(L, arg1, "example.Node");
     });
 
@@ -416,7 +414,7 @@ static int _example_Node_setName(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Node(lua_State *L)
 {
-    oluacls_class(L, "example.Node", "example.Object");
+    oluacls_class<example::Node, example::Object>(L, "example.Node");
     oluacls_func(L, "addChild", _example_Node_addChild);
     oluacls_func(L, "getChildByName", _example_Node_getChildByName);
     oluacls_func(L, "getChildren", _example_Node_getChildren);
@@ -436,8 +434,6 @@ OLUA_LIB int luaopen_example_Node(lua_State *L)
     oluacls_prop(L, "name", _example_Node_getName, _example_Node_setName);
     oluacls_prop(L, "numChildren", _example_Node_getNumChildren, nullptr);
     oluacls_prop(L, "parent", _example_Node_getParent, nullptr);
-
-    olua_registerluatype<example::Node>(L, "example.Node");
 
     return 1;
 }

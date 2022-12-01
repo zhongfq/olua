@@ -77,15 +77,13 @@ static int _example_Object_new(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    oluacls_class(L, "example.Object", nullptr);
+    oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
     oluacls_func(L, "__olua_move", _example_Object___olua_move);
     oluacls_func(L, "autorelease", _example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _example_Object_getReferenceCount);
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
-
-    olua_registerluatype<example::Object>(L, "example.Object");
 
     return 1;
 }
@@ -110,10 +108,8 @@ static int _example_ExportParent_printExportParent(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
-    oluacls_class(L, "example.ExportParent", "example.Object");
+    oluacls_class<example::ExportParent, example::Object>(L, "example.ExportParent");
     oluacls_func(L, "printExportParent", _example_ExportParent_printExportParent);
-
-    olua_registerluatype<example::ExportParent>(L, "example.ExportParent");
 
     return 1;
 }
@@ -187,14 +183,12 @@ static int _example_Hello_setName(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
-    oluacls_class(L, "example.Hello", "example.ExportParent");
+    oluacls_class<example::Hello, example::ExportParent>(L, "example.Hello");
     oluacls_func(L, "getName", _example_Hello_getName);
     oluacls_func(L, "new", _example_Hello_new);
     oluacls_func(L, "say", _example_Hello_say);
     oluacls_func(L, "setName", _example_Hello_setName);
     oluacls_prop(L, "name", _example_Hello_getName, _example_Hello_setName);
-
-    olua_registerluatype<example::Hello>(L, "example.Hello");
 
     return 1;
 }

@@ -103,15 +103,13 @@ static int _example_Object_new(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    oluacls_class(L, "example.Object", nullptr);
+    oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
     oluacls_func(L, "__olua_move", _example_Object___olua_move);
     oluacls_func(L, "autorelease", _example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _example_Object_getReferenceCount);
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
-
-    olua_registerluatype<example::Object>(L, "example.Object");
 
     return 1;
 }
@@ -136,10 +134,8 @@ static int _example_ExportParent_printExportParent(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
-    oluacls_class(L, "example.ExportParent", "example.Object");
+    oluacls_class<example::ExportParent, example::Object>(L, "example.ExportParent");
     oluacls_func(L, "printExportParent", _example_ExportParent_printExportParent);
-
-    olua_registerluatype<example::ExportParent>(L, "example.ExportParent");
 
     return 1;
 }
@@ -195,7 +191,7 @@ static int _example_VectorInt_create$2(lua_State *L)
 
     std::vector<int> arg1;       /** v */
 
-    olua_check_array<int>(L, 1, arg1, [L](int *arg1) {
+    olua_check_vector<int>(L, 1, arg1, [L](int *arg1) {
         olua_check_integer(L, -1, arg1);
     });
 
@@ -221,7 +217,7 @@ static int _example_VectorInt_create(lua_State *L)
     }
 
     if (num_args == 1) {
-        // if ((olua_is_array(L, 1))) {
+        // if ((olua_is_vector(L, 1))) {
             // @postnew @name(new) static example::VectorInt *create(const std::vector<int> &v)
             return _example_VectorInt_create$2(L);
         // }
@@ -310,7 +306,7 @@ static int _example_VectorInt_value(lua_State *L)
 
     // @getter @name(value) const std::vector<int> &value()
     const std::vector<int> &ret = self->value();
-    int num_ret = olua_push_array<int>(L, ret, [L](int &arg1) {
+    int num_ret = olua_push_vector<int>(L, ret, [L](int &arg1) {
         olua_push_integer(L, arg1);
     });
 
@@ -322,7 +318,7 @@ static int _example_VectorInt_value(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_VectorInt(lua_State *L)
 {
-    oluacls_class(L, "example.VectorInt", nullptr);
+    oluacls_class<example::VectorInt>(L, "example.VectorInt");
     oluacls_func(L, "__gc", _example_VectorInt___gc);
     oluacls_func(L, "__olua_move", _example_VectorInt___olua_move);
     oluacls_func(L, "new", _example_VectorInt_create);
@@ -331,8 +327,6 @@ OLUA_LIB int luaopen_example_VectorInt(lua_State *L)
     oluacls_prop(L, "rawdata", _example_VectorInt_rawdata, nullptr);
     oluacls_prop(L, "sizeof", _example_VectorInt_size, nullptr);
     oluacls_prop(L, "value", _example_VectorInt_value, _example_VectorInt_value);
-
-    olua_registerluatype<example::VectorInt>(L, "example.VectorInt");
 
     return 1;
 }
@@ -388,7 +382,7 @@ static int _example_VectorPoint_create$2(lua_State *L)
 
     std::vector<example::Point> arg1;       /** v */
 
-    olua_check_array<example::Point>(L, 1, arg1, [L](example::Point *arg1) {
+    olua_check_vector<example::Point>(L, 1, arg1, [L](example::Point *arg1) {
         olua_check_object(L, -1, arg1, "example.Point");
     });
 
@@ -414,7 +408,7 @@ static int _example_VectorPoint_create(lua_State *L)
     }
 
     if (num_args == 1) {
-        // if ((olua_is_array(L, 1))) {
+        // if ((olua_is_vector(L, 1))) {
             // @postnew @name(new) static example::VectorPoint *create(const std::vector<example::Point> &v)
             return _example_VectorPoint_create$2(L);
         // }
@@ -503,7 +497,7 @@ static int _example_VectorPoint_value(lua_State *L)
 
     // @getter @name(value) const std::vector<example::Point> &value()
     const std::vector<example::Point> &ret = self->value();
-    int num_ret = olua_push_array<example::Point>(L, ret, [L](example::Point &arg1) {
+    int num_ret = olua_push_vector<example::Point>(L, ret, [L](example::Point &arg1) {
         olua_pushcopy_object(L, arg1, "example.Point");
     });
 
@@ -515,7 +509,7 @@ static int _example_VectorPoint_value(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_VectorPoint(lua_State *L)
 {
-    oluacls_class(L, "example.VectorPoint", nullptr);
+    oluacls_class<example::VectorPoint>(L, "example.VectorPoint");
     oluacls_func(L, "__gc", _example_VectorPoint___gc);
     oluacls_func(L, "__olua_move", _example_VectorPoint___olua_move);
     oluacls_func(L, "new", _example_VectorPoint_create);
@@ -524,8 +518,6 @@ OLUA_LIB int luaopen_example_VectorPoint(lua_State *L)
     oluacls_prop(L, "rawdata", _example_VectorPoint_rawdata, nullptr);
     oluacls_prop(L, "sizeof", _example_VectorPoint_size, nullptr);
     oluacls_prop(L, "value", _example_VectorPoint_value, _example_VectorPoint_value);
-
-    olua_registerluatype<example::VectorPoint>(L, "example.VectorPoint");
 
     return 1;
 }
@@ -581,7 +573,7 @@ static int _example_VectorString_create$2(lua_State *L)
 
     std::vector<std::string> arg1;       /** v */
 
-    olua_check_array<std::string>(L, 1, arg1, [L](std::string *arg1) {
+    olua_check_vector<std::string>(L, 1, arg1, [L](std::string *arg1) {
         olua_check_string(L, -1, arg1);
     });
 
@@ -607,7 +599,7 @@ static int _example_VectorString_create(lua_State *L)
     }
 
     if (num_args == 1) {
-        // if ((olua_is_array(L, 1))) {
+        // if ((olua_is_vector(L, 1))) {
             // @postnew @name(new) static example::VectorString *create(const std::vector<std::string> &v)
             return _example_VectorString_create$2(L);
         // }
@@ -696,7 +688,7 @@ static int _example_VectorString_value(lua_State *L)
 
     // @getter @name(value) const std::vector<std::string> &value()
     const std::vector<std::string> &ret = self->value();
-    int num_ret = olua_push_array<std::string>(L, ret, [L](std::string &arg1) {
+    int num_ret = olua_push_vector<std::string>(L, ret, [L](std::string &arg1) {
         olua_push_string(L, arg1);
     });
 
@@ -708,7 +700,7 @@ static int _example_VectorString_value(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_VectorString(lua_State *L)
 {
-    oluacls_class(L, "example.VectorString", nullptr);
+    oluacls_class<example::VectorString>(L, "example.VectorString");
     oluacls_func(L, "__gc", _example_VectorString___gc);
     oluacls_func(L, "__olua_move", _example_VectorString___olua_move);
     oluacls_func(L, "new", _example_VectorString_create);
@@ -718,7 +710,355 @@ OLUA_LIB int luaopen_example_VectorString(lua_State *L)
     oluacls_prop(L, "sizeof", _example_VectorString_size, nullptr);
     oluacls_prop(L, "value", _example_VectorString_value, _example_VectorString_value);
 
-    olua_registerluatype<example::VectorString>(L, "example.VectorString");
+    return 1;
+}
+OLUA_END_DECLS
+
+static int _example_PointArray___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+
+    // olua_Return __gc(lua_State *L)
+    olua_Return ret = self->__gc(L);
+
+    olua_endinvoke(L);
+
+    return (int)ret;
+}
+
+static int _example_PointArray___index(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+    unsigned int arg1 = 0;       /** idx */
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+    olua_check_integer(L, 2, &arg1);
+
+    // example::Point __index(unsigned int idx)
+    example::Point ret = self->__index(arg1);
+    int num_ret = olua_pushcopy_object(L, ret, "example.Point");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray___newindex(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+    unsigned int arg1 = 0;       /** idx */
+    example::Point arg2;       /** v */
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+    olua_check_integer(L, 2, &arg1);
+    olua_check_object(L, 3, &arg2, "example.Point");
+
+    // void __newindex(unsigned int idx, const example::Point &v)
+    self->__newindex(arg1, arg2);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_PointArray___olua_move(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    auto self = (example::PointArray *)olua_toobj(L, 1, "example.PointArray");
+    olua_push_object(L, self, "example.PointArray");
+
+    olua_endinvoke(L);
+
+    return 1;
+}
+
+static int _example_PointArray_create$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    size_t arg1 = 0;       /** len */
+
+    olua_check_integer(L, 1, &arg1);
+
+    // @postnew @name(new) static example::PointArray *create(@optional size_t len)
+    example::PointArray *ret = example::PointArray::create(arg1);
+    int num_ret = olua_push_object(L, ret, "example.PointArray");
+
+    // insert code after call
+    olua_postnew(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_create$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    // @postnew @name(new) static example::PointArray *create(@optional size_t len)
+    example::PointArray *ret = example::PointArray::create();
+    int num_ret = olua_push_object(L, ret, "example.PointArray");
+
+    // insert code after call
+    olua_postnew(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_create(lua_State *L)
+{
+    int num_args = lua_gettop(L);
+
+    if (num_args == 0) {
+        // @postnew @name(new) static example::PointArray *create(@optional size_t len)
+        return _example_PointArray_create$2(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 1))) {
+            // @postnew @name(new) static example::PointArray *create(@optional size_t len)
+            return _example_PointArray_create$1(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::PointArray::create' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
+static int _example_PointArray_setstring(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+    const char *arg1 = nullptr;       /** data */
+    size_t arg2 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+    olua_check_string(L, 2, &arg1);
+    olua_check_integer(L, 3, &arg2);
+
+    // void setstring(const char *data, size_t len)
+    self->setstring(arg1, arg2);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_PointArray_sub$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+    size_t arg1 = 0;       /** from */
+    size_t arg2 = 0;       /** to */
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+    olua_check_integer(L, 2, &arg1);
+    olua_check_integer(L, 3, &arg2);
+
+    // example::PointArray *sub(size_t from, @optional size_t to)
+    example::PointArray *ret = self->sub(arg1, arg2);
+    int num_ret = olua_push_object(L, ret, "example.PointArray");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_sub$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+    size_t arg1 = 0;       /** from */
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+    olua_check_integer(L, 2, &arg1);
+
+    // example::PointArray *sub(size_t from, @optional size_t to)
+    example::PointArray *ret = self->sub(arg1);
+    int num_ret = olua_push_object(L, ret, "example.PointArray");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_sub(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // example::PointArray *sub(size_t from, @optional size_t to)
+            return _example_PointArray_sub$2(L);
+        // }
+    }
+
+    if (num_args == 2) {
+        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+            // example::PointArray *sub(size_t from, @optional size_t to)
+            return _example_PointArray_sub$1(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::PointArray::sub' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
+static int _example_PointArray_take(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+
+    // example::PointArray *take()
+    example::PointArray *ret = self->take();
+    int num_ret = olua_push_object(L, ret, "example.PointArray");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_tostring(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+    size_t arg2 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+    olua_check_integer(L, 2, &arg2);
+
+    // olua_Return tostring(lua_State *L, size_t len)
+    olua_Return ret = self->tostring(L, arg2);
+
+    olua_endinvoke(L);
+
+    return (int)ret;
+}
+
+static int _example_PointArray_data(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+
+    // @getter @name(data) example::Point *data()
+    example::Point *ret = self->data();
+    int num_ret = olua_push_object(L, ret, "example.Point");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_length(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_rawdata(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+
+    // @getter @name(rawdata) void *rawdata()
+    void *ret = self->rawdata();
+    int num_ret = olua_push_object(L, ret, "void *");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_size(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+
+    // @getter @name(sizeof) size_t size()
+    size_t ret = self->size();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _example_PointArray_value(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::PointArray *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.PointArray");
+
+    // @getter @name(value) const example::Point &value()
+    const example::Point &ret = self->value();
+    int num_ret = olua_push_object(L, ret, "example.Point");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_PointArray(lua_State *L)
+{
+    oluacls_class<example::PointArray>(L, "example.PointArray");
+    oluacls_func(L, "__gc", _example_PointArray___gc);
+    oluacls_func(L, "__index", _example_PointArray___index);
+    oluacls_func(L, "__newindex", _example_PointArray___newindex);
+    oluacls_func(L, "__olua_move", _example_PointArray___olua_move);
+    oluacls_func(L, "new", _example_PointArray_create);
+    oluacls_func(L, "setstring", _example_PointArray_setstring);
+    oluacls_func(L, "sub", _example_PointArray_sub);
+    oluacls_func(L, "take", _example_PointArray_take);
+    oluacls_func(L, "tostring", _example_PointArray_tostring);
+    oluacls_prop(L, "data", _example_PointArray_data, nullptr);
+    oluacls_prop(L, "length", _example_PointArray_length, _example_PointArray_length);
+    oluacls_prop(L, "rawdata", _example_PointArray_rawdata, nullptr);
+    oluacls_prop(L, "sizeof", _example_PointArray_size, nullptr);
+    oluacls_prop(L, "value", _example_PointArray_value, _example_PointArray_value);
 
     return 1;
 }
@@ -739,10 +1079,8 @@ static int _example_ClickCallback___call(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ClickCallback(lua_State *L)
 {
-    oluacls_class(L, "example.ClickCallback", nullptr);
+    oluacls_class<example::ClickCallback>(L, "example.ClickCallback");
     oluacls_func(L, "__call", _example_ClickCallback___call);
-
-    olua_registerluatype<example::ClickCallback>(L, "example.ClickCallback");
 
     return 1;
 }
@@ -751,14 +1089,12 @@ OLUA_END_DECLS
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Type(lua_State *L)
 {
-    oluacls_class(L, "example.Type", nullptr);
+    oluacls_class<example::Type>(L, "example.Type");
     oluacls_func(L, "__index", olua_indexerror);
     oluacls_func(L, "__newindex", olua_newindexerror);
     oluacls_enum(L, "LVALUE", (lua_Integer)example::Type::LVALUE);
     oluacls_enum(L, "POINTER", (lua_Integer)example::Type::POINTER);
     oluacls_enum(L, "RVALUE", (lua_Integer)example::Type::RVALUE);
-
-    olua_registerluatype<example::Type>(L, "example.Type");
 
     return 1;
 }
@@ -989,7 +1325,7 @@ static int _example_Point_set_y(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Point(lua_State *L)
 {
-    oluacls_class(L, "example.Point", nullptr);
+    oluacls_class<example::Point>(L, "example.Point");
     oluacls_func(L, "__call", _example_Point___call);
     oluacls_func(L, "__gc", _example_Point___gc);
     oluacls_func(L, "__olua_move", _example_Point___olua_move);
@@ -997,8 +1333,6 @@ OLUA_LIB int luaopen_example_Point(lua_State *L)
     oluacls_func(L, "new", _example_Point_new);
     oluacls_prop(L, "x", _example_Point_get_x, _example_Point_set_x);
     oluacls_prop(L, "y", _example_Point_get_y, _example_Point_set_y);
-
-    olua_registerluatype<example::Point>(L, "example.Point");
 
     return 1;
 }
@@ -1221,7 +1555,7 @@ static int _example_Hello_getCStrs(lua_State *L)
 
     // std::vector<const char *> getCStrs()
     std::vector<const char *> ret = self->getCStrs();
-    int num_ret = olua_push_array<const char *>(L, ret, [L](const char *arg1) {
+    int num_ret = olua_push_vector<const char *>(L, ret, [L](const char *arg1) {
         olua_push_string(L, arg1);
     });
 
@@ -1291,7 +1625,7 @@ static int _example_Hello_getIntPtr(lua_State *L)
 
     // int *getIntPtr()
     int *ret = self->getIntPtr();
-    int num_ret = olua_push_span(L, ret, "olua.int");
+    int num_ret = olua_push_array(L, ret, "olua.int");
 
     olua_endinvoke(L);
 
@@ -1308,8 +1642,8 @@ static int _example_Hello_getIntPtrs(lua_State *L)
 
     // std::vector<short *> getIntPtrs()
     std::vector<short *> ret = self->getIntPtrs();
-    int num_ret = olua_push_array<short *>(L, ret, [L](short *arg1) {
-        olua_push_span(L, arg1, "olua.short");
+    int num_ret = olua_push_vector<short *>(L, ret, [L](short *arg1) {
+        olua_push_array(L, arg1, "olua.short");
     });
 
     olua_endinvoke(L);
@@ -1325,7 +1659,7 @@ static int _example_Hello_getIntRef(lua_State *L)
     int *arg1 = nullptr;       /** ref */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_span(L, 2, &arg1, "olua.int");
+    olua_check_array(L, 2, &arg1, "olua.int");
 
     // void getIntRef(int &ref)
     self->getIntRef(*arg1);
@@ -1345,7 +1679,7 @@ static int _example_Hello_getInts(lua_State *L)
 
     // std::vector<int64_t> getInts()
     std::vector<int64_t> ret = self->getInts();
-    int num_ret = olua_push_array<int64_t>(L, ret, [L](int64_t &arg1) {
+    int num_ret = olua_push_vector<int64_t>(L, ret, [L](int64_t &arg1) {
         olua_push_integer(L, arg1);
     });
 
@@ -1381,7 +1715,7 @@ static int _example_Hello_getPointers(lua_State *L)
 
     // std::vector<example::Point *> getPointers()
     std::vector<example::Point *> ret = self->getPointers();
-    int num_ret = olua_push_array<example::Point *>(L, ret, [L](example::Point *arg1) {
+    int num_ret = olua_push_vector<example::Point *>(L, ret, [L](example::Point *arg1) {
         olua_push_object(L, arg1, "example.Point");
     });
 
@@ -1400,7 +1734,7 @@ static int _example_Hello_getPoints(lua_State *L)
 
     // std::vector<example::Point> getPoints()
     std::vector<example::Point> ret = self->getPoints();
-    int num_ret = olua_push_array<example::Point>(L, ret, [L](example::Point &arg1) {
+    int num_ret = olua_push_vector<example::Point>(L, ret, [L](example::Point &arg1) {
         olua_pushcopy_object(L, arg1, "example.Point");
     });
 
@@ -1434,7 +1768,7 @@ static int _example_Hello_getStringRef(lua_State *L)
     std::string *arg1 = nullptr;       /** ref */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_span(L, 2, &arg1, "olua.string");
+    olua_check_array(L, 2, &arg1, "olua.string");
 
     // void getStringRef(std::string &ref)
     self->getStringRef(*arg1);
@@ -1505,7 +1839,7 @@ static int _example_Hello_getVoids(lua_State *L)
 
     // std::vector<GLvoid *> getVoids()
     std::vector<GLvoid *> ret = self->getVoids();
-    int num_ret = olua_push_array<GLvoid *>(L, ret, [L](GLvoid *arg1) {
+    int num_ret = olua_push_vector<GLvoid *>(L, ret, [L](GLvoid *arg1) {
         olua_push_object(L, arg1, "void *");
     });
 
@@ -1553,8 +1887,8 @@ static int _example_Hello_read(lua_State *L)
     size_t *arg2 = nullptr;       /** len */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_span(L, 2, &arg1, "olua.char");
-    olua_check_span(L, 3, &arg2, "olua.size_t");
+    olua_check_array(L, 2, &arg1, "olua.char");
+    olua_check_array(L, 3, &arg2, "olua.size_t");
 
     // void read(@type(olua_char_t *) char *result, size_t *len)
     self->read(arg1, arg2);
@@ -2314,7 +2648,7 @@ static int _example_Hello_setCStrs(lua_State *L)
     std::vector<const char *> arg1;       /** v */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<const char *>(L, 2, arg1, [L](const char **arg1) {
+    olua_check_vector<const char *>(L, 2, arg1, [L](const char **arg1) {
         olua_check_string(L, -1, arg1);
     });
 
@@ -2548,7 +2882,7 @@ static int _example_Hello_setGLfloat(lua_State *L)
     GLfloat *arg1 = nullptr;       /**  */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_span(L, 2, &arg1, "olua.float");
+    olua_check_array(L, 2, &arg1, "olua.float");
 
     // void setGLfloat(GLfloat *)
     self->setGLfloat(arg1);
@@ -2602,8 +2936,8 @@ static int _example_Hello_setIntPtrs(lua_State *L)
     std::vector<short *> arg1;       /** v */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<short *>(L, 2, arg1, [L](short **arg1) {
-        olua_check_span(L, -1, arg1, "olua.short");
+    olua_check_vector<short *>(L, 2, arg1, [L](short **arg1) {
+        olua_check_array(L, -1, arg1, "olua.short");
     });
 
     // void setIntPtrs(const std::vector<short *> &v)
@@ -2622,7 +2956,7 @@ static int _example_Hello_setInts(lua_State *L)
     std::vector<int64_t> arg1;       /** v */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<int64_t>(L, 2, arg1, [L](int64_t *arg1) {
+    olua_check_vector<int64_t>(L, 2, arg1, [L](int64_t *arg1) {
         olua_check_integer(L, -1, arg1);
     });
 
@@ -2707,7 +3041,7 @@ static int _example_Hello_setPointers(lua_State *L)
     std::vector<example::Point *> arg1;       /** v */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<example::Point *>(L, 2, arg1, [L](example::Point **arg1) {
+    olua_check_vector<example::Point *>(L, 2, arg1, [L](example::Point **arg1) {
         olua_check_object(L, -1, arg1, "example.Point");
     });
 
@@ -2727,7 +3061,7 @@ static int _example_Hello_setPoints(lua_State *L)
     std::vector<example::Point> arg1;       /** v */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<example::Point>(L, 2, arg1, [L](example::Point *arg1) {
+    olua_check_vector<example::Point>(L, 2, arg1, [L](example::Point *arg1) {
         olua_check_object(L, -1, arg1, "example.Point");
     });
 
@@ -2824,7 +3158,7 @@ static int _example_Hello_setVoids(lua_State *L)
     std::vector<GLvoid *> arg1;       /** v */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<GLvoid *>(L, 2, arg1, [L](GLvoid **arg1) {
+    olua_check_vector<GLvoid *>(L, 2, arg1, [L](GLvoid **arg1) {
         olua_check_object(L, -1, arg1, "void *");
     });
 
@@ -2875,56 +3209,56 @@ static int _example_Hello_testPointerTypes$1(lua_State *L)
     std::vector<long double> arg32;       /**  */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_span(L, 2, &arg1, "olua.char");
-    olua_check_span(L, 3, &arg2, "olua.uchar");
-    olua_check_span(L, 4, &arg3, "olua.short");
-    olua_check_span(L, 5, &arg4, "olua.short");
-    olua_check_array<short>(L, 6, arg5, [L](short *arg1) {
+    olua_check_array(L, 2, &arg1, "olua.char");
+    olua_check_array(L, 3, &arg2, "olua.uchar");
+    olua_check_array(L, 4, &arg3, "olua.short");
+    olua_check_array(L, 5, &arg4, "olua.short");
+    olua_check_vector<short>(L, 6, arg5, [L](short *arg1) {
         olua_check_integer(L, -1, arg1);
     });
-    olua_check_span(L, 7, &arg6, "olua.ushort");
-    olua_check_span(L, 8, &arg7, "olua.ushort");
-    olua_check_array<unsigned short>(L, 9, arg8, [L](unsigned short *arg1) {
+    olua_check_array(L, 7, &arg6, "olua.ushort");
+    olua_check_array(L, 8, &arg7, "olua.ushort");
+    olua_check_vector<unsigned short>(L, 9, arg8, [L](unsigned short *arg1) {
         olua_check_integer(L, -1, arg1);
     });
-    olua_check_span(L, 10, &arg9, "olua.int");
-    olua_check_span(L, 11, &arg10, "olua.int");
+    olua_check_array(L, 10, &arg9, "olua.int");
+    olua_check_array(L, 11, &arg10, "olua.int");
     olua_check_pointer(L, 12, &arg11, "example.VectorInt");
-    olua_check_span(L, 13, &arg12, "olua.uint");
-    olua_check_span(L, 14, &arg13, "olua.uint");
-    olua_check_array<unsigned int>(L, 15, arg14, [L](unsigned int *arg1) {
+    olua_check_array(L, 13, &arg12, "olua.uint");
+    olua_check_array(L, 14, &arg13, "olua.uint");
+    olua_check_vector<unsigned int>(L, 15, arg14, [L](unsigned int *arg1) {
         olua_check_integer(L, -1, arg1);
     });
-    olua_check_span(L, 16, &arg15, "olua.long");
-    olua_check_span(L, 17, &arg16, "olua.long");
-    olua_check_array<long>(L, 18, arg17, [L](long *arg1) {
+    olua_check_array(L, 16, &arg15, "olua.long");
+    olua_check_array(L, 17, &arg16, "olua.long");
+    olua_check_vector<long>(L, 18, arg17, [L](long *arg1) {
         olua_check_integer(L, -1, arg1);
     });
-    olua_check_span(L, 19, &arg18, "olua.ulong");
-    olua_check_span(L, 20, &arg19, "olua.ulong");
-    olua_check_array<unsigned long>(L, 21, arg20, [L](unsigned long *arg1) {
+    olua_check_array(L, 19, &arg18, "olua.ulong");
+    olua_check_array(L, 20, &arg19, "olua.ulong");
+    olua_check_vector<unsigned long>(L, 21, arg20, [L](unsigned long *arg1) {
         olua_check_integer(L, -1, arg1);
     });
-    olua_check_span(L, 22, &arg21, "olua.llong");
-    olua_check_span(L, 23, &arg22, "olua.llong");
-    olua_check_array<long long>(L, 24, arg23, [L](long long *arg1) {
+    olua_check_array(L, 22, &arg21, "olua.llong");
+    olua_check_array(L, 23, &arg22, "olua.llong");
+    olua_check_vector<long long>(L, 24, arg23, [L](long long *arg1) {
         olua_check_integer(L, -1, arg1);
     });
-    olua_check_span(L, 25, &arg24, "olua.ullong");
-    olua_check_span(L, 26, &arg25, "olua.ullong");
-    olua_check_array<unsigned long long>(L, 27, arg26, [L](unsigned long long *arg1) {
+    olua_check_array(L, 25, &arg24, "olua.ullong");
+    olua_check_array(L, 26, &arg25, "olua.ullong");
+    olua_check_vector<unsigned long long>(L, 27, arg26, [L](unsigned long long *arg1) {
         olua_check_integer(L, -1, arg1);
     });
-    olua_check_span(L, 28, &arg27, "olua.float");
-    olua_check_array<float>(L, 29, arg28, [L](float *arg1) {
+    olua_check_array(L, 28, &arg27, "olua.float");
+    olua_check_vector<float>(L, 29, arg28, [L](float *arg1) {
         olua_check_number(L, -1, arg1);
     });
-    olua_check_span(L, 30, &arg29, "olua.double");
-    olua_check_array<double>(L, 31, arg30, [L](double *arg1) {
+    olua_check_array(L, 30, &arg29, "olua.double");
+    olua_check_vector<double>(L, 31, arg30, [L](double *arg1) {
         olua_check_number(L, -1, arg1);
     });
-    olua_check_span(L, 32, &arg31, "olua.ldouble");
-    olua_check_array<long double>(L, 33, arg32, [L](long double *arg1) {
+    olua_check_array(L, 32, &arg31, "olua.ldouble");
+    olua_check_vector<long double>(L, 33, arg32, [L](long double *arg1) {
         olua_check_number(L, -1, arg1);
     });
 
@@ -2960,54 +3294,54 @@ static int _example_Hello_testPointerTypes$2(lua_State *L)
             olua_enable_objpool(L);
             olua_push_string(L, arg1);
             olua_push_string(L, arg2);
-            olua_push_span(L, arg3, "olua.short");
-            olua_push_span(L, arg4, "olua.short");
-            olua_push_array<short>(L, arg5, [L](short &arg1) {
+            olua_push_array(L, arg3, "olua.short");
+            olua_push_array(L, arg4, "olua.short");
+            olua_push_vector<short>(L, arg5, [L](short &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_span(L, arg6, "olua.ushort");
-            olua_push_span(L, arg7, "olua.ushort");
-            olua_push_array<unsigned short>(L, arg8, [L](unsigned short &arg1) {
+            olua_push_array(L, arg6, "olua.ushort");
+            olua_push_array(L, arg7, "olua.ushort");
+            olua_push_vector<unsigned short>(L, arg8, [L](unsigned short &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_span(L, arg9, "olua.int");
-            olua_push_span(L, arg10, "olua.int");
+            olua_push_array(L, arg9, "olua.int");
+            olua_push_array(L, arg10, "olua.int");
             olua_push_pointer(L, &arg11, "example.VectorInt");
-            olua_push_span(L, arg12, "olua.uint");
-            olua_push_span(L, arg13, "olua.uint");
-            olua_push_array<unsigned int>(L, arg14, [L](unsigned int &arg1) {
+            olua_push_array(L, arg12, "olua.uint");
+            olua_push_array(L, arg13, "olua.uint");
+            olua_push_vector<unsigned int>(L, arg14, [L](unsigned int &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_span(L, arg15, "olua.long");
-            olua_push_span(L, arg16, "olua.long");
-            olua_push_array<long>(L, arg17, [L](long &arg1) {
+            olua_push_array(L, arg15, "olua.long");
+            olua_push_array(L, arg16, "olua.long");
+            olua_push_vector<long>(L, arg17, [L](long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_span(L, arg18, "olua.ulong");
-            olua_push_span(L, arg19, "olua.ulong");
-            olua_push_array<unsigned long>(L, arg20, [L](unsigned long &arg1) {
+            olua_push_array(L, arg18, "olua.ulong");
+            olua_push_array(L, arg19, "olua.ulong");
+            olua_push_vector<unsigned long>(L, arg20, [L](unsigned long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_span(L, arg21, "olua.llong");
-            olua_push_span(L, arg22, "olua.llong");
-            olua_push_array<long long>(L, arg23, [L](long long &arg1) {
+            olua_push_array(L, arg21, "olua.llong");
+            olua_push_array(L, arg22, "olua.llong");
+            olua_push_vector<long long>(L, arg23, [L](long long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_span(L, arg24, "olua.ullong");
-            olua_push_span(L, arg25, "olua.ullong");
-            olua_push_array<unsigned long long>(L, arg26, [L](unsigned long long &arg1) {
+            olua_push_array(L, arg24, "olua.ullong");
+            olua_push_array(L, arg25, "olua.ullong");
+            olua_push_vector<unsigned long long>(L, arg26, [L](unsigned long long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_span(L, arg27, "olua.float");
-            olua_push_array<float>(L, arg28, [L](float &arg1) {
+            olua_push_array(L, arg27, "olua.float");
+            olua_push_vector<float>(L, arg28, [L](float &arg1) {
                 olua_push_number(L, arg1);
             });
-            olua_push_span(L, arg29, "olua.double");
-            olua_push_array<double>(L, arg30, [L](double &arg1) {
+            olua_push_array(L, arg29, "olua.double");
+            olua_push_vector<double>(L, arg30, [L](double &arg1) {
                 olua_push_number(L, arg1);
             });
-            olua_push_span(L, arg31, "olua.ldouble");
-            olua_push_array<long double>(L, arg32, [L](long double &arg1) {
+            olua_push_array(L, arg31, "olua.ldouble");
+            olua_push_vector<long double>(L, arg32, [L](long double &arg1) {
                 olua_push_number(L, arg1);
             });
             olua_disable_objpool(L);
@@ -3040,7 +3374,7 @@ static int _example_Hello_testPointerTypes(lua_State *L)
     }
 
     if (num_args == 32) {
-        // if ((olua_is_span(L, 2, "olua.char")) && (olua_is_span(L, 3, "olua.uchar")) && (olua_is_span(L, 4, "olua.short")) && (olua_is_span(L, 5, "olua.short")) && (olua_is_array(L, 6)) && (olua_is_span(L, 7, "olua.ushort")) && (olua_is_span(L, 8, "olua.ushort")) && (olua_is_array(L, 9)) && (olua_is_span(L, 10, "olua.int")) && (olua_is_span(L, 11, "olua.int")) && (olua_is_pointer(L, 12, "example.VectorInt")) && (olua_is_span(L, 13, "olua.uint")) && (olua_is_span(L, 14, "olua.uint")) && (olua_is_array(L, 15)) && (olua_is_span(L, 16, "olua.long")) && (olua_is_span(L, 17, "olua.long")) && (olua_is_array(L, 18)) && (olua_is_span(L, 19, "olua.ulong")) && (olua_is_span(L, 20, "olua.ulong")) && (olua_is_array(L, 21)) && (olua_is_span(L, 22, "olua.llong")) && (olua_is_span(L, 23, "olua.llong")) && (olua_is_array(L, 24)) && (olua_is_span(L, 25, "olua.ullong")) && (olua_is_span(L, 26, "olua.ullong")) && (olua_is_array(L, 27)) && (olua_is_span(L, 28, "olua.float")) && (olua_is_array(L, 29)) && (olua_is_span(L, 30, "olua.double")) && (olua_is_array(L, 31)) && (olua_is_span(L, 32, "olua.ldouble")) && (olua_is_array(L, 33))) {
+        // if ((olua_is_array(L, 2, "olua.char")) && (olua_is_array(L, 3, "olua.uchar")) && (olua_is_array(L, 4, "olua.short")) && (olua_is_array(L, 5, "olua.short")) && (olua_is_vector(L, 6)) && (olua_is_array(L, 7, "olua.ushort")) && (olua_is_array(L, 8, "olua.ushort")) && (olua_is_vector(L, 9)) && (olua_is_array(L, 10, "olua.int")) && (olua_is_array(L, 11, "olua.int")) && (olua_is_pointer(L, 12, "example.VectorInt")) && (olua_is_array(L, 13, "olua.uint")) && (olua_is_array(L, 14, "olua.uint")) && (olua_is_vector(L, 15)) && (olua_is_array(L, 16, "olua.long")) && (olua_is_array(L, 17, "olua.long")) && (olua_is_vector(L, 18)) && (olua_is_array(L, 19, "olua.ulong")) && (olua_is_array(L, 20, "olua.ulong")) && (olua_is_vector(L, 21)) && (olua_is_array(L, 22, "olua.llong")) && (olua_is_array(L, 23, "olua.llong")) && (olua_is_vector(L, 24)) && (olua_is_array(L, 25, "olua.ullong")) && (olua_is_array(L, 26, "olua.ullong")) && (olua_is_vector(L, 27)) && (olua_is_array(L, 28, "olua.float")) && (olua_is_vector(L, 29)) && (olua_is_array(L, 30, "olua.double")) && (olua_is_vector(L, 31)) && (olua_is_array(L, 32, "olua.ldouble")) && (olua_is_vector(L, 33))) {
             // void testPointerTypes(@type(olua_char_t *) char *, @type(olua_uchar_t *) unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)
             return _example_Hello_testPointerTypes$1(L);
         // }
@@ -3054,7 +3388,7 @@ static int _example_Hello_testPointerTypes(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
-    oluacls_class(L, "example.Hello", "example.ExportParent");
+    oluacls_class<example::Hello, example::ExportParent>(L, "example.Hello");
     oluacls_func(L, "as", _example_Hello_as);
     oluacls_func(L, "checkString", _example_Hello_checkString);
     oluacls_func(L, "checkVectorInt", _example_Hello_checkVectorInt);
@@ -3125,8 +3459,6 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_prop(L, "vectorIntPtr", _example_Hello_getVectorIntPtr, nullptr);
     oluacls_prop(L, "voids", _example_Hello_getVoids, _example_Hello_setVoids);
 
-    olua_registerluatype<example::Hello>(L, "example.Hello");
-
     return 1;
 }
 OLUA_END_DECLS
@@ -3186,7 +3518,7 @@ static int _example_Const_set_CONST_CHAR(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Const(lua_State *L)
 {
-    oluacls_class(L, "example.Const", nullptr);
+    oluacls_class<example::Const>(L, "example.Const");
     oluacls_func(L, "__gc", _example_Const___gc);
     oluacls_func(L, "__olua_move", _example_Const___olua_move);
     oluacls_prop(L, "CONST_CHAR", _example_Const_get_CONST_CHAR, _example_Const_set_CONST_CHAR);
@@ -3207,8 +3539,6 @@ OLUA_LIB int luaopen_example_Const(lua_State *L)
     oluacls_const(L, "ULLONG", example::Const::ULLONG);
     oluacls_const(L, "ULONG", example::Const::ULONG);
     oluacls_const(L, "USHORT", example::Const::USHORT);
-
-    olua_registerluatype<example::Const>(L, "example.Const");
 
     return 1;
 }
@@ -3357,7 +3687,7 @@ static int _example_SharedHello_shared_from_this(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_SharedHello(lua_State *L)
 {
-    oluacls_class(L, "example.SharedHello", nullptr);
+    oluacls_class<example::SharedHello>(L, "example.SharedHello");
     oluacls_func(L, "__gc", _example_SharedHello___gc);
     oluacls_func(L, "__olua_move", _example_SharedHello___olua_move);
     oluacls_func(L, "getName", _example_SharedHello_getName);
@@ -3369,8 +3699,6 @@ OLUA_LIB int luaopen_example_SharedHello(lua_State *L)
     oluacls_func(L, "shared_from_this", _example_SharedHello_shared_from_this);
     oluacls_prop(L, "name", _example_SharedHello_getName, _example_SharedHello_setName);
     oluacls_prop(L, "this", _example_SharedHello_getThis, _example_SharedHello_setThis);
-
-    olua_registerluatype<example::SharedHello>(L, "example.SharedHello");
 
     return 1;
 }
@@ -3431,13 +3759,11 @@ static int _example_Singleton_example_Hello_printSingleton(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
-    oluacls_class(L, "example.Singleton<example.Hello>", nullptr);
+    oluacls_class<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
     oluacls_func(L, "__gc", _example_Singleton_example_Hello___gc);
     oluacls_func(L, "__olua_move", _example_Singleton_example_Hello___olua_move);
     oluacls_func(L, "create", _example_Singleton_example_Hello_create);
     oluacls_func(L, "printSingleton", _example_Singleton_example_Hello_printSingleton);
-
-    olua_registerluatype<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
 
     return 1;
 }
@@ -3451,6 +3777,7 @@ OLUA_LIB int luaopen_example(lua_State *L)
     olua_require(L, "example.VectorInt", luaopen_example_VectorInt);
     olua_require(L, "example.VectorPoint", luaopen_example_VectorPoint);
     olua_require(L, "example.VectorString", luaopen_example_VectorString);
+    olua_require(L, "example.PointArray", luaopen_example_PointArray);
     olua_require(L, "example.ClickCallback", luaopen_example_ClickCallback);
     olua_require(L, "example.Type", luaopen_example_Type);
     olua_require(L, "example.Point", luaopen_example_Point);

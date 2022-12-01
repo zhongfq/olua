@@ -80,6 +80,7 @@ typedef Point Vec2;
 typedef olua::pointer<std::vector<int>> VectorInt;
 typedef olua::pointer<std::vector<Point>> VectorPoint;
 typedef olua::pointer<std::vector<std::string>> VectorString;
+typedef olua::array<Point> PointArray;
 
 template<class T> class Singleton {
 public:
@@ -165,7 +166,7 @@ public:
     std::vector<Point> getPoints() { return std::vector<Point>(); }
     void setPoints(const std::vector<Point> &v) {};
 
-    std::vector<Point*> getPointers() { return std::vector<Point*>(); }
+    std::vector<Point *> getPointers() { return std::vector<Point *>(); }
     void setPointers(const std::vector<Point *> &v) {};
 
     std::vector<GLvoid *> getVoids() { return std::vector<GLvoid *>(); }

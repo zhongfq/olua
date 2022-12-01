@@ -52,12 +52,10 @@ static int _example_GC_gc(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_GC(lua_State *L)
 {
-    oluacls_class(L, "example.GC", nullptr);
+    oluacls_class<example::GC>(L, "example.GC");
     oluacls_func(L, "__gc", _example_GC___gc);
     oluacls_func(L, "__olua_move", _example_GC___olua_move);
     oluacls_func(L, "gc", _example_GC_gc);
-
-    olua_registerluatype<example::GC>(L, "example.GC");
 
     return 1;
 }
@@ -121,13 +119,11 @@ static int _example_TestWildcardListener_onClick(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestWildcardListener(lua_State *L)
 {
-    oluacls_class(L, "example.TestWildcardListener", nullptr);
+    oluacls_class<example::TestWildcardListener>(L, "example.TestWildcardListener");
     oluacls_func(L, "__gc", _example_TestWildcardListener___gc);
     oluacls_func(L, "__olua_move", _example_TestWildcardListener___olua_move);
     oluacls_func(L, "hello", _example_TestWildcardListener_hello);
     oluacls_func(L, "onClick", _example_TestWildcardListener_onClick);
-
-    olua_registerluatype<example::TestWildcardListener>(L, "example.TestWildcardListener");
 
     return 1;
 }
@@ -205,15 +201,13 @@ static int _example_Object_new(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    oluacls_class(L, "example.Object", nullptr);
+    oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
     oluacls_func(L, "__olua_move", _example_Object___olua_move);
     oluacls_func(L, "autorelease", _example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _example_Object_getReferenceCount);
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
-
-    olua_registerluatype<example::Object>(L, "example.Object");
 
     return 1;
 }
@@ -256,11 +250,9 @@ static int _example_ExportParent_setObject(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
-    oluacls_class(L, "example.ExportParent", "example.Object");
+    oluacls_class<example::ExportParent, example::Object>(L, "example.ExportParent");
     oluacls_func(L, "printExportParent", _example_ExportParent_printExportParent);
     oluacls_func(L, "setObject", _example_ExportParent_setObject);
-
-    olua_registerluatype<example::ExportParent>(L, "example.ExportParent");
 
     return 1;
 }
@@ -306,7 +298,7 @@ static int _example_Hello_checkValue(lua_State *L)
     int32_t *arg1 = nullptr;       /** t */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_span(L, 2, &arg1, "olua.int32_t");
+    olua_check_array(L, 2, &arg1, "olua.int32_t");
 
     // void checkValue(int32_t *t)
     self->checkValue(arg1);
@@ -339,7 +331,7 @@ static int _example_Hello_getBool(lua_State *L)
 
     // std::vector<bool> getBool()
     std::vector<bool> ret = self->getBool();
-    int num_ret = olua_push_array<bool>(L, ret, [L](bool &arg1) {
+    int num_ret = olua_push_vector<bool>(L, ret, [L](bool &arg1) {
         olua_push_bool(L, arg1);
     });
 
@@ -468,7 +460,7 @@ static int _example_Hello_setBool(lua_State *L)
     std::vector<bool> arg1;       /** bools */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<bool>(L, 2, arg1, [L](bool *arg1) {
+    olua_check_vector<bool>(L, 2, arg1, [L](bool *arg1) {
         olua_check_bool(L, -1, arg1);
     });
 
@@ -519,7 +511,7 @@ static int _example_Hello_setSingleton(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
-    oluacls_class(L, "example.Hello", "example.ExportParent");
+    oluacls_class<example::Hello, example::ExportParent>(L, "example.Hello");
     oluacls_func(L, "as", _example_Hello_as);
     oluacls_func(L, "checkValue", _example_Hello_checkValue);
     oluacls_func(L, "create", _example_Hello_create);
@@ -537,8 +529,6 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_prop(L, "bool", _example_Hello_getBool, _example_Hello_setBool);
     oluacls_prop(L, "name", _example_Hello_getName, _example_Hello_setName);
     oluacls_prop(L, "singleton", _example_Hello_getSingleton, _example_Hello_setSingleton);
-
-    olua_registerluatype<example::Hello>(L, "example.Hello");
 
     return 1;
 }
@@ -621,13 +611,11 @@ static int _example_TestGC_testGC(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestGC(lua_State *L)
 {
-    oluacls_class(L, "example.TestGC", "example.TestWildcardListener");
+    oluacls_class<example::TestGC, example::TestWildcardListener>(L, "example.TestGC");
     oluacls_func(L, "as", _example_TestGC_as);
     oluacls_func(L, "gc", _example_TestGC_gc);
     oluacls_func(L, "new", _example_TestGC_new);
     oluacls_func(L, "testGC", _example_TestGC_testGC);
-
-    olua_registerluatype<example::TestGC>(L, "example.TestGC");
 
     return 1;
 }
@@ -636,14 +624,13 @@ OLUA_END_DECLS
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestWildcardClickEvent(lua_State *L)
 {
-    oluacls_class(L, "example.TestWildcardClickEvent", nullptr);
+    oluacls_class<example::TestWildcardClickEvent>(L, "example.TestWildcardClickEvent");
     oluacls_func(L, "__index", olua_indexerror);
     oluacls_func(L, "__newindex", olua_newindexerror);
     oluacls_enum(L, "H1", (lua_Integer)example::TestWildcardClickEvent::H1);
     oluacls_enum(L, "H2", (lua_Integer)example::TestWildcardClickEvent::H2);
     oluacls_enum(L, "H3", (lua_Integer)example::TestWildcardClickEvent::H3);
 
-    olua_registerluatype<example::TestWildcardClickEvent>(L, "example.TestWildcardClickEvent");
     printf("test wildcard luaopen\n");
 
     return 1;
@@ -653,14 +640,13 @@ OLUA_END_DECLS
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestWildcardTouchEvent(lua_State *L)
 {
-    oluacls_class(L, "example.TestWildcardTouchEvent", nullptr);
+    oluacls_class<example::TestWildcardTouchEvent>(L, "example.TestWildcardTouchEvent");
     oluacls_func(L, "__index", olua_indexerror);
     oluacls_func(L, "__newindex", olua_newindexerror);
     oluacls_enum(L, "T1", (lua_Integer)example::TestWildcardTouchEvent::T1);
     oluacls_enum(L, "T2", (lua_Integer)example::TestWildcardTouchEvent::T2);
     oluacls_enum(L, "T3", (lua_Integer)example::TestWildcardTouchEvent::T3);
 
-    olua_registerluatype<example::TestWildcardTouchEvent>(L, "example.TestWildcardTouchEvent");
     printf("test wildcard luaopen\n");
 
     return 1;
@@ -722,13 +708,11 @@ static int _example_Singleton_example_Hello_printSingleton(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
-    oluacls_class(L, "example.Singleton<example.Hello>", nullptr);
+    oluacls_class<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
     oluacls_func(L, "__gc", _example_Singleton_example_Hello___gc);
     oluacls_func(L, "__olua_move", _example_Singleton_example_Hello___olua_move);
     oluacls_func(L, "create", _example_Singleton_example_Hello_create);
     oluacls_func(L, "printSingleton", _example_Singleton_example_Hello_printSingleton);
-
-    olua_registerluatype<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
 
     return 1;
 }

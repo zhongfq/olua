@@ -129,13 +129,8 @@ end
 local function gen_class_open(cls, write)
     local funcs = olua.newarray('\n')
     local reg_luatype = ''
-    local supercls = "nullptr"
     local luaopen = cls.luaopen or ''
-
-    if cls.supercls then
-        supercls = olua.luacls(cls.supercls)
-        supercls = format([["${supercls}"]])
-    end
+    local oluacls_class
 
     if cls.options.indexerror then
         if cls.options.indexerror:find('r') then
@@ -196,18 +191,21 @@ local function gen_class_open(cls, write)
         funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
-    if cls.options.reg_luatype then
-        reg_luatype = format('olua_registerluatype<${cls.cppcls}>(L, "${cls.luacls}");')
+    if not cls.options.reg_luatype then
+        oluacls_class = format('oluacls_class(L, "${cls.luacls}", nullptr);')
+    elseif cls.supercls then
+        oluacls_class = format('oluacls_class<${cls.cppcls}, ${cls.supercls}>(L, "${cls.luacls}");')
+    else
+        oluacls_class = format('oluacls_class<${cls.cppcls}>(L, "${cls.luacls}");')
     end
 
     write(format([[
         OLUA_BEGIN_DECLS
         OLUA_LIB int luaopen_${cls.cppcls#}(lua_State *L)
         {
-            oluacls_class(L, "${cls.luacls}", ${supercls});
+            ${oluacls_class}
             ${funcs}
 
-            ${reg_luatype}
             ${luaopen}
 
             return 1;

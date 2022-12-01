@@ -882,9 +882,9 @@ function M:visit(cur, cppcls)
             local specialized = decl.specializedTemplate
             if specialized then
                 --[[
-                    typedef olua::span<int> olua_int;
+                    typedef olua::array<int> olua_int;
 
-                    specialized: olua::span<int>
+                    specialized: olua::array<int>
                          cppcls: olua_int
                       packedcls: int
                 ]]
@@ -895,7 +895,7 @@ function M:visit(cur, cppcls)
                 local specializedcls = parse_from_type(cur.underlyingType)
                 self:visit_class(cppcls, specialized, arg_types, specializedcls)
                 
-                if specializedcls:find('^olua::span')
+                if specializedcls:find('^olua::array')
                     or specializedcls:find('^olua::pointer')
                 then
                     local typedef = self.CMD.typedef

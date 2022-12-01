@@ -14,6 +14,7 @@ import "../common/lua-object.lua"
 typeconf 'example::VectorInt'
 typeconf 'example::VectorPoint'
 typeconf 'example::VectorString'
+typeconf 'example::PointArray'
 
 typeconf 'example::ClickCallback'
 typeconf 'example::Type'

@@ -82,15 +82,13 @@ static int _example_Object_new(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    oluacls_class(L, "example.Object", nullptr);
+    oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
     oluacls_func(L, "__olua_move", _example_Object___olua_move);
     oluacls_func(L, "autorelease", _example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _example_Object_getReferenceCount);
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
-
-    olua_registerluatype<example::Object>(L, "example.Object");
 
     return 1;
 }
@@ -192,13 +190,11 @@ static int _example_Event_set_name(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Event(lua_State *L)
 {
-    oluacls_class(L, "example.Event", nullptr);
+    oluacls_class<example::Event>(L, "example.Event");
     oluacls_func(L, "__gc", _example_Event___gc);
     oluacls_func(L, "__olua_move", _example_Event___olua_move);
     oluacls_prop(L, "data", _example_Event_get_data, _example_Event_set_data);
     oluacls_prop(L, "name", _example_Event_get_name, _example_Event_set_name);
-
-    olua_registerluatype<example::Event>(L, "example.Event");
 
     return 1;
 }
@@ -219,10 +215,8 @@ static int _example_Callback_Listener___call(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Callback_Listener(lua_State *L)
 {
-    oluacls_class(L, "example.Callback.Listener", nullptr);
+    oluacls_class<example::Callback::Listener>(L, "example.Callback.Listener");
     oluacls_func(L, "__call", _example_Callback_Listener___call);
-
-    olua_registerluatype<example::Callback::Listener>(L, "example.Callback.Listener");
 
     return 1;
 }
@@ -387,14 +381,12 @@ static int _example_Callback_setOnceEvent(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Callback(lua_State *L)
 {
-    oluacls_class(L, "example.Callback", "example.Object");
+    oluacls_class<example::Callback, example::Object>(L, "example.Callback");
     oluacls_func(L, "dispatch", _example_Callback_dispatch);
     oluacls_func(L, "foreach", _example_Callback_foreach);
     oluacls_func(L, "new", _example_Callback_new);
     oluacls_func(L, "setEvent", _example_Callback_setEvent);
     oluacls_func(L, "setOnceEvent", _example_Callback_setOnceEvent);
-
-    olua_registerluatype<example::Callback>(L, "example.Callback");
 
     return 1;
 }

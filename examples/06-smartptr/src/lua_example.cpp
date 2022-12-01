@@ -77,15 +77,13 @@ static int _example_Object_new(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    oluacls_class(L, "example.Object", nullptr);
+    oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
     oluacls_func(L, "__olua_move", _example_Object___olua_move);
     oluacls_func(L, "autorelease", _example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _example_Object_getReferenceCount);
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
-
-    olua_registerluatype<example::Object>(L, "example.Object");
 
     return 1;
 }
@@ -234,7 +232,7 @@ static int _example_Hello_shared_from_this(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
-    oluacls_class(L, "example.Hello", nullptr);
+    oluacls_class<example::Hello>(L, "example.Hello");
     oluacls_func(L, "__gc", _example_Hello___gc);
     oluacls_func(L, "__olua_move", _example_Hello___olua_move);
     oluacls_func(L, "getName", _example_Hello_getName);
@@ -246,8 +244,6 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "shared_from_this", _example_Hello_shared_from_this);
     oluacls_prop(L, "name", _example_Hello_getName, _example_Hello_setName);
     oluacls_prop(L, "this", _example_Hello_getThis, _example_Hello_setThis);
-
-    olua_registerluatype<example::Hello>(L, "example.Hello");
 
     return 1;
 }
