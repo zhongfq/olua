@@ -8,6 +8,7 @@ enable_testing()
 
 add_subdirectory(examples/lua)
 add_subdirectory(examples/common)
+add_subdirectory(examples/00-testapi)
 add_subdirectory(examples/01-helloworld)
 add_subdirectory(examples/02-callback)
 add_subdirectory(examples/03-convertor)

@@ -17,20 +17,6 @@ local function has_method(cls, fn, check_super)
 end
 
 local function check_meta_method(cls)
-    local has_ctor = false
-    for _, v in ipairs(cls.funcs) do
-        if v[1].ctor then
-            has_ctor = true
-            break
-        end
-    end
-    if has_ctor and not has_method(cls, '__gc', true) then
-        cls.funcs:push(olua.parse_func(cls, '__gc', format([[
-        {
-            olua_postgc<${cls.cppcls}>(L, 1);
-            return 0;
-        }]])))
-    end
     if olua.is_func_type(cls) then
         cls.funcs:push(olua.parse_func(cls, '__call', format([[
         {
@@ -38,15 +24,40 @@ local function check_meta_method(cls)
             olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.luacls}");
             return 1;
         }]])))
-    elseif not olua.is_enum_type(cls) and cls.reg_luatype
-        and not has_method(cls, '__olua_move', false)
-    then
-        cls.funcs:push(olua.parse_func(cls, '__olua_move', format([[
-        {
-            auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
-            olua_push_obj(L, self, "${cls.luacls}");
-            return 1;
-        }]])))
+    elseif not olua.is_enum_type(cls) and cls.options.reg_luatype then
+        if not cls.options.disallow_gc and not has_method(cls, '__gc', true) then
+            cls.funcs:push(olua.parse_func(cls, '__gc', format([[
+            {
+                olua_postgc<${cls.cppcls}>(L, 1);
+                return 0;
+            }]])))
+        end
+        if not has_method(cls, '__olua_move', true) then
+            cls.funcs:push(olua.parse_func(cls, '__olua_move', format([[
+            {
+                auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
+                olua_push_object(L, self, "${cls.luacls}");
+                return 1;
+            }]])))
+        end
+        if cls.options.packable and not cls.options.packvars then
+            local codeset = {decl_args = olua.newarray(), check_args = olua.newarray()}
+            olua.gen_class_fill(cls, 2, 'ret', codeset)
+
+            cls.funcs:push(olua.parse_func(cls, '__call', format([[
+            {
+                ${cls.cppcls} ret;
+
+                luaL_checktype(L, 2, LUA_TTABLE);
+
+                ${codeset.decl_args}
+
+                ${codeset.check_args}
+
+                olua_pushcopy_object(L, ret, "${cls.luacls}");
+                return 1;
+            }]])))
+        end
     end
 end
 
@@ -118,19 +129,14 @@ end
 local function gen_class_open(cls, write)
     local funcs = olua.newarray('\n')
     local reg_luatype = ''
-    local supercls = "nullptr"
     local luaopen = cls.luaopen or ''
+    local oluacls_class
 
-    if cls.supercls then
-        supercls = olua.luacls(cls.supercls)
-        supercls = format([["${supercls}"]])
-    end
-
-    if cls.indexerror then
-        if cls.indexerror:find('r') then
+    if cls.options.indexerror then
+        if cls.options.indexerror:find('r') then
             funcs:pushf('oluacls_func(L, "__index", olua_indexerror);')
         end
-        if cls.indexerror:find('w') then
+        if cls.options.indexerror:find('w') then
             funcs:pushf('oluacls_func(L, "__newindex", olua_newindexerror);')
         end
     end
@@ -173,44 +179,33 @@ local function gen_class_open(cls, write)
 
     olua.sort(cls.consts, 'name')
     for _, ci in ipairs(cls.consts) do
-        local decltype = ci.type.decltype
-        local value = ci.value
-        local const_func
-        if decltype == 'bool' then
-            const_func = 'oluacls_const_bool'
-        elseif decltype == 'lua_Integer' or decltype == 'lua_Unsigned' then
-            const_func = 'oluacls_const_integer'
-        elseif decltype == 'lua_Number' then
-            const_func = 'oluacls_const_number'
-        elseif decltype == 'const char *' then
-            const_func = 'oluacls_const_string'
-        elseif decltype == 'std::string' then
-            const_func = 'oluacls_const_string'
-            decltype = 'const char *'
-            value = value .. '.c_str()'
-        else
-            error(ci.type.decltype)
+        local cast = ''
+        if olua.is_pointer_type(ci.type) and not olua.has_pointer_flag(ci.type) then
+            cast = '&'
         end
-        funcs:pushf('${const_func}(L, "${ci.name}", (${decltype})${value});')
+        funcs:pushf('oluacls_const(L, "${ci.name}", ${cast}${ci.value});')
     end
 
     olua.sort(cls.enums, 'name')
     for _, ei in ipairs(cls.enums) do
-        funcs:pushf('oluacls_const_integer(L, "${ei.name}", (lua_Integer)${ei.value});')
+        funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
-    if cls.reg_luatype then
-        reg_luatype = format('olua_registerluatype<${cls.cppcls}>(L, "${cls.luacls}");')
+    if not cls.options.reg_luatype then
+        oluacls_class = format('oluacls_class(L, "${cls.luacls}", nullptr);')
+    elseif cls.supercls then
+        oluacls_class = format('oluacls_class<${cls.cppcls}, ${cls.supercls}>(L, "${cls.luacls}");')
+    else
+        oluacls_class = format('oluacls_class<${cls.cppcls}>(L, "${cls.luacls}");')
     end
 
     write(format([[
         OLUA_BEGIN_DECLS
         OLUA_LIB int luaopen_${cls.cppcls#}(lua_State *L)
         {
-            oluacls_class(L, "${cls.luacls}", ${supercls});
+            ${oluacls_class}
             ${funcs}
 
-            ${reg_luatype}
             ${luaopen}
 
             return 1;
@@ -226,6 +221,15 @@ local function gen_class_chunk(cls, write)
     end
 end
 
+local function has_packable_class(module)
+    for _, cls in ipairs(module.class_types) do
+        if cls.options.packable then
+            return true
+        end
+    end
+    return false
+end
+
 function olua.gen_header(module)
     local arr = olua.newarray('\n')
     local function write(value)
@@ -234,10 +238,10 @@ function olua.gen_header(module)
             arr:push(value:gsub('\n *#', '\n#'))
         end
     end
-
+    
     local HEADER = string.upper(module.name)
     local headers = module.headers
-    if not olua.has_exported_conv(module) then
+    if not has_packable_class(module) then
         headers = '#include "olua/olua.h"'
     end
 
@@ -256,7 +260,7 @@ function olua.gen_header(module)
     ]]))
     write('')
 
-    olua.gen_conv_header(module, write, true)
+    olua.gen_pack_header(module, write)
 
     write('#endif')
 
@@ -266,7 +270,7 @@ end
 
 local function gen_include(module, write)
     local headers = ''
-    if not olua.has_exported_conv(module) then
+    if not has_packable_class(module) then
         headers = module.headers
     end
     write(format([[
@@ -278,16 +282,12 @@ local function gen_include(module, write)
     ]]))
     write('')
 
-    if not olua.has_exported_conv(module) then
-        olua.gen_conv_header(module, write, false)
-    end
-
     if module.chunk and #module.chunk > 0 then
         write(format(module.chunk))
         write('')
     end
 
-    olua.gen_conv_source(module, write)
+    olua.gen_pack_source(module, write)
 end
 
 local function gen_classes(module, write)

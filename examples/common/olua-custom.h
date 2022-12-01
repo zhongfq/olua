@@ -3,7 +3,6 @@
 
 #include "luauser.h"
 #include "olua.h"
-#include "olua-types.h"
 #include "Object.h"
 
 extern lua_State *olua_invokingstate;
@@ -60,9 +59,9 @@ void olua_postnew(lua_State *L, T *obj)
 {
     if (std::is_base_of<example::Object, T>::value) {
         ((example::Object *)obj)->autorelease();
-    } else {
-        olua_assert(obj == olua_toobj<T>(L, -1), "must be same object");
+    } else if (olua_getrawobj(L, obj)) {
         olua_setownership(L, -1, OLUA_OWNERSHIP_VM);
+        lua_pop(L, 1);
     }
 }
 #endif

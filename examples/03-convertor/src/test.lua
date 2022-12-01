@@ -1,5 +1,6 @@
 local olua = require "olua"
 local Node = require "example.Node"
+local Point = require "example.Point"
 
 olua.debug(true)
 
@@ -13,7 +14,7 @@ local id = 'hello'
 obj.identifier = id
 assert(obj:getIdentifier() == id)
 
-obj.position = {x = 1, y = 2}
+obj.position = Point {x = 1, y = 2}
 assert(obj.position.x == 1)
 assert(obj.position.y == 2)
 

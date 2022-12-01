@@ -7,15 +7,13 @@ int olua_is_example_Color(lua_State *L, int idx)
     return olua_isinteger(L, idx);
 }
 
-int olua_push_example_Color(lua_State *L, const Color *value)
+int olua_push_example_Color(lua_State *L, const Color &value)
 {
     uint32_t color = 0;
-    if (value) {
-        color |= value->r << 24;
-        color |= value->g << 16;
-        color |= value->b << 8;
-        color |= value->a;
-    }
+    color |= value.r << 24;
+    color |= value.g << 16;
+    color |= value.b << 8;
+    color |= value.a;
     lua_pushinteger(L, color);
     return 1;
 }

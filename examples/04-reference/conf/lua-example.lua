@@ -10,6 +10,7 @@ headers [[
 import "../common/lua-object.lua"
 
 typedef "example::vector"
+    .conv 'olua_$$_vector'
 
 typeconf "example::Node"
     .func 'setComponent' .arg1 '@addref(component ^)'

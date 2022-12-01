@@ -41,9 +41,22 @@ else
     olua.OLUA_HOME = os.getenv('HOME') .. '/.olua'
 end
 
+local time = os.time()
+function olua.print(fmt, ...)
+    local str = string.format(fmt, ...)
+    local idx = str:find(':')
+    if idx and idx < 11 then
+        idx = 11 - idx
+    else
+        idx = 0
+    end
+    local t = os.time() - time
+    print(string.format('[%02d:%02d] %s%s', t // 60, t % 60, string.rep(' ', idx), str))
+end
+
 -- version
-olua.OLUA_HOME = olua.OLUA_HOME .. '/v5'
-print(' olua home: ' .. olua.OLUA_HOME)
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.0'
+olua.print('olua home: %s', olua.OLUA_HOME)
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
@@ -54,27 +67,45 @@ local version = string.match(_VERSION, '%d.%d'):gsub('%.', '')
 package.cpath = string.format('%s/lua%s/?.%s;%s',
     olua.OLUA_HOME, version, suffix, package.cpath)
 
+local LUA_VERSION = 'lua' .. _VERSION:match('%d%.%d'):gsub('%.', '')
+
 -- unzip lib and header
 if not olua.isdir(olua.OLUA_HOME)
-    or not olua.isdir(olua.OLUA_HOME .. '/lua53')
-    or not olua.isdir(olua.OLUA_HOME .. '/lua54')
+    or not olua.isdir(olua.OLUA_HOME .. '/' .. LUA_VERSION)
     or not olua.isdir(olua.OLUA_HOME .. '/include')
 then
     local dir = scrpath:gsub('[^/.\\]+%.lua$', 'libs')
     olua.mkdir(olua.OLUA_HOME)
+
     local function unzip(path)
-        local cmd
+        local exe = osn == 'windows' and '.exe' or ''
+        local cmd = '%s/unzip-%s%s -f %s -o %s'
+        cmd = cmd:format(dir, osn, exe, path, olua.OLUA_HOME)
         if osn == 'windows' then
-            cmd = ('%s\\unzip.exe -f %s -o %s'):format(dir, path, olua.OLUA_HOME)
             cmd = cmd:gsub('/', '\\')
-        else
-            cmd = ('unzip -o %s -d %s'):format(path, olua.OLUA_HOME)
         end
         os.execute(cmd)
     end
-    unzip(('%s/%s-lua53.zip'):format(dir, osn))
-    unzip(('%s/%s-lua54.zip'):format(dir, osn))
-    unzip(dir .. '/include.zip')
+
+    local function wget(url, path)
+        olua.print('download: %s', url)
+        local exe = osn == 'windows' and '.exe' or ''
+        local cmd = '%s/wget-%s%s -l %s -o %s'
+        cmd = cmd:format(dir, osn, exe, url, path)
+        if osn == 'windows' then
+            cmd = cmd:gsub('/', '\\')
+        end
+        os.execute(cmd)
+    end
+
+    local url = 'https://github.com/zhongfq/olua/releases/download/v1'
+    local deps = {"include.zip", ("%s-%s.zip"):format(LUA_VERSION, osn)}
+    for _, v in ipairs(deps) do
+        wget(url .. '/' .. v, dir .. '/' .. v)
+    end
+    for _, v in ipairs(deps) do
+        unzip(dir .. '/' .. v)
+    end
 end
 
 -- error handle
@@ -102,10 +133,6 @@ function olua.assert(cond, exp)
     return cond
 end
 
-function olua.print(exp)
-    print(olua.format(exp))
-end
-
 function olua.is_end_with(str, substr)
     local _, e = str:find(substr, #str - #substr + 1, true)
     return e == #str
@@ -129,12 +156,12 @@ function olua.write(path, content)
         local flag = f:read("*a") == content
         f:close()
         if flag then
-            print("up-to-date: " .. path)
+            olua.print("up-to-date: %s", path)
             return
         end
     end
 
-    print("write: " .. path)
+    olua.print("write: %s", path)
 
     f = io.open(path, "w+b")
     assert(f, path)
@@ -154,6 +181,18 @@ function olua.sort(arr, field)
     return arr
 end
 
+function olua.ipairs(t, walk)
+    for i, v in ipairs(t) do
+        walk(i, v)
+    end
+end
+
+function olua.pairs(t, walk)
+    for k, v in pairs(t) do
+        walk(k, v)
+    end
+end
+
 function olua.newarray(sep, prefix, posfix)
     local mt = {}
     mt.__index = mt
@@ -166,21 +205,29 @@ function olua.newarray(sep, prefix, posfix)
     end
 
     function mt:push(v)
-        self[#self + 1] = v
+        if v ~= nil then
+            self[#self + 1] = v
+        end
         return self
     end
 
     function mt:pushf(v)
-        self[#self + 1] = olua.format(v)
+        if v ~= nil then
+            self[#self + 1] = olua.format(v)
+        end
         return self
     end
 
     function mt:insert(v)
-        table.insert(self, 1, v)
+        if v ~= nil then
+            table.insert(self, 1, v)
+        end
     end
 
     function mt:insertf(v)
-        table.insert(self, 1, olua.format(v))
+        if v ~= nil then
+            table.insert(self, 1, olua.format(v))
+        end
     end
 
     function mt:merge(t)
@@ -206,6 +253,15 @@ function olua.clone(t, newt)
         newt[k] = v
     end
     return newt
+end
+
+function olua.toarray(map)
+    local arr = {}
+    for k, v in pairs(map) do
+        arr[#arr + 1] = {key = k, value = v}
+    end
+    table.sort(arr, function (a, b) return a.key < b.key end)
+    return arr
 end
 
 function olua.newhash(map_only)
@@ -478,23 +534,24 @@ local function doeval(expr)
     return table.concat(arr, '\n')
 end
 
-function olua.trim(expr, indent)
+function olua.trim(expr, indent, keepspace)
     if type(expr) == 'string' then
         expr = expr:gsub('[\n\r]', '\n')
-        expr = expr:gsub('^[\n]*', '') -- trim head '\n'
-        expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
-
-        local space = string.match(expr, '^[ ]*')
-        indent = string.rep(' ', indent or 0)
-        expr = expr:gsub('^[ ]*', '')  -- trim head space
-        expr = expr:gsub('\n' .. space, '\n' .. indent)
-        expr = indent .. expr
+        if not keepspace then
+            expr = expr:gsub('^[\n]*', '') -- trim head '\n'
+            expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
+            local space = string.match(expr, '^[ ]*')
+            indent = string.rep(' ', indent or 0)
+            expr = expr:gsub('^[ ]*', '')  -- trim head space
+            expr = expr:gsub('\n' .. space, '\n' .. indent)
+            expr = indent .. expr
+        end
     end
     return expr
 end
 
-function olua.format(expr, indent)
-    expr = doeval(olua.trim(expr, indent))
+function olua.format(expr, indent, keepspace)
+    expr = doeval(olua.trim(expr, indent, keepspace))
 
     while true do
         local s, n = expr:gsub('\n[ ]+\n', '\n\n')
@@ -547,7 +604,6 @@ require "basictype"
 require "gen-class"
 require "gen-func"
 require "gen-callback"
-require "gen-conv"
 require "autoconf"
 
 _G.export = olua.export

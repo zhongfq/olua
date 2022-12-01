@@ -150,10 +150,10 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
 
     for i, v in ipairs(arg.callback.args) do
         local cb_argname = 'arg' .. i
-        local type_space = olua.typespace(v.declarg)
+        local decltype = olua.decltype(v.type, false, true)
         olua.gen_push_exp(v, cb_argname, callbackset)
         callbackset.args:pushf([[
-            ${v.declarg}${type_space}${cb_argname}
+            ${decltype}${cb_argname}
         ]])
     end
 
@@ -198,7 +198,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
                 }
             ]])
         end
-        callbackset.return_result = format([[return (${callback_ret.decltype})ret;]])
+        callbackset.return_result = format([[return ret;]])
     end
 
     if tag_store == -1 then
@@ -284,7 +284,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
             void *cb_store = (void *)${cb_store};
             std::string cb_tag = ${cb_tag};
             std::string cb_name;
-            if (${func_is}(L, ${argn}, "${arg.type.luacls}")) {
+            if (olua_isfunction(L, ${argn})) {
                 cb_name = olua_setcallback(L, cb_store,  ${argn}, cb_tag.c_str(), ${tag_mode});
                 ${callback_block}
             } else {
