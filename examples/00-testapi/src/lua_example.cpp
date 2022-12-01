@@ -1768,7 +1768,7 @@ static int _example_Hello_getStringRef(lua_State *L)
     std::string *arg1 = nullptr;       /** ref */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array(L, 2, &arg1, "olua.string");
+    olua_check_pointer(L, 2, &arg1, "olua.string");
 
     // void getStringRef(std::string &ref)
     self->getStringRef(*arg1);
