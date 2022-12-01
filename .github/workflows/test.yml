@@ -12,6 +12,8 @@ jobs:
     steps:
     - name: Checkout github repo
       uses: actions/checkout@v2
+      with:
+        submodules: 'recursive'
       
     - name: Setup Lua
       uses: xpol/setup-lua@v0.2
