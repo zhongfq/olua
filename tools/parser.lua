@@ -242,7 +242,9 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     if not checkvalue and olua.has_const_flag(ti) then
         exps:push('const ')
     end
-    if not checkvalue and olua.has_cast_flag(ti) then
+    if ti.smartptr then
+        exps:push(ti.cppcls:gsub('<.*>[ &*]*$', ''))
+    elseif not checkvalue and olua.has_cast_flag(ti) then
         exps:push(ti.cppcls:gsub('[ *]+$', ''))
     else
         exps:push(ti.cppcls)

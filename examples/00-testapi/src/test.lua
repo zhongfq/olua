@@ -80,6 +80,11 @@ assert(olua.enum(Type.RVALUE) == 1)
 obj.type = Type.POINTER
 assert(obj.type == Type.POINTER)
 assert(olua.enum(obj.type) == 2)
+assert(Type.LVALUE < Type.RVALUE)
+assert(Type.LVALUE <= Type.RVALUE)
+assert(Type.POINTER > Type.RVALUE)
+assert(Type.POINTER >= Type.RVALUE)
+assert(Type.POINTER < 3)
 
 -- test vector int
 local VectorInt = require "example.VectorInt"
