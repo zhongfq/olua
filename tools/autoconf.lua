@@ -1771,7 +1771,7 @@ local function write_typedefs()
             return
         end
         local cls = visited_types:get(raw_typename(cppcls))
-        local from = "alias: ${alias} -> ${cppcls}"
+        local from = format("alias: ${alias} -> ${cppcls}")
         if not cls then
             local ti = type_convs:get(cppcls) or olua.typeinfo(cppcls)
             types:push({
