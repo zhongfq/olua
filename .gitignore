@@ -1,4 +1,6 @@
-autobuild/
-build/
 .vscode/c_cpp_properties.json
 .vscode/settings.json
+autobuild/
+build/
+release/
+tools/libs/*.zip

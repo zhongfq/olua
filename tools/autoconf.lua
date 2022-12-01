@@ -1,9 +1,9 @@
 local olua = require "olua"
 local clang = require "clang"
-local TypeKind = require "clangwrapper.TypeKind"
-local CursorKind = require "clangwrapper.CursorKind"
-local CXXAccessSpecifier = require "clangwrapper.CXXAccessSpecifier"
-local DiagnosticSeverity = require "clangwrapper.DiagnosticSeverity"
+local TypeKind = require "clang.TypeKind"
+local CursorKind = require "clang.CursorKind"
+local CXXAccessSpecifier = require "clang.CXXAccessSpecifier"
+local DiagnosticSeverity = require "clang.DiagnosticSeverity"
 
 if not olua.isdir('autobuild') then
     olua.mkdir('autobuild')

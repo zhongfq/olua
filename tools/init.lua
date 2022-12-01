@@ -51,11 +51,11 @@ function olua.print(fmt, ...)
         idx = 0
     end
     local t = os.time() - time
-    print(string.format('[%02s:%02s] %s%s', t // 60, t % 60, string.rep(' ', idx), str))
+    print(string.format('[%02d:%02d] %s%s', t // 60, t % 60, string.rep(' ', idx), str))
 end
 
 -- version
-olua.OLUA_HOME = olua.OLUA_HOME .. '/v5'
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.0'
 olua.print('olua home: %s', olua.OLUA_HOME)
 
 -- lua search path
@@ -67,27 +67,45 @@ local version = string.match(_VERSION, '%d.%d'):gsub('%.', '')
 package.cpath = string.format('%s/lua%s/?.%s;%s',
     olua.OLUA_HOME, version, suffix, package.cpath)
 
+local LUA_VERSION = 'lua' .. _VERSION:match('%d%.%d'):gsub('%.', '')
+
 -- unzip lib and header
 if not olua.isdir(olua.OLUA_HOME)
-    or not olua.isdir(olua.OLUA_HOME .. '/lua53')
-    or not olua.isdir(olua.OLUA_HOME .. '/lua54')
+    or not olua.isdir(olua.OLUA_HOME .. '/' .. LUA_VERSION)
     or not olua.isdir(olua.OLUA_HOME .. '/include')
 then
     local dir = scrpath:gsub('[^/.\\]+%.lua$', 'libs')
     olua.mkdir(olua.OLUA_HOME)
+
     local function unzip(path)
-        local cmd
+        local exe = osn == 'windows' and '.exe' or ''
+        local cmd = '%s/unzip-%s%s -f %s -o %s'
+        cmd = cmd:format(dir, osn, exe, path, olua.OLUA_HOME)
         if osn == 'windows' then
-            cmd = ('%s\\unzip.exe -f %s -o %s'):format(dir, path, olua.OLUA_HOME)
             cmd = cmd:gsub('/', '\\')
-        else
-            cmd = ('unzip -o %s -d %s'):format(path, olua.OLUA_HOME)
         end
         os.execute(cmd)
     end
-    unzip(('%s/%s-lua53.zip'):format(dir, osn))
-    unzip(('%s/%s-lua54.zip'):format(dir, osn))
-    unzip(dir .. '/include.zip')
+
+    local function wget(url, path)
+        olua.print('download: %s', url)
+        local exe = osn == 'windows' and '.exe' or ''
+        local cmd = '%s/wget-%s%s -l %s -o %s'
+        cmd = cmd:format(dir, osn, exe, url, path)
+        if osn == 'windows' then
+            cmd = cmd:gsub('/', '\\')
+        end
+        os.execute(cmd)
+    end
+
+    local url = 'https://github.com/zhongfq/olua/releases/download/v1'
+    local deps = {"include.zip", ("%s-%s.zip"):format(LUA_VERSION, osn)}
+    for _, v in ipairs(deps) do
+        wget(url .. '/' .. v, dir .. '/' .. v)
+    end
+    for _, v in ipairs(deps) do
+        unzip(dir .. '/' .. v)
+    end
 end
 
 -- error handle
