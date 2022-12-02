@@ -91,10 +91,11 @@ then
         olua.print('download: %s', url)
         local exe = osn == 'windows' and '.exe' or ''
         local cmd = '%s/wget-%s%s -l %s -o %s'
-        cmd = cmd:format(dir, osn, exe, url, path)
+        cmd = cmd:format(dir, osn, exe, '%s', path)
         if osn == 'windows' then
             cmd = cmd:gsub('/', '\\')
         end
+        cmd = cmd:format(url)
         os.execute(cmd)
     end
 
