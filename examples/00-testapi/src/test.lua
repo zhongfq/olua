@@ -1,6 +1,11 @@
 local path = (...):gsub('test.lua$', '') .. '../../common/?.lua;'
 package.path = path .. package.path
 
+local OLUA_FLAG_SINGLE      = 1 << 1 -- add & remove: only ref one
+local OLUA_FLAG_MULTIPLE    = 1 << 2 -- add & remove: can ref one or more
+local OLUA_FLAG_TABLE       = 1 << 3 -- obj is table
+local OLUA_FLAG_REMOVE      = 1 << 4 -- internal use
+
 local Hello = require "example.Hello"
 local Point = require "example.Point"
 local ClickCallback = require "example.ClickCallback"
@@ -57,6 +62,7 @@ print('sizeof(string)', str.sizeof)
 print('ref', num.value, str.value)
 assert(num.value == 120)
 assert(str.value == "120")
+assert(olua.isa(obj, 'void *'))
 
 -- callback
 obj:setClickCallback(ClickCallback(function (...)
@@ -113,3 +119,27 @@ local Const = require "example.Const"
 assert(Const.BOOL == true)
 assert(Const.INT == -1)
 assert(Const.ULLONG == 1)
+
+-- test ref
+local obja = Hello.new()
+local objb = Hello.new()
+print("------------olua.ref------------")
+-- olua.ref {
+--     action = 'add',
+--     name = 'children',
+--     where = obj,
+--     object = obja,
+--     flags = OLUA_FLAG_MULTIPLE,
+-- }
+olua.ref('add', obj, 'children', obja, OLUA_FLAG_MULTIPLE)
+olua.ref('add', obj, 'children', objb, OLUA_FLAG_MULTIPLE)
+olua.ref('add', obj, 'objecta', obja, OLUA_FLAG_SINGLE)
+util.dumpUserValue(obj)
+assert(util.hasRef(obj, "children", obja))
+assert(util.hasRef(obj, "children", objb))
+olua.ref('del', obj, 'children', obja, OLUA_FLAG_MULTIPLE)
+assert(util.hasNoRef(obj, 'children', obja))
+olua.ref('delall', obj, 'children')
+assert(util.hasNoRef(obj, 'children', objb))
+util.dumpUserValue(obj)
+util.dump(olua.uservalue(obj))
