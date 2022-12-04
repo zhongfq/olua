@@ -7,6 +7,7 @@ new_globals = {
     "OLUA_ENABLE_DEPRECATED",
     "OLUA_MAX_VARIADIC_ARGS",
     "OLUA_VERBOSE",
+    "LUA_DEBUG",
     "autoconf",
     "chunk",
     "name",

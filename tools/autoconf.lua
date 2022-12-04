@@ -2094,14 +2094,16 @@ end
 --
 local has_hook = false
 
+if LUA_DEBUG then
+    olua.make = deferred_autoconf
+end
+
 function M.__call(_, path)
-    if not has_hook then
+    if not has_hook and not LUA_DEBUG then
         has_hook = true
         local debug_getinfo = debug.getinfo
         local build_func = debug_getinfo(2, "f").func
-        local count = 0
         debug.sethook(function ()
-            count = count + 1
             if debug_getinfo(2, "f").func == build_func then
                 debug.sethook(nil)
                 deferred_autoconf()

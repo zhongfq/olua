@@ -85,10 +85,7 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
     local subtis = {}
     for subcpptype in cpptype:match('<(.*)>'):gmatch(' *([^,]+)') do
         local subti = olua.typeinfo(subcpptype, cls, throwerror)
-        if subti.smartptr then
-            subti.cppcls = olua.decltype(subti)
-            subti.luacls = subti.subtypes[1].luacls
-        elseif subcpptype:find('<') then
+        if not subti.smartptr and subcpptype:find('<') then
             olua.error([[
                 unsupport template class as template args:
                        type: ${cpptype}
@@ -200,6 +197,11 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
             ti = setmetatable({}, {__index = tti})
             ti.flag = flag
         end
+        if ti.smartptr then
+            ti.cppcls = olua.decltype(ti, true)
+            ti.luacls = ti.subtypes[1].luacls
+            ti.subtypes = nil
+        end
     end
 
     if not olua.is_pointer_type(ti.cppcls)
@@ -242,9 +244,7 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     if not checkvalue and olua.has_const_flag(ti) then
         exps:push('const ')
     end
-    if ti.smartptr then
-        exps:push(ti.cppcls:gsub('<.*>[ &*]*$', ''))
-    elseif not checkvalue and olua.has_cast_flag(ti) then
+    if not checkvalue and olua.has_cast_flag(ti) then
         exps:push(ti.cppcls:gsub('[ *]+$', ''))
     else
         exps:push(ti.cppcls)
