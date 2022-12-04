@@ -870,9 +870,12 @@ static int _example_PointArray_sub$1(lua_State *L)
     olua_check_integer(L, 2, &arg1);
     olua_check_integer(L, 3, &arg2);
 
-    // example::PointArray *sub(size_t from, @optional size_t to)
+    // @postnew example::PointArray *sub(size_t from, @optional size_t to)
     example::PointArray *ret = self->sub(arg1, arg2);
     int num_ret = olua_push_object(L, ret, "example.PointArray");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -889,9 +892,12 @@ static int _example_PointArray_sub$2(lua_State *L)
     olua_to_object(L, 1, &self, "example.PointArray");
     olua_check_integer(L, 2, &arg1);
 
-    // example::PointArray *sub(size_t from, @optional size_t to)
+    // @postnew example::PointArray *sub(size_t from, @optional size_t to)
     example::PointArray *ret = self->sub(arg1);
     int num_ret = olua_push_object(L, ret, "example.PointArray");
+
+    // insert code after call
+    olua_postnew(L, ret);
 
     olua_endinvoke(L);
 
@@ -904,14 +910,14 @@ static int _example_PointArray_sub(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 2))) {
-            // example::PointArray *sub(size_t from, @optional size_t to)
+            // @postnew example::PointArray *sub(size_t from, @optional size_t to)
             return _example_PointArray_sub$2(L);
         // }
     }
 
     if (num_args == 2) {
         // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
-            // example::PointArray *sub(size_t from, @optional size_t to)
+            // @postnew example::PointArray *sub(size_t from, @optional size_t to)
             return _example_PointArray_sub$1(L);
         // }
     }
@@ -1136,7 +1142,8 @@ static int _example_Point___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::Point>(L, 1);
+    auto self = (example::Point *)olua_toobj(L, 1, "example.Point");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 
@@ -3467,7 +3474,8 @@ static int _example_Const___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::Const>(L, 1);
+    auto self = (example::Const *)olua_toobj(L, 1, "example.Const");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 
@@ -3548,7 +3556,8 @@ static int _example_SharedHello___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::SharedHello>(L, 1);
+    auto self = (example::SharedHello *)olua_toobj(L, 1, "example.SharedHello");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 
@@ -3708,7 +3717,8 @@ static int _example_Singleton_example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::Singleton<example::Hello>>(L, 1);
+    auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton<example.Hello>");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 

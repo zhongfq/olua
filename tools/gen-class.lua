@@ -28,7 +28,8 @@ local function check_meta_method(cls)
         if not cls.options.disallow_gc and not has_method(cls, '__gc', true) then
             cls.funcs:push(olua.parse_func(cls, '__gc', format([[
             {
-                olua_postgc<${cls.cppcls}>(L, 1);
+                auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
+                olua_postgc(L, self);
                 return 0;
             }]])))
         end

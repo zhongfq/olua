@@ -65,7 +65,8 @@ static int _example_TestWildcardListener___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::TestWildcardListener>(L, 1);
+    auto self = (example::TestWildcardListener *)olua_toobj(L, 1, "example.TestWildcardListener");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 
@@ -657,7 +658,8 @@ static int _example_Singleton_example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::Singleton<example::Hello>>(L, 1);
+    auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton<example.Hello>");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 

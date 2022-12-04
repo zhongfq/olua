@@ -93,7 +93,8 @@ static int _example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::Hello>(L, 1);
+    auto self = (example::Hello *)olua_toobj(L, 1, "example.Hello");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 

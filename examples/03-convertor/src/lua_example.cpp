@@ -147,7 +147,8 @@ static int _example_Point___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::Point>(L, 1);
+    auto self = (example::Point *)olua_toobj(L, 1, "example.Point");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 

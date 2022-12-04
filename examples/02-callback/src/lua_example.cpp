@@ -98,7 +98,8 @@ static int _example_Event___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
-    olua_postgc<example::Event>(L, 1);
+    auto self = (example::Event *)olua_toobj(L, 1, "example.Event");
+    olua_postgc(L, self);
 
     olua_endinvoke(L);
 
