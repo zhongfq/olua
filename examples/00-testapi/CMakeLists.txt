@@ -14,12 +14,6 @@ target_compile_definitions(00-api
   PUBLIC
     LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
 )
-if(WIN32)
-    add_custom_command(TARGET 00-api POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:00-api> $<TARGET_FILE_DIR:00-api>
-      COMMAND_EXPAND_LISTS
-    )
-endif()
 add_test(NAME test-00-api COMMAND 00-api)
 
 execute_process(

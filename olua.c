@@ -330,11 +330,17 @@ OLUA_API int olua_pushobj(lua_State *L, void *obj, const char *cls)
     if (olua_likely(olua_rawgetp(L, -1, obj) == LUA_TNIL)) {
         olua_VMEnv *env = aux_getvmenv(L);
         lua_pop(L, 1);
-        if (olua_unlikely(env->poolenabled)) {
+        if (olua_isuserdata(L, -3) && olua_torawobj(L, -3) == obj) {
+            lua_pushvalue(L, -3);
+            // L: obj metaclass objtable obj
+            lua_remove(L, -4);
+        } else if (olua_unlikely(env->poolenabled)) {
             aux_pushlocalobj(L, obj);
             status = OLUA_OBJ_EXIST;
         } else {
             olua_newrawobj(L, obj);
+        }
+        if (!olua_unlikely(env->poolenabled)) {
             lua_pushvalue(L, -1);
             // L: metaclass objtable obj obj
             olua_rawsetp(L, -3, obj); // objtable[obj] = obj
@@ -416,11 +422,7 @@ OLUA_API const char *olua_objstring(lua_State *L, int idx)
     if (olua_isuserdata(L, idx)) {
         obj = olua_torawobj(L, idx);
     }
-    if (aux_getvmenv(L)->debug) {
-        return lua_pushfstring(L, "%s: %p(%p)", olua_typename(L, idx), obj, ud);
-    } else {
-        return lua_pushfstring(L, "%s: %p", olua_typename(L, idx), obj);
-    }
+    return lua_pushfstring(L, "%s: %p", olua_typename(L, idx), obj);
 }
 
 OLUA_API int olua_indexerror(lua_State *L)
@@ -924,30 +926,44 @@ static int cls_metamethod(lua_State *L)
     // 1: funcs   2: name   3: isgc
     bool isgc = olua_tobool(L, lua_upvalueindex(3));
     lua_pushvalue(L, lua_upvalueindex(2));
-    if (lookupfunc(L, lua_upvalueindex(1), lua_gettop(L))) {
-        lua_replace(L, -2);
-        lua_insert(L, 1);
+    if (!lookupfunc(L, lua_upvalueindex(1), lua_gettop(L))) {
         if (!isgc) {
-            lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
-            return lua_gettop(L);
-        } else if (olua_isuserdata(L, 2)) {
-            if (olua_getownership(L, 2) == OLUA_OWNERSHIP_SLAVE) {
-                if (olua_isdebug(L)) {
-                    printf("skip gc for object: %s\n", olua_objstring(L, 2));
-                }
-                return 0;
-            }
-            olua_pusherrorfunc(L);
-            lua_insert(L, 1);
-            lua_pcall(L, lua_gettop(L) - 2, LUA_MULTRET, 1);
-            return lua_gettop(L) - 1;
-        } else {
-            // unnecessary call __gc on class table
-            return 0;
+            luaL_error(L, "meta method '%s' not found for '%s'",
+                olua_checkstring(L, lua_upvalueindex(2)), olua_objstring(L, 1));
         }
-    } else if (!isgc) {
-        luaL_error(L, "meta method '%s' not found for '%s'",
-            olua_checkstring(L, lua_upvalueindex(2)), olua_objstring(L, 1));
+        return 0;
+    }
+    lua_replace(L, -2); // remove name
+    lua_insert(L, 1);
+    if (!isgc) {
+        lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
+        return lua_gettop(L);
+    }
+    if (!olua_isuserdata(L, 2)) {
+        // unnecessary call __gc on class table
+        return 0;
+    }
+    if (olua_getownership(L, 2) == OLUA_OWNERSHIP_SLAVE) {
+        if (olua_isdebug(L)) {
+            printf("skip gc for object: %s\n", olua_objstring(L, 2));
+        }
+        return 0;
+    } else {
+        if (olua_isdebug(L)) {
+            int top = lua_gettop(L);
+            lua_getfield(L, 2, "name");
+            const char *name = lua_tostring(L, -1);
+            const char *str = olua_objstring(L, 2);
+            olua_getglobal(L, "print");
+            lua_pushfstring(L, "lua gc: %s {userdata=%p, name=%s}",
+                str, lua_topointer(L, 2), name && strlen(name) > 0 ? name : "''");
+            lua_pcall(L, 1, 0, 1);
+            lua_settop(L, top);
+        }
+        olua_pusherrorfunc(L);
+        lua_insert(L, 1);
+        lua_pcall(L, lua_gettop(L) - 2, LUA_MULTRET, 1);
+        return lua_gettop(L) - 1;
     }
     return 0;
 }
@@ -1141,6 +1157,8 @@ OLUA_API void oluacls_class(lua_State *L, const char *cls, const char *supercls)
         lua_newuserdata(L, sizeof(void *)); // create clsobj
         lua_createtable(L, 0, 1);   // create metatable
         lua_pushvalue(L, -1);
+        lua_pushfstring(L, "classobj(%s)", cls);
+        olua_setfield(L, -2, "__name");
         // L: metaclass objtable clsobj metatable metatable
         olua_rawsetf(L, -2, "__index"); // metatable.__index = metatable
         olua_setfieldstring(L, -1, "classname", cls);
@@ -1304,6 +1322,13 @@ OLUA_API void olua_setfieldstring(lua_State *L, int idx, const char *field, cons
 {
     idx = lua_absindex(L, idx);
     olua_pushstring(L, value);
+    olua_setfield(L, idx, field);
+}
+
+OLUA_API void olua_setfieldfunc(lua_State *L, int idx, const char *field, lua_CFunction fn)
+{
+    idx = lua_absindex(L, idx);
+    lua_pushcfunction(L, fn);
     olua_setfield(L, idx, field);
 }
 
@@ -1568,6 +1593,12 @@ static intptr_t aux_toenum(lua_State *L, int idx) {
     return 0;
 }
 
+static int l_enum_tostring(lua_State *L)
+{
+    lua_pushfstring(L, "lightuserdata: %p", lua_topointer(L, 1));
+    return 1;
+}
+
 static int l_enum_lt(lua_State *L)
 {
     return aux_toenum(L, 1) < aux_toenum(L, 2);
@@ -1582,10 +1613,9 @@ int luaopen_enum(lua_State *L)
 {
     lua_pushlightuserdata(L, NULL);
     luaL_newmetatable(L, "enum *");
-    lua_pushcfunction(L, l_enum_lt);
-    olua_setfield(L, -2, "__lt");
-    lua_pushcfunction(L, l_enum_le);
-    olua_setfield(L, -2, "__le");
+    olua_setfieldfunc(L, -1, "__tostring", l_enum_tostring);
+    olua_setfieldfunc(L, -1, "__lt", l_enum_lt);
+    olua_setfieldfunc(L, -1, "__le", l_enum_le);
     lua_pushvalue(L, -1);
     lua_setmetatable(L, -3);
     return 1;

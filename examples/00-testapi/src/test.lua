@@ -10,7 +10,6 @@ local Hello = require "example.Hello"
 local Point = require "example.Point"
 local ClickCallback = require "example.ClickCallback"
 local util = require "util"
-print('%%', util)
 
 -- excluded
 assert(not Hello.getExcludeType)
@@ -27,6 +26,7 @@ obj.id = 100
 print('convert', obj:convertPoint(3, 10))
 print("referenceCount", obj.referenceCount)
 print('name', obj.name, obj.id, obj.ptr)
+print('as', obj, obj:as('example.Singleton'))
 -- print('ptr', obj.ptr, obj.point, obj.valuePoint)
 -- -- obj:say()
 

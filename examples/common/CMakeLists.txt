@@ -13,10 +13,69 @@ set(source
     lua_types.cpp
     ../../olua.h
     ../../olua.c
+    ../lua/lapi.c
+    ../lua/lapi.h
+    ../lua/lauxlib.c
+    ../lua/lauxlib.h
+    ../lua/lbaselib.c
+    ../lua/lcode.c
+    ../lua/lcode.h
+    ../lua/lcorolib.c
+    ../lua/lctype.c
+    ../lua/lctype.h
+    ../lua/ldblib.c
+    ../lua/ldebug.c
+    ../lua/ldebug.h
+    ../lua/ldo.c
+    ../lua/ldo.h
+    ../lua/ldump.c
+    ../lua/lfunc.c
+    ../lua/lfunc.h
+    ../lua/lgc.c
+    ../lua/lgc.h
+    ../lua/linit.c
+    ../lua/liolib.c
+    ../lua/ljumptab.h
+    ../lua/llex.c
+    ../lua/llex.h
+    ../lua/llimits.h
+    ../lua/lmathlib.c
+    ../lua/lmem.c
+    ../lua/lmem.h
+    ../lua/loadlib.c
+    ../lua/lobject.c
+    ../lua/lobject.h
+    ../lua/lopcodes.c
+    ../lua/lopcodes.h
+    ../lua/lopnames.h
+    ../lua/loslib.c
+    ../lua/lparser.c
+    ../lua/lparser.h
+    ../lua/lprefix.h
+    ../lua/lstate.c
+    ../lua/lstate.h
+    ../lua/lstring.c
+    ../lua/lstring.h
+    ../lua/lstrlib.c
+    ../lua/ltable.c
+    ../lua/ltable.h
+    ../lua/ltablib.c
+    ../lua/ltm.c
+    ../lua/ltm.h
+    ../lua/lua.h
+    ../lua/lua.hpp
+    ../lua/luaconf.h
+    ../lua/lualib.h
+    ../lua/lundump.c
+    ../lua/lundump.h
+    ../lua/lutf8lib.c
+    ../lua/lvm.c
+    ../lua/lvm.h
+    ../lua/lzio.c
+    ../lua/lzio.h
 )
 
 add_library(common ${source})
-target_link_libraries(common liblua)
 target_compile_definitions(common
   PUBLIC
     OLUA_USER_H="luauser.h"
@@ -25,6 +84,7 @@ target_compile_definitions(common
 target_include_directories(common
   PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../lua
     ${CMAKE_CURRENT_SOURCE_DIR}/../..
     ${CMAKE_CURRENT_SOURCE_DIR}/../../..
 )

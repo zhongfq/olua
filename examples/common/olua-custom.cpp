@@ -73,16 +73,6 @@ int olua_dofile(lua_State *L, const char *path)
 int olua_objgc(lua_State *L)
 {
     auto obj = olua_toobj<Object>(L, 1);
-    if (olua_isdebug(L)) {
-        int top = lua_gettop(L);
-        lua_getfield(L, 1, "name");
-        const char *name = lua_tostring(L, -1);
-        const char *str = olua_objstring(L, 1);
-        printf("lua gc: %s(NAME=%s, RC=%d)\n", str,
-            name && strlen(name) > 0 ? name : "''",
-            obj->getReferenceCount() - 1);
-        lua_settop(L, top);
-    }
     obj->release();
     olua_setrawobj(L, 1, nullptr);
     lua_pushnil(L);

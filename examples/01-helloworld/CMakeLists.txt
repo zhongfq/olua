@@ -14,12 +14,6 @@ target_compile_definitions(01-helloworld
   PUBLIC
     LUA_TEST="${CMAKE_CURRENT_SOURCE_DIR}/src/test.lua"
 )
-if(WIN32)
-    add_custom_command(TARGET 01-helloworld POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:01-helloworld> $<TARGET_FILE_DIR:01-helloworld>
-      COMMAND_EXPAND_LISTS
-    )
-endif()
 add_test(NAME test-01-helloworld COMMAND 01-helloworld)
 
 execute_process(

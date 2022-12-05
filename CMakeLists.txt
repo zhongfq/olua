@@ -6,7 +6,6 @@ set(CMAKE_CXX_STANDARD 11)
 
 enable_testing()
 
-add_subdirectory(examples/lua)
 add_subdirectory(examples/common)
 add_subdirectory(examples/00-testapi)
 add_subdirectory(examples/01-helloworld)

@@ -336,6 +336,7 @@ OLUA_API void olua_setfieldnumber(lua_State *L, int idx, const char *field, lua_
 OLUA_API void olua_setfieldinteger(lua_State *L, int idx, const char *field, lua_Integer value);
 OLUA_API void olua_setfieldstring(lua_State *L, int idx, const char *field, const char *value);
 OLUA_API void olua_setfieldbool(lua_State *L, int idx, const char *field, bool value);
+OLUA_API void olua_setfieldfunc(lua_State *L, int idx, const char *field, lua_CFunction fn);
 OLUA_API const char *olua_optfieldstring(lua_State *L, int idx, const char *field, const char *def);
 OLUA_API lua_Number olua_optfieldnumber(lua_State *L, int idx, const char *field, lua_Number def);
 OLUA_API lua_Integer olua_optfieldinteger(lua_State *L, int idx, const char *field, lua_Integer def);
@@ -680,13 +681,7 @@ int olua_pushobj_as(lua_State *L, int idx, const T *value, const char *ref)
 {
     idx = lua_absindex(L, idx);
     if (olua_loadref(L, idx, ref) != LUA_TUSERDATA) {
-        const char *cls = olua_getluatype<T>(L);
-        if (olua_unlikely(!cls || olua_getmetatable(L, cls) != LUA_TTABLE)) {
-            luaL_error(L, "class metatable '%s' not found", cls ? cls : "NULL");
-        }
-        olua_newrawobj(L, (void *)value);
-        lua_insert(L, -2);
-        lua_setmetatable(L, -2);
+        olua_pushobj(L, (void *)value, olua_getluatype<T>(L));
         olua_setownership(L, -1, OLUA_OWNERSHIP_SLAVE);
         olua_addref(L, idx, ref, -1, OLUA_FLAG_SINGLE);
         olua_addref(L, -1, "as.self", idx, OLUA_FLAG_SINGLE);
@@ -926,7 +921,8 @@ template <class T, std::enable_if_t<olua::is_enum<T>::value, bool> = true> inlin
 void olua_check_enum(lua_State *L, int idx, T *value)
 {
     if (!olua_islightuserdata(L, idx)) {
-        luaL_error(L, "expect enum '%s', got '%s'", olua_getluatype<olua::remove_cvrp_t<T>>(L),
+        luaL_error(L, "expect enum '%s', got '%s'", 
+            olua_getluatype<olua::remove_cvrp_t<T>>(L),
             lua_typename(L, lua_type(L, idx)));
     }
     *value = (T)(intptr_t)lua_touserdata(L, idx);
@@ -987,11 +983,10 @@ int olua_pushcopy_object(lua_State *L, T &value, const char *cls)
 {
     using Type = typename std::remove_const<T>::type;
     olua_debug_assert(cls, "cls is null");
-    cls = olua_getluatype<T>(L, nullptr, cls);
     void *ptr = lua_newuserdata(L, sizeof(void *) + sizeof(T));
     Type *obj = new ((char *)ptr + sizeof(void *)) Type(value);
     *(void **)ptr = obj;
-    olua_setmetatable(L, cls);
+    olua_pushobj(L, (void *)obj, olua_getluatype<T>(L, nullptr, cls));
     olua_setownership(L, -1, OLUA_OWNERSHIP_USERDATA);
     return 1;
 }
