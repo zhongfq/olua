@@ -6,12 +6,10 @@ using namespace example;
 Object::Object()
 :_referenceCount(1)
 {
-    printf("new '%s': %p\n", typeid(*this).name(), this);
 }
 
 Object::~Object()
 {
-    printf("del '%s': %p\n", typeid(*this).name(), this);
 }
 
 void Object::retain()

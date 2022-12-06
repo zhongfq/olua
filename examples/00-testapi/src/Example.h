@@ -31,8 +31,6 @@ public:
     Point(const Point &p):x(p.x), y(p.y) {}
     Point(float x, float y):x(x), y(y) {}
 
-    ~Point() {printf("~Point\n");}
-
     float length() {return (float)sqrt(x * x + y * y);}
 };
 
@@ -106,7 +104,6 @@ class Hello : public ExportParent, public Singleton<Hello> {
 public:
     Hello()
     {
-        printf("Hello() '%s': %p\n", typeid(*this).name(), this);
         _ptr = malloc(sizeof(void *));
         _p.x = 34;
         _p.y = 50;
@@ -115,7 +112,6 @@ public:
     virtual ~Hello()
     {
         free(_ptr);
-        printf("~Hello() '%s': %p\n", typeid(*this).name(), this);
     }
 
     const std::string &getName() const {return _name;}
@@ -255,22 +251,24 @@ private:
 
 class SharedHello : public std::enable_shared_from_this<SharedHello> {
 public:
-    SharedHello() {
-        printf("new '%s': %p\n", typeid(*this).name(), this);
-    };
-    
-    ~SharedHello() {
-        printf("del '%s': %p\n", typeid(*this).name(), this);
+
+    OLUA_NAME(new) static std::shared_ptr<SharedHello> create()
+    {
+        auto obj = new SharedHello();
+        obj->_name = "shared";
+        return std::shared_ptr<SharedHello>(obj);
     }
+
+    ~SharedHello() {
+    };
 
     void say() {}
 
     const std::string &getName() const {return _name;}
-    void setName(const std::string &value) {_name = value;}
     
     std::shared_ptr<SharedHello> getThis()
     {
-        return std::shared_ptr<SharedHello>(this);
+        return shared_from_this();
     }
     
     void setThis(const std::shared_ptr<SharedHello> &sp)

@@ -55,6 +55,7 @@ olua.size_t = require "olua.size_t"
 
 local num = olua.int.new()
 local str = olua.string.new()
+num.name = "num *"
 obj:getIntRef(num)
 obj:getStringRef(str)
 print('sizeof(int)', num.sizeof)
@@ -143,3 +144,8 @@ olua.ref('delall', obj, 'children')
 assert(util.hasNoRef(obj, 'children', objb))
 util.dumpUserValue(obj)
 util.dump(olua.uservalue(obj))
+
+-- test smart ptr
+local SharedHello = require "example.SharedHello"
+local shared = SharedHello.new()
+print(shared.this, shared.this)

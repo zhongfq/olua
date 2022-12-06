@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.16)
 
 set(source
     AutoreleasePool.h
@@ -12,6 +12,7 @@ set(source
     lua_types.h
     lua_types.cpp
     ../../olua.h
+    ../../olua.hpp
     ../../olua.c
     ../lua/lapi.c
     ../lua/lapi.h

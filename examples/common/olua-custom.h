@@ -2,7 +2,7 @@
 #define __EXAMPLES_OLUA_CUSTOM_H__
 
 #include "luauser.h"
-#include "olua.h"
+#include "olua.hpp"
 #include "Object.h"
 
 extern lua_State *olua_invokingstate;

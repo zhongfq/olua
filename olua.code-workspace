@@ -96,7 +96,10 @@
 			"vector": "cpp",
 			"algorithm": "cpp",
 			"xlocale": "c",
-			"*.inc": "c"
-		}
+			"*.inc": "c",
+			"xtr1common": "cpp",
+			"assert.h": "c"
+		},
+		"cmake.buildDirectory": "${workspaceFolder}/build"
 	}
 }

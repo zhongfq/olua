@@ -1,4 +1,7 @@
 unused = false
+exclude_files = {
+    "examples/lua/testes/*.lua"
+}
 new_globals = {
     "OLUA_AUTO_BUILD",
     "OLUA_AUTO_GEN_PROP",
