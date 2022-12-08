@@ -22,7 +22,7 @@
             },
             "stopOnEntry": false,
             "cwd": "${workspaceFolder}/examples/00-testapi",
-            "program": "../../debug.lua"
+            "program": "build.lua"
         }
     ]
 }

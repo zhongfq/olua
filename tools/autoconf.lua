@@ -55,8 +55,8 @@ local visited_types = olua.newhash(true)
 local alias_types = olua.newhash(true)
 local type_convs = olua.newhash(true)
 local type_checker = olua.newarray()
-local module_files = olua.newarray()
-local deferred = {clang_args = {}, modules = olua.newhash()}
+local clang_args = {}
+local modules = olua.newhash()
 local metamethod = {
     __index = true, __newindex = true,
     __gc = true, __pairs = true, __len = true, __eq = true, __tostring = true,
@@ -471,9 +471,7 @@ local M = {}
 function M:parse()
     assert(not self.class_file)
     self.class_file = format('autobuild/${self.filename}.idl')
-
-    module_files:push(self)
-
+    
     -- scan method, variable, enum, const value
     for _, cls in ipairs(self.class_types:clone()) do
         local cur = type_cursors:get(cls.cppcls)
@@ -916,7 +914,7 @@ local function try_add_wildcard_type(cppcls, cur)
         -- (unnamed enum at src/protobuf.pb.h:1015:3)
         return
     end
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         if m.class_types:has(cppcls) then
             goto continue
         end
@@ -1335,7 +1333,7 @@ end
 
 local function parse_headers()
     local headers = olua.newarray('\n')
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         headers:push(m.headers)
     end
 
@@ -1354,7 +1352,7 @@ local function parse_headers()
     local has_stdv = false
     local flags = olua.newarray()
     flags:push('-DOLUA_AUTOCONF')
-    for i, v in ipairs(deferred.clang_args) do
+    for i, v in ipairs(clang_args) do
         flags[#flags + 1] = v
         if v:find('^-target') then
             has_target = true
@@ -1410,7 +1408,7 @@ local function init_conv_func(cls)
 end
 
 local function parse_types()
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         for _, cls in ipairs(m.typedef_types) do
             init_conv_func(cls)
         end
@@ -1419,7 +1417,7 @@ local function parse_types()
         end
     end
 
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
             for fn, func in pairs(cls.funcs) do
                 if not func.snippet then
@@ -1446,7 +1444,7 @@ local function check_errors()
     local type_not_found = olua.newarray()
 
     -- check class and super class
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
             if not visited_types:has(cls.cppcls) then
                 class_not_found:pushf([[
@@ -1614,7 +1612,7 @@ local function copy_super_funcs()
         end
     end
 
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
             for _, supercls in ipairs(cls.supers) do
                 if cls.supercls == supercls then
@@ -1634,7 +1632,7 @@ local function copy_super_funcs()
 end
 
 local function find_as()
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
             -- find as
             local ascls = olua.newhash()
@@ -1678,7 +1676,7 @@ local function parse_modules()
     copy_super_funcs()
     find_as()
 
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         write_module(m)
     end
 end
@@ -1713,7 +1711,7 @@ local function write_typedefs()
 
     typedefs:push("-- AUTO BUILD, DON'T MODIFY!\n")
 
-    for _, m in ipairs(deferred.modules) do
+    for _, m in ipairs(modules) do
         olua.ipairs(m.typedef_types, function (_, td)
             if td.packable then
                 olua.assert(td.packvars, [[
@@ -1834,7 +1832,7 @@ end
 
 local function write_makefile()
     local class_files = olua.newarray('\n')
-    for _, v in ipairs(module_files) do
+    for _, v in ipairs(modules) do
         class_files:pushf('export "${v.class_file}"')
     end
     olua.write('autobuild/make.lua', format([[
@@ -1855,8 +1853,6 @@ local function deferred_autoconf()
     exclude_types = nil
     visited_types = nil
     alias_types = nil
-    module_files = nil
-    deferred = nil
 
     if OLUA_AUTO_BUILD ~= false then
         dofile('autobuild/make.lua')
@@ -2094,26 +2090,28 @@ end
 --
 local has_hook = false
 
-if LUA_DEBUG then
-    olua.make = deferred_autoconf
-end
-
 function M.__call(_, path)
-    if not has_hook and not LUA_DEBUG then
+    if not has_hook then
         has_hook = true
-        local debug_getinfo = debug.getinfo
-        local build_func = debug_getinfo(2, "f").func
-        debug.sethook(function ()
-            if debug_getinfo(2, "f").func == build_func then
-                debug.sethook(nil)
-                deferred_autoconf()
-            end
-        end, 'r')
+        local build_func = debug.getinfo(2, "f").func
+        if debug.gethook() then
+            build_func()
+            deferred_autoconf()
+            M.__call = function () end
+            return
+        else
+            debug.sethook(function ()
+                if debug.getinfo(2, "f").func == build_func then
+                    debug.sethook(nil)
+                    deferred_autoconf()
+                end
+            end, 'r')
+        end
     end
 
     local macro = nil
     local CMD = {}
-    local module = {
+    local m = {
         CMD = CMD,
         headers = '',
         class_types = olua.newhash(),
@@ -2124,12 +2122,12 @@ function M.__call(_, path)
         end,
     }
 
-    add_value_command(CMD, 'module', module, 'name')
-    add_value_command(CMD, 'path', module)
-    add_value_command(CMD, 'luaopen', module)
-    add_value_command(CMD, 'headers', module)
-    add_value_command(CMD, 'chunk', module)
-    add_value_command(CMD, 'luacls', module, nil, checkfunc)
+    add_value_command(CMD, 'module', m, 'name')
+    add_value_command(CMD, 'path', m)
+    add_value_command(CMD, 'luaopen', m)
+    add_value_command(CMD, 'headers', m)
+    add_value_command(CMD, 'chunk', m)
+    add_value_command(CMD, 'luacls', m, nil, checkfunc)
 
     function CMD.excludetype(tn)
         exclude_types:replace(olua.pretty_typename(tn), true)
@@ -2152,7 +2150,7 @@ function M.__call(_, path)
     function CMD.typeconf(cppcls)
         local cls = {
             cppcls = assert(cppcls, 'not specify cppcls'),
-            luacls = module.luacls(cppcls),
+            luacls = m.luacls(cppcls),
             extends = olua.newhash(),
             excludes = olua.newhash(),
             wildcards = olua.newhash(), -- exclude wildcards
@@ -2183,9 +2181,9 @@ function M.__call(_, path)
             ]])
         end
         if cppcls:find('[%^%%%$%*%+]') then -- ^%$*+
-            module.wildcard_types:push(cppcls, cls)
+            m.wildcard_types:push(cppcls, cls)
         else
-            module.class_types:push(cppcls, cls)
+            m.class_types:push(cppcls, cls)
         end
         if macro then
             cls.macros:push('*', {name = '*', value = macro})
@@ -2205,7 +2203,7 @@ function M.__call(_, path)
         for c in cppcls:gmatch('[^;\n\r]+') do
             c = olua.pretty_typename(c)
             local t = setmetatable({cppcls = c}, {__index = cls})
-            module.typedef_types:push(c, t)
+            m.typedef_types:push(c, t)
             type_convs:push(c, t)
         end
         return make_typedef_command(cls)
@@ -2213,7 +2211,7 @@ function M.__call(_, path)
 
     function CMD._typecopy(cppcls, fromcls)
         CMD.typeconf(cppcls)
-        local cls = module.class_types:get(cppcls)
+        local cls = m.class_types:get(cppcls)
         for k, v in pairs(fromcls) do
             if k == 'cppcls' or k == 'luacls' then
                 goto continue
@@ -2232,9 +2230,9 @@ function M.__call(_, path)
         end
     end
 
-    function CMD.clang(clang_args)
-        deferred.clang_args = clang_args
-        module = nil
+    function CMD.clang(args)
+        clang_args = args
+        m = nil
     end
 
     assert(loadfile(path, nil, setmetatable({}, {
@@ -2246,10 +2244,10 @@ function M.__call(_, path)
         end
     })))()
 
-    if module and module.name then
-        module.file = path
-        module.filename = path:match('([^/\\]+).lua$')
-        deferred.modules:push(module.name, module, "(module name)")
+    if m and m.name then
+        m.file = path
+        m.filename = path:match('([^/\\]+).lua$')
+        modules:push(m.name, m, "(module name)")
     end
 end
 
