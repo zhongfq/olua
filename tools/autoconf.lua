@@ -915,7 +915,7 @@ local function try_add_wildcard_type(cppcls, cur)
         return
     end
     for _, m in ipairs(modules) do
-        if m.class_types:has(cppcls) then
+        if m.class_types:has(cppcls) or type_convs:has(cppcls) then
             goto continue
         end
         for type, conf in pairs(m.wildcard_types) do

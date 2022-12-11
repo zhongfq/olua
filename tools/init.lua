@@ -56,7 +56,6 @@ end
 
 -- version
 olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.0'
-olua.print('olua home: %s', olua.OLUA_HOME)
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
@@ -68,6 +67,9 @@ package.cpath = string.format('%s/lua%s/?.%s;%s',
     olua.OLUA_HOME, version, suffix, package.cpath)
 
 local LUA_VERSION = 'lua' .. _VERSION:match('%d%.%d'):gsub('%.', '')
+
+olua.print('pwd: %s', io.popen('cd'):read('*l'))
+olua.print('olua home: %s', olua.OLUA_HOME)
 
 -- unzip lib and header
 if not olua.isdir(olua.OLUA_HOME)
