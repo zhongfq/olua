@@ -741,13 +741,20 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
         if specializedcls then
             cls.template_types:push(specializedcls, cppcls)
         end
+        cls.options.fromtable = false
     elseif cur.kind == CursorKind.Namespace then
         cls.options.reg_luatype = false
+        cls.options.fromtable = false
     end
     
     for _, c in ipairs(cur.children) do
         local kind = c.kind
         local access = c.cxxAccessSpecifier
+        if kind == CursorKind.Constructor then
+            if c.isCXXMethoDeleted then
+                cls.options.fromtable = false
+            end
+        end
         if access == CXXAccessSpecifier.Private
             or access == CXXAccessSpecifier.Protected
         then
@@ -774,6 +781,8 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
             local supercls = parse_from_type(c.type)
             local rawsupercls = raw_typename(supercls)
             local supercursor = type_cursors:get(rawsupercls)
+
+            cls.options.fromtable = false
 
             if is_excluded_typename(rawsupercls) then
                 skipsuper = true
@@ -837,8 +846,10 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
         then
             local isConstructor = kind == CursorKind.Constructor
             if is_excluded_memeber(cls, c)
+                or c.isCXXMethoDeleted
                 or (isConstructor and (cls.excludes:has('new')))
                 or (isConstructor and cur.kind == CursorKind.ClassTemplate)
+                -- isCXXMethoAbstract -> clang_CXXRecord_isAbstract
                 or (isConstructor and cur.isCXXMethoAbstract)
             then
                 goto continue
@@ -1669,12 +1680,47 @@ local function find_as()
     end
 end
 
+local function validate_fromtable()
+    for _, m in ipairs(modules) do
+        for _, cls in ipairs(m.class_types) do
+            local options = cls.options
+            local has_var = false
+            for _, var in ipairs(cls.vars) do
+                if not var.snippet:find('static ') then
+                    has_var = true
+                end
+            end
+            if not has_var then
+                options.fromtable = false
+            end
+
+            if options.fromtable then
+                local has_ctor = false
+                local min_args = math.maxinteger
+                for _, func in ipairs(cls.funcs) do
+                    if func.isctor then
+                        has_ctor = true
+                        min_args = math.min(min_args, func.min_args)
+                    end
+                end
+                if has_ctor then
+                    options.fromtable = min_args == 0
+                end
+            end
+            
+            options.fromtable = options.fromtable or nil
+            options.reg_luatype = options.reg_luatype or nil
+        end
+    end
+end
+
 local function parse_modules()
     parse_headers()
     parse_types()
     check_errors()
     copy_super_funcs()
     find_as()
+    validate_fromtable()
 
     for _, m in ipairs(modules) do
         write_module(m)
@@ -1945,6 +1991,7 @@ local function make_typeconf_command(cls, ModuleCMD)
     add_value_command(CMD, 'supercls', cls)
     add_value_command(CMD, 'luaopen', cls)
     add_value_command(CMD, 'indexerror', cls.options)
+    add_value_command(CMD, 'fromtable', cls.options, nil, tobool)
     add_value_command(CMD, 'packable', cls.options, nil, tobool)
     add_value_command(CMD, 'packvars', cls.options, nil, tonum)
     add_value_command(CMD, '_maincls', cls, "maincls", totable)
@@ -2169,7 +2216,7 @@ function M.__call(_, path)
             supers = olua.newhash(),
             funcdecl = nil,
             conv = 'olua_$$_object',
-            options = {reg_luatype = true},
+            options = {reg_luatype = true, fromtable = true},
             template_types = olua.newhash(),
             luaname = function (n) return n end,
         }

@@ -41,7 +41,7 @@ local function check_meta_method(cls)
                 return 1;
             }]])))
         end
-        if cls.options.packable and not cls.options.packvars then
+        if not has_method(cls, '__call') and cls.options.fromtable then
             local codeset = {decl_args = olua.newarray(), check_args = olua.newarray()}
             olua.gen_class_fill(cls, 2, 'ret', codeset)
 
