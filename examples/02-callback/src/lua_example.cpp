@@ -94,6 +94,34 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
 }
 OLUA_END_DECLS
 
+static int _example_Event___call(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Event ret;
+
+    luaL_checktype(L, 2, LUA_TTABLE);
+
+    std::string arg1;       /** name */
+    std::string arg2;       /** data */
+
+    olua_getfield(L, 2, "name");
+    olua_check_string(L, -1, &arg1);
+    ret.name = arg1;
+    lua_pop(L, 1);
+
+    olua_getfield(L, 2, "data");
+    olua_check_string(L, -1, &arg2);
+    ret.data = arg2;
+    lua_pop(L, 1);
+
+    olua_pushcopy_object(L, ret, "example.Event");
+
+    olua_endinvoke(L);
+
+    return 1;
+}
+
 static int _example_Event___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -192,6 +220,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Event(lua_State *L)
 {
     oluacls_class<example::Event>(L, "example.Event");
+    oluacls_func(L, "__call", _example_Event___call);
     oluacls_func(L, "__gc", _example_Event___gc);
     oluacls_func(L, "__olua_move", _example_Event___olua_move);
     oluacls_prop(L, "data", _example_Event_get_data, _example_Event_set_data);

@@ -11,6 +11,9 @@ local Point = require "example.Point"
 local ClickCallback = require "example.ClickCallback"
 local util = require "util"
 
+local SubHello = olua.class('SubHello', Hello)
+print('SubHello', SubHello, SubHello.class, SubHello.classname)
+
 -- excluded
 assert(not Hello.getExcludeType)
 assert(not Hello.setExcludeType)

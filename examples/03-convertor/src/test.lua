@@ -1,4 +1,3 @@
-local olua = require "olua"
 local Node = require "example.Node"
 local Point = require "example.Point"
 
