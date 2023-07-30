@@ -55,7 +55,7 @@ function olua.print(fmt, ...)
 end
 
 -- version
-olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.0'
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.1'
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
@@ -101,7 +101,7 @@ then
         os.execute(cmd)
     end
 
-    local url = 'https://github.com/zhongfq/olua/releases/download/v1'
+    local url = 'https://github.com/zhongfq/olua/releases/download/v1.1'
     local deps = {"include.zip", ("%s-%s.zip"):format(LUA_VERSION, osn)}
     for _, v in ipairs(deps) do
         wget(url .. '/' .. v, dir .. '/' .. v)
