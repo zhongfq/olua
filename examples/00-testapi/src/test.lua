@@ -75,6 +75,10 @@ end))
 obj:setClickCallback(function (...)
     print('click', ...)
 end)
+obj:setCallback(function (this, p)
+    print("callback", this, p, p.x, p.y)
+end)
+obj:doCallback()
 
 -- type repalce
 local result = olua.char.new(12)

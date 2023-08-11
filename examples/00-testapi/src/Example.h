@@ -152,7 +152,13 @@ public:
     void setExcludeType(struct ExcludeType &v) {}
     void setExcludeTypes(const std::vector<ExcludeType> &v) {}
 
-    void setCallback(const std::function<int (Hello *)> &callback) {}
+    void setCallback(const std::function<int (Hello *, Point *)> &callback) { _callback = callback; }
+    void doCallback() {
+        if (_callback) {
+            Point p(10, 10);
+            _callback(this, &p);
+        }
+    }
     void setNotifyCallback(const NotifyCallback &callback) {}
     void setClickCallback(const ClickCallback &callback) {callback(this);}
     void setClickCallback(const NotifyCallback &callback) {callback(this, 2);}
@@ -242,6 +248,7 @@ public:
     }
 
 private:
+    std::function<int (Hello *, Point *)> _callback;
     std::string _name;
     int _id = 0;
     void *_ptr = nullptr;

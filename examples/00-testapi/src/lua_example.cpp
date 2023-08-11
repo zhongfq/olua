@@ -1501,6 +1501,22 @@ static int _example_Hello_create(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_doCallback(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.Hello");
+
+    // void doCallback()
+    self->doCallback();
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_getAliasHello(lua_State *L)
 {
     olua_startinvoke(L);
@@ -2672,7 +2688,7 @@ static int _example_Hello_setCallback(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    std::function<int (example::Hello *)> arg1;       /** callback */
+    std::function<int (example::Hello *, example::Point *)> arg1;       /** callback */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_callback(L, 2, &arg1, "std.function");
@@ -2681,7 +2697,7 @@ static int _example_Hello_setCallback(lua_State *L)
     std::string cb_tag = "Callback";
     std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, example::Point *arg2) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
         int ret = 0;       /** ret */
@@ -2690,9 +2706,10 @@ static int _example_Hello_setCallback(lua_State *L)
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
             olua_push_object(L, arg1, "example.Hello");
+            olua_push_object(L, arg2, "example.Point");
             olua_disable_objpool(L);
 
-            olua_callback(L, cb_store, cb_name.c_str(), 1);
+            olua_callback(L, cb_store, cb_name.c_str(), 2);
 
             if (olua_is_integer(L, -1)) {
                 olua_check_integer(L, -1, &ret);
@@ -2705,7 +2722,7 @@ static int _example_Hello_setCallback(lua_State *L)
         return ret;
     };
 
-    // void setCallback(@localvar const std::function<int (example::Hello *)> &callback)
+    // void setCallback(@localvar const std::function<int (example::Hello *, example::Point *)> &callback)
     self->setCallback(arg1);
 
     olua_endinvoke(L);
@@ -3402,6 +3419,7 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "checkVectorPoint", _example_Hello_checkVectorPoint);
     oluacls_func(L, "convertPoint", _example_Hello_convertPoint);
     oluacls_func(L, "create", _example_Hello_create);
+    oluacls_func(L, "doCallback", _example_Hello_doCallback);
     oluacls_func(L, "getAliasHello", _example_Hello_getAliasHello);
     oluacls_func(L, "getCGLchar", _example_Hello_getCGLchar);
     oluacls_func(L, "getCName", _example_Hello_getCName);
