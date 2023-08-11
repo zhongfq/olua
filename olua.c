@@ -450,6 +450,18 @@ OLUA_API const char *olua_objstring(lua_State *L, int idx)
     return env->buff;
 }
 
+OLUA_API void olua_printobj(lua_State *L, const char *tag, int idx)
+{
+    char buf[256];
+    olua_VMEnv *env = olua_getvmenv(L);
+    snprintf(buf, sizeof(buf), "%s:%05"PRId64": %s {userdata=%p, name=%s}",
+        tag, env->objcount, olua_objstring(L, 2), lua_topointer(L, 2),
+        olua_optfieldstring(L, 2, "name", ""));
+    olua_getglobal(L, "print");
+    olua_pushstring(L, buf);
+    lua_pcall(L, 1, 0, 1);
+}
+
 OLUA_API int olua_indexerror(lua_State *L)
 {
     const char *cls = olua_checkfieldstring(L, 1, "classname");
@@ -979,13 +991,7 @@ static int cls_metamethod(lua_State *L)
         return 0;
     } else {
         if (env->debug) {
-            char buf[256];
-            snprintf(buf, sizeof(buf), "lua gc:%05"PRId64": %s {userdata=%p, name=%s}",
-                env->objcount, olua_objstring(L, 2), lua_topointer(L, 2),
-                olua_optfieldstring(L, 2, "name", ""));
-            olua_getglobal(L, "print");
-            olua_pushstring(L, buf);
-            lua_pcall(L, 1, 0, 1);
+            olua_printobj(L, "lua gc", 2);
         }
         olua_pusherrorfunc(L);
         lua_insert(L, 1);
