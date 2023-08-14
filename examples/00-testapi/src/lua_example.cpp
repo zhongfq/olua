@@ -3711,6 +3711,55 @@ OLUA_LIB int luaopen_example_SharedHello(lua_State *L)
 }
 OLUA_END_DECLS
 
+static int _example_NoGC___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    auto self = (example::NoGC *)olua_toobj(L, 1, "example.NoGC");
+    olua_postgc(L, self);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_NoGC___olua_move(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    auto self = (example::NoGC *)olua_toobj(L, 1, "example.NoGC");
+    olua_push_object(L, self, "example.NoGC");
+
+    olua_endinvoke(L);
+
+    return 1;
+}
+
+static int _example_NoGC_create(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    // static example::NoGC *create()
+    example::NoGC *ret = example::NoGC::create();
+    int num_ret = olua_push_object(L, ret, "example.NoGC");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_NoGC(lua_State *L)
+{
+    oluacls_class<example::NoGC>(L, "example.NoGC");
+    oluacls_func(L, "__gc", _example_NoGC___gc);
+    oluacls_func(L, "__olua_move", _example_NoGC___olua_move);
+    oluacls_func(L, "create", _example_NoGC_create);
+
+    return 1;
+}
+OLUA_END_DECLS
+
 static int _example_Singleton_example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -3792,6 +3841,7 @@ OLUA_LIB int luaopen_example(lua_State *L)
     olua_require(L, "example.Hello", luaopen_example_Hello);
     olua_require(L, "example.Const", luaopen_example_Const);
     olua_require(L, "example.SharedHello", luaopen_example_SharedHello);
+    olua_require(L, "example.NoGC", luaopen_example_NoGC);
     olua_require(L, "example.Singleton<example.Hello>", luaopen_example_Singleton_example_Hello);
 
     return 0;

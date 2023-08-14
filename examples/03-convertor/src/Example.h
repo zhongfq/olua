@@ -62,7 +62,7 @@ public:
             for (auto child : children) {
                 if (child->getIdentifier() == name) {
                     olua_pushobj<Node>(L, child);
-                    olua_addref(L, 1, "children", -1, OLUA_FLAG_MULTIPLE);
+                    olua_addref(L, 1, "children", -1, OLUA_REF_MULTI);
                     return 1;
                 }
             }

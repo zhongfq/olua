@@ -1,13 +1,13 @@
 local path = (...):gsub('test.lua$', '') .. '../../common/?.lua;'
 package.path = path .. package.path
 
-local OLUA_FLAG_SINGLE      = 1 << 1 -- add & remove: only ref one
-local OLUA_FLAG_MULTIPLE    = 1 << 2 -- add & remove: can ref one or more
-local OLUA_FLAG_TABLE       = 1 << 3 -- obj is table
-local OLUA_FLAG_REMOVE      = 1 << 4 -- internal use
+local OLUA_REF_ALONE = 1 << 1 -- add & remove: only ref one
+local OLUA_REF_MULTI = 1 << 2 -- add & remove: can ref one or more
+local OLUA_REF_TABLE = 1 << 3 -- obj is table
 
 local Hello = require "example.Hello"
 local Point = require "example.Point"
+local NoGC = require "example.NoGC"
 local ClickCallback = require "example.ClickCallback"
 local util = require "util"
 
@@ -19,9 +19,12 @@ assert(not Hello.getExcludeType)
 assert(not Hello.setExcludeType)
 assert(not Hello.setExcludeTypes)
 
+print("nogc", NoGC.create())
+
 olua.debug(true)
 
 print(Point.new(2, 4), Point {x = 4, y = 8}, Point.new(3, 4):length())
+print("point.x == 4", (Point {x = 4, y = 8}).x == 4)
 
 local obj = Hello.new()
 obj.name = 'codetypes'
@@ -137,15 +140,15 @@ print("------------olua.ref------------")
 --     name = 'children',
 --     where = obj,
 --     object = obja,
---     flags = OLUA_FLAG_MULTIPLE,
+--     flags = OLUA_REF_MULTI,
 -- }
-olua.ref('add', obj, 'children', obja, OLUA_FLAG_MULTIPLE)
-olua.ref('add', obj, 'children', objb, OLUA_FLAG_MULTIPLE)
-olua.ref('add', obj, 'objecta', obja, OLUA_FLAG_SINGLE)
+olua.ref('add', obj, 'children', obja, OLUA_REF_MULTI)
+olua.ref('add', obj, 'children', objb, OLUA_REF_MULTI)
+olua.ref('add', obj, 'objecta', obja, OLUA_REF_ALONE)
 util.dumpUserValue(obj)
 assert(util.hasRef(obj, "children", obja))
 assert(util.hasRef(obj, "children", objb))
-olua.ref('del', obj, 'children', obja, OLUA_FLAG_MULTIPLE)
+olua.ref('del', obj, 'children', obja, OLUA_REF_MULTI)
 assert(util.hasNoRef(obj, 'children', obja))
 olua.ref('delall', obj, 'children')
 assert(util.hasNoRef(obj, 'children', objb))

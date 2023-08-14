@@ -56,6 +56,11 @@ public:
     static const char *CONST_CHAR;
 };
 
+class NoGC {
+public:
+    static NoGC *create() { return new NoGC(); }
+};
+
 class ExportParent : public Object {
 public:
     void printExportParent()
