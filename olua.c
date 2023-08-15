@@ -468,7 +468,7 @@ static void *aux_toobj(lua_State *L, int idx, const char *cls, bool checked)
         void *obj = olua_torawobj(L, idx);
         if (olua_unlikely(!obj)) {
             idx = lua_absindex(L, idx);
-
+            olua_printobj(L, "access dead object", idx);
             luaL_error(L, "object '%s %p' survive from gc",
                 olua_typename(L, idx), lua_topointer(L, idx));
         }
@@ -537,10 +537,10 @@ OLUA_API void olua_printobj(lua_State *L, const char *tag, int idx)
     snprintf(buf, sizeof(buf), "%s:%05"PRId64": %s {luaobj=%p,%s,%s}",
         tag,
         env->objcount,
-        olua_objstring(L, 2),
+        olua_objstring(L, idx),
         luaobj,
-        tobitstr(luaobj->flags, bitstr),
-        luaobj->self ? olua_optfieldstring(L, 2, "name", "") : "0x0");
+        luaobj->self ? olua_optfieldstring(L, idx, "name", "") : "",
+        tobitstr(luaobj->flags, bitstr));
     olua_print(L, buf);
 }
 
@@ -1048,9 +1048,9 @@ static int cls_metamethod(lua_State *L)
     env->objcount--;
     luaobj = olua_toluaobj(L, 2);
 
-    if (luaobj->flags & OLUA_FLAG_SKIP_GC) {
+    if (luaobj->flags & (OLUA_FLAG_SKIP_GC | OLUA_FLAG_DEL)) {
         if (env->debug) {
-            printf("skip gc for object: %s\n", olua_objstring(L, 2));
+            olua_printobj(L, "skip gc", 2);
         }
         return 0;
     } else {

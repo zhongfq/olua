@@ -209,6 +209,7 @@ OLUA_API bool olua_getrawobj(lua_State *L, void *obj);
 #define OLUA_FLAG_IN_HEAP       1 << 4 // object in heap, gc: delete or free
 #define OLUA_FLAG_IN_USERDATA   1 << 5 // object in userdata, gc: obj->~T()
 #define OLUA_FLAG_IN_POOL       1 << 6 // object in pool
+#define OLUA_FLAG_IN_SMARTPRT   1 << 7 // object in smartptr
 OLUA_API void olua_setobjflag(lua_State *L, int idx, int flag);
 OLUA_API bool olua_hasobjflag(lua_State *L, int idx, int flag);
 
