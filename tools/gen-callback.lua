@@ -222,7 +222,9 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         ]]
     elseif tag_store == 0 then
         cb_store = 'self'
-        if (fi.static and fi.ret.type.cppcls == 'void') or tag_scope == 'function' then
+        if not fi.static or fi.luafunc == 'new' and fi.ret.type.cppcls == cls.cppcls  then
+            cb_store = 'self'
+        else
             cb_store = format 'olua_pushclassobj(L, "${cls.luacls}")'
         end
     elseif tag_store > 0 then

@@ -1871,6 +1871,54 @@ static int _example_Hello_getVoids(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_load(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    std::string arg1;       /** path */
+    std::function<std::string (example::Hello *, int)> arg2;       /** callback */
+
+    olua_check_string(L, 1, &arg1);
+    olua_check_callback(L, 2, &arg2, "std.function");
+
+    void *cb_store = (void *)olua_pushclassobj(L, "example.Hello");
+    std::string cb_tag = "load";
+    std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
+    olua_Context cb_ctx = olua_context(L);
+    arg2 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, int arg2) {
+        lua_State *L = olua_mainthread(NULL);
+        olua_checkhostthread();
+        std::string ret;       /** ret */
+        if (olua_contextequal(L, cb_ctx)) {
+            int top = lua_gettop(L);
+            size_t last = olua_push_objpool(L);
+            olua_enable_objpool(L);
+            olua_push_object(L, arg1, "example.Hello");
+            olua_push_integer(L, arg2);
+            olua_disable_objpool(L);
+
+            olua_callback(L, cb_store, cb_name.c_str(), 2);
+
+            if (olua_is_string(L, -1)) {
+                olua_check_string(L, -1, &ret);
+            }
+
+            //pop stack value
+            olua_pop_objpool(L, last);
+            lua_settop(L, top);
+        }
+        return ret;
+    };
+
+    // static int load(const std::string &path, @localvar const std::function<std::string (example::Hello *, int)> &callback)
+    int ret = example::Hello::load(arg1, arg2);
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
 static int _example_Hello_new(lua_State *L)
 {
     olua_startinvoke(L);
@@ -3440,6 +3488,7 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
     oluacls_func(L, "getVec2", _example_Hello_getVec2);
     oluacls_func(L, "getVectorIntPtr", _example_Hello_getVectorIntPtr);
     oluacls_func(L, "getVoids", _example_Hello_getVoids);
+    oluacls_func(L, "load", _example_Hello_load);
     oluacls_func(L, "new", _example_Hello_new);
     oluacls_func(L, "printSingleton", _example_Hello_printSingleton);
     oluacls_func(L, "read", _example_Hello_read);
@@ -3748,6 +3797,61 @@ static int _example_NoGC_create(lua_State *L)
     return num_ret;
 }
 
+static int _example_NoGC_new(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    int arg1 = 0;       /** i */
+    std::function<int (example::NoGC *)> arg2;       /** callbak */
+
+    olua_check_integer(L, 1, &arg1);
+    olua_check_callback(L, 2, &arg2, "std.function");
+
+    void *cb_store = (void *)olua_newobjstub(L, "example.NoGC");
+    std::string cb_tag = "NoGC";
+    std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
+    olua_Context cb_ctx = olua_context(L);
+    arg2 = [cb_store, cb_name, cb_ctx](example::NoGC *arg1) {
+        lua_State *L = olua_mainthread(NULL);
+        olua_checkhostthread();
+        int ret = 0;       /** ret */
+        if (olua_contextequal(L, cb_ctx)) {
+            int top = lua_gettop(L);
+            size_t last = olua_push_objpool(L);
+            olua_enable_objpool(L);
+            olua_push_object(L, arg1, "example.NoGC");
+            olua_disable_objpool(L);
+
+            olua_callback(L, cb_store, cb_name.c_str(), 1);
+
+            if (olua_is_integer(L, -1)) {
+                olua_check_integer(L, -1, &ret);
+            }
+
+            //pop stack value
+            olua_pop_objpool(L, last);
+            lua_settop(L, top);
+        }
+        return ret;
+    };
+
+    // NoGC(int i, @localvar const std::function<int (example::NoGC *)> &callbak)
+    example::NoGC *ret = new example::NoGC(arg1, arg2);
+    if (olua_pushobjstub(L, ret, cb_store, "example.NoGC") == OLUA_OBJ_EXIST) {
+        olua_removecallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_EQUAL);
+        lua_pushstring(L, cb_name.c_str());
+        lua_pushvalue(L, 2);
+        olua_setvariable(L, -3);
+    } else {
+        olua_postnew(L, ret);
+    };
+    olua_postnew(L, ret);
+
+    olua_endinvoke(L);
+
+    return 1;
+}
+
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_NoGC(lua_State *L)
 {
@@ -3755,6 +3859,7 @@ OLUA_LIB int luaopen_example_NoGC(lua_State *L)
     oluacls_func(L, "__gc", _example_NoGC___gc);
     oluacls_func(L, "__olua_move", _example_NoGC___olua_move);
     oluacls_func(L, "create", _example_NoGC_create);
+    oluacls_func(L, "new", _example_NoGC_new);
 
     return 1;
 }

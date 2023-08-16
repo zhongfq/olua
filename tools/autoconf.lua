@@ -1160,12 +1160,14 @@ local function write_cls_func(module, cls, append)
                 callback.funcs = funcs
                 callback.tag_maker = callback.tag_maker or format('${tag_maker}')
                 callback.tag_mode = callback.tag_mode or mode
+                callback.tag_store = callback.tag_store or (fi.isctor and -1 or nil)
             else
                 cls.callbacks:push(fi.name, {
                     name = fi.name,
                     funcs = funcs,
                     tag_maker = olua.format '${tag_maker}',
                     tag_mode = mode,
+                    tag_store = (fi.isctor and -1 or nil),
                 })
             end
         end

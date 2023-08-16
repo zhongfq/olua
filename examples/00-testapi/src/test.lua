@@ -19,7 +19,7 @@ assert(not Hello.getExcludeType)
 assert(not Hello.setExcludeType)
 assert(not Hello.setExcludeTypes)
 
-print("nogc", NoGC.create())
+print("nogc", NoGC.create(), NoGC.new(0, function () end))
 
 olua.debug(true)
 

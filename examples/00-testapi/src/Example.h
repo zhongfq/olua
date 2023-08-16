@@ -58,7 +58,10 @@ public:
 
 class NoGC {
 public:
-    static NoGC *create() { return new NoGC(); }
+    // flags in gc: 0b0000000000000010
+    static NoGC *create() { return new NoGC(0, nullptr); }
+
+    NoGC(int i, const std::function<int(NoGC *)> &callbak) {}
 };
 
 class ExportParent : public Object {
@@ -164,6 +167,7 @@ public:
             _callback(this, &p);
         }
     }
+    static int load(const std::string &path, const NotifyCallback &callback) { return 0; }
     void setNotifyCallback(const NotifyCallback &callback) {}
     void setClickCallback(const ClickCallback &callback) {callback(this);}
     void setClickCallback(const NotifyCallback &callback) {callback(this, 2);}
