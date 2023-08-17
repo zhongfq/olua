@@ -29,6 +29,9 @@ print("point.x == 4", (Point {x = 4, y = 8}).x == 4)
 local obj = Hello.new()
 obj.name = 'codetypes'
 obj.id = 100
+olua.printobj("TAG", obj);
+olua.take(obj)
+olua.printobj(obj);
 print('convert', obj:convertPoint(3, 10))
 print("referenceCount", obj.referenceCount)
 print('name', obj.name, obj.id, obj.ptr)
