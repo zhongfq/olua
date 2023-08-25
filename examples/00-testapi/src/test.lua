@@ -19,7 +19,11 @@ assert(not Hello.getExcludeType)
 assert(not Hello.setExcludeType)
 assert(not Hello.setExcludeTypes)
 
-print("nogc", NoGC.create(), NoGC.new(0, function () end))
+local nogc = NoGC.new(0, function () end)
+print("nogc", NoGC.create(), nogc)
+olua.printobj("brefore take", nogc)
+olua.take(nogc)
+olua.printobj("after take  ", nogc)
 
 olua.debug(true)
 
@@ -30,7 +34,6 @@ local obj = Hello.new()
 obj.name = 'codetypes'
 obj.id = 100
 olua.printobj("TAG", obj);
-olua.take(obj)
 olua.printobj(obj);
 print('convert', obj:convertPoint(3, 10))
 print("referenceCount", obj.referenceCount)
