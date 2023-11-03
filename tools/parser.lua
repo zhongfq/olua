@@ -567,8 +567,8 @@ function olua.parse_func(cls, name, ...)
         if funcdecl:find('{') then
             fi.luafunc = assert(name)
             fi.cppfunc = name
-            fi.snippet = olua.trim(funcdecl)
-            fi.funcdesc = '<function snippet>'
+            fi.body = olua.trim(funcdecl)
+            fi.funcdesc = '<function body>'
             fi.ret.type = olua.typeinfo('void', cls)
             fi.ret.attr = {}
             fi.args = {}
@@ -640,13 +640,13 @@ local function parse_prop(cls, name, declget, declset)
         end
     end
 
-    if not pi.get.snippet then
+    if not pi.get.body then
         assert(pi.get.ret.type.cppcls ~= 'void', pi.get.funcdesc)
     elseif declget then
         pi.get.cppfunc = 'get_' .. pi.get.cppfunc
     end
 
-    if pi.set and pi.set.snippet and declset then
+    if pi.set and pi.set.body and declset then
         pi.set.cppfunc = 'set_' .. pi.set.cppfunc
     end
 

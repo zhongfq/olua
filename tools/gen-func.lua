@@ -2,10 +2,10 @@ local olua = require "olua"
 
 local format = olua.format
 
-local function gen_func_snippet(cls, fi, write)
-    local snippet = fi.snippet
-    snippet = string.gsub(snippet, '^[\n ]*{', '{\n    olua_startinvoke(L);\n')
-    snippet = string.gsub(snippet, '(\n)([ ]*)(return )', function (lf, indent, ret)
+local function gen_func_body(cls, fi, write)
+    local body = fi.body
+    body = string.gsub(body, '^[\n ]*{', '{\n    olua_startinvoke(L);\n')
+    body = string.gsub(body, '(\n)([ ]*)(return )', function (lf, indent, ret)
         return format([[
             ${lf}
 
@@ -16,7 +16,7 @@ local function gen_func_snippet(cls, fi, write)
     end)
     write(format([[
         static int _${cls.cppcls#}_${fi.cppfunc}(lua_State *L)
-        ${snippet}
+        ${body}
     ]]))
 end
 
@@ -431,8 +431,8 @@ local function gen_one_func(cls, fi, write, funcidx)
             func = ${fi.funcdesc}
     ]])
 
-    if fi.snippet then
-        gen_func_snippet(cls, fi, write)
+    if fi.body then
+        gen_func_body(cls, fi, write)
         return
     end
 

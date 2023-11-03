@@ -675,7 +675,7 @@ function M:visit_var(cls, cur)
     local name = cls.luaname(cur.name, 'var')
     cls.vars:push(name, {
         name = name,
-        snippet = decl,
+        body = decl,
         cb_kind = cb_kind
     })
 end
@@ -1089,7 +1089,7 @@ local function write_cls_func(module, cls, append)
             arr = {}
             group:push(func.name, arr)
         end
-        if func.snippet or func.name == 'as'
+        if func.body or func.name == 'as'
             or is_new_func(module, cls.supercls, func)
         then
             arr.has_new = true
@@ -1150,7 +1150,7 @@ local function write_cls_func(module, cls, append)
             if #funcs > 0 then
                 append(format(".func(${fi.luaname}, ${funcs})", 4))
             else
-                append(format(".func('${fi.name}', ${fi.snippet?})", 4))
+                append(format(".func('${fi.name}', ${fi.body?})", 4))
             end
         else
             local tag_maker = fi.name:gsub('^set', ''):gsub('^get', '')
@@ -1202,7 +1202,7 @@ end
 
 local function write_cls_var(module, cls, append)
     for _, var in ipairs(cls.vars) do
-        append(format(".var('${var.name}', ${var.snippet?})", 4))
+        append(format(".var('${var.name}', ${var.body?})", 4))
     end
 end
 
@@ -1433,13 +1433,13 @@ local function parse_types()
     for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
             for fn, func in pairs(cls.funcs) do
-                if not func.snippet then
+                if not func.body then
                     cls.funcs:take(fn)
                     cls.excludes:take(fn)
                 end
             end
             for vn, vi in pairs(cls.vars) do
-                if not vi.snippet then
+                if not vi.body then
                     cls.vars:take(vn)
                     cls.excludes:take(vn)
                 end
@@ -1567,7 +1567,7 @@ local function copy_super_funcs()
             if func.name == '__gc' then
                 goto continue
             end
-            if func.snippet then
+            if func.body then
                 if not cls.funcs:has(func.name) and not cls.excludes:has(func.name) then
                     cls.funcs:push(func.name, setmetatable({}, {__index = func}))
                 end
@@ -1592,7 +1592,7 @@ local function copy_super_funcs()
                 and not cls.excludes:has(var.name)
             then
                 cls.vars:push(var.name, setmetatable({
-                    snippet = format("@copyfrom(${rawsuper}) ${var.snippet}")
+                    body = format("@copyfrom(${rawsuper}) ${var.body}")
                 }, {__index = var}))
             end
         end
@@ -1688,7 +1688,7 @@ local function validate_fromtable()
             local options = cls.options
             local has_var = false
             for _, var in ipairs(cls.vars) do
-                if not var.snippet:find('static ') then
+                if not var.body:find('static ') then
                     has_var = true
                 end
             end
@@ -2065,7 +2065,7 @@ local function make_typeconf_command(cls, ModuleCMD)
             cls.macros:push(name, {name = name, value = macro})
         end
         cls.funcs:push(name, entry)
-        add_value_command(SubCMD, 'snippet', entry)
+        add_value_command(SubCMD, 'body', entry)
         add_attr_command(SubCMD, name, cls)
         add_insert_command(SubCMD, name, cls)
         return olua.command_proxy(SubCMD, CMD)
@@ -2096,14 +2096,14 @@ local function make_typeconf_command(cls, ModuleCMD)
         return olua.command_proxy(SubCMD, CMD)
     end
 
-    function CMD.var(name, snippet)
+    function CMD.var(name, body)
         local entry = {name = name}
         local SubCMD = {}
         name = checkstr('var', name)
         if name ~= '*' then
             cls.excludes:replace(name, true)
             cls.vars:replace(name, entry)
-            add_value_command(SubCMD, 'snippet', entry)
+            add_value_command(SubCMD, 'body', entry)
         else
             name = 'var*'
         end
