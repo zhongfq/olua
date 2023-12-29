@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2019-2022 codetypes@gmail.com
+ * Copyright (c) 2019-2023 codetypes@gmail.com
  *
  * https://github.com/zhongfq/olua
  *
@@ -167,7 +167,7 @@ void olua_postpush(lua_State *L, T* obj, int status) {}
  *      if (std::is_base_of<Object, T>::value) {
  *          ((Object *)obj)->autorelease();
  *      } else if (olua_getrawobj(L, obj)) {
- *          olua_setownership(L, -1, OLUA_OWNERSHIP_VM);
+ *          olua_setobjflag(L, -1, OLUA_FLAG_IN_HEAP);
  *          lua_pop(L, 1);
  *      }
  *  }
@@ -180,7 +180,7 @@ template <class T>
 void olua_postnew(lua_State *L, T *obj)
 {
     if (olua_getrawobj(L, obj)) {
-        olua_setownership(L, -1, OLUA_OWNERSHIP_VM);
+        olua_setobjflag(L, -1, OLUA_FLAG_IN_HEAP);
         lua_pop(L, 1);
     }
 }
