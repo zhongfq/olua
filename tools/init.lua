@@ -55,7 +55,7 @@ function olua.print(fmt, ...)
 end
 
 -- version
-olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.1'
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.2'
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
