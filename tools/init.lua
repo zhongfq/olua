@@ -101,7 +101,7 @@ then
         os.execute(cmd)
     end
 
-    local url = 'https://github.com/zhongfq/olua/releases/download/v1.1'
+    local url = 'https://github.com/zhongfq/olua/releases/download/v1.2'
     local deps = {"include.zip", ("%s-%s.zip"):format(LUA_VERSION, osn)}
     for _, v in ipairs(deps) do
         wget(url .. '/' .. v, dir .. '/' .. v)
