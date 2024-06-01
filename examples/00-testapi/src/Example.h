@@ -276,6 +276,7 @@ public:
     }
 
     ~SharedHello() {
+        printf("del SharedHello\n");
     };
 
     void say() {}
@@ -285,6 +286,10 @@ public:
     std::shared_ptr<SharedHello> getThis()
     {
         return shared_from_this();
+    }
+    
+    std::weak_ptr<SharedHello> getWeakPtr() {
+        return std::weak_ptr<SharedHello>(shared_from_this());
     }
     
     void setThis(const std::shared_ptr<SharedHello> &sp)

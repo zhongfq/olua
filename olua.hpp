@@ -626,8 +626,12 @@ template <template<class> class SmartPtr, class T>
 int olua_smartptr_gc(lua_State *L)
 {
     SmartPtr<T> *obj = olua_checkobj<SmartPtr<T>>(L, 1);
+    if (olua_hasobjflag(L, -1, OLUA_FLAG_IN_USERDATA)) {
+        obj->~SmartPtr<T>();
+    } else {
+        delete obj;
+    }
     olua_setrawobj(L, 1, nullptr);
-    delete obj;
     return 0;
 }
 
@@ -688,7 +692,11 @@ int olua_push_object(lua_State *L, const std::shared_ptr<T> *value, const char *
     
     olua_setobjflag(L, -2, OLUA_FLAG_SKIP_GC);  // skip gc, managed by smart ptr
     olua_setobjflag(L, -2, OLUA_FLAG_IN_SMARTPRT);
-    olua_pushobj<std::shared_ptr<T>>(L, new std::shared_ptr<T>(*value));
+    
+    void *ptr = olua_newrawobj(L, nullptr, sizeof(*value));
+    std::shared_ptr<T> *obj = new (ptr) std::shared_ptr<T>(*value);
+    olua_pushobj<std::shared_ptr<T>>(L, obj);
+    olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);
     olua_addref(L, -3, OLUA_SMART_PRT, -1, OLUA_REF_ALONE);
     lua_pop(L, 2); // pop nil and smartptr
     return 1;
@@ -707,7 +715,7 @@ template <class T>
 int olua_push_object(lua_State *L, const std::weak_ptr<T> *value, const char *cls)
 {
     std::shared_ptr<T> sp = value->lock();
-    return olua_push_obj(L, &sp, cls);
+    return olua_push_object(L, &sp, cls);
 }
 
 // map

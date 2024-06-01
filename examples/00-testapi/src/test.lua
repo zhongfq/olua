@@ -163,5 +163,6 @@ util.dump(olua.uservalue(obj))
 
 -- test smart ptr
 local SharedHello = require "example.SharedHello"
-local shared = SharedHello.new()
-print(shared.this, shared.this)
+-- local shared = SharedHello.new()
+-- print(shared.this, shared.this)
+

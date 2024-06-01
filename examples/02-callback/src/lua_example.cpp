@@ -282,7 +282,7 @@ static int _example_Callback_foreach(lua_State *L)
     olua_check_integer(L, 3, &arg2);
     olua_check_callback(L, 4, &arg3, "std.function");
 
-    void *cb_store = (void *)olua_pushclassobj(L, "example.Callback");
+    void *cb_store = (void *)self;
     std::string cb_tag = makeForeachTag(arg1);
     std::string cb_name = olua_setcallback(L, cb_store,  4, cb_tag.c_str(), OLUA_TAG_NEW);
     olua_Context cb_ctx = olua_context(L);

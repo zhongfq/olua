@@ -3677,6 +3677,23 @@ static int _example_SharedHello_getThis(lua_State *L)
     return num_ret;
 }
 
+static int _example_SharedHello_getWeakPtr(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::SharedHello *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.SharedHello");
+
+    // std::weak_ptr<example::SharedHello> getWeakPtr()
+    std::weak_ptr<example::SharedHello> ret = self->getWeakPtr();
+    int num_ret = olua_push_object(L, &ret, "example.SharedHello");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
 static int _example_SharedHello_create(lua_State *L)
 {
     olua_startinvoke(L);
@@ -3749,12 +3766,14 @@ OLUA_LIB int luaopen_example_SharedHello(lua_State *L)
     oluacls_func(L, "__olua_move", _example_SharedHello___olua_move);
     oluacls_func(L, "getName", _example_SharedHello_getName);
     oluacls_func(L, "getThis", _example_SharedHello_getThis);
+    oluacls_func(L, "getWeakPtr", _example_SharedHello_getWeakPtr);
     oluacls_func(L, "new", _example_SharedHello_create);
     oluacls_func(L, "say", _example_SharedHello_say);
     oluacls_func(L, "setThis", _example_SharedHello_setThis);
     oluacls_func(L, "shared_from_this", _example_SharedHello_shared_from_this);
     oluacls_prop(L, "name", _example_SharedHello_getName, nullptr);
     oluacls_prop(L, "this", _example_SharedHello_getThis, _example_SharedHello_setThis);
+    oluacls_prop(L, "weakPtr", _example_SharedHello_getWeakPtr, nullptr);
 
     return 1;
 }
