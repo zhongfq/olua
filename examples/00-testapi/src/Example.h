@@ -86,7 +86,7 @@ typedef Point Vec2;
 typedef olua::pointer<std::vector<int>> VectorInt;
 typedef olua::pointer<std::vector<Point>> VectorPoint;
 typedef olua::pointer<std::vector<std::string>> VectorString;
-typedef olua::array<Point> PointArray;
+typedef olua::pointer<Point> PointArray;
 
 template<class T> class Singleton {
 public:

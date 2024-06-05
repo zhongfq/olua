@@ -71,7 +71,7 @@ typedef {
         std::set
         std::vector
     ]],
-    conv = 'olua_$$_vector',
+    conv = 'olua_$$_array',
 }
 
 typedef {

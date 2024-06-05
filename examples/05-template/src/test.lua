@@ -51,7 +51,7 @@ arr[9] = 90
 
 local int8_t = require "olua.int8_t"
 local str = int8_t.new(10)
-str:setstring('hello', 4)
+str:assign('hello', 4)
 print(str:tostring(4))
 print(str:sub(2):tostring(4))
 print(str:sub(2, 3):tostring(2))

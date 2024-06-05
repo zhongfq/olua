@@ -299,7 +299,7 @@ static int _example_Hello_checkValue(lua_State *L)
     int32_t *arg1 = nullptr;       /** t */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array(L, 2, &arg1, "olua.int32_t");
+    olua_check_pointer(L, 2, &arg1, "olua.int32_t");
 
     // void checkValue(int32_t *t)
     self->checkValue(arg1);
@@ -332,7 +332,7 @@ static int _example_Hello_getBool(lua_State *L)
 
     // std::vector<bool> getBool()
     std::vector<bool> ret = self->getBool();
-    int num_ret = olua_push_vector<bool>(L, ret, [L](bool &arg1) {
+    int num_ret = olua_push_array<bool>(L, ret, [L](bool &arg1) {
         olua_push_bool(L, arg1);
     });
 
@@ -461,7 +461,7 @@ static int _example_Hello_setBool(lua_State *L)
     std::vector<bool> arg1;       /** bools */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_vector<bool>(L, 2, arg1, [L](bool *arg1) {
+    olua_check_array<bool>(L, 2, arg1, [L](bool *arg1) {
         olua_check_bool(L, -1, arg1);
     });
 

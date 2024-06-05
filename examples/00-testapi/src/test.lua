@@ -73,6 +73,7 @@ obj:getStringRef(str)
 print('sizeof(int)', num.sizeof)
 print('sizeof(string)', str.sizeof)
 print('ref', num.value, str.value)
+print('rawdata', num.rawdata)
 assert(num.value == 120)
 assert(str.value == "120")
 assert(olua.isa(obj, 'void *'))
@@ -129,6 +130,8 @@ assert(vectP[2].y == 100)
 
 -- test ptr
 assert(obj.intPtr == nil)
+print("vector int ptr 1", obj.vectorIntPtr)
+print("vector int ptr 2", obj.vectorIntPtr)
 assert(obj.vectorIntPtr.value[1] == 100)
 
 -- test const
@@ -163,6 +166,17 @@ util.dump(olua.uservalue(obj))
 
 -- test smart ptr
 local SharedHello = require "example.SharedHello"
--- local shared = SharedHello.new()
--- print(shared.this, shared.this)
+local shared = SharedHello.new()
+print(shared.this)
 
+local int8_t = require "olua.int8_t"
+local chars = int8_t.new(10)
+local slice = chars:slice(2, 4)
+chars:assign('hello', 4)
+print("slice", slice:tostring(2))
+assert(slice[1] == string.byte('e'))
+assert(slice[2] == string.byte('l'))
+print(chars:tostring(4))
+print(chars:sub(2):tostring(4))
+print(chars:sub(2, 3):tostring(2))
+print(chars:sub(2, 4):tostring(3))

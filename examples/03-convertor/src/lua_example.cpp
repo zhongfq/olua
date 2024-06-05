@@ -273,7 +273,7 @@ static int _example_Node_getChildren(lua_State *L)
 
     // const example::vector<example::Node *> &getChildren()
     const example::vector<example::Node *> &ret = self->getChildren();
-    int num_ret = olua_push_vector<example::Node *>(L, ret, [L](example::Node *arg1) {
+    int num_ret = olua_push_array<example::Node *>(L, ret, [L](example::Node *arg1) {
         olua_push_object(L, arg1, "example.Node");
     });
 
@@ -355,7 +355,7 @@ static int _example_Node_setChildren(lua_State *L)
     example::vector<example::Node *> arg1;       /** value */
 
     olua_to_object(L, 1, &self, "example.Node");
-    olua_check_vector<example::Node *>(L, 2, arg1, [L](example::Node **arg1) {
+    olua_check_array<example::Node *>(L, 2, arg1, [L](example::Node **arg1) {
         olua_check_object(L, -1, arg1, "example.Node");
     });
 

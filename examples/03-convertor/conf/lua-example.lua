@@ -11,7 +11,7 @@ import "../common/lua-object.lua"
 
 typedef "example::Color"
 typedef "example::vector"
-    .conv "olua_$$_vector"
+    .conv "olua_$$_array"
 
 typeconf "example::Point"
     .packable 'true'

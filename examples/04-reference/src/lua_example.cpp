@@ -188,7 +188,7 @@ static int _example_Node_getChildren(lua_State *L)
 
     // example::vector<example::Node *> &getChildren()
     example::vector<example::Node *> &ret = self->getChildren();
-    int num_ret = olua_push_vector<example::Node *>(L, ret, [L](example::Node *arg1) {
+    int num_ret = olua_push_array<example::Node *>(L, ret, [L](example::Node *arg1) {
         olua_push_object(L, arg1, "example.Node");
     });
 
