@@ -1032,7 +1032,7 @@ int olua_pushobj(lua_State *L, const olua::pointer<T> *value, const char *cls)
 template <class T> inline
 int olua_pushobj(lua_State *L, const olua::pointer<T> *value)
 {
-    static_assert(sizeof(T) == 0, "push olua::array object must specify the lua class");
+    static_assert(sizeof(T) == 0, "push olua::pointer object must specify the lua class");
     return 0;
 }
 
