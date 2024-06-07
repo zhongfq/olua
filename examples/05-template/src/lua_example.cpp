@@ -299,7 +299,7 @@ static int _example_Hello_checkValue(lua_State *L)
     int32_t *arg1 = nullptr;       /** t */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_pointer(L, 2, &arg1, "olua.int32_t");
+    olua_check_pointer(L, 2, &arg1, "olua.int32");
 
     // void checkValue(int32_t *t)
     self->checkValue(arg1);

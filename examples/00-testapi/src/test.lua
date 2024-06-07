@@ -169,8 +169,8 @@ local SharedHello = require "example.SharedHello"
 local shared = SharedHello.new()
 print(shared.this)
 
-local int8_t = require "olua.int8_t"
-local chars = int8_t.new(10)
+local int8 = require "olua.int8"
+local chars = int8.new(10)
 local slice = chars:slice(2, 4)
 chars:assign('hello', 4)
 print("slice", slice:tostring(2))

@@ -908,9 +908,9 @@ static void aux_changeref(lua_State *L, int idx, const char *name, int obj, int 
             lua_settop(L, top);
             return;
         }
+        olua_getreftable(L, idx, name);
         if (flags & OLUA_REF_TABLE) {
             olua_assert(olua_istable(L, obj), "expect table");
-            olua_getreftable(L, idx, name);
             lua_pushnil(L);
             while (lua_next(L, obj)) {
                 if (olua_isuserdata(L, -2)) {
@@ -929,7 +929,6 @@ static void aux_changeref(lua_State *L, int idx, const char *name, int obj, int 
             }
         } else {
             olua_assert(olua_isuserdata(L, obj), "expect userdata");
-            olua_getreftable(L, idx, name);
             lua_pushvalue(L, obj);
             lua_pushvalue(L, top + 1);
             // L: reftable obj obj|nil
