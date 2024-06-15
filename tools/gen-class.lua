@@ -172,7 +172,7 @@ local function gen_class_open(cls, write)
         local macro = cls.macros[vi.get.varname]
         funcs:push(macro)
         if vi.set and vi.set.cppfunc then
-           func_set = format('_${cls.cppcls#}_${vi.set.cppfunc}')
+            func_set = format('_${cls.cppcls#}_${vi.set.cppfunc}')
         end
         funcs:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
         funcs:push(macro and '#endif' or nil)
@@ -239,7 +239,7 @@ function olua.gen_header(module)
             arr:push(value:gsub('\n *#', '\n#'))
         end
     end
-    
+
     local HEADER = string.upper(module.name)
     local headers = module.headers
     if not has_packable_class(module) then
@@ -326,6 +326,15 @@ local function gen_luaopen(module, write)
 
     local luaopen = format(module.luaopen or '')
 
+    local entry = ''
+    if module.entry then
+        entry = format([[
+            if (olua_getclass(L, olua_getluatype<${module.entry}>(L))) {
+                return 1;
+            }
+        ]])
+    end
+
     write(format([[
         OLUA_BEGIN_DECLS
         OLUA_LIB int luaopen_${module.name}(lua_State *L)
@@ -333,6 +342,8 @@ local function gen_luaopen(module, write)
             ${requires}
 
             ${luaopen}
+
+            ${entry}
 
             return 0;
         }
@@ -356,4 +367,201 @@ function olua.gen_source(module)
 
     local path = format('${module.path}/lua_${module.name}.cpp')
     olua.write(path, tostring(arr))
+end
+
+local function gen_class_meta(module, cls, write)
+    local luacls = cls.luacls:match("[^.]+$")
+    local supercls = cls.supercls and olua.luacls(cls.supercls) or nil
+    supercls = supercls and format(": ${supercls}") or ""
+
+    if module.entry == cls.cppcls then
+        write(format("---@meta ${module.name}"))
+    else
+        write(format("---@meta ${cls.luacls}"))
+    end
+    write("")
+
+    if olua.is_enum_type(cls) then
+        write(format([[
+            ---@type ${cls.luacls}
+            local VALUE
+
+            ---@enum ${cls.luacls}
+        ]]))
+    else
+        write(format([[
+            ---@class ${cls.luacls} ${supercls}
+        ]]))
+    end
+
+    for _, pi in ipairs(cls.props) do
+        local field_luacls = olua.luatype(pi.get.ret.type)
+        local comment = pi.get.ret.attr.comment
+        if comment and #comment > 0 then
+            comment = olua.base64_decode(comment[1])
+            comment = comment:gsub('^[/* \n\r]+', '')
+            comment = comment:gsub('[\n\r ]+[/* ]+', '\n')
+            comment = comment:gsub('[\n\r]', '\n')
+            comment = comment:gsub('[/* \n\r]+$', '')
+            comment = comment:gsub('\n\n', ' <br><br>')
+            comment = comment:gsub('\n+', ' ')
+            comment = comment:gsub('\\code', "```")
+            comment = comment:gsub('\\endcode', "```")
+            comment = comment:gsub('\\c ([^ ,.]+)', '`%1`')
+        else
+            comment = ""
+        end
+        write(format([[
+            ---@field ${pi.name} ${field_luacls} ${comment}
+        ]]))
+    end
+
+    for _, vi in ipairs(cls.vars) do
+        local field_luacls = olua.luatype(vi.get.ret.type)
+        write(format([[
+            ---@field ${vi.name} ${field_luacls}
+        ]]))
+    end
+
+    if olua.is_enum_type(cls) then
+        local fields = olua.newarray('\n')
+        for _, ei in ipairs(cls.enums) do
+            local comment = ei.comment
+            if #comment > 0 then
+                comment = comment:gsub('^[/* \n\r]+', '')
+                comment = comment:gsub('[\n\r]+[/* ]+', '\n')
+                comment = comment:gsub('[/* \n\r]+$', '')
+                comment = comment:gsub('\n', '\n---')
+                fields:pushf("---${comment}")
+            end
+            fields:pushf('${ei.name} = VALUE,')
+        end
+        write(format([[
+            local ${luacls} = {
+                ${fields}
+            }
+        ]]))
+    else
+        write(format('local ${luacls} = {}'))
+    end
+
+    write('')
+
+    for _, fis in ipairs(cls.funcs) do
+        local fi = fis[1]
+
+        local comment = fi.ret.attr.comment
+        if comment and #comment > 0 then
+            comment = olua.base64_decode(comment[1])
+            comment = comment:gsub('^[/* \n\r]+', '---')
+            comment = comment:gsub('[\n\r]+[/* ]+', '\n')
+            comment = comment:gsub('[/* \n\r]+$', '')
+            comment = comment:gsub('\n', '\n---')
+            comment = comment:gsub('@param', '\\param')
+            comment = comment:gsub('@return', '\\return')
+            comment = comment:gsub('\\code', "```")
+            comment = comment:gsub('\\endcode', "```")
+            comment = comment:gsub('\\c ([^ ,.]+)', '`%1`')
+            write(comment)
+        else
+            comment = ""
+        end
+
+        -- write function parameters
+        local caller_args = olua.newarray(', ')
+        if #fi.args > 0 then
+            local params = olua.newarray('\n')
+            local skip_first_arg = olua.is_oluaret(fi)
+            for _, arg in ipairs(fi.args) do
+                if skip_first_arg then
+                    skip_first_arg = false
+                    goto continue
+                end
+                local varname = arg.varname or ""
+                local arg_luacls = olua.luatype(arg.type)
+                caller_args:push(varname)
+                params:pushf([[
+                    ---@param ${varname} ${arg_luacls}
+                ]])
+                ::continue::
+            end
+            write(format([[
+                ${params}
+            ]]))
+        end
+
+        -- write return type
+        local ret_luacls = olua.luatype(fi.ret.type)
+        write(format([[
+            ---@return ${ret_luacls}
+        ]]))
+
+        -- write overload
+        for i, olfi in ipairs(fis) do
+            if i == 1 then
+                goto skip_first_fn
+            end
+
+            local caller_args = olua.newarray(', ')
+            local ret_luacls = olua.luatype(olfi.ret.type)
+
+            if not olfi.static then
+                caller_args:pushf("self: ${cls.luacls}")
+            end
+
+            for idx, arg in ipairs(olfi.args) do
+                local varname = arg.varname or ("arg" .. idx)
+                local arg_luacls = olua.luatype(arg.type)
+                caller_args:pushf("${varname}: ${arg_luacls}")
+            end
+
+            write(format("---@overload fun(${caller_args}): ${ret_luacls}"))
+
+            ::skip_first_fn::
+        end
+
+        -- write function prototype
+        local static = fi.static and "." or ':'
+        write(format [[
+            function ${luacls}${static}${fi.luafunc}(${caller_args}) end
+        ]])
+        write('')
+    end
+
+    write(format('return ${luacls}'))
+end
+
+function olua.gen_metafile(module)
+    if not module.metapath then
+        return
+    end
+    for _, cls in ipairs(module.class_types) do
+        local luacls = cls.luacls:gsub("%.", "/")
+        if luacls:find("<") then
+            goto continue
+        end
+        local arr = olua.newarray('\n')
+        local function append(value)
+            if value then
+                arr:push(value)
+            end
+        end
+        local filename = module.entry == cls.cppcls and module.name or luacls
+        local path = format('${module.metapath}/${module.name}/library/${filename}.lua')
+        local dir = path:match("(.*)/[^/]+$")
+        olua.mkdir(dir)
+        gen_class_meta(module, cls, append)
+        olua.write(path, tostring(arr))
+
+        olua.write(format('${module.metapath}/${module.name}/config.json'), format([[
+            {
+              "$schema": "https://raw.githubusercontent.com/LuaLS/LLS-Addons/main/schemas/addon_config.schema.json",
+              "words": ["%s+-clang"],
+              "files": ["clang"],
+              "settings": {}
+            }
+        ]]))
+
+        ::continue::
+    end
 end

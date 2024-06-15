@@ -235,7 +235,8 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
                 if fi.variable then
                     codeset.insert_after:pushf('olua_delallrefs(L, ${ref_store}, "${ref_name}");')
                 end
-                codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
+                codeset.insert_after:pushf(
+                    'olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
             end
         elseif arg.type.cppcls:find('<') then
             codeset.insert_after:pushf([[
@@ -287,7 +288,7 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
     end
 
     if ref_mode == '|' or ref_mode == '^' then
-        if arg.type.cppcls  == 'void' then
+        if arg.type.cppcls == 'void' then
             olua.assert(not fi.static, 'no delref object')
             olua.assert(arg.attr.delref[3], 'must supply where to delref object')
             argn = 1
@@ -303,7 +304,8 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
         codeset.insert_after:pushf('olua_delallrefs(L, ${ref_store}, "${ref_name}");')
     elseif ref_mode == '|' then
         if arg.type.subtypes then
-            codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
+            codeset.insert_after:pushf(
+                'olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
         else
             codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI);')
         end
@@ -312,7 +314,6 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
     else
         error('no support delref flag: ' .. ref_mode)
     end
-
 end
 
 local function gen_func_args(cls, fi, codeset)
@@ -557,7 +558,7 @@ local function get_func_with_num_args(cls, funcs, num_args)
     for _, fi in ipairs(funcs) do
         local n = olua.is_oluaret(fi) and (num_args + 1) or num_args
         if fi.max_args == n then
-            arr[#arr + 1] = fi
+            arr[#arr+1] = fi
         end
     end
     return arr
@@ -588,16 +589,16 @@ local function gen_test_and_call(cls, fns)
 
                 if olua.is_pointer_type(ai.type) or olua.is_func_type(ai.type) then
                     if ai.attr.pack then
-                        test_exps[#test_exps + 1] = format([[
+                        test_exps[#test_exps+1] = format([[
                             (${func_is}(L, ${argn}, (${ai.type.cppcls} *)nullptr)${test_nil})
                         ]])
                     else
-                        test_exps[#test_exps + 1] = format([[
+                        test_exps[#test_exps+1] = format([[
                             (${func_is}(L, ${argn}, "${ai.type.luacls}")${test_nil})
                         ]])
                     end
                 else
-                    test_exps[#test_exps + 1] = format([[
+                    test_exps[#test_exps+1] = format([[
                         (${func_is}(L, ${argn})${test_nil})
                     ]])
                 end
@@ -610,7 +611,7 @@ local function gen_test_and_call(cls, fns)
             end
 
             test_exps = table.concat(test_exps, " && ")
-            callblock[#callblock + 1] = {
+            callblock[#callblock+1] = {
                 max_vars = max_vars,
                 exp1 = format([[
                     // if (${test_exps}) {
@@ -632,7 +633,7 @@ local function gen_test_and_call(cls, fns)
                 end
             end
             assert(#fns == 1, fi.cppfunc)
-            callblock[#callblock + 1] = {
+            callblock[#callblock+1] = {
                 max_vars = 1,
                 exp1 = format([[
                     // ${fi.funcdesc}
@@ -736,7 +737,6 @@ function olua.gen_class_fill(cls, idx, name, codeset)
         end
         codeset.check_args:push('')
     end
-
 end
 
 -- packable object
@@ -749,7 +749,7 @@ local function gen_pack_func(cls, write)
         local pi = var.set.args[1]
         local argname = 'arg' .. i
         olua.gen_decl_exp(pi, argname, codeset)
-        olua.gen_check_exp(pi, argname, 'idx + ' ..  (i - 1), codeset)
+        olua.gen_check_exp(pi, argname, 'idx + ' .. (i - 1), codeset)
         codeset.check_args:pushf([[
             value->${pi.varname} = ${argname};
         ]])

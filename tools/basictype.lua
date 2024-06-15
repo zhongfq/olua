@@ -8,12 +8,14 @@ end
 typedef {
     cppcls = 'void',
     conv = '<NONE>',
+    luatype = 'nil',
 }
 
 typedef {
     cppcls = 'void *',
     luacls = 'void *',
     conv = 'olua_$$_object',
+    luatype = 'any',
 }
 
 typedef {
@@ -30,6 +32,7 @@ typedef {
 typedef {
     cppcls = 'bool',
     conv = 'olua_$$_bool',
+    luatype = 'boolean',
 }
 
 typedef {
@@ -40,16 +43,19 @@ typedef {
         const unsigned char *
     ]],
     conv = 'olua_$$_string',
+    luatype = 'string',
 }
 
 typedef {
     cppcls = 'std::string',
     conv = 'olua_$$_string',
+    luatype = 'string',
 }
 
 typedef {
     cppcls = 'std::string_view',
     conv = 'olua_$$_string',
+    luatype = 'string',
 }
 
 typedef {
@@ -64,6 +70,7 @@ typedef {
         std::map
     ]],
     conv = 'olua_$$_map',
+    luatype = 'map',
 }
 
 typedef {
@@ -72,6 +79,7 @@ typedef {
         std::vector
     ]],
     conv = 'olua_$$_array',
+    luatype = 'array',
 }
 
 typedef {
@@ -91,6 +99,7 @@ typedef {
         lua_Number
     ]],
     conv = 'olua_$$_number',
+    luatype = 'number',
 }
 
 typedef {
@@ -118,6 +127,7 @@ typedef {
         lua_Integer
     ]],
     conv = 'olua_$$_integer',
+    luatype = 'number',
 }
 
 typedef {
@@ -136,4 +146,5 @@ typedef {
         lua_Unsigned
     ]],
     conv = 'olua_$$_integer',
+    luatype = 'number',
 }

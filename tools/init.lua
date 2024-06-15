@@ -55,7 +55,7 @@ function olua.print(fmt, ...)
 end
 
 -- version
-olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.2'
+olua.OLUA_HOME = olua.OLUA_HOME .. '/v1.3'
 
 -- lua search path
 package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
@@ -101,7 +101,7 @@ then
         os.execute(cmd)
     end
 
-    local url = 'https://github.com/zhongfq/olua/releases/download/v1.2'
+    local url = 'https://github.com/zhongfq/olua/releases/download/v1.3'
     local deps = {"include.zip", ("%s-%s.zip"):format(LUA_VERSION, osn)}
     for _, v in ipairs(deps) do
         wget(url .. '/' .. v, dir .. '/' .. v)
@@ -209,14 +209,14 @@ function olua.newarray(sep, prefix, posfix)
 
     function mt:push(v)
         if v ~= nil then
-            self[#self + 1] = v
+            self[#self+1] = v
         end
         return self
     end
 
     function mt:pushf(v)
         if v ~= nil then
-            self[#self + 1] = olua.format(v)
+            self[#self+1] = olua.format(v)
         end
         return self
     end
@@ -235,7 +235,7 @@ function olua.newarray(sep, prefix, posfix)
 
     function mt:merge(t)
         for _, v in ipairs(t) do
-            self[#self + 1] = v
+            self[#self+1] = v
         end
         return self
     end
@@ -261,7 +261,7 @@ end
 function olua.toarray(map)
     local arr = {}
     for k, v in pairs(map) do
-        arr[#arr + 1] = {key = k, value = v}
+        arr[#arr+1] = {key = k, value = v}
     end
     table.sort(arr, function (a, b) return a.key < b.key end)
     return arr
@@ -306,7 +306,7 @@ function olua.newhash(map_only)
         assert(value ~= nil, 'no value')
         hash.map[key] = value
         if not map_only then
-            hash.values[#hash.values + 1] = value
+            hash.values[#hash.values+1] = value
         end
     end
 
@@ -360,7 +360,7 @@ function olua.newhash(map_only)
                     end
                 end
             else
-                hash.values[#hash.values + 1] = value
+                hash.values[#hash.values+1] = value
             end
         end
     end
@@ -500,7 +500,7 @@ local function eval(line)
                 if value:find('[\n\r]') then
                     value = '\n' .. value
                     prefix = '[['
-                    posfix =  '\n' .. indent .. ']]'
+                    posfix = '\n' .. indent .. ']]'
                     indent = indent .. '    '
                 elseif value:find('[\'"]') then
                     value = '[[' .. value .. ']]'
@@ -531,7 +531,7 @@ local function doeval(expr)
             from = #expr + 1
             to = from
         end
-        arr[#arr + 1] = eval(string.sub(expr, idx, from - 1))
+        arr[#arr+1] = eval(string.sub(expr, idx, from - 1))
         idx = to + 1
     end
     return table.concat(arr, '\n')
@@ -541,11 +541,11 @@ function olua.trim(expr, indent, keepspace)
     if type(expr) == 'string' then
         expr = expr:gsub('[\n\r]', '\n')
         if not keepspace then
-            expr = expr:gsub('^[\n]*', '') -- trim head '\n'
+            expr = expr:gsub('^[\n]*', '')  -- trim head '\n'
             expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
             local space = string.match(expr, '^[ ]*')
             indent = string.rep(' ', indent or 0)
-            expr = expr:gsub('^[ ]*', '')  -- trim head space
+            expr = expr:gsub('^[ ]*', '') -- trim head space
             expr = expr:gsub('\n' .. space, '\n' .. indent)
             expr = indent .. expr
         end
@@ -608,6 +608,11 @@ require "gen-class"
 require "gen-func"
 require "gen-callback"
 require "autoconf"
+
+local base64 = require "base64"
+
+olua.base64_encode = base64.encode
+olua.base64_decode = base64.decode
 
 _G.export = olua.export
 _G.typedef = olua.typedef

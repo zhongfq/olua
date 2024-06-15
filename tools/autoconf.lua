@@ -46,37 +46,56 @@ if OLUA_MAX_VARIADIC_ARGS == nil then
     OLUA_MAX_VARIADIC_ARGS = 16
 end
 
-local format = olua.format
+local format         = olua.format
 local clang_tu
 
-local type_cursors = olua.newhash(true)
-local exclude_types = olua.newhash(true)
-local visited_types = olua.newhash(true)
-local alias_types = olua.newhash(true)
-local type_convs = olua.newhash(true)
-local type_checker = olua.newarray()
-local clang_args = {}
-local modules = olua.newhash()
-local metamethod = {
-    __index = true, __newindex = true,
-    __gc = true, __pairs = true, __len = true, __eq = true, __tostring = true,
-    __add = true, __sub = true, __mul = true, __mod = true, __pow = true,
-    __div = true, __idiv = true,
-    __band = true, __bor = true, __bxor = true, __shl = true, __shr = true,
-    __unm = true, __bnot = true, __lt = true, __le = true,
-    __concat = true, __call = true, __close = true
+local type_cursors   = olua.newhash(true)
+local exclude_types  = olua.newhash(true)
+local visited_types  = olua.newhash(true)
+local alias_types    = olua.newhash(true)
+local type_convs     = olua.newhash(true)
+local type_checker   = olua.newarray()
+local clang_args     = {}
+local modules        = olua.newhash()
+local metamethod     = {
+    __index = true,
+    __newindex = true,
+    __gc = true,
+    __pairs = true,
+    __len = true,
+    __eq = true,
+    __tostring = true,
+    __add = true,
+    __sub = true,
+    __mul = true,
+    __mod = true,
+    __pow = true,
+    __div = true,
+    __idiv = true,
+    __band = true,
+    __bor = true,
+    __bxor = true,
+    __shl = true,
+    __shr = true,
+    __unm = true,
+    __bnot = true,
+    __lt = true,
+    __le = true,
+    __concat = true,
+    __call = true,
+    __close = true
 }
 
-local kFLAG_POINTER     = 1 << 1    -- pointer type
-local kFLAG_ENUM        = 1 << 2    -- enum type
-local kFLAG_ALIAS       = 1 << 3    -- alias type
-local kFLAG_FUNC        = 1 << 4    -- function type
-local kFLAG_TEMPLATE    = 1 << 5    -- template type
-local kFLAG_SKIP        = 1 << 6    -- don't export
+local kFLAG_POINTER  = 1 << 1 -- pointer type
+local kFLAG_ENUM     = 1 << 2 -- enum type
+local kFLAG_ALIAS    = 1 << 3 -- alias type
+local kFLAG_FUNC     = 1 << 4 -- function type
+local kFLAG_TEMPLATE = 1 << 5 -- template type
+local kFLAG_SKIP     = 1 << 6 -- don't export
 
-local KEEP_CONST        = 1 << 1
-local KEEP_TEMPLATE     = 1 << 2
-local KEEP_POINTER      = 1 << 3
+local KEEP_CONST     = 1 << 1
+local KEEP_TEMPLATE  = 1 << 2
+local KEEP_POINTER   = 1 << 3
 
 local function has_flag(flag, k)
     return (flag & k) ~= 0
@@ -106,6 +125,8 @@ local function raw_typename(cppcls, flag)
     end
 end
 
+---@param tn string
+---@return string
 local function trim_prefix_colon(tn)
     if tn:find(' ::') then
         tn = tn:gsub(' ::', ' ')
@@ -116,6 +137,8 @@ local function trim_prefix_colon(tn)
     return tn
 end
 
+---@param type clang.Type
+---@return string
 local function parse_from_ast(type)
     local cur = type.declaration
     if cur.kind == CursorKind.NoDeclFound then
@@ -139,6 +162,7 @@ end
 
 local typename
 
+---@param type clang.Type
 local function parse_from_type(type, template_types, try_underlying, level, willcheck)
     local kind = type.kind
     local tn = trim_prefix_colon(type.name)
@@ -212,6 +236,9 @@ local function parse_from_type(type, template_types, try_underlying, level, will
         if tn == astname or not olua.is_end_with(astname, rawtn) then
             return tn
         else
+            if astname:find("::operator") then
+                return tn
+            end
             return tn:gsub(rawtn, astname)
         end
     end
@@ -236,7 +263,7 @@ local function check_alias_typename(tn, underlying)
             return tn, true
         end
     end
-    
+
     local has_ti = olua.typeinfo(rawp_underlying, nil, false)
     if has_ti and not olua.is_templdate_type(underlying) then
         if underlying:find('^const ') then
@@ -277,12 +304,12 @@ local function get_pointee_type(type)
 end
 
 function typename(type, template_types, level, willcheck)
-     --[[
+    --[[
             tn: const uint32_t *
          rawtn: uint32_t
         rawptn: uint32_t *
     ]]
-    
+
     local tn = parse_from_type(type, template_types, false, level, willcheck)
     local rawtn = raw_typename(tn)
     local rawptn = raw_typename(tn, KEEP_POINTER)
@@ -471,7 +498,7 @@ local M = {}
 function M:parse()
     assert(not self.class_file)
     self.class_file = format('autobuild/${self.filename}.idl')
-    
+
     -- scan method, variable, enum, const value
     for _, cls in ipairs(self.class_types:clone()) do
         local cur = type_cursors:get(cls.cppcls)
@@ -481,11 +508,13 @@ function M:parse()
     end
 end
 
+---@param cls any
+---@param cur clang.Cursor
 function M:visit_method(cls, cur)
     if has_deprecated_attr(cur)
         or cur.isCXXMoveConstructor
         or cur.name:find('operator *[%-=+/*><!()]?')
-        or cur.name == 'as'  -- 'as used to cast object'
+        or cur.name == 'as' -- 'as used to cast object'
         or has_exclude_attr(cur)
     then
         return
@@ -499,11 +528,30 @@ function M:visit_method(cls, cur)
     local typefrom = format('${cls.cppcls} -> ${cur.prettyPrinted}')
     local attr = get_attr_copy(cls, fn)
     local callback = cls.callbacks:get(fn) or {}
-    local static = cur.isCXXMethoStatic
+    local static = cur.isCXXMethodStatic
     local declexps = olua.newarray('')
     local protoexps = olua.newarray('')
 
     parse_attr_from_annotate(attr, cur)
+
+    local comment = cur.rawCommentText
+    if comment then
+        local see = comment:match('@oluasee +([^ ]+)')
+        if see then
+            local see_cursor = type_cursors:get(see)
+            if see_cursor then
+                local see_comment = see_cursor.rawCommentText
+                if see_comment then
+                    comment = see_comment
+                end
+            else
+                print(format("[WARNING]: @oluasee ${see} not found"))
+            end
+        end
+
+        comment = olua.base64_encode(comment)
+        declexps:pushf('@comment(${comment})')
+    end
 
     for i, c in ipairs({{type = result_type}, table.unpack(arguments)}) do
         local mark = (attr['arg' .. (i - 1)]) or ''
@@ -597,7 +645,7 @@ function M:visit_method(cls, cur)
     protoexps:push(')')
 
     local decl = tostring(declexps)
-    local prototype =  tostring(protoexps)
+    local prototype = tostring(protoexps)
     cls.excludes:replace(display_name, true)
     cls.excludes:replace(prototype, true)
     if cur.kind == CursorKind.FunctionDecl then
@@ -695,14 +743,25 @@ function M:will_visit(cppcls)
     return cls
 end
 
+---@param cppcls any
+---@param cur clang.Cursor
 function M:visit_enum(cppcls, cur)
     local cls = self:will_visit(cppcls)
+    local filter = {}
     for _, c in ipairs(cur.children) do
-        local value =  c.name
+        local value = c.name
         local name = cls.luaname(value, 'enum')
+        local range = c.commentRange
+        local comment = c.rawCommentText
+        if not filter[range.startLine] then
+            filter[range.startLine] = true
+        else
+            comment = ""
+        end
         cls.enums:push(name, {
             name = name,
             value = format('${cls.cppcls}::${value}'),
+            comment = comment
         })
     end
     type_convs:get(cppcls).conv = 'olua_$$_enum'
@@ -725,6 +784,10 @@ function M:visit_alias_class(alias, cppcls)
     end
 end
 
+---@param cppcls string
+---@param cur clang.Cursor
+---@param template_types any
+---@param specializedcls any
 function M:visit_class(cppcls, cur, template_types, specializedcls)
     local cls = self:will_visit(cppcls)
     local skipsuper = false
@@ -746,12 +809,12 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
         cls.options.reg_luatype = false
         cls.options.fromtable = false
     end
-    
+
     for _, c in ipairs(cur.children) do
         local kind = c.kind
         local access = c.cxxAccessSpecifier
         if kind == CursorKind.Constructor then
-            if c.isCXXMethoDeleted then
+            if c.isCXXMethodDeleted then
                 cls.options.fromtable = false
             end
         end
@@ -846,11 +909,10 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
         then
             local isConstructor = kind == CursorKind.Constructor
             if is_excluded_memeber(cls, c)
-                or c.isCXXMethoDeleted
+                or c.isCXXMethodDeleted
                 or (isConstructor and (cls.excludes:has('new')))
                 or (isConstructor and cur.kind == CursorKind.ClassTemplate)
-                -- isCXXMethoAbstract -> clang_CXXRecord_isAbstract
-                or (isConstructor and cur.isCXXMethoAbstract)
+                or (isConstructor and cur.isCXXAbstract)
             then
                 goto continue
             end
@@ -861,6 +923,8 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
     end
 end
 
+---@param cur clang.Cursor
+---@param cppcls string
 function M:visit(cur, cppcls)
     local kind = cur.kind
     local children = cur.children
@@ -903,7 +967,7 @@ function M:visit(cur, cppcls)
                 end
                 local specializedcls = parse_from_type(cur.underlyingType)
                 self:visit_class(cppcls, specialized, arg_types, specializedcls)
-                
+
                 if specializedcls:find('^olua::pointer') then
                     local typedef = self.CMD.typedef
                     local packedcls = specializedcls:match('<(.*)>') .. ' *'
@@ -950,6 +1014,7 @@ local function add_type_cursor(cppcls, cursor)
     end
 end
 
+---@param cur clang.Cursor
 local function prepare_cursor(cur)
     local kind = cur.kind
     local cppcls = parse_from_ast({declaration = cur, name = cur.name})
@@ -979,6 +1044,12 @@ local function prepare_cursor(cur)
             type_cursors:push_if_not_exist(typename(cur.type), cur)
             try_add_wildcard_type(cppcls, cur)
         end
+    elseif kind == CursorKind.UnexposedDecl or kind == CursorKind.LinkageSpec then
+        for _, v in ipairs(cur.children) do
+            prepare_cursor(v)
+        end
+    elseif kind == CursorKind.FunctionDecl then
+        type_cursors:push_if_not_exist(cppcls, cur)
     end
     if kind == CursorKind.TranslationUnit then
         alias_types:clear()
@@ -992,6 +1063,8 @@ local function write_module_metadata(module, append)
     append(format([[
         name = "${module.name}"
         path = "${module.path}"
+        metapath = ${module.metapath??}
+        entry = ${module.entry??}
     ]]))
 
     append(format('headers = ${module.headers?}'))
@@ -1049,7 +1122,7 @@ local function search_using_func(module, cls)
         if super then
             for _, func in ipairs(super.funcs) do
                 if func.name == name then
-                    arr[#arr + 1] = func
+                    arr[#arr+1] = func
                 end
             end
             if #arr == 0 and super.supercls then
@@ -1096,7 +1169,7 @@ local function write_cls_func(module, cls, append)
                 decl = '@using ' .. func.decl
             }, {__index = func})
         end
-        arr[#arr + 1] = func
+        arr[#arr+1] = func
     end
 
     for _, arr in ipairs(group) do
@@ -1110,7 +1183,7 @@ local function write_cls_func(module, cls, append)
             if v.cb_kind or cls.callbacks:has(v.name) then
                 has_callback = true
             end
-            funcs[#funcs + 1] = v.decl
+            funcs[#funcs+1] = v.decl
         end
 
         if #arr == 1 and OLUA_AUTO_GEN_PROP then
@@ -1194,7 +1267,13 @@ end
 
 local function write_cls_enum(module, cls, append)
     for _, e in ipairs(cls.enums) do
-        append(format(".enum('${e.name}', '${e.value}')", 4))
+        local comment = e.comment
+        if comment then
+            comment = olua.base64_encode(comment)
+        else
+            comment = ""
+        end
+        append(format(".enum('${e.name}', '${e.value}', '${comment}')", 4))
     end
 end
 
@@ -1349,7 +1428,7 @@ local function parse_headers()
     end
 
     local HEADER_PATH = 'autobuild/.autoconf.h'
-    local header = io.open(HEADER_PATH, 'w')
+    local header = assert(io.open(HEADER_PATH, 'w'))
     header:write(format [[
         #ifndef __AUTOCONF_H__
         #define __AUTOCONF_H__
@@ -1364,7 +1443,7 @@ local function parse_headers()
     local flags = olua.newarray()
     flags:push('-DOLUA_AUTOCONF')
     for i, v in ipairs(clang_args) do
-        flags[#flags + 1] = v
+        flags[#flags+1] = v
         if v:find('^-target') then
             has_target = true
         end
@@ -1707,7 +1786,7 @@ local function validate_fromtable()
                     options.fromtable = min_args == 0
                 end
             end
-            
+
             options.fromtable = options.fromtable or nil
             options.reg_luatype = options.reg_luatype or nil
         end
@@ -1728,9 +1807,9 @@ local function parse_modules()
 end
 
 local function write_ignored_types()
-    local file = io.open('autobuild/ignore-types.log', 'w')
+    local file = assert(io.open('autobuild/ignore-types.log', 'w'))
     local ignored_types = {}
-    for cppcls, cur in  pairs(type_cursors) do
+    for cppcls, cur in pairs(type_cursors) do
         local kind = cur.kind
         if not cppcls:find('^std::')
             and (kind == CursorKind.ClassDecl
@@ -1742,7 +1821,7 @@ local function write_ignored_types()
                 or alias_types:has(cppcls)
                 or type_convs:has(cppcls))
         then
-            ignored_types[#ignored_types + 1] = cppcls
+            ignored_types[#ignored_types+1] = cppcls
         end
     end
     table.sort(ignored_types)
@@ -1774,6 +1853,7 @@ local function write_typedefs()
                     from = 'module: ${filename}.lua -> typedef "${td.cppcls}"',
                     cppcls = '${td.cppcls}',
                     luacls = ${td.luacls??},
+                    luatype = ${td.luatype??},
                     conv = '${td.conv}',
                     packable = ${td.packable??},
                     packvars = ${td.packvars??},
@@ -1857,7 +1937,7 @@ local function write_typedefs()
             })
         end
     end)
-    
+
     for i, v in ipairs(olua.sort(types, 'cppcls')) do
         typedefs:pushf([[
             typedef {
@@ -2127,6 +2207,7 @@ local function make_typedef_command(cls)
     add_value_command(CMD, 'packvars', cls, nil, tonum)
     add_value_command(CMD, 'smartptr', cls, nil, tobool)
     add_value_command(CMD, 'luacls', cls)
+    add_value_command(CMD, 'luatype', cls)
     add_value_command(CMD, 'replace', cls, nil, tobool)
     return olua.command_proxy(CMD)
 end
@@ -2170,6 +2251,8 @@ function M.__call(_, path)
     }
 
     add_value_command(CMD, 'module', m, 'name')
+    add_value_command(CMD, 'metapath', m)
+    add_value_command(CMD, 'entry', m)
     add_value_command(CMD, 'path', m)
     add_value_command(CMD, 'luaopen', m)
     add_value_command(CMD, 'headers', m)
@@ -2194,6 +2277,7 @@ function M.__call(_, path)
         end
     end
 
+    ---@alias typeconf fun(cppcls: string):table
     function CMD.typeconf(cppcls)
         local cls = {
             cppcls = assert(cppcls, 'not specify cppcls'),
