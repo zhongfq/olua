@@ -3,12 +3,13 @@
 ---@type clang.CXXAccessSpecifier
 local VALUE
 
+---
 ---@enum clang.CXXAccessSpecifier
 local CXXAccessSpecifier = {
-    InvalidAccessSpecifier = VALUE,
-    Private = VALUE,
-    Protected = VALUE,
-    Public = VALUE,
+    InvalidAccessSpecifier = 0,
+    Private = 3,
+    Protected = 2,
+    Public = 1,
 }
 
 return CXXAccessSpecifier

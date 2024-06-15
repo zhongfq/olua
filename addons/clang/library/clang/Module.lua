@@ -1,9 +1,10 @@
 ---@meta clang.Module
 
+---
 ---@class clang.Module : clang.IndexError
 ---@field astFile clang.File 
 ---@field fullName string 
----@field isSystem number 
+---@field isSystem integer 
 ---@field name string 
 ---@field parent clang.Module 
 local Module = {}

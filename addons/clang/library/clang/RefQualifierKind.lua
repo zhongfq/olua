@@ -3,14 +3,15 @@
 ---@type clang.RefQualifierKind
 local VALUE
 
+---
 ---@enum clang.RefQualifierKind
 local RefQualifierKind = {
     ---An lvalue ref-qualifier was provided (\c &).
-    LValue = VALUE,
+    LValue = 1,
     ---No ref-qualifier was provided.
-    None = VALUE,
+    None = 0,
     ---An rvalue ref-qualifier was provided (\c &&).
-    RValue = VALUE,
+    RValue = 2,
 }
 
 return RefQualifierKind

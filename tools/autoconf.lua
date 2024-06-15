@@ -46,18 +46,19 @@ if OLUA_MAX_VARIADIC_ARGS == nil then
     OLUA_MAX_VARIADIC_ARGS = 16
 end
 
-local format         = olua.format
+local format          = olua.format
 local clang_tu
 
-local type_cursors   = olua.newhash(true)
-local exclude_types  = olua.newhash(true)
-local visited_types  = olua.newhash(true)
-local alias_types    = olua.newhash(true)
-local type_convs     = olua.newhash(true)
-local type_checker   = olua.newarray()
-local clang_args     = {}
-local modules        = olua.newhash()
-local metamethod     = {
+local type_cursors    = olua.newhash(true)
+local comment_cursors = olua.newhash(true)
+local exclude_types   = olua.newhash(true)
+local visited_types   = olua.newhash(true)
+local alias_types     = olua.newhash(true)
+local type_convs      = olua.newhash(true)
+local type_checker    = olua.newarray()
+local clang_args      = {}
+local modules         = olua.newhash()
+local metamethod      = {
     __index = true,
     __newindex = true,
     __gc = true,
@@ -86,16 +87,16 @@ local metamethod     = {
     __close = true
 }
 
-local kFLAG_POINTER  = 1 << 1 -- pointer type
-local kFLAG_ENUM     = 1 << 2 -- enum type
-local kFLAG_ALIAS    = 1 << 3 -- alias type
-local kFLAG_FUNC     = 1 << 4 -- function type
-local kFLAG_TEMPLATE = 1 << 5 -- template type
-local kFLAG_SKIP     = 1 << 6 -- don't export
+local kFLAG_POINTER   = 1 << 1 -- pointer type
+local kFLAG_ENUM      = 1 << 2 -- enum type
+local kFLAG_ALIAS     = 1 << 3 -- alias type
+local kFLAG_FUNC      = 1 << 4 -- function type
+local kFLAG_TEMPLATE  = 1 << 5 -- template type
+local kFLAG_SKIP      = 1 << 6 -- don't export
 
-local KEEP_CONST     = 1 << 1
-local KEEP_TEMPLATE  = 1 << 2
-local KEEP_POINTER   = 1 << 3
+local KEEP_CONST      = 1 << 1
+local KEEP_TEMPLATE   = 1 << 2
+local KEEP_POINTER    = 1 << 3
 
 local function has_flag(flag, k)
     return (flag & k) ~= 0
@@ -137,7 +138,7 @@ local function trim_prefix_colon(tn)
     return tn
 end
 
----@param type clang.Type
+---@param type clang.Type | {declaration: clang.Cursor, name: string}
 ---@return string
 local function parse_from_ast(type)
     local cur = type.declaration
@@ -493,6 +494,27 @@ local function is_excluded_memeber(cls, cur)
     end
 end
 
+---@param cur clang.Cursor
+local function get_comment(cur)
+    local comment = cur.rawCommentText
+    if comment then
+        local see = comment:match('@oluasee +([%w$_:]+)')
+        if see then
+            local see_cursor = comment_cursors:get(see)
+            if see_cursor then
+                local see_comment = see_cursor.rawCommentText
+                if see_comment then
+                    comment = see_comment
+                end
+            else
+                print(format("[WARNING]: @oluasee ${see} not found"))
+            end
+        end
+
+        return olua.base64_encode(comment)
+    end
+end
+
 local M = {}
 
 function M:parse()
@@ -534,22 +556,8 @@ function M:visit_method(cls, cur)
 
     parse_attr_from_annotate(attr, cur)
 
-    local comment = cur.rawCommentText
+    local comment = get_comment(cur)
     if comment then
-        local see = comment:match('@oluasee +([^ ]+)')
-        if see then
-            local see_cursor = type_cursors:get(see)
-            if see_cursor then
-                local see_comment = see_cursor.rawCommentText
-                if see_comment then
-                    comment = see_comment
-                end
-            else
-                print(format("[WARNING]: @oluasee ${see} not found"))
-            end
-        end
-
-        comment = olua.base64_encode(comment)
         declexps:pushf('@comment(${comment})')
     end
 
@@ -749,6 +757,7 @@ function M:visit_enum(cppcls, cur)
     local cls = self:will_visit(cppcls)
     local filter = {}
     for _, c in ipairs(cur.children) do
+        ---@type string | integer
         local value = c.name
         local name = cls.luaname(value, 'enum')
         local range = c.commentRange
@@ -758,9 +767,14 @@ function M:visit_enum(cppcls, cur)
         else
             comment = ""
         end
+        if c.kind == CursorKind.EnumConstantDecl then
+            value = c.enumConstantDeclValue
+        else
+            value = format('${cls.cppcls}::${value}')
+        end
         cls.enums:push(name, {
             name = name,
-            value = format('${cls.cppcls}::${value}'),
+            value = value,
             comment = comment
         })
     end
@@ -793,6 +807,11 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
     local skipsuper = false
 
     cls.kind = cls.kind or kFLAG_POINTER
+
+    local comment = get_comment(cur)
+    if comment then
+        cls.comment = comment
+    end
 
     if cur.kind == CursorKind.ClassTemplate then
         type_convs:push_if_not_exist(raw_typename(cppcls), true)
@@ -1048,8 +1067,9 @@ local function prepare_cursor(cur)
         for _, v in ipairs(cur.children) do
             prepare_cursor(v)
         end
-    elseif kind == CursorKind.FunctionDecl then
-        type_cursors:push_if_not_exist(cppcls, cur)
+    end
+    if cur.rawCommentText then
+        comment_cursors:push_if_not_exist(cppcls, cur)
     end
     if kind == CursorKind.TranslationUnit then
         alias_types:clear()
@@ -1387,6 +1407,7 @@ local function write_module_classes(module, append)
                 .supercls(${cls.supercls??})
                 .chunk(${cls.chunk??})
                 .luaopen(${cls.luaopen??})
+                .comment(${cls.comment??})
         ]]))
         write_cls_options(module, cls, append)
         write_cls_macro(module, cls, append)
@@ -2299,6 +2320,7 @@ function M.__call(_, path)
             macros = olua.newhash(),
             supers = olua.newhash(),
             funcdecl = nil,
+            comment = nil,
             conv = 'olua_$$_object',
             options = {reg_luatype = true, fromtable = true},
             template_types = olua.newhash(),

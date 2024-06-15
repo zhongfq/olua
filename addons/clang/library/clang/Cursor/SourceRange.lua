@@ -1,11 +1,12 @@
 ---@meta clang.Cursor.SourceRange
 
+---
 ---@class clang.Cursor.SourceRange 
----@field endColumn number
----@field endLine number
+---@field endColumn integer
+---@field endLine integer
 ---@field path string
----@field startColumn number
----@field startLine number
+---@field startColumn integer
+---@field startLine integer
 local SourceRange = {}
 
 ---@return nil

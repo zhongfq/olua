@@ -1,5 +1,6 @@
 ---@meta clang.IndexError
 
+---
 ---@class clang.IndexError 
 local IndexError = {}
 

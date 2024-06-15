@@ -1,7 +1,8 @@
 ---@meta clang.Diagnostic
 
+---
 ---@class clang.Diagnostic : clang.IndexError
----@field category number Retrieve the category number for this diagnostic. <br><br>Diagnostics can be categorized into groups along with other, related diagnostics (e.g., diagnostics under the same warning flag). This routine retrieves the category number for the given diagnostic. <br><br>\returns The number of the category that contains this diagnostic, or zero if this diagnostic is uncategorized.
+---@field category integer Retrieve the category number for this diagnostic. <br><br>Diagnostics can be categorized into groups along with other, related diagnostics (e.g., diagnostics under the same warning flag). This routine retrieves the category number for the given diagnostic. <br><br>\returns The number of the category that contains this diagnostic, or zero if this diagnostic is uncategorized.
 ---@field categoryText string Retrieve the diagnostic category text for a given diagnostic. <br><br>\returns The text of the given diagnostic category.
 ---@field name string Retrieve the text of the given diagnostic.
 ---@field severity clang.DiagnosticSeverity Determine the severity of the given diagnostic.
@@ -26,7 +27,7 @@ function Diagnostic:as(cls) end
 ---created by combining `CXDiagnosticDisplayOptions` values.
 ---
 ---\returns A new string containing for formatted diagnostic.
----@param options number
+---@param options integer
 ---@return string
 function Diagnostic:formatDiagnostic(options) end
 

@@ -381,15 +381,28 @@ local function gen_class_meta(module, cls, write)
     end
     write("")
 
+    local comment = cls.comment
+    if comment then
+        comment = olua.base64_decode(comment)
+        comment = comment:gsub('^[/* \n\r]+', '')
+        comment = comment:gsub('[\n\r]+[/* ]+', '\n')
+        comment = comment:gsub('[/* \n\r]+$', '')
+        comment = comment:gsub('\n', '\n---')
+    else
+        comment = ""
+    end
+
     if olua.is_enum_type(cls) then
         write(format([[
             ---@type ${cls.luacls}
             local VALUE
 
+            ---${comment}
             ---@enum ${cls.luacls}
         ]]))
     else
         write(format([[
+            ---${comment}
             ---@class ${cls.luacls} ${supercls}
         ]]))
     end
@@ -434,7 +447,12 @@ local function gen_class_meta(module, cls, write)
                 comment = comment:gsub('\n', '\n---')
                 fields:pushf("---${comment}")
             end
-            fields:pushf('${ei.name} = VALUE,')
+            local value = "VALUE"
+            local int_value = tonumber(ei.value)
+            if int_value then
+                value = ei.value
+            end
+            fields:pushf('${ei.name} = ${value},')
         end
         write(format([[
             local ${luacls} = {
@@ -553,15 +571,15 @@ function olua.gen_metafile(module)
         gen_class_meta(module, cls, append)
         olua.write(path, tostring(arr))
 
-        olua.write(format('${module.metapath}/${module.name}/config.json'), format([[
-            {
-              "$schema": "https://raw.githubusercontent.com/LuaLS/LLS-Addons/main/schemas/addon_config.schema.json",
-              "words": ["%s+-clang"],
-              "files": ["clang"],
-              "settings": {}
-            }
-        ]]))
-
         ::continue::
     end
+
+    olua.write(format('${module.metapath}/${module.name}/config.json'), format([[
+        {
+            "$schema": "https://raw.githubusercontent.com/LuaLS/LLS-Addons/main/schemas/addon_config.schema.json",
+            "words": ["%s+-clang"],
+            "files": ["clang"],
+            "settings": {}
+        }
+    ]]))
 end

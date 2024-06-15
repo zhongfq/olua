@@ -1,7 +1,9 @@
 ---@meta clang.Index
 
+---An "index" that consists of a set of translation units that would
+---typically be linked together into an executable or library.
 ---@class clang.Index : clang.IndexError
----@field globalOptions number 
+---@field globalOptions integer 
 local Index = {}
 
 ---@param cls string
@@ -14,7 +16,7 @@ function Index:as(cls) end
 ---@return clang.TranslationUnit
 function Index:create(path) end
 
----@return number
+---@return integer
 function Index:getGlobalOptions() end
 
 ---Same as `clang_parseTranslationUnit2`, but returns
@@ -23,12 +25,12 @@ function Index:getGlobalOptions() end
 ---error codes.
 ---@param path string
 ---@param args string[]
----@param options number
+---@param options integer
 ---@return clang.TranslationUnit
 ---@overload fun(self: clang.Index, path: string, args: string[]): clang.TranslationUnit
 function Index:parse(path, args, options) end
 
----@param options number
+---@param options integer
 ---@return nil
 function Index:setGlobalOptions(options) end
 

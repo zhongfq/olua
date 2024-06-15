@@ -1,8 +1,9 @@
 ---@meta clang.File
 
+---
 ---@class clang.File : clang.IndexError
 ---@field fileName string Retrieve the complete file and path name of the given file.
----@field fileTime number Retrieve the last modification time of the given file.
+---@field fileTime integer Retrieve the last modification time of the given file.
 local File = {}
 
 ---@param f clang.File

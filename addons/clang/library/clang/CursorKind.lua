@@ -3,57 +3,58 @@
 ---@type clang.CursorKind
 local VALUE
 
+---
 ---@enum clang.CursorKind
 local CursorKind = {
     ---The GNU address of label extension, representing &&label.
-    AddrLabelExpr = VALUE,
-    AlignedAttr = VALUE,
-    AnnotateAttr = VALUE,
+    AddrLabelExpr = 120,
+    AlignedAttr = 441,
+    AnnotateAttr = 406,
     ---OpenMP 5.0 [2.1.5, Array Section].
     ---OpenACC 3.3 [2.7.1, Data Specification for Data Clauses (Sub Arrays)]
-    ArraySectionExpr = VALUE,
+    ArraySectionExpr = 147,
     ---[C99 6.5.2.1] Array Subscripting.
-    ArraySubscriptExpr = VALUE,
-    AsmLabelAttr = VALUE,
-    AsmStmt = VALUE,
+    ArraySubscriptExpr = 113,
+    AsmLabelAttr = 407,
+    AsmStmt = 215,
     ---A builtin binary operation expression such as "x + y" or
     ---"x <= y".
-    BinaryOperator = VALUE,
+    BinaryOperator = 114,
     ---An expression that represents a block literal.
-    BlockExpr = VALUE,
+    BlockExpr = 105,
     ---A break statement.
-    BreakStmt = VALUE,
+    BreakStmt = 213,
     ---C++2a std::bit_cast expression.
-    BuiltinBitCastExpr = VALUE,
+    BuiltinBitCastExpr = 280,
     ---An explicit cast in C (C99 6.5.4) or a C-style cast in C++
     ---(C++ [expr.cast]), which uses the syntax (Type)expr.
     ---
     ---For example: (int)f.
-    CStyleCastExpr = VALUE,
-    CUDAConstantAttr = VALUE,
-    CUDADeviceAttr = VALUE,
-    CUDAGlobalAttr = VALUE,
-    CUDAHostAttr = VALUE,
-    CUDASharedAttr = VALUE,
+    CStyleCastExpr = 117,
+    CUDAConstantAttr = 412,
+    CUDADeviceAttr = 413,
+    CUDAGlobalAttr = 414,
+    CUDAHostAttr = 415,
+    CUDASharedAttr = 416,
     ---An access specifier.
-    CXXAccessSpecifier = VALUE,
+    CXXAccessSpecifier = 39,
     ---OpenCL's addrspace_cast<> expression.
-    CXXAddrspaceCastExpr = VALUE,
-    CXXBaseSpecifier = VALUE,
+    CXXAddrspaceCastExpr = 152,
+    CXXBaseSpecifier = 44,
     ---[C++ 2.13.5] C++ Boolean Literal.
-    CXXBoolLiteralExpr = VALUE,
+    CXXBoolLiteralExpr = 130,
     ---C++'s catch statement.
-    CXXCatchStmt = VALUE,
+    CXXCatchStmt = 223,
     ---C++'s const_cast<> expression.
-    CXXConstCastExpr = VALUE,
+    CXXConstCastExpr = 127,
     ---A delete expression for memory deallocation and destructor calls,
     ---e.g. "delete[] pArray".
-    CXXDeleteExpr = VALUE,
+    CXXDeleteExpr = 135,
     ---C++'s dynamic_cast<> expression.
-    CXXDynamicCastExpr = VALUE,
-    CXXFinalAttr = VALUE,
+    CXXDynamicCastExpr = 125,
+    CXXFinalAttr = 404,
     ---C++'s for (* : *) statement.
-    CXXForRangeStmt = VALUE,
+    CXXForRangeStmt = 225,
     ---Represents an explicit C++ type conversion that uses "functional"
     ---notion (C++ [expr.type.conv]).
     ---
@@ -61,112 +62,112 @@ local CursorKind = {
     ---\code
     ---x = int(0.5);
     ---\endcode
-    CXXFunctionalCastExpr = VALUE,
+    CXXFunctionalCastExpr = 128,
     ---A C++ class method.
-    CXXMethod = VALUE,
+    CXXMethod = 21,
     ---A new expression for memory allocation and constructor calls, e.g:
     ---"new CXXNewExpr(foo)".
-    CXXNewExpr = VALUE,
+    CXXNewExpr = 134,
     ---[C++0x 2.14.7] C++ Pointer Literal.
-    CXXNullPtrLiteralExpr = VALUE,
-    CXXOverrideAttr = VALUE,
+    CXXNullPtrLiteralExpr = 131,
+    CXXOverrideAttr = 405,
     ---Expression that references a C++20 parenthesized list aggregate
     ---initializer.
-    CXXParenListInitExpr = VALUE,
+    CXXParenListInitExpr = 155,
     ---C++'s reinterpret_cast<> expression.
-    CXXReinterpretCastExpr = VALUE,
+    CXXReinterpretCastExpr = 126,
     ---C++'s static_cast<> expression.
-    CXXStaticCastExpr = VALUE,
+    CXXStaticCastExpr = 124,
     ---Represents the "this" expression in C++
-    CXXThisExpr = VALUE,
+    CXXThisExpr = 132,
     ---[C++ 15] C++ Throw Expression.
     ---
     ---This handles 'throw' and 'throw' assignment-expression. When
     ---assignment-expression isn't present, Op will be null.
-    CXXThrowExpr = VALUE,
+    CXXThrowExpr = 133,
     ---C++'s try statement.
-    CXXTryStmt = VALUE,
+    CXXTryStmt = 224,
     ---A C++ typeid expression (C++ [expr.typeid]).
-    CXXTypeidExpr = VALUE,
+    CXXTypeidExpr = 129,
     ---An expression that calls a function.
-    CallExpr = VALUE,
+    CallExpr = 103,
     ---A case statement.
-    CaseStmt = VALUE,
+    CaseStmt = 203,
     ---A character literal.
-    CharacterLiteral = VALUE,
+    CharacterLiteral = 110,
     ---A C++ class.
-    ClassDecl = VALUE,
+    ClassDecl = 4,
     ---A C++ class template.
-    ClassTemplate = VALUE,
+    ClassTemplate = 31,
     ---A C++ class template partial specialization.
-    ClassTemplatePartialSpecialization = VALUE,
+    ClassTemplatePartialSpecialization = 32,
     ---Compound assignment such as "+=".
-    CompoundAssignOperator = VALUE,
+    CompoundAssignOperator = 115,
     ---[C99 6.5.2.5]
-    CompoundLiteralExpr = VALUE,
+    CompoundLiteralExpr = 118,
     ---A group of statements like { stmt stmt }.
     ---
     ---This cursor kind is used to describe compound statements, e.g. function
     ---bodies.
-    CompoundStmt = VALUE,
+    CompoundStmt = 202,
     ---a concept declaration.
-    ConceptDecl = VALUE,
+    ConceptDecl = 604,
     ---Expression that references a C++20 concept.
-    ConceptSpecializationExpr = VALUE,
+    ConceptSpecializationExpr = 153,
     ---The ?: ternary operator.
-    ConditionalOperator = VALUE,
-    ConstAttr = VALUE,
+    ConditionalOperator = 116,
+    ConstAttr = 410,
     ---A C++ constructor.
-    Constructor = VALUE,
+    Constructor = 24,
     ---A continue statement.
-    ContinueStmt = VALUE,
-    ConvergentAttr = VALUE,
+    ContinueStmt = 212,
+    ConvergentAttr = 438,
     ---A C++ conversion function.
-    ConversionFunction = VALUE,
-    DLLExport = VALUE,
-    DLLImport = VALUE,
+    ConversionFunction = 26,
+    DLLExport = 418,
+    DLLImport = 419,
     ---An expression that refers to some value declaration, such
     ---as a function, variable, or enumerator.
-    DeclRefExpr = VALUE,
+    DeclRefExpr = 101,
     ---Adaptor class for mixing declarations with statements and
     ---expressions.
-    DeclStmt = VALUE,
+    DeclStmt = 231,
     ---A default statement.
-    DefaultStmt = VALUE,
+    DefaultStmt = 204,
     ---A C++ destructor.
-    Destructor = VALUE,
+    Destructor = 25,
     ---A do statement.
-    DoStmt = VALUE,
+    DoStmt = 208,
     ---An enumerator constant.
-    EnumConstantDecl = VALUE,
+    EnumConstantDecl = 7,
     ---An enumeration.
-    EnumDecl = VALUE,
+    EnumDecl = 5,
     ---A field (in C) or non-static data member (in C++) in a
     ---struct, union, or C++ class.
-    FieldDecl = VALUE,
-    FirstAttr = VALUE,
-    FirstDecl = VALUE,
-    FirstExpr = VALUE,
-    FirstExtraDecl = VALUE,
-    FirstInvalid = VALUE,
-    FirstPreprocessing = VALUE,
-    FirstRef = VALUE,
-    FirstStmt = VALUE,
+    FieldDecl = 6,
+    FirstAttr = 400,
+    FirstDecl = 1,
+    FirstExpr = 100,
+    FirstExtraDecl = 600,
+    FirstInvalid = 70,
+    FirstPreprocessing = 500,
+    FirstRef = 40,
+    FirstStmt = 200,
     ---Fixed point literal
-    FixedPointLiteral = VALUE,
-    FlagEnum = VALUE,
+    FixedPointLiteral = 149,
+    FlagEnum = 437,
     ---A floating point number literal.
-    FloatingLiteral = VALUE,
+    FloatingLiteral = 107,
     ---A for statement.
-    ForStmt = VALUE,
+    ForStmt = 209,
     ---a friend declaration.
-    FriendDecl = VALUE,
+    FriendDecl = 603,
     ---A function.
-    FunctionDecl = VALUE,
+    FunctionDecl = 8,
     ---A C++ function template.
-    FunctionTemplate = VALUE,
+    FunctionTemplate = 30,
     ---A GCC inline assembly statement extension.
-    GCCAsmStmt = VALUE,
+    GCCAsmStmt = 215,
     ---Implements the GNU __null extension, which is a name for a null
     ---pointer constant that has integral type (e.g., int or long) and is the same
     ---size and alignment as a pointer.
@@ -174,27 +175,27 @@ local CursorKind = {
     ---The __null extension is typically only used by system headers, which define
     ---NULL as __null in C++ rather than using 0 (which is an integer that may not
     ---match the size of a pointer).
-    GNUNullExpr = VALUE,
+    GNUNullExpr = 123,
     ---Represents a C11 generic selection.
-    GenericSelectionExpr = VALUE,
+    GenericSelectionExpr = 122,
     ---A goto statement.
-    GotoStmt = VALUE,
-    IBActionAttr = VALUE,
-    IBOutletAttr = VALUE,
-    IBOutletCollectionAttr = VALUE,
+    GotoStmt = 210,
+    IBActionAttr = 401,
+    IBOutletAttr = 402,
+    IBOutletCollectionAttr = 403,
     ---An if statement
-    IfStmt = VALUE,
+    IfStmt = 205,
     ---An imaginary number literal.
-    ImaginaryLiteral = VALUE,
-    InclusionDirective = VALUE,
+    ImaginaryLiteral = 108,
+    InclusionDirective = 503,
     ---An indirect goto statement.
-    IndirectGotoStmt = VALUE,
+    IndirectGotoStmt = 211,
     ---Describes an C or C++ initializer list.
-    InitListExpr = VALUE,
+    InitListExpr = 119,
     ---An integer literal.
-    IntegerLiteral = VALUE,
-    InvalidCode = VALUE,
-    InvalidFile = VALUE,
+    IntegerLiteral = 106,
+    InvalidCode = 73,
+    InvalidFile = 70,
     ---A reference to a labeled statement.
     ---
     ---This cursor kind is used to describe the jump to "start_over" in the
@@ -208,7 +209,7 @@ local CursorKind = {
     ---\endcode
     ---
     ---A label reference cursor refers to a label statement.
-    LabelRef = VALUE,
+    LabelRef = 48,
     ---A labelled statement in a function.
     ---
     ---This cursor kind is used to describe the "start_over:" label statement in
@@ -218,282 +219,282 @@ local CursorKind = {
     ---start_over:
     ---++counter;
     ---\endcode
-    LabelStmt = VALUE,
-    LambdaExpr = VALUE,
-    LastAttr = VALUE,
-    LastDecl = VALUE,
-    LastExpr = VALUE,
-    LastExtraDecl = VALUE,
-    LastInvalid = VALUE,
-    LastPreprocessing = VALUE,
-    LastRef = VALUE,
-    LastStmt = VALUE,
+    LabelStmt = 201,
+    LambdaExpr = 144,
+    LastAttr = 441,
+    LastDecl = 39,
+    LastExpr = 156,
+    LastExtraDecl = 604,
+    LastInvalid = 73,
+    LastPreprocessing = 503,
+    LastRef = 50,
+    LastStmt = 321,
     ---A linkage specification, e.g. 'extern "C"'.
-    LinkageSpec = VALUE,
+    LinkageSpec = 23,
     ---A MS inline assembly statement extension.
-    MSAsmStmt = VALUE,
-    MacroDefinition = VALUE,
-    MacroExpansion = VALUE,
-    MacroInstantiation = VALUE,
+    MSAsmStmt = 229,
+    MacroDefinition = 501,
+    MacroExpansion = 502,
+    MacroInstantiation = 502,
     ---A reference to a member of a struct, union, or class that occurs in
     ---some non-expression context, e.g., a designated initializer.
-    MemberRef = VALUE,
+    MemberRef = 47,
     ---An expression that refers to a member of a struct, union,
     ---class, Objective-C class, etc.
-    MemberRefExpr = VALUE,
+    MemberRefExpr = 102,
     ---A module import declaration.
-    ModuleImportDecl = VALUE,
-    NSConsumed = VALUE,
-    NSConsumesSelf = VALUE,
-    NSReturnsAutoreleased = VALUE,
-    NSReturnsNotRetained = VALUE,
-    NSReturnsRetained = VALUE,
+    ModuleImportDecl = 600,
+    NSConsumed = 424,
+    NSConsumesSelf = 423,
+    NSReturnsAutoreleased = 422,
+    NSReturnsNotRetained = 421,
+    NSReturnsRetained = 420,
     ---A C++ namespace.
-    Namespace = VALUE,
+    Namespace = 22,
     ---A C++ namespace alias declaration.
-    NamespaceAlias = VALUE,
+    NamespaceAlias = 33,
     ---A reference to a namespace or namespace alias.
-    NamespaceRef = VALUE,
-    NoDeclFound = VALUE,
-    NoDuplicateAttr = VALUE,
+    NamespaceRef = 46,
+    NoDeclFound = 71,
+    NoDuplicateAttr = 411,
     ---A C++ non-type template parameter.
-    NonTypeTemplateParameter = VALUE,
-    NotImplemented = VALUE,
+    NonTypeTemplateParameter = 28,
+    NotImplemented = 72,
     ---The null statement ";": C99 6.8.3p3.
     ---
     ---This cursor kind is used to describe the null statement.
-    NullStmt = VALUE,
+    NullStmt = 230,
     ---OpenMP 5.0 [2.1.4, Array Shaping].
-    OMPArrayShapingExpr = VALUE,
+    OMPArrayShapingExpr = 150,
     ---OpenMP atomic directive.
-    OMPAtomicDirective = VALUE,
+    OMPAtomicDirective = 249,
     ---OpenMP barrier directive.
-    OMPBarrierDirective = VALUE,
+    OMPBarrierDirective = 244,
     ---OpenMP cancel directive.
-    OMPCancelDirective = VALUE,
+    OMPCancelDirective = 256,
     ---OpenMP cancellation point directive.
-    OMPCancellationPointDirective = VALUE,
+    OMPCancellationPointDirective = 255,
     ---OpenMP canonical loop.
-    OMPCanonicalLoop = VALUE,
+    OMPCanonicalLoop = 289,
     ---OpenMP critical directive.
-    OMPCriticalDirective = VALUE,
+    OMPCriticalDirective = 242,
     ---OpenMP depobj directive.
-    OMPDepobjDirective = VALUE,
+    OMPDepobjDirective = 286,
     ---OpenMP dispatch directive.
-    OMPDispatchDirective = VALUE,
+    OMPDispatchDirective = 291,
     ---OpenMP distribute directive.
-    OMPDistributeDirective = VALUE,
+    OMPDistributeDirective = 260,
     ---OpenMP distribute parallel for directive.
-    OMPDistributeParallelForDirective = VALUE,
+    OMPDistributeParallelForDirective = 266,
     ---OpenMP distribute parallel for simd directive.
-    OMPDistributeParallelForSimdDirective = VALUE,
+    OMPDistributeParallelForSimdDirective = 267,
     ---OpenMP distribute simd directive.
-    OMPDistributeSimdDirective = VALUE,
+    OMPDistributeSimdDirective = 268,
     ---OpenMP error directive.
-    OMPErrorDirective = VALUE,
+    OMPErrorDirective = 305,
     ---OpenMP flush directive.
-    OMPFlushDirective = VALUE,
+    OMPFlushDirective = 246,
     ---OpenMP for directive.
-    OMPForDirective = VALUE,
+    OMPForDirective = 234,
     ---OpenMP for SIMD directive.
-    OMPForSimdDirective = VALUE,
+    OMPForSimdDirective = 250,
     ---OpenMP loop directive.
-    OMPGenericLoopDirective = VALUE,
+    OMPGenericLoopDirective = 295,
     ---OpenMP interop directive.
-    OMPInteropDirective = VALUE,
+    OMPInteropDirective = 290,
     ---OpenMP 5.0 [2.1.6 Iterators]
-    OMPIteratorExpr = VALUE,
+    OMPIteratorExpr = 151,
     ---OpenMP masked directive.
-    OMPMaskedDirective = VALUE,
+    OMPMaskedDirective = 292,
     ---OpenMP masked taskloop directive.
-    OMPMaskedTaskLoopDirective = VALUE,
+    OMPMaskedTaskLoopDirective = 301,
     ---OpenMP masked taskloop simd directive.
-    OMPMaskedTaskLoopSimdDirective = VALUE,
+    OMPMaskedTaskLoopSimdDirective = 302,
     ---OpenMP master directive.
-    OMPMasterDirective = VALUE,
+    OMPMasterDirective = 241,
     ---OpenMP master taskloop directive.
-    OMPMasterTaskLoopDirective = VALUE,
+    OMPMasterTaskLoopDirective = 281,
     ---OpenMP master taskloop simd directive.
-    OMPMasterTaskLoopSimdDirective = VALUE,
+    OMPMasterTaskLoopSimdDirective = 283,
     ---OpenMP metadirective directive.
-    OMPMetaDirective = VALUE,
+    OMPMetaDirective = 294,
     ---OpenMP ordered directive.
-    OMPOrderedDirective = VALUE,
+    OMPOrderedDirective = 248,
     ---OpenMP parallel directive.
-    OMPParallelDirective = VALUE,
+    OMPParallelDirective = 232,
     ---OpenMP parallel for directive.
-    OMPParallelForDirective = VALUE,
+    OMPParallelForDirective = 238,
     ---OpenMP parallel for SIMD directive.
-    OMPParallelForSimdDirective = VALUE,
+    OMPParallelForSimdDirective = 251,
     ---OpenMP parallel loop directive.
-    OMPParallelGenericLoopDirective = VALUE,
+    OMPParallelGenericLoopDirective = 298,
     ---OpenMP parallel masked directive.
-    OMPParallelMaskedDirective = VALUE,
+    OMPParallelMaskedDirective = 300,
     ---OpenMP parallel masked taskloop directive.
-    OMPParallelMaskedTaskLoopDirective = VALUE,
+    OMPParallelMaskedTaskLoopDirective = 303,
     ---OpenMP parallel masked taskloop simd directive.
-    OMPParallelMaskedTaskLoopSimdDirective = VALUE,
+    OMPParallelMaskedTaskLoopSimdDirective = 304,
     ---OpenMP parallel master directive.
-    OMPParallelMasterDirective = VALUE,
+    OMPParallelMasterDirective = 285,
     ---OpenMP parallel master taskloop directive.
-    OMPParallelMasterTaskLoopDirective = VALUE,
+    OMPParallelMasterTaskLoopDirective = 282,
     ---OpenMP parallel master taskloop simd directive.
-    OMPParallelMasterTaskLoopSimdDirective = VALUE,
+    OMPParallelMasterTaskLoopSimdDirective = 284,
     ---OpenMP parallel sections directive.
-    OMPParallelSectionsDirective = VALUE,
+    OMPParallelSectionsDirective = 239,
     ---OpenMP scan directive.
-    OMPScanDirective = VALUE,
+    OMPScanDirective = 287,
     ---OpenMP scope directive.
-    OMPScopeDirective = VALUE,
+    OMPScopeDirective = 306,
     ---OpenMP section directive.
-    OMPSectionDirective = VALUE,
+    OMPSectionDirective = 236,
     ---OpenMP sections directive.
-    OMPSectionsDirective = VALUE,
+    OMPSectionsDirective = 235,
     ---OpenMP SIMD directive.
-    OMPSimdDirective = VALUE,
+    OMPSimdDirective = 233,
     ---OpenMP single directive.
-    OMPSingleDirective = VALUE,
+    OMPSingleDirective = 237,
     ---OpenMP target data directive.
-    OMPTargetDataDirective = VALUE,
+    OMPTargetDataDirective = 257,
     ---OpenMP target directive.
-    OMPTargetDirective = VALUE,
+    OMPTargetDirective = 252,
     ---OpenMP target enter data directive.
-    OMPTargetEnterDataDirective = VALUE,
+    OMPTargetEnterDataDirective = 261,
     ---OpenMP target exit data directive.
-    OMPTargetExitDataDirective = VALUE,
+    OMPTargetExitDataDirective = 262,
     ---OpenMP target parallel directive.
-    OMPTargetParallelDirective = VALUE,
+    OMPTargetParallelDirective = 263,
     ---OpenMP target parallel for directive.
-    OMPTargetParallelForDirective = VALUE,
+    OMPTargetParallelForDirective = 264,
     ---OpenMP target parallel for simd directive.
-    OMPTargetParallelForSimdDirective = VALUE,
+    OMPTargetParallelForSimdDirective = 269,
     ---OpenMP target parallel loop directive.
-    OMPTargetParallelGenericLoopDirective = VALUE,
+    OMPTargetParallelGenericLoopDirective = 299,
     ---OpenMP target simd directive.
-    OMPTargetSimdDirective = VALUE,
+    OMPTargetSimdDirective = 270,
     ---OpenMP target teams directive.
-    OMPTargetTeamsDirective = VALUE,
+    OMPTargetTeamsDirective = 275,
     ---OpenMP target teams distribute directive.
-    OMPTargetTeamsDistributeDirective = VALUE,
+    OMPTargetTeamsDistributeDirective = 276,
     ---OpenMP target teams distribute parallel for directive.
-    OMPTargetTeamsDistributeParallelForDirective = VALUE,
+    OMPTargetTeamsDistributeParallelForDirective = 277,
     ---OpenMP target teams distribute parallel for simd directive.
-    OMPTargetTeamsDistributeParallelForSimdDirective = VALUE,
+    OMPTargetTeamsDistributeParallelForSimdDirective = 278,
     ---OpenMP target teams distribute simd directive.
-    OMPTargetTeamsDistributeSimdDirective = VALUE,
+    OMPTargetTeamsDistributeSimdDirective = 279,
     ---OpenMP target teams loop directive.
-    OMPTargetTeamsGenericLoopDirective = VALUE,
+    OMPTargetTeamsGenericLoopDirective = 297,
     ---OpenMP target update directive.
-    OMPTargetUpdateDirective = VALUE,
+    OMPTargetUpdateDirective = 265,
     ---OpenMP task directive.
-    OMPTaskDirective = VALUE,
+    OMPTaskDirective = 240,
     ---OpenMP taskloop directive.
-    OMPTaskLoopDirective = VALUE,
+    OMPTaskLoopDirective = 258,
     ---OpenMP taskloop simd directive.
-    OMPTaskLoopSimdDirective = VALUE,
+    OMPTaskLoopSimdDirective = 259,
     ---OpenMP taskgroup directive.
-    OMPTaskgroupDirective = VALUE,
+    OMPTaskgroupDirective = 254,
     ---OpenMP taskwait directive.
-    OMPTaskwaitDirective = VALUE,
+    OMPTaskwaitDirective = 245,
     ---OpenMP taskyield directive.
-    OMPTaskyieldDirective = VALUE,
+    OMPTaskyieldDirective = 243,
     ---OpenMP teams directive.
-    OMPTeamsDirective = VALUE,
+    OMPTeamsDirective = 253,
     ---OpenMP teams distribute directive.
-    OMPTeamsDistributeDirective = VALUE,
+    OMPTeamsDistributeDirective = 271,
     ---OpenMP teams distribute parallel for directive.
-    OMPTeamsDistributeParallelForDirective = VALUE,
+    OMPTeamsDistributeParallelForDirective = 274,
     ---OpenMP teams distribute parallel for simd directive.
-    OMPTeamsDistributeParallelForSimdDirective = VALUE,
+    OMPTeamsDistributeParallelForSimdDirective = 273,
     ---OpenMP teams distribute simd directive.
-    OMPTeamsDistributeSimdDirective = VALUE,
+    OMPTeamsDistributeSimdDirective = 272,
     ---OpenMP teams loop directive.
-    OMPTeamsGenericLoopDirective = VALUE,
+    OMPTeamsGenericLoopDirective = 296,
     ---OpenMP tile directive.
-    OMPTileDirective = VALUE,
+    OMPTileDirective = 288,
     ---OpenMP unroll directive.
-    OMPUnrollDirective = VALUE,
+    OMPUnrollDirective = 293,
     ---Objective-C's \@catch statement.
-    ObjCAtCatchStmt = VALUE,
+    ObjCAtCatchStmt = 217,
     ---Objective-C's \@finally statement.
-    ObjCAtFinallyStmt = VALUE,
+    ObjCAtFinallyStmt = 218,
     ---Objective-C's \@synchronized statement.
-    ObjCAtSynchronizedStmt = VALUE,
+    ObjCAtSynchronizedStmt = 220,
     ---Objective-C's \@throw statement.
-    ObjCAtThrowStmt = VALUE,
+    ObjCAtThrowStmt = 219,
     ---Objective-C's overall \@try-\@catch-\@finally statement.
-    ObjCAtTryStmt = VALUE,
+    ObjCAtTryStmt = 216,
     ---Objective-C's autorelease pool statement.
-    ObjCAutoreleasePoolStmt = VALUE,
+    ObjCAutoreleasePoolStmt = 221,
     ---Represents an @available(...) check.
-    ObjCAvailabilityCheckExpr = VALUE,
+    ObjCAvailabilityCheckExpr = 148,
     ---Objective-c Boolean Literal.
-    ObjCBoolLiteralExpr = VALUE,
-    ObjCBoxable = VALUE,
+    ObjCBoolLiteralExpr = 145,
+    ObjCBoxable = 436,
     ---An Objective-C "bridged" cast expression, which casts between
     ---Objective-C pointers and C pointers, transferring ownership in the process.
     ---
     ---\code
     ---NSString *str = (__bridge_transfer NSString *)CFCreateString();
     ---\endcode
-    ObjCBridgedCastExpr = VALUE,
+    ObjCBridgedCastExpr = 141,
     ---An Objective-C \@interface for a category.
-    ObjCCategoryDecl = VALUE,
+    ObjCCategoryDecl = 12,
     ---An Objective-C \@implementation for a category.
-    ObjCCategoryImplDecl = VALUE,
+    ObjCCategoryImplDecl = 19,
     ---An Objective-C class method.
-    ObjCClassMethodDecl = VALUE,
-    ObjCClassRef = VALUE,
-    ObjCDesignatedInitializer = VALUE,
+    ObjCClassMethodDecl = 17,
+    ObjCClassRef = 42,
+    ObjCDesignatedInitializer = 434,
     ---An Objective-C \@dynamic definition.
-    ObjCDynamicDecl = VALUE,
+    ObjCDynamicDecl = 38,
     ---An Objective-C \@encode expression.
-    ObjCEncodeExpr = VALUE,
-    ObjCException = VALUE,
-    ObjCExplicitProtocolImpl = VALUE,
+    ObjCEncodeExpr = 138,
+    ObjCException = 425,
+    ObjCExplicitProtocolImpl = 433,
     ---Objective-C's collection statement.
-    ObjCForCollectionStmt = VALUE,
+    ObjCForCollectionStmt = 222,
     ---An Objective-C \@implementation.
-    ObjCImplementationDecl = VALUE,
-    ObjCIndependentClass = VALUE,
+    ObjCImplementationDecl = 18,
+    ObjCIndependentClass = 427,
     ---An Objective-C instance method.
-    ObjCInstanceMethodDecl = VALUE,
+    ObjCInstanceMethodDecl = 16,
     ---An Objective-C \@interface.
-    ObjCInterfaceDecl = VALUE,
+    ObjCInterfaceDecl = 11,
     ---An Objective-C instance variable.
-    ObjCIvarDecl = VALUE,
+    ObjCIvarDecl = 15,
     ---An expression that sends a message to an Objective-C
     ---object or class.
-    ObjCMessageExpr = VALUE,
-    ObjCNSObject = VALUE,
-    ObjCPreciseLifetime = VALUE,
+    ObjCMessageExpr = 104,
+    ObjCNSObject = 426,
+    ObjCPreciseLifetime = 428,
     ---An Objective-C \@property declaration.
-    ObjCPropertyDecl = VALUE,
+    ObjCPropertyDecl = 14,
     ---An Objective-C \@protocol declaration.
-    ObjCProtocolDecl = VALUE,
+    ObjCProtocolDecl = 13,
     ---An Objective-C \@protocol expression.
-    ObjCProtocolExpr = VALUE,
-    ObjCProtocolRef = VALUE,
-    ObjCRequiresSuper = VALUE,
-    ObjCReturnsInnerPointer = VALUE,
-    ObjCRootClass = VALUE,
-    ObjCRuntimeVisible = VALUE,
+    ObjCProtocolExpr = 140,
+    ObjCProtocolRef = 41,
+    ObjCRequiresSuper = 430,
+    ObjCReturnsInnerPointer = 429,
+    ObjCRootClass = 431,
+    ObjCRuntimeVisible = 435,
     ---An Objective-C \@selector expression.
-    ObjCSelectorExpr = VALUE,
+    ObjCSelectorExpr = 139,
     ---Represents the "self" expression in an Objective-C method.
-    ObjCSelfExpr = VALUE,
+    ObjCSelfExpr = 146,
     ---An Objective-C string literal i.e. @"foo".
-    ObjCStringLiteral = VALUE,
-    ObjCSubclassingRestricted = VALUE,
-    ObjCSuperClassRef = VALUE,
+    ObjCStringLiteral = 137,
+    ObjCSubclassingRestricted = 432,
+    ObjCSuperClassRef = 40,
     ---An Objective-C \@synthesize definition.
-    ObjCSynthesizeDecl = VALUE,
+    ObjCSynthesizeDecl = 37,
     ---OpenACC Compute Construct.
-    OpenACCComputeConstruct = VALUE,
+    OpenACCComputeConstruct = 320,
     ---OpenACC Loop Construct.
-    OpenACCLoopConstruct = VALUE,
+    OpenACCLoopConstruct = 321,
     ---A code completion overload candidate.
-    OverloadCandidate = VALUE,
+    OverloadCandidate = 700,
     ---A reference to a set of overloaded functions or function templates
     ---that has not yet been resolved to a specific function or function template.
     ---
@@ -528,7 +529,7 @@ local CursorKind = {
     ---The functions \c clang_getNumOverloadedDecls() and
     ---\c clang_getOverloadedDecl() can be used to retrieve the definitions
     ---referenced by this cursor.
-    OverloadedDeclRef = VALUE,
+    OverloadedDeclRef = 49,
     ---Represents a C++0x pack expansion that produces a sequence of
     ---expressions.
     ---
@@ -541,30 +542,30 @@ local CursorKind = {
     ---f(static_cast<Types&&>(args)...);
     ---}
     ---\endcode
-    PackExpansionExpr = VALUE,
+    PackExpansionExpr = 142,
     ---Represents a C++26 pack indexing expression.
-    PackIndexingExpr = VALUE,
-    PackedAttr = VALUE,
+    PackIndexingExpr = 156,
+    PackedAttr = 408,
     ---A parenthesized expression, e.g. "(1)".
     ---
     ---This AST node is only formed if full location information is requested.
-    ParenExpr = VALUE,
+    ParenExpr = 111,
     ---A function or method parameter.
-    ParmDecl = VALUE,
-    PreprocessingDirective = VALUE,
-    PureAttr = VALUE,
+    ParmDecl = 10,
+    PreprocessingDirective = 500,
+    PureAttr = 409,
     ---Expression that references a C++20 requires expression.
-    RequiresExpr = VALUE,
+    RequiresExpr = 154,
     ---A return statement.
-    ReturnStmt = VALUE,
+    ReturnStmt = 214,
     ---Windows Structured Exception Handling's except statement.
-    SEHExceptStmt = VALUE,
+    SEHExceptStmt = 227,
     ---Windows Structured Exception Handling's finally statement.
-    SEHFinallyStmt = VALUE,
+    SEHFinallyStmt = 228,
     ---Windows Structured Exception Handling's leave statement.
-    SEHLeaveStmt = VALUE,
+    SEHLeaveStmt = 247,
     ---Windows Structured Exception Handling's try statement.
-    SEHTryStmt = VALUE,
+    SEHTryStmt = 226,
     ---Represents an expression that computes the length of a parameter
     ---pack.
     ---
@@ -574,32 +575,32 @@ local CursorKind = {
     ---static const unsigned value = sizeof...(Types);
     ---};
     ---\endcode
-    SizeOfPackExpr = VALUE,
+    SizeOfPackExpr = 143,
     ---A static_assert or _Static_assert node
-    StaticAssert = VALUE,
+    StaticAssert = 602,
     ---This is the GNU Statement Expression extension: ({int X=4; X;})
-    StmtExpr = VALUE,
+    StmtExpr = 121,
     ---A string literal.
-    StringLiteral = VALUE,
+    StringLiteral = 109,
     ---A C or C++ struct.
-    StructDecl = VALUE,
+    StructDecl = 2,
     ---A switch statement.
-    SwitchStmt = VALUE,
+    SwitchStmt = 206,
     ---A reference to a class template, function template, template
     ---template parameter, or class template partial specialization.
-    TemplateRef = VALUE,
+    TemplateRef = 45,
     ---A C++ template template parameter.
-    TemplateTemplateParameter = VALUE,
+    TemplateTemplateParameter = 29,
     ---A C++ template type parameter.
-    TemplateTypeParameter = VALUE,
+    TemplateTypeParameter = 27,
     ---Cursor that represents the translation unit itself.
     ---
     ---The translation unit cursor exists primarily to act as the root
     ---cursor for traversing the contents of a translation unit.
-    TranslationUnit = VALUE,
+    TranslationUnit = 350,
     ---A C++ alias declaration
-    TypeAliasDecl = VALUE,
-    TypeAliasTemplateDecl = VALUE,
+    TypeAliasDecl = 36,
+    TypeAliasTemplateDecl = 601,
     ---A reference to a type declaration.
     ---
     ---A type reference occurs anywhere where a type is named but not
@@ -613,17 +614,17 @@ local CursorKind = {
     ---The typedef is a declaration of size_type (CXCursor_TypedefDecl),
     ---while the type of the variable "size" is referenced. The cursor
     ---referenced by the type of size is the typedef for size_type.
-    TypeRef = VALUE,
+    TypeRef = 43,
     ---A typedef.
-    TypedefDecl = VALUE,
+    TypedefDecl = 20,
     ---A unary expression. (noexcept, sizeof, or other traits)
-    UnaryExpr = VALUE,
+    UnaryExpr = 136,
     ---This represents the unary-expression's (except sizeof and
     ---alignof).
-    UnaryOperator = VALUE,
+    UnaryOperator = 112,
     ---An attribute whose specific kind is not exposed via this
     ---interface.
-    UnexposedAttr = VALUE,
+    UnexposedAttr = 400,
     ---A declaration whose specific kind is not exposed via this
     ---interface.
     ---
@@ -631,7 +632,7 @@ local CursorKind = {
     ---of declaration; one can extract their location information,
     ---spelling, find their definitions, etc. However, the specific kind
     ---of the declaration is not reported.
-    UnexposedDecl = VALUE,
+    UnexposedDecl = 1,
     ---An expression whose specific kind is not exposed via this
     ---interface.
     ---
@@ -639,7 +640,7 @@ local CursorKind = {
     ---of expression; one can extract their location information,
     ---spelling, children, etc. However, the specific kind of the
     ---expression is not reported.
-    UnexposedExpr = VALUE,
+    UnexposedExpr = 100,
     ---A statement whose specific kind is not exposed via this
     ---interface.
     ---
@@ -647,23 +648,23 @@ local CursorKind = {
     ---statement; one can extract their location information, spelling,
     ---children, etc. However, the specific kind of the statement is not
     ---reported.
-    UnexposedStmt = VALUE,
+    UnexposedStmt = 200,
     ---A C or C++ union.
-    UnionDecl = VALUE,
+    UnionDecl = 3,
     ---A C++ using declaration.
-    UsingDeclaration = VALUE,
+    UsingDeclaration = 35,
     ---A C++ using directive.
-    UsingDirective = VALUE,
+    UsingDirective = 34,
     ---A variable.
-    VarDecl = VALUE,
+    VarDecl = 9,
     ---A reference to a variable that occurs in some non-expression
     ---context, e.g., a C++ lambda capture list.
-    VariableRef = VALUE,
-    VisibilityAttr = VALUE,
-    WarnUnusedAttr = VALUE,
-    WarnUnusedResultAttr = VALUE,
+    VariableRef = 50,
+    VisibilityAttr = 417,
+    WarnUnusedAttr = 439,
+    WarnUnusedResultAttr = 440,
     ---A while statement.
-    WhileStmt = VALUE,
+    WhileStmt = 207,
 }
 
 return CursorKind

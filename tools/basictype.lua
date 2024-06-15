@@ -127,7 +127,7 @@ typedef {
         lua_Integer
     ]],
     conv = 'olua_$$_integer',
-    luatype = 'number',
+    luatype = 'integer',
 }
 
 typedef {
@@ -146,5 +146,5 @@ typedef {
         lua_Unsigned
     ]],
     conv = 'olua_$$_integer',
-    luatype = 'number',
+    luatype = 'integer',
 }

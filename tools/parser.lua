@@ -830,6 +830,10 @@ local function typeconf(...)
         cls.luaopen = luaopen
     end
 
+    function CMD.comment(comment)
+        cls.comment = comment
+    end
+
     function CMD.macro(name, value)
         cls.macros[name] = value
     end

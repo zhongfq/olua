@@ -1,5 +1,21 @@
 ---@meta clang.Cursor
 
+---A cursor representing some element in the abstract syntax tree for
+---a translation unit.
+---
+---The cursor abstraction unifies the different kinds of entities in a
+---program--declaration, statements, expressions, references to declarations,
+---etc.--under a single "cursor" abstraction with a common set of operations.
+---Common operation for a cursor include: getting the physical location in
+---a source file where the cursor points, getting the name associated with a
+---cursor, and retrieving cursors for any child nodes of a particular cursor.
+---
+---Cursors can be produced in two specific ways.
+---clang_getTranslationUnitCursor() produces a cursor for a translation unit,
+---from which one can use clang_visitChildren() to explore the rest of the
+---translation unit. clang_getCursor() maps from a physical source location
+---to the entity that resides at that location, allowing one to map from the
+---source code into the AST.
 ---@class clang.Cursor : clang.IndexError
 ---@field arguments clang.Cursor[] Retrieve the argument cursor of a function or method. <br><br>The argument cursor can be determined for calls as well as for declarations of functions or methods. For other cursors and for invalid indices, an invalid cursor is returned.
 ---@field availability clang.AvailabilityKind Determine the availability of the entity that this cursor refers to, taking the current target platform into account. <br><br>\param cursor The cursor to query. <br><br>\returns The availability of the cursor.
@@ -12,14 +28,14 @@
 ---@field cxxManglings string[] Retrieve the CXStrings representing the mangled symbols of the C++ constructor or destructor at the cursor.
 ---@field definition clang.Cursor For a cursor that is either a reference to or a declaration of some entity, retrieve a cursor that describes the definition of that entity. <br><br>Some entities can be declared multiple times within a translation unit, but only one of those declarations can also be a definition. For example, given: <br><br>``` int f(int, int); int g(int x, int y) { return f(x, y); } int f(int a, int b) { return a + b; } int f(int, int); ``` <br><br>there are three declarations of the function "f", but only the second one is a definition. The clang_getCursorDefinition() function will take any cursor pointing to a declaration of "f" (the first or fourth lines of the example) or a cursor referenced that uses "f" (the call to "f' inside "g") and will return a declaration cursor pointing to the definition (the second "f" declaration). <br><br>If given a cursor for which there is no corresponding definition, e.g., because there is no definition of that entity within this translation unit, returns a NULL cursor.
 ---@field displayName string Retrieve the display name for the entity referenced by this cursor. <br><br>The display name contains extra information that helps identify the cursor, such as the parameters of a function or template or the arguments of a class template specialization.
----@field enumConstantDeclUnsignedValue number Retrieve the integer value of an enum constant declaration as an unsigned long long. <br><br>If the cursor does not reference an enum constant declaration, ULLONG_MAX is returned. Since this is also potentially a valid constant value, the kind of the cursor must be verified before calling this function.
----@field enumConstantDeclValue number Retrieve the integer value of an enum constant declaration as a signed long long. <br><br>If the cursor does not reference an enum constant declaration, LLONG_MIN is returned. Since this is also potentially a valid constant value, the kind of the cursor must be verified before calling this function.
+---@field enumConstantDeclUnsignedValue integer Retrieve the integer value of an enum constant declaration as an unsigned long long. <br><br>If the cursor does not reference an enum constant declaration, ULLONG_MAX is returned. Since this is also potentially a valid constant value, the kind of the cursor must be verified before calling this function.
+---@field enumConstantDeclValue integer Retrieve the integer value of an enum constant declaration as a signed long long. <br><br>If the cursor does not reference an enum constant declaration, LLONG_MIN is returned. Since this is also potentially a valid constant value, the kind of the cursor must be verified before calling this function.
 ---@field enumDeclIntegerType clang.Type Retrieve the integer type of an enum declaration. <br><br>If the cursor does not reference an enum declaration, an invalid type is returned.
----@field exceptionSpecificationType number Retrieve the exception specification type associated with a given cursor. This is a value of type CXCursor_ExceptionSpecificationKind. <br><br>This only returns a valid result if the cursor refers to a function or method.
----@field fieldDeclBitWidth number Retrieve the bit width of a bit-field declaration as an integer. <br><br>If the cursor does not reference a bit-field, or if the bit-field's width expression cannot be evaluated, -1 is returned. <br><br>For example: ``` if (clang_Cursor_isBitField(Cursor)) { int Width = clang_getFieldDeclBitWidth(Cursor); if (Width != -1) { The bit-field width is not value-dependent. } } ```
+---@field exceptionSpecificationType integer Retrieve the exception specification type associated with a given cursor. This is a value of type CXCursor_ExceptionSpecificationKind. <br><br>This only returns a valid result if the cursor refers to a function or method.
+---@field fieldDeclBitWidth integer Retrieve the bit width of a bit-field declaration as an integer. <br><br>If the cursor does not reference a bit-field, or if the bit-field's width expression cannot be evaluated, -1 is returned. <br><br>For example: ``` if (clang_Cursor_isBitField(Cursor)) { int Width = clang_getFieldDeclBitWidth(Cursor); if (Width != -1) { The bit-field width is not value-dependent. } } ```
 ---@field hasAttrs boolean Determine whether the given cursor has any attributes.
----@field hasVarDeclExternalStorage number If cursor refers to a variable declaration that has external storage returns 1. If cursor refers to a variable declaration that doesn't have external storage returns 0. Otherwise returns -1.
----@field hasVarDeclGlobalStorage number If cursor refers to a variable declaration that has global storage returns 1. If cursor refers to a variable declaration that doesn't have global storage returns 0. Otherwise returns -1.
+---@field hasVarDeclExternalStorage integer If cursor refers to a variable declaration that has external storage returns 1. If cursor refers to a variable declaration that doesn't have external storage returns 0. Otherwise returns -1.
+---@field hasVarDeclGlobalStorage integer If cursor refers to a variable declaration that has global storage returns 1. If cursor refers to a variable declaration that doesn't have global storage returns 0. Otherwise returns -1.
 ---@field ibOutletCollectionType clang.Type For cursors representing an iboutletcollection attribute, this function returns the collection element type.
 ---@field includedFile clang.File Retrieve the file that is included by the given inclusion directive cursor.
 ---@field isAnonymous boolean Determine whether the given cursor represents an anonymous tag or namespace
@@ -44,7 +60,7 @@
 ---@field isDeclaration boolean Determine whether the given cursor kind represents a declaration.
 ---@field isDefinition boolean Determine whether the declaration pointed to by this cursor is also a definition of that entity.
 ---@field isDeprecated boolean Is this a deprecated member
----@field isDynamicCall number Given a cursor pointing to a C++ method call or an Objective-C message, returns non-zero if the method/message is "dynamic", meaning: <br><br>For a C++ method: the call is virtual. For an Objective-C message: the receiver is an object instance, not 'super' or a specific class. <br><br>If the method/message is "static" or the cursor does not point to a method/message, it will return zero.
+---@field isDynamicCall integer Given a cursor pointing to a C++ method call or an Objective-C message, returns non-zero if the method/message is "dynamic", meaning: <br><br>For a C++ method: the call is virtual. For an Objective-C message: the receiver is an object instance, not 'super' or a specific class. <br><br>If the method/message is "static" or the cursor does not point to a method/message, it will return zero.
 ---@field isEnumDeclScoped boolean Determine if an enum declaration refers to a scoped enum.
 ---@field isExpression boolean Determine whether the given cursor kind represents an expression.
 ---@field isFunctionInlined boolean Determine whether a CXCursor that is a function declaration, is an inline declaration.
@@ -69,7 +85,7 @@
 ---@field mangling string Retrieve the CXString representing the mangled name of the cursor.
 ---@field module clang.Module Given a CXCursor_ModuleImportDecl cursor, return the associated module.
 ---@field name string Retrieve a name for the entity referenced by this cursor.
----@field offsetOfField number Return the offset of the field represented by the Cursor. <br><br>If the cursor is not a field declaration, -1 is returned. If the cursor semantic parent is not a record field declaration, CXTypeLayoutError_Invalid is returned. If the field's type declaration is an incomplete type, CXTypeLayoutError_Incomplete is returned. If the field's type declaration is a dependent type, CXTypeLayoutError_Dependent is returned. If the field's name S is not found, CXTypeLayoutError_InvalidFieldName is returned.
+---@field offsetOfField integer Return the offset of the field represented by the Cursor. <br><br>If the cursor is not a field declaration, -1 is returned. If the cursor semantic parent is not a record field declaration, CXTypeLayoutError_Invalid is returned. If the field's type declaration is an incomplete type, CXTypeLayoutError_Incomplete is returned. If the field's type declaration is a dependent type, CXTypeLayoutError_Dependent is returned. If the field's name S is not found, CXTypeLayoutError_InvalidFieldName is returned.
 ---@field overloadedDecls clang.Cursor[] Retrieve a cursor for one of the overloaded declarations referenced by a `CXCursor_OverloadedDeclRef` cursor. <br><br>\param cursor The cursor whose overloaded declarations are being queried. <br><br>\param index The zero-based index into the set of overloaded declarations in the cursor. <br><br>\returns A cursor representing the declaration referenced by the given `cursor` at the specified `index`. If the cursor does not have an associated set of overloaded declarations, or if the index is out of bounds, returns `clang_getNullCursor();`
 ---@field parent clang.Cursor Determine the semantic parent of the given cursor. <br><br>The semantic parent of a cursor is the cursor that semantically contains the given \p cursor. For many declarations, the lexical and semantic parents are equivalent (the lexical parent is returned by `clang_getCursorLexicalParent())`. They diverge when declarations or definitions are provided out-of-line. For example: <br><br>``` class C { void f(); }; <br><br>void C::f() { } ``` <br><br>In the out-of-line definition of `C::f`, the semantic parent is the class `C`, of which this function is a member. The lexical parent is the place where the declaration actually occurs in the source code; in this case, the definition occurs in the translation unit. In general, the lexical parent for a given entity can change without affecting the semantics of the program, and the lexical parent of different declarations of the same entity may be different. Changing the semantic parent of a declaration, on the other hand, can have a major impact on semantics, and redeclarations of a particular entity should all have the same semantic context. <br><br>In the example above, both declarations of `C::f` have `C` as their semantic context, while the lexical context of the first `C::f` is `C` and the lexical context of the second `C::f` is the translation unit. <br><br>For global declarations, the semantic parent is the translation unit.
 ---@field prettyPrinted string Pretty print declarations. <br><br>\param Cursor The cursor representing a declaration. <br><br>\param Policy The policy to control the entities being printed. If NULL, a default policy is used. <br><br>\returns The pretty printed declaration or the empty string for other cursors.
@@ -106,7 +122,7 @@ function Cursor:as(cls) end
 function Cursor:getModule() end
 
 ---Compute a hash value for the given cursor.
----@return number
+---@return integer
 function Cursor:hashCursor() end
 
 ---Retrieve a range for a piece that forms the cursors spelling name.
@@ -118,8 +134,8 @@ function Cursor:hashCursor() end
 ---than the actual number of pieces, it will return a NULL (invalid) range.
 ---
 ---\param options Reserved.
----@param pieceIndex number
----@param options number
+---@param pieceIndex integer
+---@param options integer
 ---@return clang.Cursor.SourceRange
 function Cursor:nameRange(pieceIndex, options) end
 
@@ -139,8 +155,8 @@ function Cursor:nameRange(pieceIndex, options) end
 ---
 ---\returns The piece of the name pointed to by the given cursor. If there is no
 ---name, or if the PieceIndex is out-of-range, a null-cursor will be returned.
----@param pieceIndex number
----@param options number
+---@param pieceIndex integer
+---@param options integer
 ---@return clang.Cursor.SourceRange
 function Cursor:referenceNameRange(pieceIndex, options) end
 
@@ -163,7 +179,7 @@ function Cursor:shared_from_this() end
 ---
 ---If called with I = 1 or 2, -7 or true will be returned, respectively.
 ---For I == 0, this function's behavior is undefined.
----@param index number
+---@param index integer
 ---@return clang.TemplateArgumentKind
 function Cursor:templateArgumentKind(index) end
 
@@ -183,8 +199,8 @@ function Cursor:templateArgumentKind(index) end
 ---
 ---If called with I = 1 or 2, 2147483649 or true will be returned, respectively.
 ---For I == 0, this function's behavior is undefined.
----@param index number
----@return number
+---@param index integer
+---@return integer
 function Cursor:templateArgumentUnsignedValue(index) end
 
 ---Retrieve the value of an Integral TemplateArgument (of a function
@@ -203,8 +219,8 @@ function Cursor:templateArgumentUnsignedValue(index) end
 ---
 ---If called with I = 1 or 2, -7 or true will be returned, respectively.
 ---For I == 0, this function's behavior is undefined.
----@param index number
----@return number
+---@param index integer
+---@return integer
 function Cursor:templateArgumentValue(index) end
 
 return Cursor

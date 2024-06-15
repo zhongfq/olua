@@ -3,18 +3,19 @@
 ---@type clang.AvailabilityKind
 local VALUE
 
+---
 ---@enum clang.AvailabilityKind
 local AvailabilityKind = {
     ---The entity is available.
-    Available = VALUE,
+    Available = 0,
     ---The entity is available, but has been deprecated (and its use is
     ---not recommended).
-    Deprecated = VALUE,
+    Deprecated = 1,
     ---The entity is available, but not accessible; any use of it will be
     ---an error.
-    NotAccessible = VALUE,
+    NotAccessible = 3,
     ---The entity is not available; any use of it will be an error.
-    NotAvailable = VALUE,
+    NotAvailable = 2,
 }
 
 return AvailabilityKind

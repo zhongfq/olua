@@ -3,12 +3,13 @@
 ---@type clang.LanguageKind
 local VALUE
 
+---
 ---@enum clang.LanguageKind
 local LanguageKind = {
-    C = VALUE,
-    CPlusPlus = VALUE,
-    Invalid = VALUE,
-    ObjC = VALUE,
+    C = 1,
+    CPlusPlus = 3,
+    Invalid = 0,
+    ObjC = 2,
 }
 
 return LanguageKind

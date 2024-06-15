@@ -76,7 +76,7 @@ if not olua.isdir(olua.OLUA_HOME)
     or not olua.isdir(olua.OLUA_HOME .. '/' .. LUA_VERSION)
     or not olua.isdir(olua.OLUA_HOME .. '/include')
 then
-    local dir = scrpath:gsub('[^/.\\]+%.lua$', 'libs')
+    local dir = scrpath:gsub('[^/.\\]+%.lua$', 'bin')
     olua.mkdir(olua.OLUA_HOME)
 
     local function unzip(path)

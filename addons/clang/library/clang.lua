@@ -1,5 +1,6 @@
 ---@meta clang
 
+---
 ---@class clang.clang 
 ---@field version string 
 ---@field debug boolean

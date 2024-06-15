@@ -1,5 +1,6 @@
 ---@meta clang.TranslationUnit
 
+---A single translation unit, which resides in an index.
 ---@class clang.TranslationUnit : clang.IndexError
 ---@field cursor clang.Cursor 
 ---@field diagnosticSetFromTU clang.Diagnostic[] 
@@ -11,10 +12,10 @@ local TranslationUnit = {}
 ---@return any
 function TranslationUnit:as(cls) end
 
----@return number
+---@return integer
 function TranslationUnit:defaultReparseOptions() end
 
----@return number
+---@return integer
 function TranslationUnit:defaultSaveOptions() end
 
 ---@param path string
@@ -34,22 +35,22 @@ function TranslationUnit:isFileMultipleIncludeGuarded(f) end
 function TranslationUnit:moduleForFile(file) end
 
 ---@param m clang.Module
----@return number
+---@return integer
 function TranslationUnit:numTopLevelHeaders(m) end
 
 ---@param path string
----@param options number
----@return number
+---@param options integer
+---@return integer
 function TranslationUnit:saveTranslationUnit(path, options) end
 
 ---@return clang.TranslationUnit
 function TranslationUnit:shared_from_this() end
 
----@return number
+---@return integer
 function TranslationUnit:suspendTranslationUnit() end
 
 ---@param m clang.Module
----@param index number
+---@param index integer
 ---@return clang.File
 function TranslationUnit:topLevelHeader(m, index) end
 
