@@ -509,10 +509,12 @@ local function gen_class_meta(module, cls, write)
         end
 
         -- write return type
-        local ret_luacls = olua.luatype(fi.ret.type)
-        write(format([[
-            ---@return ${ret_luacls}
-        ]]))
+        if fi.ret.type.cppcls ~= 'void' then
+            local ret_luacls = olua.luatype(fi.ret.type)
+            write(format([[
+                ---@return ${ret_luacls}
+            ]]))
+        end
 
         -- write overload
         for i, olfi in ipairs(fis) do
@@ -521,7 +523,13 @@ local function gen_class_meta(module, cls, write)
             end
 
             local caller_args = olua.newarray(', ')
-            local ret_luacls = olua.luatype(olfi.ret.type)
+
+            local ret_luacls
+            if olfi.ret.type.cppcls ~= 'void' then
+                ret_luacls = ": " .. olua.luatype(olfi.ret.type)
+            else
+                ret_luacls = ''
+            end
 
             if not olfi.static then
                 caller_args:pushf("self: ${cls.luacls}")
@@ -533,7 +541,7 @@ local function gen_class_meta(module, cls, write)
                 caller_args:pushf("${varname}: ${arg_luacls}")
             end
 
-            write(format("---@overload fun(${caller_args}): ${ret_luacls}"))
+            write(format("---@overload fun(${caller_args})${ret_luacls}"))
 
             ::skip_first_fn::
         end

@@ -559,6 +559,7 @@ function M:visit_method(cls, cur)
     local comment = get_comment(cur)
     if comment then
         declexps:pushf('@comment(${comment})')
+        declexps:push(' ')
     end
 
     for i, c in ipairs({{type = result_type}, table.unpack(arguments)}) do
@@ -579,6 +580,10 @@ function M:visit_method(cls, cur)
     end
 
     declexps:push(attr.ret and (attr.ret .. ' ') or nil)
+
+    if cur.kind == CursorKind.FunctionDecl then
+        static = true
+    end
     declexps:push(static and 'static ' or nil)
 
     local cb_kind
@@ -656,10 +661,7 @@ function M:visit_method(cls, cur)
     local prototype = tostring(protoexps)
     cls.excludes:replace(display_name, true)
     cls.excludes:replace(prototype, true)
-    if cur.kind == CursorKind.FunctionDecl then
-        decl = 'static ' .. decl
-        static = true
-    end
+    
     if decl:find('@getter') or decl:find('@setter') then
         local what = decl:find('@getter') and 'get' or 'set'
         olua.assert((what == 'get' and num_args == 0) or num_args == 1, [[
