@@ -1225,7 +1225,7 @@ OLUA_API void oluacls_class(lua_State *L, const char *cls, const char *supercls)
         if (olua_strequal(supercls, OLUA_VOIDCLS)) {
             olua_require(L, "void *", luaopen_voidp);
             olua_require(L, "enum *", luaopen_enum);
-            olua_require(L, "olua", luaopen_olua);
+            olua_require(L, "olua.c", luaopen_olua);
             olua_getmetatable(L, OLUA_VOIDCLS);
             lua_replace(L, -2);
             olua_debug_assert(lua_istable(L, -1), "class 'void *' not found");
@@ -1704,7 +1704,6 @@ int luaopen_olua(lua_State *L)
     };
     luaL_newlib(L, lib);
     lua_pushvalue(L, -1);
-    olua_setglobal(L, "olua");
     return 1;
 }
 
