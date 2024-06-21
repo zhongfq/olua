@@ -1,5 +1,6 @@
 local Node = require "example.Node"
 local Point = require "example.Point"
+local olua = require "olua.c"
 
 olua.debug(true)
 

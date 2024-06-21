@@ -3,6 +3,7 @@ package.path = path .. package.path
 
 local Node = require "example.Node"
 local util = require "util"
+local olua = require "olua.c"
 
 olua.debug(true)
 

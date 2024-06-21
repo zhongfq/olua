@@ -1,6 +1,8 @@
 local path = (...):gsub('test.lua$', '') .. '../../common/?.lua;'
 package.path = path .. package.path
 
+local olua = require "olua.c"
+
 local OLUA_REF_ALONE = 1 << 1 -- add & remove: only ref one
 local OLUA_REF_MULTI = 1 << 2 -- add & remove: can ref one or more
 local OLUA_REF_TABLE = 1 << 3 -- obj is table

@@ -31,11 +31,9 @@ function Index:getGlobalOptions() end
 function Index:parse(path, args, options) end
 
 ---@param options integer
----@return nil
 function Index:setGlobalOptions(options) end
 
 ---@param path string
----@return nil
 function Index:setInvocationEmissionPathOption(path) end
 
 ---@return clang.Index

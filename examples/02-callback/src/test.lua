@@ -1,4 +1,5 @@
 local Callback = require "example.Callback"
+local olua = require "olua.c"
 
 olua.debug(true)
 
