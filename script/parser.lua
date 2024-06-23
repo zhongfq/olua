@@ -1066,10 +1066,11 @@ local function typeconf(cppcls)
         })
     end
 
-    function CMD.enum(name, value, comment)
+    function CMD.enum(name, value, intvalue, comment)
         cls.enums:push({
             name = name,
             value = value or (cls.cppcls .. '::' .. name),
+            intvalue = intvalue,
             comment = olua.base64_decode(comment)
         })
     end

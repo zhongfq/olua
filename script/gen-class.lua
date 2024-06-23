@@ -445,11 +445,7 @@ local function gen_class_meta(module, cls, write)
                 comment = comment:gsub('\n', '\n---')
                 fields:push(olua.format('---${comment}'))
             end
-            local value = 'VALUE'
-            local int_value = tonumber(ei.value)
-            if int_value then
-                value = ei.value
-            end
+            local value = ei.intvalue or 'VALUE'
             fields:push(olua.format('${ei.name} = ${value},'))
         end
         write(format([[
@@ -571,7 +567,7 @@ function olua.gen_metafile(module)
             end
         end
         local filename = module.entry == cls.cppcls and module.name or luacls
-        local path = format('${module.metapath}/${module.name}/library/${filename}.lua')
+        local path = format('${module.metapath}/library/${filename}.lua')
         local dir = path:match('(.*)/[^/]+$')
         olua.mkdir(dir)
         gen_class_meta(module, cls, append)
@@ -580,11 +576,12 @@ function olua.gen_metafile(module)
         ::continue::
     end
 
-    olua.write(format('${module.metapath}/${module.name}/config.json'), format([[
+    local name = module.metapath:match('([^/]+)$')
+    olua.write(format('${module.metapath}/config.json'), format([[
         {
             "$schema": "https://raw.githubusercontent.com/LuaLS/LLS-Addons/main/schemas/addon_config.schema.json",
-            "words": ["%s+-clang"],
-            "files": ["clang"],
+            "words": ["%s+-${name}"],
+            "files": ["${name}"],
             "settings": {}
         }
     ]]))

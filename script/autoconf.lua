@@ -763,8 +763,9 @@ function M:visit_enum(cppcls, cur)
     local cls = self:will_visit(cppcls)
     local filter = {}
     for _, c in ipairs(cur.children) do
-        ---@type string|integer
+        ---@type string
         local value = c.name
+        local intvalue
         local name = cls.luaname(value --[[@as string]], 'enum')
         local range = c.commentRange
         local comment = c.rawCommentText
@@ -773,14 +774,14 @@ function M:visit_enum(cppcls, cur)
         else
             comment = ''
         end
+        value = olua.format('${cls.cppcls}::${value}')
         if c.kind == CursorKind.EnumConstantDecl then
-            value = c.enumConstantDeclValue
-        else
-            value = olua.format('${cls.cppcls}::${value}')
+            intvalue = c.enumConstantDeclValue
         end
         cls.enums:set(name, {
             name = name,
             value = value,
+            intvalue = intvalue,
             comment = comment
         })
     end
@@ -1159,7 +1160,9 @@ local function search_using_func(module, cls)
         if supercls then
             search_parent(arr, name, supercls)
             for _, func in ipairs(arr) do
-                cls.funcs:replace(func.prototype, func)
+                if not cls.funcs:has(func.prototype) then
+                    cls.funcs:replace(func.prototype, func)
+                end
             end
         elseif not cls.supers:has(where) then
             olua.error([[unexpect copy using error: using ${where}:${name}]])
@@ -1291,12 +1294,16 @@ end
 local function write_cls_enum(module, cls, append)
     for _, e in ipairs(cls.enums) do
         local comment = e.comment
+        local intvalue = e.intvalue
+        if not intvalue then
+            intvalue = "nil"
+        end
         if comment then
             comment = olua.base64_encode(comment)
         else
             comment = ''
         end
-        append(olua.format(".enum('${e.name}', '${e.value}', '${comment}')", 4))
+        append(olua.format(".enum('${e.name}', '${e.value}', ${intvalue}, '${comment}')", 4))
     end
 end
 
