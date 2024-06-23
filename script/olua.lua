@@ -14,6 +14,11 @@ function pairs(t)
     return (mt and mt.__pairs or _pairs)(t)
 end
 
+---Suppress warnings.
+---@param ... unknown
+function olua.unuse(...)
+end
+
 function olua.print(fmt, ...)
     print(string.format(fmt, ...))
 end
@@ -144,16 +149,6 @@ function olua.array(...)
     ---@private
     array.__index = array
 
-    ---Fill the array with a table.
-    ---@param t table<string|integer, any>
-    ---@return array
-    function array:fill_with_table(t)
-        for k, v in pairs(t) do
-            self:push({ key = k, value = v })
-        end
-        return self
-    end
-
     ---Clear the array.
     function array:clear()
         for i = 1, #self do
@@ -183,6 +178,10 @@ function olua.array(...)
         if value ~= nil then
             table.insert(self, value)
         end
+    end
+
+    function array:pushf(__value)
+        self:push(olua.format(__value))
     end
 
     ---Remove and return the last element of the array.
@@ -355,16 +354,6 @@ function olua.ordered_map(overwritable)
     ---@private
     function ordered_map:__ipairs()
         return ipairs(self:toarray())
-    end
-
-    ---Fill the ordered map with the table.
-    ---@param t table<string|integer, any>
-    ---@return ordered_map
-    function ordered_map:fill_with_table(t)
-        for k, v in pairs(t) do
-            self:set(k, v)
-        end
-        return self
     end
 
     ---Clone the ordered map.

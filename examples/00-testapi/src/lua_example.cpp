@@ -1819,9 +1819,9 @@ OLUA_LIB int luaopen_example_Type(lua_State *L)
     oluacls_class<example::Type>(L, "example.Type");
     oluacls_func(L, "__index", olua_indexerror);
     oluacls_func(L, "__newindex", olua_newindexerror);
-    oluacls_enum(L, "LVALUE", (lua_Integer)0);
-    oluacls_enum(L, "POINTER", (lua_Integer)2);
-    oluacls_enum(L, "RVALUE", (lua_Integer)1);
+    oluacls_enum(L, "LVALUE", (lua_Integer)example::Type::LVALUE);
+    oluacls_enum(L, "POINTER", (lua_Integer)example::Type::POINTER);
+    oluacls_enum(L, "RVALUE", (lua_Integer)example::Type::RVALUE);
 
     return 1;
 }

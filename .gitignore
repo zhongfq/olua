@@ -2,5 +2,5 @@
 .vscode/settings.json
 autobuild/
 build/
-release/
 bin/*.zip
+script/*.lua

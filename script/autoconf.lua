@@ -1274,9 +1274,13 @@ end
 ---@param cls TypeconfDescriptor
 ---@param append any
 local function write_cls_options(module, cls, append)
-    for _, v in ipairs(olua.array():fill_with_table(cls.options):sort('key')) do
-        append(olua.format([[.option('${v.key}', ${v.value?})]], 4))
+    local out = olua.array():set_joiner('\n')
+    for key, value in pairs(cls.options) do
+        olua.unuse(key, value)
+        out:push(olua.format([[.option('${key}', ${value?})]], 4))
     end
+    out:sort()
+    append(tostring(out))
 end
 
 local function write_cls_macro(module, cls, append)
@@ -1296,7 +1300,7 @@ local function write_cls_enum(module, cls, append)
         local comment = e.comment
         local intvalue = e.intvalue
         if not intvalue then
-            intvalue = "nil"
+            intvalue = 'nil'
         end
         if comment then
             comment = olua.base64_encode(comment)
