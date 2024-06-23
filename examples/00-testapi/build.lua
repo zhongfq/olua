@@ -1,10 +1,10 @@
-package.path = "../../../?.lua;../../../?/init.lua;" .. package.path
+package.path = "../../?.lua;" .. package.path
 
 OLUA_AUTO_EXPORT_PARENT = true
 
 OLUA_VERBOSE = true
 
-require "olua.tools"
+require "init"
 
 autoconf "../common/lua-types.lua"
 autoconf "conf/clang-args.lua"

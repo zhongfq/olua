@@ -1,5 +1,3 @@
-local olua = require "olua"
-
 local function typedef(t)
     t.from = 'olua: basictype'
     olua.typedef(t)

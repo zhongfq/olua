@@ -1,5 +1,3 @@
-local olua = require "olua"
-
 local format = olua.format
 
 local tag_mode_map = {
@@ -11,7 +9,7 @@ local tag_mode_map = {
 
 local function get_tag_mode(fi)
     local tag_mode = tag_mode_map[fi.callback.tag_mode]
-    olua.assert(tag_mode, "unknown tag mode: ${fi.callback.tag_mode}")
+    olua.assert(tag_mode, 'unknown tag mode: ${fi.callback.tag_mode}')
     return tag_mode
 end
 
@@ -115,19 +113,20 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         cb_tag = cb_tag .. ' + std::string(".using")'
     end
 
+    ---@class CallbackCodeset
     local callbackset = {
-        args = olua.newarray(', '),
+        args = olua.array():set_joiner(', '),
         num_args = #arg.callback.args,
-        push_args = olua.newarray(),
-        remove_once_callback = "",
-        remove_function_callback = "",
-        remove_normal_callback = "",
-        pop_objpool = "",
-        decl_result = "",
-        return_result = "",
-        check_result = "",
-        insert_cbefore = olua.newarray():push(fi.insert.cbefore),
-        insert_cafter = olua.newarray():push(fi.insert.cafter),
+        push_args = olua.array():set_joiner('\n'),
+        remove_once_callback = '',
+        remove_function_callback = '',
+        remove_normal_callback = '',
+        pop_objpool = '',
+        decl_result = '',
+        return_result = '',
+        check_result = '',
+        insert_cbefore = fi.insert.cbefore or '',
+        insert_cafter = fi.insert.cafter or '',
     }
 
     local pool_enabled = false
@@ -140,8 +139,8 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     end
 
     if pool_enabled then
-        callbackset.push_args:push( "size_t last = olua_push_objpool(L);")
-        callbackset.push_args:push("olua_enable_objpool(L);")
+        callbackset.push_args:push('size_t last = olua_push_objpool(L);')
+        callbackset.push_args:push('olua_enable_objpool(L);')
         callbackset.pop_objpool = format([[
             //pop stack value
             olua_pop_objpool(L, last);
@@ -152,13 +151,13 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         local cb_argname = 'arg' .. i
         local decltype = olua.decltype(v.type, false, true)
         olua.gen_push_exp(v, cb_argname, callbackset)
-        callbackset.args:pushf([[
+        callbackset.args:push(olua.format([[
             ${decltype}${cb_argname}
-        ]])
+        ]]))
     end
 
     if pool_enabled then
-        callbackset.push_args:push("olua_disable_objpool(L);")
+        callbackset.push_args:push('olua_disable_objpool(L);')
     end
 
     if tag_scope == 'once' then
@@ -174,15 +173,15 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     end
 
     local callback_ret = arg.callback.ret
-    if callback_ret.type.cppcls ~= "void" then
+    if callback_ret.type.cppcls ~= 'void' then
         local retset = {
-            decl_args = olua.newarray(),
-            check_args = olua.newarray(),
+            decl_args = olua.array(),
+            check_args = olua.array(),
         }
         olua.gen_decl_exp(callback_ret, 'ret', retset)
         olua.gen_check_exp(callback_ret, 'ret', -1, retset)
-        callbackset.decl_result = retset.decl_args
-        callbackset.check_result = retset.check_args
+        callbackset.decl_result = tostring(retset.decl_args)
+        callbackset.check_result = tostring(retset.check_args)
 
         local func_is = olua.conv_func(callback_ret.type, 'is')
         if olua.is_pointer_type(callback_ret.type) then
@@ -222,7 +221,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         ]]
     elseif tag_store == 0 then
         cb_store = 'self'
-        if not fi.static or fi.luafunc == 'new' and fi.ret.type.cppcls == cls.cppcls  then
+        if not fi.static or fi.luafunc == 'new' and fi.ret.type.cppcls == cls.cppcls then
             cb_store = 'self'
         else
             cb_store = format 'olua_pushclassobj(L, "${cls.luacls}")'

@@ -1,0 +1,3 @@
+{
+  "diagnostics.disable": ["redundant-return-value", "lowercase-global"]
+}

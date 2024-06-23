@@ -1,6 +1,6 @@
-package.path = "../../../?.lua;../../../?/init.lua;" .. package.path
+package.path = "../../?.lua;" .. package.path
 
-require "olua.tools"
+require "init"
 
 autoconf "../common/lua-types.lua"
 autoconf "conf/clang-args.lua"

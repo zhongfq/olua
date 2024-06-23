@@ -6,6 +6,7 @@
   ],
   "settings": {
     "editor.snippetSuggestions": "bottom",
+    "editor.formatOnSave": true,
     "files.associations": {
       "*.manifest": "json",
       "*.jsfl": "javascript"

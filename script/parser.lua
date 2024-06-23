@@ -1,5 +1,3 @@
-local olua           = require "olua"
-
 local typeinfo_map   = {}
 local class_map      = {}
 
@@ -64,7 +62,7 @@ local function search_type_from_class(cls, cpptype, errors)
         end
         while #nsarr > 0 do
             -- const Object * => const ns::Object *
-            local ns = table.concat(nsarr, "::")
+            local ns = table.concat(nsarr, '::')
             local tn = olua.pretty_typename(cpptype:gsub('[%w:_]+ *[*&]*$', ns .. '::%1'))
             local ti = olua.typeinfo(tn, nil, false, errors)
             nsarr[#nsarr] = nil
@@ -100,29 +98,37 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
     return subtis
 end
 
---[[
-    func: void addChild(const std::vector<const Object *> &child, const char *name)
-    child = {
-        cppcls = std::vector
-        flag = kFLAG_CONST | kFLAG_LVALUE
-        subtis = {
-            [1] = {
-                cppcls = 'Object *'
-                flag = kFLAG_CONST | kFLAG_POINTER
-            }
-        }
-    }
-    name {
-        cppcls = const char *          -- basictype.lua
-        flag = kFLAG_POINTER
-    }
-]]
+--- Get typeinfo.
+---
+---```c++
+--- func: void addChild(const std::vector<const Object *> &child, const char *name)
+--- child = {
+---     cppcls = std::vector
+---     flag = kFLAG_CONST | kFLAG_LVALUE
+---     subtis = {
+---         [1] = {
+---             cppcls = 'Object *'
+---             flag = kFLAG_CONST | kFLAG_POINTER
+---         }
+---     }
+--- }
+--- name {
+---     cppcls = const char *          -- basictype.lua
+---     flag = kFLAG_POINTER
+--- }
+---```
+---@param cpptype any
+---@param cls any
+---@param throwerror any
+---@param errors any
+---@return nil
+---@overload fun(cpptype: string, cls: any): any
 function olua.typeinfo(cpptype, cls, throwerror, errors)
     local tn, ti, subtis -- for tn<T, ...>
     local flag = 0
 
     throwerror = throwerror ~= false
-    errors = errors or olua.newhash()
+    errors = errors or olua.ordered_map()
     cpptype = olua.pretty_typename(cpptype)
 
     if cpptype:find('^const') then
@@ -163,7 +169,7 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
     errors:replace(cpptype, cpptype)
 
     if ti then
-        ti = setmetatable({}, {__index = ti})
+        ti = setmetatable({}, { __index = ti })
     else
         repeat
             -- search in class namespace
@@ -194,7 +200,7 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
     if ti.subtypes then
         local tti = lookup_typeinfo(olua.decltype(ti, true))
         if tti then
-            ti = setmetatable({}, {__index = tti})
+            ti = setmetatable({}, { __index = tti })
             ti.flag = flag
         end
         if ti.smartptr then
@@ -240,7 +246,7 @@ function olua.decltype(ti, checkvalue, addspace, exps)
         return ti
     end
 
-    exps = exps or olua.newarray('')
+    exps = exps or olua.array():set_joiner('')
     if not checkvalue and olua.has_const_flag(ti) then
         exps:push('const ')
     end
@@ -369,7 +375,7 @@ local function parse_type(str)
     str = str:gsub('^ *', '')
 
     if attr.type then
-        tn = olua.assert(table.concat(attr.type, ' '), "no replaceable type")
+        tn = olua.assert(table.concat(attr.type, ' '), 'no replaceable type')
     end
 
     return olua.pretty_typename(tn), attr, str
@@ -382,7 +388,7 @@ local function type_func_info(tn, cls, cb)
     else
         ti = olua.typeinfo('std::function', cls)
         ti.flag = ti.flag | kFLAG_CALLBACK
-        ti.callback = {[0] = cb.ret.type}
+        ti.callback = { [0] = cb.ret.type }
         for i, arg in ipairs(cb.args) do
             ti.callback[i] = arg.type
         end
@@ -476,8 +482,8 @@ end
 
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
-    local exps = olua.newarray('')
-    exps:push(fi.static and "static " or nil)
+    local exps = olua.array()
+    exps:push(fi.static and 'static ' or nil)
     exps:push(olua.decltype(fi.ret.type, nil, true))
     exps:push(fi.cppfunc)
     exps:push('(')
@@ -491,7 +497,7 @@ local function gen_func_prototype(cls, fi)
 end
 
 local function copy(t)
-    return setmetatable({}, {__index = t})
+    return setmetatable({}, { __index = t })
 end
 
 local function gen_func_pack(cls, fi, funcs)
@@ -555,10 +561,14 @@ local function gen_func_overload(cls, fi, funcs)
     end
 end
 
+---@param cls ParserTypeconf
+---@param name any
+---@param ... unknown
+---@return table
 function olua.parse_func(cls, name, ...)
-    local arr = {max_args = 0}
-    for _, funcdecl in ipairs({...}) do
-        local fi = {ret = {}}
+    local arr = { max_args = 0 }
+    for _, funcdecl in ipairs({ ... }) do
+        local fi = { ret = {} }
         olua.willdo([[
             parse func:
                 class = ${cls.cppcls}
@@ -591,7 +601,7 @@ function olua.parse_func(cls, name, ...)
             fi.cppfunc = olua.assert(str:match('[^ ()]+'), 'invalid func')
             fi.luafunc = name or fi.cppfunc
             fi.static = attr.static
-            fi.funcdesc = funcdecl:gsub("@comment%([^()]+%) *", "")
+            fi.funcdesc = funcdecl:gsub('@comment%([^()]+%) *', '')
             fi.insert = {}
             if olua.is_func_type(tn, fromcls) then
                 local cb = parse_callback(fromcls, tn)
@@ -610,7 +620,7 @@ function olua.parse_func(cls, name, ...)
             fi.args, fi.max_args = parse_args(fromcls, str:sub(#fi.cppfunc + 1))
             gen_func_prototype(cls, fi)
             gen_func_pack(cls, fi, arr)
-            cls.parsed_funcs:push(funcdecl, fi)
+            cls.parsed_funcs:set(funcdecl, fi)
         end
         arr[#arr+1] = fi
         arr.max_args = math.max(arr.max_args, fi.max_args)
@@ -660,17 +670,17 @@ function olua.luacls(cppcls)
 end
 
 function olua.luatype(ti)
-    if ti.luacls == "void" then
-        return "nil"
-    elseif ti.luacls == "void *" then
-        return "any"
-    elseif ti.luatype == "array" then
+    if ti.luacls == 'void' then
+        return 'nil'
+    elseif ti.luacls == 'void *' then
+        return 'any'
+    elseif ti.luatype == 'array' then
         return olua.luatype(ti.subtypes[1]) .. '[]'
-    elseif ti.luatype == "map" then
+    elseif ti.luatype == 'map' then
         local key_luatype = olua.luatype(ti.subtypes[1])
         local value_luatype = olua.luatype(ti.subtypes[2])
         -- { [string]: boolean }
-        return string.format("{ [%s]: %s }", key_luatype, value_luatype)
+        return string.format('{ [%s]: %s }', key_luatype, value_luatype)
     else
         return ti.luatype or ti.luacls or 'any'
     end
@@ -776,7 +786,7 @@ function olua.typedef(typeinfo)
         tn = olua.pretty_typename(tn)
         if #tn > 0 then
             local previous = typeinfo_map[tn]
-            local ti = setmetatable({}, {__index = typeinfo})
+            local ti = setmetatable({}, { __index = typeinfo })
             ti.cppcls = tn
             olua.assert(ti.replace or not previous, [[
                 type info conflict: ${ti.cppcls}
@@ -797,19 +807,20 @@ function olua.typedef(typeinfo)
     end
 end
 
-local function typeconf(...)
+local function typeconf(cppcls)
     local CMD = {}
+    ---@class ParserTypeconf
     local cls = {
-        cppcls = ...,
-        funcs = olua.newarray(),
-        consts = olua.newarray(),
-        enums = olua.newarray(),
-        props = olua.newarray(),
-        vars = olua.newarray(),
+        cppcls = cppcls,
+        funcs = olua.array(),
+        consts = olua.array(),
+        enums = olua.array(),
+        props = olua.array(),
+        vars = olua.array(),
         macros = {},
         prototypes = {},
         options = {},
-        parsed_funcs = olua.newhash(),
+        parsed_funcs = olua.ordered_map(),
     }
 
     class_map[cls.cppcls] = cls
@@ -906,9 +917,9 @@ local function typeconf(...)
 
         olua.assert(origin_funcs, 'func not found: ' .. luafunc)
 
-        local alias_funcs = olua.newarray()
+        local alias_funcs = olua.array()
         for _, fi in ipairs(origin_funcs) do
-            alias_funcs:push(setmetatable({luafunc = assert(alias)}, {__index = fi}))
+            alias_funcs:push(setmetatable({ luafunc = assert(alias) }, { __index = fi }))
         end
         cls.funcs:push(alias_funcs)
     end
@@ -947,7 +958,7 @@ local function typeconf(...)
     function CMD.callback(opt)
         cls.funcs:push(olua.parse_func(cls, nil, table.unpack(opt.funcs)))
         for i, fi in ipairs(cls.funcs[#cls.funcs]) do
-            fi.callback = setmetatable({}, {__index = opt})
+            fi.callback = setmetatable({}, { __index = opt })
             if type(fi.callback.tag_maker) == 'table' then
                 fi.callback.tag_maker = assert(fi.callback.tag_maker[i])
             end
@@ -1067,7 +1078,7 @@ local function typeconf(...)
 end
 
 function olua.export(path)
-    local m = {class_types = {}}
+    local m = { class_types = {} }
 
     local CMD = {}
 

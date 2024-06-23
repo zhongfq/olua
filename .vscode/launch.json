@@ -1,28 +1,36 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "lua",
-            "request": "launch",
-            "name": "debug",
-            "windows": {
-                "type": "lua",
-                "request": "launch",
-                "name": "debug",
-                "luaexe": "lua.exe",
-            },
-            "osx": {
-                "type": "lua",
-                "request": "launch",
-                "name": "debug",
-                "luaexe": "lua",
-            },
-            "stopOnEntry": false,
-            "cwd": "${workspaceFolder}/examples/00-testapi",
-            "program": "build.lua"
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lua",
+      "request": "launch",
+      "name": "debug",
+      "windows": {
+        "type": "lua",
+        "request": "launch",
+        "name": "debug",
+        "luaexe": "lua.exe"
+      },
+      "osx": {
+        "type": "lua",
+        "request": "launch",
+        "name": "debug",
+        "luaexe": "lua"
+      },
+      "stopOnEntry": false,
+      "cwd": "${workspaceFolder}/examples/00-testapi",
+      "program": "build.lua"
+    },
+    {
+      "type": "lua",
+      "request": "launch",
+      "name": "olua",
+      "stopOnEntry": false,
+      "cwd": "${workspaceFolder}/tools",
+      "program": "olua.lua"
+    }
+  ]
 }
