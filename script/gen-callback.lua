@@ -151,9 +151,9 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         local cb_argname = 'arg' .. i
         local decltype = olua.decltype(v.type, false, true)
         olua.gen_push_exp(v, cb_argname, callbackset)
-        callbackset.args:push(olua.format([[
+        callbackset.args:pushf([[
             ${decltype}${cb_argname}
-        ]]))
+        ]])
     end
 
     if pool_enabled then

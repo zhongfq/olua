@@ -25,9 +25,9 @@ function olua.gen_decl_exp(arg, argname, codeset)
     local decltype = olua.decltype(arg.type, true, true)
     local initial_value = olua.initial_value(arg.type)
     local varname = arg.varname or argname
-    codeset.decl_args:push(olua.format([[
+    codeset.decl_args:pushf([[
         ${decltype}${argname}${initial_value};       /** ${varname} */
-    ]]))
+    ]])
 end
 
 function olua.gen_check_exp(arg, name, i, codeset)
@@ -45,16 +45,16 @@ function olua.gen_check_exp(arg, name, i, codeset)
                 * typeconf '${arg.type.cppcls}'
                       .packable 'true'
         ]])
-        codeset.check_args:push(olua.format([[
+        codeset.check_args:pushf([[
             ${func_check}(L, ${argn}, &${argname});
-        ]]))
+        ]])
     elseif olua.is_pointer_type(arg.type)
         or olua.is_func_type(arg.type)
         or arg.type.smartptr
     then
-        codeset.check_args:push(olua.format([[
+        codeset.check_args:pushf([[
             ${func_check}(L, ${argn}, &${argname}, "${arg.type.luacls}");
-        ]]))
+        ]])
     elseif arg.type.subtypes then
         olua.assert(#arg.type.subtypes <= 2, 'unsupport template arg types > 2 ')
         local subtype_decl_args = olua.array():set_joiner(', ')
@@ -66,36 +66,36 @@ function olua.gen_check_exp(arg, name, i, codeset)
             local subtype_name = 'arg' .. ii
             local decltype = olua.decltype(subtype)
             local declarg = olua.decltype(subtype, nil, true)
-            subtype_decl_args:push(olua.format('${declarg}*${subtype_name}'))
-            subtype_template_args:push(olua.format('${decltype}'))
+            subtype_decl_args:pushf('${declarg}*${subtype_name}')
+            subtype_template_args:pushf('${decltype}')
             if subtype.smartptr or olua.is_pointer_type(subtype) then
-                subtype_check_exp:push(olua.format([[
+                subtype_check_exp:pushf([[
                     ${subtype_func_check}(L, ${idx}, ${subtype_name}, "${subtype.luacls}");
-                ]]))
+                ]])
             else
-                subtype_check_exp:push(olua.format([[
+                subtype_check_exp:pushf([[
                     ${subtype_func_check}(L, ${idx}, ${subtype_name});
-                ]]))
+                ]])
             end
             idx = idx - 1
         end
-        codeset.check_args:push(olua.format([[
+        codeset.check_args:pushf([[
             ${func_check}<${subtype_template_args}>(L, ${argn}, ${argname}, [L](${subtype_decl_args}) {
                 ${subtype_check_exp}
             });
-        ]]))
+        ]])
     else
-        codeset.check_args:push(olua.format('${func_check}(L, ${argn}, &${argname});'))
+        codeset.check_args:pushf('${func_check}(L, ${argn}, &${argname});')
     end
 
     if arg.attr.nullable then
-        check_args:push(olua.format([[
+        check_args:pushf([[
             if (!olua_isnoneornil(L, ${argn})) {
                 ${codeset.check_args}
             }
-        ]]))
+        ]])
     else
-        check_args:push(olua.format([[${codeset.check_args}]]))
+        check_args:pushf([[${codeset.check_args}]])
     end
 
     codeset.check_args = check_args
@@ -121,17 +121,17 @@ function olua.gen_push_exp(arg, name, codeset)
                 * typeconf '${arg.type.cppcls}'
                       .packable 'true'
         ]])
-        codeset.push_args:push(olua.format('${func_push}(L, &${argname});'))
+        codeset.push_args:pushf('${func_push}(L, &${argname});')
     elseif olua.is_pointer_type(arg.type) or olua.is_func_type(arg.type) then
         if olua.has_cast_flag(arg.type)
             or arg.type.smartptr
             or olua.is_func_type(arg.type)
         then
-            codeset.push_args:push(olua.format('${func_push}(L, &${argname}, "${arg.type.luacls}");'))
+            codeset.push_args:pushf('${func_push}(L, &${argname}, "${arg.type.luacls}");')
         elseif olua.has_pointee_flag(arg.type) then
-            codeset.push_args:push(olua.format('${func_push}(L, ${argname}, "${arg.type.luacls}");'))
+            codeset.push_args:pushf('${func_push}(L, ${argname}, "${arg.type.luacls}");')
         else
-            codeset.push_args:push(olua.format('${func_copy}(L, ${argname}, "${arg.type.luacls}");'))
+            codeset.push_args:pushf('${func_copy}(L, ${argname}, "${arg.type.luacls}");')
         end
     elseif arg.type.subtypes then
         olua.assert(#arg.type.subtypes <= 2, 'unsupport template arg types > 2 ')
@@ -144,29 +144,29 @@ function olua.gen_push_exp(arg, name, codeset)
             local subtype_name = 'arg' .. i
             local decltype = olua.decltype(subtype)
             local declarg = olua.decltype(subtype, nil, true)
-            subtype_template_args:push(olua.format('${decltype}'))
+            subtype_template_args:pushf('${decltype}')
             if subtype.smartptr then
-                subtype_decl_args:push(olua.format('${declarg}&${subtype_name}'))
-                subtype_push_exp:push(olua.format('${subtype_func_push}(L, &${subtype_name}, "${subtype.luacls}");'))
+                subtype_decl_args:pushf('${declarg}&${subtype_name}')
+                subtype_push_exp:pushf('${subtype_func_push}(L, &${subtype_name}, "${subtype.luacls}");')
             elseif subtype.luacls and olua.is_pointer_type(decltype) then
-                subtype_decl_args:push(olua.format('${declarg}${subtype_name}'))
-                subtype_push_exp:push(olua.format('${subtype_func_push}(L, ${subtype_name}, "${subtype.luacls}");'))
+                subtype_decl_args:pushf('${declarg}${subtype_name}')
+                subtype_push_exp:pushf('${subtype_func_push}(L, ${subtype_name}, "${subtype.luacls}");')
             elseif olua.is_pointer_type(subtype) then
-                subtype_decl_args:push(olua.format('${declarg}&${subtype_name}'))
-                subtype_push_exp:push(olua.format('${subtype_func_copy}(L, ${subtype_name}, "${subtype.luacls}");'))
+                subtype_decl_args:pushf('${declarg}&${subtype_name}')
+                subtype_push_exp:pushf('${subtype_func_copy}(L, ${subtype_name}, "${subtype.luacls}");')
             else
                 local subtype_cast = olua.is_pointer_type(decltype) and '' or '&'
-                subtype_decl_args:push(olua.format('${declarg}${subtype_cast}${subtype_name}'))
-                subtype_push_exp:push(olua.format('${subtype_func_push}(L, ${subtype_name});'))
+                subtype_decl_args:pushf('${declarg}${subtype_cast}${subtype_name}')
+                subtype_push_exp:pushf('${subtype_func_push}(L, ${subtype_name});')
             end
         end
-        codeset.push_args:push(olua.format([[
+        codeset.push_args:pushf([[
             ${func_push}<${subtype_template_args}>(L, ${argname}, [L](${subtype_decl_args}) {
                 ${subtype_push_exp}
             });
-        ]]))
+        ]])
     else
-        codeset.push_args:push(olua.format('${func_push}(L, ${argname});'))
+        codeset.push_args:pushf('${func_push}(L, ${argname});')
     end
 end
 
@@ -194,9 +194,9 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
     if ref_store:find('^::') then
         if not codeset.has_ref_store then
             codeset.has_ref_store = true
-            codeset.insert_before:push(olua.format([[
+            codeset.insert_before:pushf([[
                 int ref_store = ${cls.cppcls}${ref_store}(L);
-            ]]))
+            ]])
         end
         ref_store = 'ref_store'
     end
@@ -227,35 +227,35 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
                 local func_push = olua.conv_func(arg.type, 'push')
                 local subtype_func_push = olua.conv_func(subtype, 'push')
                 local ref_store2 = ref_store == 'ref_store' and 'ref_store2' or 'ref_store'
-                codeset.insert_after:push(olua.format([[
+                codeset.insert_after:pushf([[
                     int ${ref_store2} = lua_absindex(L, ${ref_store});
                     ${func_push}<${subtype.cppcls}>(L, &${argname}, [L](${subtype.cppcls}value) {
                         ${subtype_func_push}(L, value, "${subtype.luacls}");
                     });
                     olua_addref(L, ${ref_store2}, "${ref_name}", -1, OLUA_REF_MULTI | OLUA_REF_TABLE);
                     lua_pop(L, 1);
-                ]]))
+                ]])
             else
                 if fi.variable then
                     codeset.insert_after:puhs(olua.format('olua_delallrefs(L, ${ref_store}, "${ref_name}");'))
                 end
-                codeset.insert_after:push(olua.format(
-                    'olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);'))
+                codeset.insert_after:pushf(
+                    'olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
             end
         elseif arg.type.cppcls:find('<') then
-            codeset.insert_after:push(olua.format([[
+            codeset.insert_after:pushf([[
                 for (auto obj : *${argname}) {
                     olua_pushobj(L, obj);
                     olua_addref(L, 1, "${ref_name}", -1, OLUA_REF_MULTI);
                     lua_pop(L, 1);
                 }
-            ]]))
+            ]])
         else
-            codeset.insert_after:push(olua.format(
-                'olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI);'))
+            codeset.insert_after:pushf(
+                'olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI);')
         end
     elseif ref_mode == '^' then
-        codeset.insert_after:push(olua.format('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_ALONE);'))
+        codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_ALONE);')
     else
         error('no support addref flag: ' .. ref_mode)
     end
@@ -285,9 +285,9 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
     if ref_store:find('^::') then
         if not codeset.has_ref_store then
             codeset.has_ref_store = true
-            codeset.insert_before:push(olua.format([[
+            codeset.insert_before:pushf([[
                 int ref_store = ${cls.cppcls}${ref_store}(L);
-            ]]))
+            ]])
         end
         ref_store = 'ref_store'
     end
@@ -303,20 +303,20 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
     end
 
     if ref_mode == '~' then
-        codeset.insert_before:push(olua.format('olua_startcmpref(L, ${ref_store}, "${ref_name}");'))
-        codeset.insert_after:push(olua.format('olua_endcmpref(L, ${ref_store}, "${ref_name}");'))
+        codeset.insert_before:pushf('olua_startcmpref(L, ${ref_store}, "${ref_name}");')
+        codeset.insert_after:pushf('olua_endcmpref(L, ${ref_store}, "${ref_name}");')
     elseif ref_mode == '*' then
-        codeset.insert_after:push(olua.format('olua_delallrefs(L, ${ref_store}, "${ref_name}");'))
+        codeset.insert_after:pushf('olua_delallrefs(L, ${ref_store}, "${ref_name}");')
     elseif ref_mode == '|' then
         if arg.type.subtypes then
-            codeset.insert_after:push(olua.format(
-                'olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);'))
+            codeset.insert_after:pushf(
+                'olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
         else
-            codeset.insert_after:push(olua.format(
-                'olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI);'))
+            codeset.insert_after:pushf(
+                'olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI);')
         end
     elseif ref_mode == '^' then
-        codeset.insert_after:push(olua.format('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_ALONE);'))
+        codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_ALONE);')
     else
         error('no support delref flag: ' .. ref_mode)
     end
@@ -331,8 +331,8 @@ local function gen_func_args(cls, fi, codeset)
         codeset.idx = codeset.idx + 1
         local ti = olua.typeinfo(cls.cppcls)
         local func_to = olua.conv_func(ti, 'to')
-        codeset.decl_args:push(olua.format('${cls.cppcls} *self = nullptr;'))
-        codeset.check_args:push(olua.format('${func_to}(L, 1, &self, "${ti.luacls}");'))
+        codeset.decl_args:pushf('${cls.cppcls} *self = nullptr;')
+        codeset.check_args:pushf('${func_to}(L, 1, &self, "${ti.luacls}");')
     end
 
     local skip_first_arg = false
@@ -359,9 +359,9 @@ local function gen_func_args(cls, fi, codeset)
         end
 
         if olua.has_cast_flag(ai.type) then
-            codeset.caller_args:push(olua.format('*${argname}'))
+            codeset.caller_args:pushf('*${argname}')
         else
-            codeset.caller_args:push(olua.format('${argname}'))
+            codeset.caller_args:pushf('${argname}')
         end
 
         olua.gen_decl_exp(ai, argname, codeset)
@@ -501,12 +501,12 @@ local function gen_one_func(cls, fi, write, funcidx)
         for _, ascls in ipairs(fi.ret.attr.as) do
             local asti = olua.typeinfo(ascls .. '*')
             local asluacls = asti.luacls:match('^[^< ]+')
-            asexp:push(olua.format([[
+            asexp:pushf([[
                 if (olua_strequal(arg1, "${asluacls}")) {
                     olua_pushobj_as<${ascls}>(L, 1, self, "as.${asluacls}");
                     break;
                 }
-            ]]))
+            ]])
         end
         write(format([[
             static int _${cls.cppcls#}_${fi.cppfunc}${funcidx}(lua_State *L)
@@ -678,11 +678,11 @@ local function gen_multi_func(cls, funcs, write)
         local arr = get_func_with_num_args(cls, funcs, i)
         if #arr > 0 then
             local test_and_call = gen_test_and_call(cls, arr)
-            ifblock:push(olua.format([[
+            ifblock:pushf([[
                 if (num_args == ${i}) {
                     ${test_and_call}
                 }
-            ]]))
+            ]])
         end
     end
 
@@ -727,23 +727,23 @@ function olua.gen_class_fill(cls, idx, name, codeset)
     for i, var in ipairs(vars) do
         local argname = 'arg' .. i
         olua.gen_decl_exp(var, argname, codeset)
-        codeset.check_args:push(olua.format([[olua_getfield(L, ${idx}, "${var.varname}");]]))
+        codeset.check_args:pushf([[olua_getfield(L, ${idx}, "${var.varname}");]])
         if var.attr.optional then
             local subset = { check_args = olua.array():set_joiner('\n') }
             olua.gen_check_exp(var, argname, -1, subset)
-            codeset.check_args:push(olua.format([[
+            codeset.check_args:pushf([[
                 if (!olua_isnoneornil(L, -1)) {
                     ${subset.check_args}
                     ${name}.${var.varname} = ${argname};
                 }
                 lua_pop(L, 1);
-            ]]))
+            ]])
         else
             olua.gen_check_exp(var, argname, -1, codeset)
-            codeset.check_args:push(olua.format([[
+            codeset.check_args:pushf([[
                 ${name}.${var.varname} = ${argname};
                 lua_pop(L, 1);
-            ]]))
+            ]])
         end
         codeset.check_args:push('')
     end
@@ -760,9 +760,9 @@ local function gen_pack_func(cls, write)
         local argname = 'arg' .. i
         olua.gen_decl_exp(pi, argname, codeset)
         olua.gen_check_exp(pi, argname, 'idx + ' .. (i - 1), codeset)
-        codeset.check_args:push(olua.format([[
+        codeset.check_args:pushf([[
             value->${pi.varname} = ${argname};
-        ]]))
+        ]])
         codeset.check_args:push('')
     end
 
@@ -806,9 +806,9 @@ local function gen_canpack_func(cls, write)
         local func_is = olua.conv_func(pi.type, 'is')
         local N = i - 1
         if olua.is_pointer_type(pi.type) then
-            exps:push(olua.format('${func_is}(L, idx + ${N}, "${pi.type.luacls}")'))
+            exps:pushf('${func_is}(L, idx + ${N}, "${pi.type.luacls}")')
         else
-            exps:push(olua.format('${func_is}(L, idx + ${N})'))
+            exps:pushf('${func_is}(L, idx + ${N})')
         end
     end
     write(format([[

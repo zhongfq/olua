@@ -96,9 +96,9 @@ end
 local willdo = ''
 
 ---Will do the job.
----@param __job string
-function olua.willdo(__job)
-    willdo = olua.format(__job)
+---@param message string
+function olua.willdo(message)
+    willdo = olua.format(message)
 end
 
 local function throw_error(msg)
@@ -109,21 +109,21 @@ local function throw_error(msg)
 end
 
 ---Throw error.
----@param __message string
-function olua.error(__message)
-    throw_error(olua.format(__message))
+---@param message string
+function olua.error(message)
+    throw_error(olua.format(message))
 end
 
 ---Check the value
 ---@generic T
----@param __value T
----@param __message? string
+---@param value T
+---@param message? string
 ---@return T
-function olua.assert(__value, __message)
-    if not __value then
-        olua.error(__message or '<no assert info>')
+function olua.assert(value, message)
+    if not value then
+        olua.error(message or '<no assert info>')
     end
-    return __value
+    return value
 end
 
 ---Clone a table.
@@ -159,6 +159,7 @@ function olua.array(...)
     ---@param sep string
     ---@param prefix? string
     ---@param posfix? string
+    ---@return self
     function array:set_joiner(sep, prefix, posfix)
         joiner.sep = sep
         joiner.prefix = prefix
@@ -180,8 +181,8 @@ function olua.array(...)
         end
     end
 
-    function array:pushf(__value)
-        self:push(olua.format(__value))
+    function array:pushf(value)
+        self:push(olua.format(value))
     end
 
     ---Remove and return the last element of the array.
@@ -234,7 +235,7 @@ function olua.array(...)
 
     ---Concatenate the array with another array.
     ---@param arr array
-    ---@return array
+    ---@return self
     function array:concat(arr)
         for _, v in ipairs(arr) do
             self:push(v)
@@ -258,7 +259,7 @@ function olua.array(...)
 
     ---Sort the array.
     ---@param field? string | fun(a:any, b:any):boolean
-    ---@return array
+    ---@return self
     function array:sort(field)
         if type(field) == 'function' then
             table.sort(self, field)
@@ -353,7 +354,7 @@ function olua.ordered_map(overwritable)
 
     ---@private
     function ordered_map:__ipairs()
-        return ipairs(self:toarray())
+        return ipairs(self:values())
     end
 
     ---Clone the ordered map.
@@ -441,9 +442,9 @@ function olua.ordered_map(overwritable)
         self.map = {}
     end
 
-    ---Return values of the ordered map as an array.
+    ---Return values of the ordered.
     ---@return array
-    function ordered_map:toarray()
+    function ordered_map:values()
         local arr = olua.array()
         for _, key in ipairs(self.keys) do
             arr:push(self.map[key])
@@ -457,29 +458,28 @@ function olua.ordered_map(overwritable)
     ---| '"before"'
     ---| '"back"'
 
-    ---
-    -- TODO: check
-    ---@param insertmode insertmode
-    ---@param curr string|number
+    ---Insert an element into the ordered map.
+    ---@param mode insertmode
+    ---@param at_key string|number
     ---@param key string|number
     ---@param value any
-    function ordered_map:insert(insertmode, curr, key, value)
+    function ordered_map:insert(mode, at_key, key, value)
         local idx = 0
-        if insertmode == 'front' then
+        if mode == 'front' then
             idx = 1
-        elseif insertmode == 'after' then
-            idx = self.keys:index_of(curr)
+        elseif mode == 'after' then
+            idx = self.keys:index_of(at_key)
             if idx == 0 then
                 idx = #self.keys + 1
             else
                 idx = idx + 1
             end
-        elseif insertmode == 'before' then
-            idx = self.keys:index_of(curr)
+        elseif mode == 'before' then
+            idx = self.keys:index_of(at_key)
             if idx == 0 then
                 idx = 1
             end
-        elseif insertmode == 'back' then
+        elseif mode == 'back' then
             idx = #self.keys + 1
         else
             olua.error('invalid insert mode: ${insertmode}')
@@ -495,7 +495,8 @@ end
 --- string util
 -------------------------------------------------------------------------------
 
-local formatting_exprs = olua.array()
+local FORMAT_PATTERN = '${[%w_.?#]+}'
+local curr_expr = nil
 
 function olua.is_end_with(str, substr)
     local _, e = str:find(substr, #str - #substr + 1, true)
@@ -510,19 +511,19 @@ local function lookup(level, key)
 
     local value
     local searchupvalue = true
-    local expr = formatting_exprs[#formatting_exprs]
-
 
     local info1 = debug.getinfo(level, 'Snfu')
     local info2 = debug.getinfo(level + 1, 'Sn')
 
     for i = 1, 256 do
         local k, v = debug.getlocal(level, i)
-        if i <= info1.nparams and v == expr then
+        if i <= info1.nparams and v == curr_expr then
             searchupvalue = false
         end
         if k == key then
-            value = v
+            if type(v) ~= 'string' or not v:find(FORMAT_PATTERN) then
+                value = v
+            end
         elseif not k then
             break
         end
@@ -532,8 +533,6 @@ local function lookup(level, key)
         return value
     end
 
-
-    --TODO:
     if searchupvalue then
         for i = 1, 256 do
             local k, v = debug.getupvalue(info1.func, i)
@@ -626,7 +625,7 @@ local function eval(line)
 
         return prefix .. value:gsub('\n', '\n' .. indent) .. posfix
     end
-    line = line:gsub('${[%w_.?#]+}', replace)
+    line = line:gsub(FORMAT_PATTERN, replace)
     return not drop and line or nil
 end
 
@@ -673,9 +672,8 @@ end
 ---@param keepspace? boolean
 ---@return string
 function olua.format(expr, indent, keepspace)
-    formatting_exprs:push(expr)
+    curr_expr = expr
     expr = doeval(olua.trim(expr, indent, keepspace))
-    formatting_exprs:pop()
 
     while true do
         local s, n = expr:gsub('\n[ ]+\n', '\n\n')

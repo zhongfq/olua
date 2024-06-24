@@ -133,10 +133,10 @@ local function gen_class_open(cls, write)
 
     if cls.options.indexerror then
         if cls.options.indexerror:find('r') then
-            funcs:push(olua.format('oluacls_func(L, "__index", olua_indexerror);'))
+            funcs:pushf('oluacls_func(L, "__index", olua_indexerror);')
         end
         if cls.options.indexerror:find('w') then
-            funcs:push(olua.format('oluacls_func(L, "__newindex", olua_newindexerror);'))
+            funcs:pushf('oluacls_func(L, "__newindex", olua_newindexerror);')
         end
     end
 
@@ -145,7 +145,7 @@ local function gen_class_open(cls, write)
         local luafunc = fis[1].luafunc
         local macro = cls.macros[cppfunc]
         funcs:push(macro)
-        funcs:push(olua.format('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});'))
+        funcs:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
         funcs:push(macro and '#endif' or nil)
     end
 
@@ -160,7 +160,7 @@ local function gen_class_open(cls, write)
         if pi.set then
             func_set = format('_${cls.cppcls#}_${pi.set.cppfunc}')
         end
-        funcs:push(olua.format('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});'))
+        funcs:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
         funcs:push(macro and '#endif' or nil)
     end
 
@@ -172,7 +172,7 @@ local function gen_class_open(cls, write)
         if vi.set and vi.set.cppfunc then
             func_set = format('_${cls.cppcls#}_${vi.set.cppfunc}')
         end
-        funcs:push(olua.format('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});'))
+        funcs:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
         funcs:push(macro and '#endif' or nil)
     end
 
@@ -182,12 +182,12 @@ local function gen_class_open(cls, write)
         if olua.is_pointer_type(ci.type) and not olua.has_pointer_flag(ci.type) then
             cast = '&'
         end
-        funcs:push(olua.format('oluacls_const(L, "${ci.name}", ${cast}${ci.value});'))
+        funcs:pushf('oluacls_const(L, "${ci.name}", ${cast}${ci.value});')
     end
 
     olua.sort(cls.enums, 'name')
     for _, ei in ipairs(cls.enums) do
-        funcs:push(olua.format('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});'))
+        funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
     if not cls.options.reg_luatype then
@@ -318,7 +318,7 @@ local function gen_luaopen(module, write)
             end
             last_macro = macro
         end
-        requires:push(olua.format('olua_require(L, "${cls.luacls}", luaopen_${cls.cppcls#});'))
+        requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${cls.cppcls#});')
     end
     requires:push(last_macro and '#endif' or nil)
 
@@ -443,10 +443,10 @@ local function gen_class_meta(module, cls, write)
                 comment = comment:gsub('[\n\r]+[/* ]+', '\n')
                 comment = comment:gsub('[/* \n\r]+$', '')
                 comment = comment:gsub('\n', '\n---')
-                fields:push(olua.format('---${comment}'))
+                fields:pushf('---${comment}')
             end
             local value = ei.intvalue or 'VALUE'
-            fields:push(olua.format('${ei.name} = ${value},'))
+            fields:pushf('${ei.name} = ${value},')
         end
         write(format([[
             local ${luacls} = {
@@ -492,9 +492,9 @@ local function gen_class_meta(module, cls, write)
                 local varname = arg.varname or ''
                 local arg_luacls = olua.luatype(arg.type)
                 caller_args:push(varname)
-                params:push(olua.format([[
+                params:pushf([[
                     ---@param ${varname} ${arg_luacls}
-                ]]))
+                ]])
                 ::continue::
             end
             write(format([[
@@ -526,13 +526,13 @@ local function gen_class_meta(module, cls, write)
             end
 
             if not olfi.static then
-                caller_args:push(olua.format('self: ${cls.luacls}'))
+                caller_args:pushf('self: ${cls.luacls}')
             end
 
             for idx, arg in ipairs(olfi.args) do
                 local varname = arg.varname or ('arg' .. idx)
                 local arg_luacls = olua.luatype(arg.type)
-                caller_args:push(olua.format('${varname}: ${arg_luacls}'))
+                caller_args:pushf('${varname}: ${arg_luacls}')
             end
 
             write(format('---@overload fun(${caller_args})${ret_luacls}'))

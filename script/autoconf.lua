@@ -522,7 +522,7 @@ function M:parse()
     self.class_file = olua.format('autobuild/${self.filename}.idl')
 
     -- scan method, variable, enum, const value
-    for _, cls in ipairs(self.class_types:toarray()) do
+    for _, cls in ipairs(self.class_types:values()) do
         local cur = type_cursors:get(cls.cppcls)
         if cur then
             self:visit(cur, cls.cppcls)
@@ -558,7 +558,7 @@ function M:visit_method(cls, cur)
 
     local comment = get_comment(cur)
     if comment then
-        declexps:push(olua.format('@comment(${comment})'))
+        declexps:pushf('@comment(${comment})')
         declexps:push(' ')
     end
 
@@ -649,7 +649,7 @@ function M:visit_method(cls, cur)
                 declexps:push('@optional ')
                 declexps:push(attr[argn] and (attr[argn] .. ' ') or nil)
                 declexps:push(olua.decltype(tn, nil, true))
-                declexps:push(olua.format('${arg.name}_$${vi}'))
+                declexps:pushf('${arg.name}_$${vi}')
             end
         end
     end
@@ -1277,7 +1277,7 @@ local function write_cls_options(module, cls, append)
     local out = olua.array():set_joiner('\n')
     for key, value in pairs(cls.options) do
         olua.unuse(key, value)
-        out:push(olua.format([[.option('${key}', ${value?})]], 4))
+        out:pushf([[.option('${key}', ${value?})]])
     end
     out:sort()
     append(tostring(out))
@@ -1572,15 +1572,15 @@ local function check_errors()
     for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
             if not visited_types:has(cls.cppcls) then
-                class_not_found:push(olua.format([[
+                class_not_found:pushf([[
                     => ${cls.cppcls}
-                ]]))
+                ]])
             end
             for _, supercls in ipairs(cls.supers) do
                 if not visited_types:has(supercls) then
-                    supercls_not_found:push(olua.format([[
+                    supercls_not_found:pushf([[
                         => ${cls.cppcls} -> ${supercls}
-                    ]]))
+                    ]])
                 end
             end
         end
@@ -1617,15 +1617,15 @@ local function check_errors()
         end
 
         if OLUA_VERBOSE then
-            type_not_found:push(olua.format([[
+            type_not_found:pushf([[
                 => ${entry.type} (${entry.kind})
                         from: ${entry.from}
-            ]]))
+            ]])
         elseif not filter[entry.type] then
             filter[entry.type] = true
-            type_not_found:push(olua.format([[
+            type_not_found:pushf([[
                 => ${entry.type} (${entry.kind})
-            ]]))
+            ]])
         end
     end)
 
@@ -1794,7 +1794,7 @@ local function find_as()
                 end
                 remove_first_as_cls(cls)
             end
-            local ascls_arr = ascls_map:toarray()
+            local ascls_arr = ascls_map:values()
             if #ascls_arr > 0 then
                 ascls_arr:sort()
                 local ascls_str = ascls_arr:join(' ')
@@ -1897,7 +1897,7 @@ local function write_typedefs()
             if cls and has_type_flag(cls, kFLAG_POINTER) then
                 return
             end
-            typedefs:push(olua.format([[
+            typedefs:pushf([[
                 typedef {
                     from = 'module: ${filename}.lua -> typedef "${td.cppcls}"',
                     cppcls = '${td.cppcls}',
@@ -1909,7 +1909,7 @@ local function write_typedefs()
                     smartptr = ${td.smartptr??},
                     replace = ${td.replace??},
                 }
-            ]]))
+            ]])
             typedefs:push('')
         end)
 
@@ -1923,7 +1923,7 @@ local function write_typedefs()
             if has_type_flag(cls, kFLAG_POINTER) and cls.options.packable then
                 packvars = cls.options.packvars or #cls.vars
             end
-            typedefs:push(olua.format([[
+            typedefs:pushf([[
                 typedef {
                     from = 'module: ${filename}.lua -> typeconf "${cls.cppcls}"',
                     cppcls = '${cls.cppcls}',
@@ -1934,7 +1934,7 @@ local function write_typedefs()
                     packable = ${cls.options.packable??},
                     packvars = ${packvars??},
                 }
-            ]]))
+            ]])
             typedefs:push('')
         end)
     end
@@ -1988,7 +1988,7 @@ local function write_typedefs()
     end)
 
     for i, v in ipairs(olua.sort(types, 'cppcls')) do
-        typedefs:push(olua.format([[
+        typedefs:pushf([[
             typedef {
                 from = '${v.from}',
                 cppcls = '${v.cppcls}',
@@ -1998,7 +1998,7 @@ local function write_typedefs()
                 packable = ${v.packable??},
                 packvars = ${v.packvars??},
             }
-        ]]))
+        ]])
         typedefs:push('')
     end
 
@@ -2008,7 +2008,7 @@ end
 local function write_makefile()
     local class_files = olua.array():set_joiner('\n')
     for _, v in ipairs(modules) do
-        class_files:push(olua.format('export "${v.class_file}"'))
+        class_files:pushf('export "${v.class_file}"')
     end
     olua.write('autobuild/make.lua', olua.format([[
         require "init"
