@@ -51,9 +51,24 @@ package.path = scrpath:gsub('[^/.\\]+%.lua$', '?.lua;') .. package.path
 -- lua c search path
 local suffix = osn == 'windows' and 'dll' or 'so'
 local lua = 'lua' .. string.match(_VERSION, '%d.%d'):gsub('%.', '')
-package.cpath = string.format('%s/%s/?.%s;%s', OLUA_HOME, lua, suffix, package.cpath)
+local arch
+if osn == 'windows' then
+    arch = os.getenv('PROCESSOR_ARCHITECTURE')
+    if arch == 'x86' then
+        arch = 'x86/'
+    elseif arch == 'AMD64' then
+        arch = 'x64/'
+    else
+        error('unsupported architecture: ' .. arch)
+    end
+else
+    arch = ''
+end
+local cpath = string.format('%s/%s/%s?.%s', OLUA_HOME, lua, arch, suffix)
+package.cpath = cpath .. ';' .. package.cpath
 
 print(string.format('olua home: %s', OLUA_HOME))
+print(string.format('lua cpath: %s', cpath))
 
 -- unzip lib and header
 if not isdir(OLUA_HOME) or not isdir(OLUA_HOME .. '/' .. lua) or not isdir(OLUA_HOME .. '/include') then
