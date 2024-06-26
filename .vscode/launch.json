@@ -9,15 +9,9 @@
       "request": "launch",
       "name": "debug",
       "windows": {
-        "type": "lua",
-        "request": "launch",
-        "name": "debug",
         "luaexe": "lua.exe"
       },
       "osx": {
-        "type": "lua",
-        "request": "launch",
-        "name": "debug",
         "luaexe": "lua"
       },
       "stopOnEntry": false,

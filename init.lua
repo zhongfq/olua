@@ -25,6 +25,15 @@ local function mkdir(dir)
     end
 end
 
+-- working directory
+OLUA_WORKDIR = nil
+if osn == 'windows' then
+    OLUA_WORKDIR = io.popen('cd'):read('*l')
+    OLUA_WORKDIR = OLUA_WORKDIR:gsub('\\', '/')
+else
+    OLUA_WORKDIR = io.popen('pwd'):read('*l')
+end
+
 -- home dir
 ---@type string?
 OLUA_HOME = nil
@@ -67,6 +76,7 @@ end
 local cpath = string.format('%s/%s/%s?.%s', OLUA_HOME, lua, arch, suffix)
 package.cpath = cpath .. ';' .. package.cpath
 
+print(string.format('pwd: %s', OLUA_WORKDIR))
 print(string.format('olua home: %s', OLUA_HOME))
 print(string.format('lua cpath: %s', cpath))
 
