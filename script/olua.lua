@@ -1,6 +1,6 @@
 olua = {}
 
-local is_windows = package.config:find('\\')
+local is_windows = package.config:find("\\")
 
 local _ipairs = ipairs
 function ipairs(t)
@@ -24,8 +24,8 @@ function olua.print(fmt, ...)
 end
 
 function olua.isdir(path)
-    if not string.find(path, '[/\\]$') then
-        path = path .. '/'
+    if not string.find(path, "[/\\]$") then
+        path = path .. "/"
     end
     local ok, err, code = os.rename(path, path)
     if not ok then
@@ -39,27 +39,27 @@ end
 function olua.mkdir(dir)
     if not olua.isdir(dir) then
         if is_windows then
-            os.execute('mkdir ' .. dir:gsub('/', '\\'))
+            os.execute("mkdir " .. dir:gsub("/", "\\"))
         else
-            os.execute('mkdir -p ' .. dir)
+            os.execute("mkdir -p " .. dir)
         end
     end
 end
 
 function olua.write(path, content)
-    local f = io.open(path, 'rb')
+    local f = io.open(path, "rb")
     if f then
-        local flag = f:read('*a') == content
+        local flag = f:read("*a") == content
         f:close()
         if flag then
-            olua.print('up-to-date: %s', path)
+            olua.print("up-to-date: %s", path)
             return
         end
     end
 
-    olua.print('write: %s', path)
+    olua.print("write: %s", path)
 
-    f = io.open(path, 'w+b')
+    f = io.open(path, "w+b")
     assert(f, path)
     f:write(content)
     f:flush()
@@ -93,7 +93,7 @@ end
 -- Error handle
 -------------------------------------------------------------------------------
 
-local willdo = ''
+local willdo = ""
 
 ---Will do the job.
 ---@param message string
@@ -121,7 +121,7 @@ end
 ---@return T
 function olua.assert(value, message)
     if not value then
-        olua.error(message or '<no assert info>')
+        olua.error(message or "<no assert info>")
     end
     return value
 end
@@ -261,7 +261,7 @@ function olua.array(...)
     ---@param field? string | fun(a:any, b:any):boolean
     ---@return self
     function array:sort(field)
-        if type(field) == 'function' then
+        if type(field) == "function" then
             table.sort(self, field)
         elseif field then
             table.sort(self, function (a, b)
@@ -301,14 +301,14 @@ function olua.array(...)
     ---@param prefix? string
     ---@param posfix? string
     function array:join(sep, prefix, posfix)
-        prefix = prefix or ''
-        posfix = posfix or ''
+        prefix = prefix or ""
+        posfix = posfix or ""
         return prefix .. table.concat(self, sep) .. posfix
     end
 
     ---@private
     function array:__tostring()
-        return self:join(joiner.sep or '', joiner.prefix, joiner.posfix)
+        return self:join(joiner.sep or "", joiner.prefix, joiner.posfix)
     end
 
     return setmetatable({ ... }, array)
@@ -465,24 +465,24 @@ function olua.ordered_map(overwritable)
     ---@param value any
     function ordered_map:insert(mode, at_key, key, value)
         local idx = 0
-        if mode == 'front' then
+        if mode == "front" then
             idx = 1
-        elseif mode == 'after' then
+        elseif mode == "after" then
             idx = self.keys:index_of(at_key)
             if idx == 0 then
                 idx = #self.keys + 1
             else
                 idx = idx + 1
             end
-        elseif mode == 'before' then
+        elseif mode == "before" then
             idx = self.keys:index_of(at_key)
             if idx == 0 then
                 idx = 1
             end
-        elseif mode == 'back' then
+        elseif mode == "back" then
             idx = #self.keys + 1
         else
-            olua.error('invalid insert mode: ${insertmode}')
+            olua.error("invalid insert mode: ${insertmode}")
         end
         self.keys:insert(idx, key)
         self.map[key] = value
@@ -495,7 +495,7 @@ end
 --- string util
 -------------------------------------------------------------------------------
 
-local FORMAT_PATTERN = '${[%w_.?#]+}'
+local FORMAT_PATTERN = "${[%w_.?#]+}"
 local curr_expr = nil
 
 function olua.is_end_with(str, substr)
@@ -512,8 +512,8 @@ local function lookup(level, key)
     local value
     local searchupvalue = true
 
-    local info1 = debug.getinfo(level, 'Snfu')
-    local info2 = debug.getinfo(level + 1, 'Sn')
+    local info1 = debug.getinfo(level, "Snfu")
+    local info2 = debug.getinfo(level + 1, "Sn")
 
     for i = 1, 256 do
         local k, v = debug.getlocal(level, i)
@@ -521,7 +521,7 @@ local function lookup(level, key)
             searchupvalue = false
         end
         if k == key then
-            if type(v) ~= 'string' or not v:find(FORMAT_PATTERN) then
+            if type(v) ~= "string" or not v:find(FORMAT_PATTERN) then
                 value = v
             end
         elseif not k then
@@ -543,8 +543,8 @@ local function lookup(level, key)
     end
 
     if info1.source == info2.source or
-        string.find(info1.source, 'olua.lua$') or
-        string.find(info2.source, 'olua.lua$')
+        string.find(info1.source, "olua.lua$") or
+        string.find(info2.source, "olua.lua$")
     then
         return lookup(level + 1, key)
     end
@@ -556,9 +556,9 @@ local function eval(line)
     local function replace(str)
         local level = 1
         while true do
-            local info = debug.getinfo(level, 'Sfn')
+            local info = debug.getinfo(level, "Sfn")
             if info then
-                if string.find(info.source, 'olua.lua$') and
+                if string.find(info.source, "olua.lua$") and
                     info.func == olua.format
                 then
                     break
@@ -571,12 +571,12 @@ local function eval(line)
         end
 
         -- search in the functin local value
-        local indent = string.match(line, ' *')
-        local key = string.match(str, '[%w_]+')
-        local opt = string.match(str, '%?+')
-        local fix = string.match(str, '#')
+        local indent = string.match(line, " *")
+        local key = string.match(str, "[%w_]+")
+        local opt = string.match(str, "%?+")
+        local fix = string.match(str, "#")
         local value = lookup(level + 2, key) or _G[key]
-        for field in string.gmatch(string.match(str, '[%w_.]+'), '[^.]+') do
+        for field in string.gmatch(string.match(str, "[%w_.]+"), "[^.]+") do
             if not value then
                 break
             elseif field ~= key then
@@ -589,8 +589,8 @@ local function eval(line)
         end
 
         -- indent the value if value has multiline
-        local prefix, posfix = '', ''
-        if type(value) == 'table' then
+        local prefix, posfix = "", ""
+        if type(value) == "table" then
             local mt = getmetatable(value)
             if mt and mt.__tostring then
                 value = tostring(value)
@@ -598,19 +598,19 @@ local function eval(line)
                 throw_error("no meta method '__tostring' for " .. str)
             end
         elseif value == nil then
-            drop = opt == '??'
-            value = 'nil'
-        elseif type(value) == 'string' then
-            value = value:gsub('[\n]*$', '')
+            drop = opt == "??"
+            value = "nil"
+        elseif type(value) == "string" then
+            value = value:gsub("[\n]*$", "")
             if opt then
                 value = olua.trim(value)
-                if value:find('[\n\r]') then
-                    value = '\n' .. value
-                    prefix = '[['
-                    posfix = '\n' .. indent .. ']]'
-                    indent = indent .. '    '
+                if value:find("[\n\r]") then
+                    value = "\n" .. value
+                    prefix = "[["
+                    posfix = "\n" .. indent .. "]]"
+                    indent = indent .. "    "
                 elseif value:find('[\'"]') then
-                    value = '[[' .. value .. ']]'
+                    value = "[[" .. value .. "]]"
                 else
                     value = "'" .. value .. "'"
                 end
@@ -620,10 +620,10 @@ local function eval(line)
         end
 
         if fix then
-            value = value:gsub('[^%w_]+', '_'):gsub('_+$', '')
+            value = value:gsub("[^%w_]+", "_"):gsub("_+$", "")
         end
 
-        return prefix .. value:gsub('\n', '\n' .. indent) .. posfix
+        return prefix .. value:gsub("\n", "\n" .. indent) .. posfix
     end
     line = line:gsub(FORMAT_PATTERN, replace)
     return not drop and line or nil
@@ -634,7 +634,7 @@ local function doeval(expr)
     local arr = {}
     local idx = 1
     while idx <= #expr do
-        local from, to = string.find(expr, '[\n\r]', idx)
+        local from, to = string.find(expr, "[\n\r]", idx)
         if not from then
             from = #expr + 1
             to = from
@@ -642,7 +642,7 @@ local function doeval(expr)
         arr[#arr+1] = eval(string.sub(expr, idx, from - 1))
         idx = to + 1
     end
-    return table.concat(arr, '\n')
+    return table.concat(arr, "\n")
 end
 
 ---Trim the expression.
@@ -651,15 +651,15 @@ end
 ---@param keepspace? boolean
 ---@return string
 function olua.trim(expr, indent, keepspace)
-    if type(expr) == 'string' then
-        expr = expr:gsub('[\n\r]', '\n')
+    if type(expr) == "string" then
+        expr = expr:gsub("[\n\r]", "\n")
         if not keepspace then
-            expr = expr:gsub('^[\n]*', '')  -- trim head '\n'
-            expr = expr:gsub('[ \n]*$', '') -- trim tail '\n' or ' '
-            local space = string.match(expr, '^[ ]*')
-            local indent_space = string.rep(' ', indent or 0)
-            expr = expr:gsub('^[ ]*', '') -- trim head space
-            expr = expr:gsub('\n' .. space, '\n' .. indent_space)
+            expr = expr:gsub("^[\n]*", "")  -- trim head '\n'
+            expr = expr:gsub("[ \n]*$", "") -- trim tail '\n' or ' '
+            local space = string.match(expr, "^[ ]*")
+            local indent_space = string.rep(" ", indent or 0)
+            expr = expr:gsub("^[ ]*", "") -- trim head space
+            expr = expr:gsub("\n" .. space, "\n" .. indent_space)
             expr = indent_space .. expr
         end
     end
@@ -676,7 +676,7 @@ function olua.format(expr, indent, keepspace)
     expr = doeval(olua.trim(expr, indent, keepspace))
 
     while true do
-        local s, n = expr:gsub('\n[ ]+\n', '\n\n')
+        local s, n = expr:gsub("\n[ ]+\n", "\n\n")
         expr = s
         if n == 0 then
             break
@@ -684,15 +684,15 @@ function olua.format(expr, indent, keepspace)
     end
 
     while true do
-        local s, n = expr:gsub('\n\n\n', '\n\n')
+        local s, n = expr:gsub("\n\n\n", "\n\n")
         expr = s
         if n == 0 then
             break
         end
     end
 
-    expr = expr:gsub('{\n\n', '{\n')
-    expr = expr:gsub('\n\n}', '\n}')
+    expr = expr:gsub("{\n\n", "{\n")
+    expr = expr:gsub("\n\n}", "\n}")
 
     return expr
 end
@@ -700,7 +700,7 @@ end
 -- TODO: rm
 function olua.command_proxy(cmd, parent)
     local proxy = {}
-    assert(cmd.__proxy == nil, 'already add command proxy')
+    assert(cmd.__proxy == nil, "already add command proxy")
     cmd.__proxy = proxy
     function proxy.__index(_, key)
         local f = cmd[key]

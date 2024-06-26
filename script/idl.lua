@@ -29,36 +29,36 @@ end
 
 ---@return string
 local function checkstring(key, v)
-    if type(v) ~= 'string' then
-        error_value(key, v, 'string')
+    if type(v) ~= "string" then
+        error_value(key, v, "string")
     end
     return v
 end
 
 ---@return boolean
 local function checkboolean(key, v)
-    if v == 'true' then
+    if v == "true" then
         v = true
-    elseif v == 'false' then
+    elseif v == "false" then
         v = false
     else
-        error_value(key, v, 'boolean')
+        error_value(key, v, "boolean")
     end
     return v
 end
 
 ---@return integer
 local function checkinteger(key, v)
-    if not (type(v) == 'number' and v == math.floor(v)) then
-        error_value(key, v, 'integer')
+    if not (type(v) == "number" and v == math.floor(v)) then
+        error_value(key, v, "integer")
     end
     return v
 end
 
 ---@return function
 local function checkfunction(key, v)
-    if type(v) ~= 'function' then
-        error_value(key, v, 'function')
+    if type(v) ~= "function" then
+        error_value(key, v, "function")
     end
     return v
 end
@@ -84,7 +84,7 @@ end
 
 local function check_module()
     if not current_module then
-        error('You should define a module!!!')
+        error("You should define a module!!!")
     end
 end
 
@@ -111,7 +111,7 @@ function module(name)
         typedef_types = olua.ordered_map(),
         type_convs = olua.ordered_map(),
         luacls = function (cppcls)
-            return string.gsub(cppcls, '::', '.')
+            return string.gsub(cppcls, "::", ".")
         end,
     }
     olua_modules:set(name, current_module)
@@ -176,7 +176,7 @@ function typedef(cppcls)
     ---@field override? boolean
     local cls = { cppcls = cppcls }
 
-    for c in cppcls:gmatch('[^;\n\r]+') do
+    for c in cppcls:gmatch("[^;\n\r]+") do
         -- c = olua.pretty_typename(c)
         local t = setmetatable({ cppcls = c }, { __index = cls })
         m.typedef_types:set(c, t)
@@ -193,13 +193,13 @@ function typedef(cppcls)
     ---@field override fun(override:booltype):Typedef
     local Typedef = {}
 
-    add_value_command(Typedef, cls, 'luacls')
-    add_value_command(Typedef, cls, 'conv')
-    add_value_command(Typedef, cls, 'luatype')
-    add_value_command(Typedef, cls, 'packable')
-    add_value_command(Typedef, cls, 'packvars')
-    add_value_command(Typedef, cls, 'smartptr')
-    add_value_command(Typedef, cls, 'override')
+    add_value_command(Typedef, cls, "luacls")
+    add_value_command(Typedef, cls, "conv")
+    add_value_command(Typedef, cls, "luatype")
+    add_value_command(Typedef, cls, "packable")
+    add_value_command(Typedef, cls, "packvars")
+    add_value_command(Typedef, cls, "smartptr")
+    add_value_command(Typedef, cls, "override")
 
     return Typedef
 end
@@ -244,10 +244,10 @@ local function add_insert_command(cmd, cls, func, name)
     local entry = { name = name }
     cls.inserts:set(name, entry)
 
-    add_value_command(cmd, entry, 'insert_before', nil, 'before')
-    add_value_command(cmd, entry, 'insert_after', nil, 'after')
-    add_value_command(cmd, entry, 'insert_cbefore', nil, 'cbefore')
-    add_value_command(cmd, entry, 'insert_cafter', nil, 'cafter')
+    add_value_command(cmd, entry, "insert_before", nil, "before")
+    add_value_command(cmd, entry, "insert_after", nil, "after")
+    add_value_command(cmd, entry, "insert_cbefore", nil, "cbefore")
+    add_value_command(cmd, entry, "insert_cafter", nil, "cafter")
 end
 
 ---@param cmd TypeconfFuncBase
@@ -272,19 +272,19 @@ local function add_attr_command(cmd, cls, func, name)
     local entry = {}
     cls.attrs:set(name, entry)
 
-    add_value_command(cmd, entry, 'optional', checkboolean)
-    add_value_command(cmd, entry, 'readonly', checkboolean)
-    add_value_command(cmd, entry, 'ret')
-    add_value_command(cmd, entry, 'arg1')
-    add_value_command(cmd, entry, 'arg2')
-    add_value_command(cmd, entry, 'arg3')
-    add_value_command(cmd, entry, 'arg4')
-    add_value_command(cmd, entry, 'arg5')
-    add_value_command(cmd, entry, 'arg6')
-    add_value_command(cmd, entry, 'arg7')
-    add_value_command(cmd, entry, 'arg8')
-    add_value_command(cmd, entry, 'arg9')
-    add_value_command(cmd, entry, 'arg10')
+    add_value_command(cmd, entry, "optional", checkboolean)
+    add_value_command(cmd, entry, "readonly", checkboolean)
+    add_value_command(cmd, entry, "ret")
+    add_value_command(cmd, entry, "arg1")
+    add_value_command(cmd, entry, "arg2")
+    add_value_command(cmd, entry, "arg3")
+    add_value_command(cmd, entry, "arg4")
+    add_value_command(cmd, entry, "arg5")
+    add_value_command(cmd, entry, "arg6")
+    add_value_command(cmd, entry, "arg7")
+    add_value_command(cmd, entry, "arg8")
+    add_value_command(cmd, entry, "arg9")
+    add_value_command(cmd, entry, "arg10")
 end
 
 
@@ -304,7 +304,7 @@ local function typedef_func(cmd, cls, name)
     ---@field body fun(body:string):TypeconfFunc
     local TypeconfFunc = {}
 
-    add_value_command(TypeconfFunc, func, 'body')
+    add_value_command(TypeconfFunc, func, "body")
     add_attr_command(TypeconfFunc, cls, func, name)
     add_insert_command(TypeconfFunc, cls, func, name)
 
@@ -320,7 +320,7 @@ local function typedef_callback(cmd, cls, name)
     ---@class TypeconfCallbackDescriptor
     local callback = {
         name = name,
-        tag_scope = 'object',
+        tag_scope = "object",
         localvar = true,
     }
 
@@ -330,9 +330,9 @@ local function typedef_callback(cmd, cls, name)
     ---@field tag_mode fun(tag_mode:string):typeconf.Callback
     local TypeconfCallback = {}
 
-    add_value_command(TypeconfCallback, callback, 'localvar', checkboolean)
-    add_value_command(TypeconfCallback, callback, 'tag_maker')
-    add_value_command(TypeconfCallback, callback, 'tag_mode')
+    add_value_command(TypeconfCallback, callback, "localvar", checkboolean)
+    add_value_command(TypeconfCallback, callback, "tag_maker")
+    add_value_command(TypeconfCallback, callback, "tag_mode")
     add_attr_command(TypeconfCallback, cls, callback, name)
     add_insert_command(TypeconfCallback, cls, callback, name)
 
@@ -343,7 +343,7 @@ local function typedef_callback(cmd, cls, name)
     ---@param store integer
     ---@return typeconf.Callback
     function TypeconfCallback.tag_store(store)
-        callback.tag_store = checkinteger('tag_store', store)
+        callback.tag_store = checkinteger("tag_store", store)
         return TypeconfCallback
     end
 
@@ -353,7 +353,7 @@ local function typedef_callback(cmd, cls, name)
     ---* `object`: Callback will exist until the c++ object die.
     ---@param scope "once"|"function"|"object"
     function TypeconfCallback.tag_scope(scope)
-        callback.tag_scope = checkstring('tag_scope', scope)
+        callback.tag_scope = checkstring("tag_scope", scope)
         return TypeconfCallback
     end
 
@@ -380,7 +380,7 @@ function typeconf(cppcls)
         luacls = m.luacls(cppcls),
         funcdecl = nil,
         comment = nil,
-        conv = 'olua_$$_object',
+        conv = "olua_$$_object",
         extends = olua.ordered_map(),
         excludes = olua.ordered_map(),
         wildcards = olua.ordered_map(),
@@ -403,7 +403,7 @@ function typeconf(cppcls)
         luaname = function (name, kind) return name end,
     }
 
-    if cppcls:find('[%^%%%$%*%+]') then -- ^%$*+
+    if cppcls:find("[%^%%%$%*%+]") then -- ^%$*+
         current_module.wildcard_types:set(cppcls, cls)
     else
         current_module.class_types:set(cppcls, cls)

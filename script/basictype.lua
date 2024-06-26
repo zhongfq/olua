@@ -1,36 +1,36 @@
 local function typedef(t)
-    t.from = 'olua: basictype'
+    t.from = "olua: basictype"
     olua.typedef(t)
 end
 
 typedef {
-    cppcls = 'void',
-    conv = '<NONE>',
-    luatype = 'nil',
+    cppcls = "void",
+    conv = "<NONE>",
+    luatype = "nil",
 }
 
 typedef {
-    cppcls = 'void *',
-    luacls = 'void *',
-    conv = 'olua_$$_object',
-    luatype = 'any',
+    cppcls = "void *",
+    luacls = "void *",
+    conv = "olua_$$_object",
+    luatype = "any",
 }
 
 typedef {
-    cppcls = 'olua_Return',
-    conv = '<NONE>',
+    cppcls = "olua_Return",
+    conv = "<NONE>",
 }
 
 typedef {
-    cppcls = 'lua_State',
-    luacls = 'lua_State',
-    conv = '<NONE>',
+    cppcls = "lua_State",
+    luacls = "lua_State",
+    conv = "<NONE>",
 }
 
 typedef {
-    cppcls = 'bool',
-    conv = 'olua_$$_bool',
-    luatype = 'boolean',
+    cppcls = "bool",
+    conv = "olua_$$_bool",
+    luatype = "boolean",
 }
 
 typedef {
@@ -40,26 +40,26 @@ typedef {
         unsigned char *
         const unsigned char *
     ]],
-    conv = 'olua_$$_string',
-    luatype = 'string',
+    conv = "olua_$$_string",
+    luatype = "string",
 }
 
 typedef {
-    cppcls = 'std::string',
-    conv = 'olua_$$_string',
-    luatype = 'string',
+    cppcls = "std::string",
+    conv = "olua_$$_string",
+    luatype = "string",
 }
 
 typedef {
-    cppcls = 'std::string_view',
-    conv = 'olua_$$_string',
-    luatype = 'string',
+    cppcls = "std::string_view",
+    conv = "olua_$$_string",
+    luatype = "string",
 }
 
 typedef {
-    cppcls = 'std::function',
-    luacls = 'std.function',
-    conv = 'olua_$$_callback',
+    cppcls = "std::function",
+    luacls = "std.function",
+    conv = "olua_$$_callback",
 }
 
 typedef {
@@ -67,8 +67,8 @@ typedef {
         std::unordered_map
         std::map
     ]],
-    conv = 'olua_$$_map',
-    luatype = 'map',
+    conv = "olua_$$_map",
+    luatype = "map",
 }
 
 typedef {
@@ -76,8 +76,8 @@ typedef {
         std::set
         std::vector
     ]],
-    conv = 'olua_$$_array',
-    luatype = 'array',
+    conv = "olua_$$_array",
+    luatype = "array",
 }
 
 typedef {
@@ -86,7 +86,7 @@ typedef {
         std::weak_ptr
     ]],
     smartptr = true,
-    conv = 'olua_$$_object',
+    conv = "olua_$$_object",
 }
 
 typedef {
@@ -96,8 +96,8 @@ typedef {
         long double
         lua_Number
     ]],
-    conv = 'olua_$$_number',
-    luatype = 'number',
+    conv = "olua_$$_number",
+    luatype = "number",
 }
 
 typedef {
@@ -124,8 +124,8 @@ typedef {
         signed long long int
         lua_Integer
     ]],
-    conv = 'olua_$$_integer',
-    luatype = 'integer',
+    conv = "olua_$$_integer",
+    luatype = "integer",
 }
 
 typedef {
@@ -143,6 +143,6 @@ typedef {
         unsigned long long int
         lua_Unsigned
     ]],
-    conv = 'olua_$$_integer',
-    luatype = 'integer',
+    conv = "olua_$$_integer",
+    luatype = "integer",
 }

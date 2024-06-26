@@ -15,16 +15,16 @@ local function has_flag(kind, flag)
 end
 
 function olua.get_class(cls)
-    return cls == '*' and class_map or class_map[cls]
+    return cls == "*" and class_map or class_map[cls]
 end
 
 function olua.pretty_typename(tn)
-    tn = tn:gsub('^ *', '')           -- trim head space
-    tn = tn:gsub(' *$', '')           -- trim tail space
-    tn = tn:gsub(' +', ' ')           -- remove needless space
-    tn = tn:gsub(' *([<>]+) *', '%1') -- remove space around '<>'
-    tn = tn:gsub(' *([*&]) *', '%1')  -- remove space around '*&'
-    tn = tn:gsub('[*&]+', ' %1')      -- add one space before '*&'
+    tn = tn:gsub("^ *", "")           -- trim head space
+    tn = tn:gsub(" *$", "")           -- trim tail space
+    tn = tn:gsub(" +", " ")           -- remove needless space
+    tn = tn:gsub(" *([<>]+) *", "%1") -- remove space around '<>'
+    tn = tn:gsub(" *([*&]) *", "%1")  -- remove space around '*&'
+    tn = tn:gsub("[*&]+", " %1")      -- add one space before '*&'
     return tn
 end
 
@@ -32,19 +32,19 @@ local function lookup_typeinfo(cpptype)
     local tn = cpptype
     local ti = typeinfo_map[tn]
     if not ti then
-        tn = tn:gsub('^const ', '')
+        tn = tn:gsub("^const ", "")
         ti = typeinfo_map[tn]
     end
-    if not ti and cpptype:find('[*]$') then
-        ti, tn = lookup_typeinfo(cpptype:gsub('[ *]+$', ''))
+    if not ti and cpptype:find("[*]$") then
+        ti, tn = lookup_typeinfo(cpptype:gsub("[ *]+$", ""))
     end
     return ti, tn
 end
 
 local function throw_type_error(cpptype, errors)
-    print('try type:')
-    print('    ' .. table.concat(errors.values, '\n    '))
-    local rawtn = cpptype:gsub(' [*&]+$', '')
+    print("try type:")
+    print("    " .. table.concat(errors.values, "\n    "))
+    local rawtn = cpptype:gsub(" [*&]+$", "")
     olua.error([[
         type info not found: ${cpptype}
         you should do one of:
@@ -57,13 +57,13 @@ end
 local function search_type_from_class(cls, cpptype, errors)
     if cls and cls.cppcls then
         local nsarr = {}
-        for ns in cls.cppcls:gmatch('[^:]+') do
-            nsarr[#nsarr+1] = ns:match('[^ *&]+') -- remove * &
+        for ns in cls.cppcls:gmatch("[^:]+") do
+            nsarr[#nsarr+1] = ns:match("[^ *&]+") -- remove * &
         end
         while #nsarr > 0 do
             -- const Object * => const ns::Object *
-            local ns = table.concat(nsarr, '::')
-            local tn = olua.pretty_typename(cpptype:gsub('[%w:_]+ *[*&]*$', ns .. '::%1'))
+            local ns = table.concat(nsarr, "::")
+            local tn = olua.pretty_typename(cpptype:gsub("[%w:_]+ *[*&]*$", ns .. "::%1"))
             local ti = olua.typeinfo(tn, nil, false, errors)
             nsarr[#nsarr] = nil
             if ti then
@@ -81,9 +81,9 @@ end
 
 local function subtype_typeinfo(cls, cpptype, throwerror)
     local subtis = {}
-    for subcpptype in cpptype:match('<(.*)>'):gmatch(' *([^,]+)') do
+    for subcpptype in cpptype:match("<(.*)>"):gmatch(" *([^,]+)") do
         local subti = olua.typeinfo(subcpptype, cls, throwerror)
-        if not subti.smartptr and subcpptype:find('<') then
+        if not subti.smartptr and subcpptype:find("<") then
             olua.error([[
                 unsupport template class as template args:
                        type: ${cpptype}
@@ -93,7 +93,7 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
         subtis[#subtis+1] = subti
     end
     if throwerror then
-        olua.assert(next(subtis), 'not found subtype: ' .. cpptype)
+        olua.assert(next(subtis), "not found subtype: " .. cpptype)
     end
     return subtis
 end
@@ -131,25 +131,25 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
     errors = errors or olua.ordered_map()
     cpptype = olua.pretty_typename(cpptype)
 
-    if cpptype:find('^const') then
+    if cpptype:find("^const") then
         flag = flag | kFLAG_CONST
     end
-    if cpptype:find('%*%*+$') then
+    if cpptype:find("%*%*+$") then
         if throwerror then
-            olua.error('type not support: ${cpptype}')
+            olua.error("type not support: ${cpptype}")
         else
             return nil
         end
-    elseif cpptype:find('%*$') then
+    elseif cpptype:find("%*$") then
         flag = flag | kFLAG_POINTER
-    elseif cpptype:find('&&$') then
+    elseif cpptype:find("&&$") then
         flag = flag | kFLAG_RVALUE
-    elseif cpptype:find('&$') then
+    elseif cpptype:find("&$") then
         flag = flag | kFLAG_LVALUE
     end
 
     if not has_flag(flag, kFLAG_CONST) and has_flag(flag, kFLAG_LVALUE) then
-        local pti = olua.typeinfo(cpptype:gsub('&+$', '*'), cls, false)
+        local pti = olua.typeinfo(cpptype:gsub("&+$", "*"), cls, false)
         if pti and pti.luacls then
             ti = pti
             ti.flag = ti.flag | kFLAG_CAST
@@ -157,12 +157,12 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
         end
     end
 
-    cpptype = cpptype:gsub('[ &]+$', '')
+    cpptype = cpptype:gsub("[ &]+$", "")
 
     -- parse template args
-    if cpptype:find('<') then
+    if cpptype:find("<") then
         subtis = subtype_typeinfo(cls, cpptype, throwerror)
-        cpptype = olua.pretty_typename(cpptype:gsub('<.*>', ''))
+        cpptype = olua.pretty_typename(cpptype:gsub("<.*>", ""))
     end
 
     ti, tn = lookup_typeinfo(cpptype)
@@ -190,7 +190,7 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
         until true
     end
 
-    if tn:find('^const ') then
+    if tn:find("^const ") then
         flag = flag & (~kFLAG_CONST)
     end
 
@@ -239,53 +239,53 @@ end
     self->call(arg1);
 ]]
 function olua.decltype(ti, checkvalue, addspace, exps)
-    if type(ti) == 'string' then
-        if addspace and not ti:find('[*&]$') then
-            ti = ti .. ' '
+    if type(ti) == "string" then
+        if addspace and not ti:find("[*&]$") then
+            ti = ti .. " "
         end
         return ti
     end
 
-    exps = exps or olua.array():set_joiner('')
+    exps = exps or olua.array():set_joiner("")
     if not checkvalue and olua.has_const_flag(ti) then
-        exps:push('const ')
+        exps:push("const ")
     end
     if not checkvalue and olua.has_cast_flag(ti) then
-        exps:push(ti.cppcls:gsub('[ *]+$', ''))
+        exps:push(ti.cppcls:gsub("[ *]+$", ""))
     else
         exps:push(ti.cppcls)
     end
     if olua.has_callback_flag(ti) then
-        exps:push('<')
+        exps:push("<")
         olua.decltype(ti.callback[0], false, true, exps)
-        exps:push('(')
+        exps:push("(")
         for i, ai in ipairs(ti.callback) do
-            exps:push(i > 1 and ', ' or nil)
+            exps:push(i > 1 and ", " or nil)
             olua.decltype(ai, false, false, exps)
         end
-        exps:push(')')
-        exps:push('>')
+        exps:push(")")
+        exps:push(">")
     elseif ti.subtypes then
-        exps:push('<')
+        exps:push("<")
         for i, subti in ipairs(ti.subtypes) do
-            exps:push(i > 1 and ', ' or nil)
+            exps:push(i > 1 and ", " or nil)
             olua.decltype(subti, false, false, exps)
         end
-        exps:push('>')
+        exps:push(">")
     end
     if not checkvalue then
-        exps:push(olua.has_lvalue_flag(ti) and ' &' or nil)
-        exps:push(olua.has_rvalue_flag(ti) and ' &&' or nil)
+        exps:push(olua.has_lvalue_flag(ti) and " &" or nil)
+        exps:push(olua.has_rvalue_flag(ti) and " &&" or nil)
     end
     if not checkvalue and olua.has_cast_flag(ti) then
-        exps:push(' &')
+        exps:push(" &")
     elseif olua.has_pointer_flag(ti)
         and not olua.is_pointer_type(ti.cppcls)
     then
-        exps:push(' *')
+        exps:push(" *")
     end
-    if addspace and not exps[#exps]:find('[*&]$') then
-        exps:push(' ')
+    if addspace and not exps[#exps]:find("[*&]$") then
+        exps:push(" ")
     end
     return tostring(exps)
 end
@@ -298,28 +298,28 @@ end
 local function parse_attr(str)
     local attr = {}
     local static
-    str = str:gsub('^ *', '')
+    str = str:gsub("^ *", "")
     while true do
-        local name, value = str:match('^@(%w+)%(([^)]+)%)')
+        local name, value = str:match("^@(%w+)%(([^)]+)%)")
         if name then
             local arr = {}
-            for v in value:gmatch('[^ ]+') do
+            for v in value:gmatch("[^ ]+") do
                 arr[#arr+1] = v
             end
             attr[name] = arr
-            str = str:gsub('^@(%w+)%(([^)]+)%)', '')
+            str = str:gsub("^@(%w+)%(([^)]+)%)", "")
         else
-            name = str:match('^@(%w+)')
+            name = str:match("^@(%w+)")
             if name then
                 attr[name] = {}
-                str = str:gsub('^@%w+', '')
+                str = str:gsub("^@%w+", "")
             else
                 break
             end
         end
-        str = str:gsub('^ *', '')
+        str = str:gsub("^ *", "")
     end
-    str, static = str:gsub('^ *static *', '')
+    str, static = str:gsub("^ *static *", "")
     attr.static = static > 0
     return attr, str
 end
@@ -342,19 +342,19 @@ local function parse_type(str)
     local attr, tn
     attr, str = parse_attr(str)
     -- str = std::function <void (float int)> &arg, ...
-    tn = str:match('^[%w_: ]+%b<>[ &*]*') -- parse template type
+    tn = str:match("^[%w_: ]+%b<>[ &*]*") -- parse template type
     if not tn then
         local substr = str
         while true do
-            local _, to = substr:find(' *[%w_:]+[ &*]*')
+            local _, to = substr:find(" *[%w_:]+[ &*]*")
             if not to then
-                olua.assert(tn, 'no type')
+                olua.assert(tn, "no type")
                 break
             end
             local subtn = olua.pretty_typename(substr:sub(1, to))
-            subtn = subtn:gsub('[ &*]*$', '') -- rm ' *&'
+            subtn = subtn:gsub("[ &*]*$", "") -- rm ' *&'
             if composite_types[subtn] then
-                tn = (tn and tn or '') .. substr:sub(1, to)
+                tn = (tn and tn or "") .. substr:sub(1, to)
                 substr = substr:sub(to + 1)
             elseif not tn then
                 tn = substr:sub(1, to)
@@ -362,9 +362,9 @@ local function parse_type(str)
                 break
             else
                 local ptn = olua.pretty_typename(tn)
-                ptn = ptn:gsub('[ &*]*$', '') -- rm ' *&'
-                if ptn == 'struct' or ptn == 'const' then
-                    tn = (tn and tn or '') .. substr:sub(1, to)
+                ptn = ptn:gsub("[ &*]*$", "") -- rm ' *&'
+                if ptn == "struct" or ptn == "const" then
+                    tn = (tn and tn or "") .. substr:sub(1, to)
                     substr = substr:sub(to + 1)
                 end
                 break
@@ -372,10 +372,10 @@ local function parse_type(str)
         end
     end
     str = str:sub(#tn + 1)
-    str = str:gsub('^ *', '')
+    str = str:gsub("^ *", "")
 
     if attr.type then
-        tn = olua.assert(table.concat(attr.type, ' '), 'no replaceable type')
+        tn = olua.assert(table.concat(attr.type, " "), "no replaceable type")
     end
 
     return olua.pretty_typename(tn), attr, str
@@ -383,10 +383,10 @@ end
 
 local function type_func_info(tn, cls, cb)
     local ti
-    if not tn:find('std::function') then
+    if not tn:find("std::function") then
         ti = olua.typeinfo(tn, cls)
     else
-        ti = olua.typeinfo('std::function', cls)
+        ti = olua.typeinfo("std::function", cls)
         ti.flag = ti.flag | kFLAG_CALLBACK
         ti.callback = { [0] = cb.ret.type }
         for i, arg in ipairs(cb.args) do
@@ -399,11 +399,11 @@ end
 local parse_args
 
 local function parse_callback(cls, tn)
-    if not tn:find('std::function') then
+    if not tn:find("std::function") then
         tn = olua.typeinfo(tn, cls).funcdecl
     end
-    local rtn, rattr, str = parse_type(tn:match('<(.*)>'))
-    str = str:gsub('^[^(]+', '') -- match callback args
+    local rtn, rattr, str = parse_type(tn:match("<(.*)>"))
+    str = str:gsub("^[^(]+", "") -- match callback args
     return {
         ret = {
             type = olua.typeinfo(rtn, cls),
@@ -428,30 +428,30 @@ end
 function parse_args(cls, declstr)
     local args = {}
     local count = 0
-    declstr = declstr:match('%((.*)%)')
-    olua.assert(declstr, 'malformed args string')
+    declstr = declstr:match("%((.*)%)")
+    olua.assert(declstr, "malformed args string")
 
     while #declstr > 0 do
         local tn, attr, varname, from, to
         tn, attr, declstr = parse_type(declstr)
-        if tn == 'void' then
+        if tn == "void" then
             return args, count
         end
 
-        from, to, varname = declstr:find('^([^ ,]+)')
+        from, to, varname = declstr:find("^([^ ,]+)")
 
         if varname then
             declstr = declstr:sub(to + 1)
         end
 
-        declstr = declstr:gsub('^[^,]*,? *', '') -- skip ','
+        declstr = declstr:gsub("^[^,]*,? *", "") -- skip ','
 
         -- is callback
         if olua.is_func_type(tn, cls) then
             local cb = parse_callback(cls, tn)
             args[#args+1] = {
                 type = type_func_info(tn, cls, cb),
-                varname = varname or '',
+                varname = varname or "",
                 attr = attr,
                 callback = cb,
             }
@@ -459,7 +459,7 @@ function parse_args(cls, declstr)
             local ti = olua.typeinfo(tn, cls)
             args[#args+1] = {
                 type = ti,
-                varname = varname or '',
+                varname = varname or "",
                 attr = attr,
             }
         end
@@ -477,21 +477,21 @@ end
 
 function olua.func_name(funcdecl)
     local _, _, str = parse_type(funcdecl)
-    return str:match('[^ ()]+')
+    return str:match("[^ ()]+")
 end
 
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
     local exps = olua.array()
-    exps:push(fi.static and 'static ' or nil)
+    exps:push(fi.static and "static " or nil)
     exps:push(olua.decltype(fi.ret.type, nil, true))
     exps:push(fi.cppfunc)
-    exps:push('(')
+    exps:push("(")
     for i, v in ipairs(fi.args) do
-        exps:push(i > 1 and ', ' or nil)
+        exps:push(i > 1 and ", " or nil)
         exps:push(olua.decltype(v.type))
     end
-    exps:push(')')
+    exps:push(")")
     fi.prototype = tostring(exps)
     cls.prototypes[fi.prototype] = true
 end
@@ -515,12 +515,12 @@ local function gen_func_pack(cls, fi, funcs)
         newfi.ret = copy(fi.ret)
         newfi.ret.attr = copy(fi.ret.attr)
         newfi.args = {}
-        newfi.funcdesc = fi.funcdesc:gsub('@pack *', '')
+        newfi.funcdesc = fi.funcdesc:gsub("@pack *", "")
         for i in ipairs(fi.args) do
             newfi.args[i] = copy(fi.args[i])
             newfi.args[i].attr = copy(fi.args[i].attr)
             if fi.args[i].attr.pack then
-                assert(not packarg, 'too many pack args')
+                assert(not packarg, "too many pack args")
                 packarg = fi.args[i]
                 newfi.args[i].attr.pack = false
                 local packvars = packarg.type.packvars
@@ -574,12 +574,12 @@ function olua.parse_func(cls, name, ...)
                 class = ${cls.cppcls}
                 func = ${funcdecl}
         ]])
-        if funcdecl:find('{') then
+        if funcdecl:find("{") then
             fi.luafunc = assert(name)
             fi.cppfunc = name
             fi.body = olua.trim(funcdecl)
-            fi.funcdesc = '<function body>'
-            fi.ret.type = olua.typeinfo('void', cls)
+            fi.funcdesc = "<function body>"
+            fi.ret.type = olua.typeinfo("void", cls)
             fi.ret.attr = {}
             fi.args = {}
             fi.insert = {}
@@ -587,21 +587,21 @@ function olua.parse_func(cls, name, ...)
             fi.max_args = #fi.args
         else
             local tn, attr, str = parse_type(funcdecl)
-            local ctor = cls.cppcls:match('[^:]+$')
+            local ctor = cls.cppcls:match("[^:]+$")
             local fromcls = cls
             if attr.copyfrom then
-                fromcls = olua.typeinfo(attr.copyfrom[1] .. ' *', cls)
+                fromcls = olua.typeinfo(attr.copyfrom[1] .. " *", cls)
             end
-            if tn == ctor and str:find('^ *%(') then
-                tn = tn .. ' *'
-                str = 'new' .. str
+            if tn == ctor and str:find("^ *%(") then
+                tn = tn .. " *"
+                str = "new" .. str
                 fi.ctor = true
                 attr.static = true
             end
-            fi.cppfunc = olua.assert(str:match('[^ ()]+'), 'invalid func')
+            fi.cppfunc = olua.assert(str:match("[^ ()]+"), "invalid func")
             fi.luafunc = name or fi.cppfunc
             fi.static = attr.static
-            fi.funcdesc = funcdecl:gsub('@comment%([^()]+%) *', '')
+            fi.funcdesc = funcdecl:gsub("@comment%([^()]+%) *", "")
             fi.insert = {}
             if olua.is_func_type(tn, fromcls) then
                 local cb = parse_callback(fromcls, tn)
@@ -632,7 +632,7 @@ end
 
 local function parse_prop(cls, name, declget, declset)
     local pi = {}
-    pi.name = assert(name, 'no prop name')
+    pi.name = assert(name, "no prop name")
 
     if declget then
         if cls.parsed_funcs:has(declget) then
@@ -651,46 +651,46 @@ local function parse_prop(cls, name, declget, declset)
     end
 
     if not pi.get.body then
-        assert(pi.get.ret.type.cppcls ~= 'void', pi.get.funcdesc)
+        assert(pi.get.ret.type.cppcls ~= "void", pi.get.funcdesc)
     elseif declget then
-        pi.get.cppfunc = 'get_' .. pi.get.cppfunc
+        pi.get.cppfunc = "get_" .. pi.get.cppfunc
     end
 
     if pi.set and pi.set.body and declset then
-        pi.set.cppfunc = 'set_' .. pi.set.cppfunc
+        pi.set.cppfunc = "set_" .. pi.set.cppfunc
     end
 
     return pi
 end
 
 function olua.luacls(cppcls)
-    local ti = typeinfo_map[cppcls .. ' *'] or typeinfo_map[cppcls]
-    assert(ti, 'type not found: ' .. cppcls)
+    local ti = typeinfo_map[cppcls .. " *"] or typeinfo_map[cppcls]
+    assert(ti, "type not found: " .. cppcls)
     return ti.luacls
 end
 
 function olua.luatype(ti)
-    if ti.luacls == 'void' then
-        return 'nil'
-    elseif ti.luacls == 'void *' then
-        return 'any'
-    elseif ti.luatype == 'array' then
-        return olua.luatype(ti.subtypes[1]) .. '[]'
-    elseif ti.luatype == 'map' then
+    if ti.luacls == "void" then
+        return "nil"
+    elseif ti.luacls == "void *" then
+        return "any"
+    elseif ti.luatype == "array" then
+        return olua.luatype(ti.subtypes[1]) .. "[]"
+    elseif ti.luatype == "map" then
         local key_luatype = olua.luatype(ti.subtypes[1])
         local value_luatype = olua.luatype(ti.subtypes[2])
         -- { [string]: boolean }
-        return string.format('{ [%s]: %s }', key_luatype, value_luatype)
+        return string.format("{ [%s]: %s }", key_luatype, value_luatype)
     else
-        return ti.luatype or ti.luacls or 'any'
+        return ti.luatype or ti.luacls or "any"
     end
 end
 
 function olua.is_func_type(tn, cls)
-    if type(tn) == 'table' then
+    if type(tn) == "table" then
         tn = tn.cppcls
     end
-    if tn:find('std::function') then
+    if tn:find("std::function") then
         return true
     else
         local ti = olua.typeinfo(tn, cls)
@@ -727,9 +727,9 @@ function olua.has_cast_flag(ti)
 end
 
 function olua.is_pointer_type(ti)
-    if type(ti) == 'string' then
+    if type(ti) == "string" then
         -- is 'T *'?
-        return ti:find('%*$')
+        return ti:find("%*$")
     else
         return ti.luacls and not olua.is_value_type(ti)
             and not olua.is_func_type(ti)
@@ -737,39 +737,39 @@ function olua.is_pointer_type(ti)
 end
 
 function olua.is_templdate_type(cppcls)
-    return cppcls:find('<')
+    return cppcls:find("<")
 end
 
 function olua.is_enum_type(cls)
     local ti = typeinfo_map[cls.cppcls]
-    return ti.conv == 'olua_$$_enum'
+    return ti.conv == "olua_$$_enum"
 end
 
 function olua.is_oluaret(fi)
-    return fi.ret.type.cppcls == 'olua_Return'
+    return fi.ret.type.cppcls == "olua_Return"
 end
 
 function olua.initial_value(ti)
     if olua.has_pointer_flag(ti) then
-        return ' = nullptr'
-    elseif ti.conv == 'olua_$$_bool' then
-        return ' = false'
-    elseif ti.conv == 'olua_$$_integer' or ti.conv == 'olua_$$_number' then
-        return ' = 0'
-    elseif ti.conv == 'olua_$$_enum' then
-        return format(' = (${ti.cppcls})0', nil, true), nil
+        return " = nullptr"
+    elseif ti.conv == "olua_$$_bool" then
+        return " = false"
+    elseif ti.conv == "olua_$$_integer" or ti.conv == "olua_$$_number" then
+        return " = 0"
+    elseif ti.conv == "olua_$$_enum" then
+        return format(" = (${ti.cppcls})0", nil, true), nil
     else
-        return ''
+        return ""
     end
 end
 
 local valuetype = {
-    ['olua_$$_bool'] = true,
-    ['olua_$$_string'] = true,
-    ['olua_$$_callback'] = true,
-    ['olua_$$_integer'] = true,
-    ['olua_$$_number'] = true,
-    ['olua_$$_enum'] = true,
+    ["olua_$$_bool"] = true,
+    ["olua_$$_string"] = true,
+    ["olua_$$_callback"] = true,
+    ["olua_$$_integer"] = true,
+    ["olua_$$_number"] = true,
+    ["olua_$$_enum"] = true,
 }
 
 -- enum has cpp cls, but declared as lua_Unsigned
@@ -778,11 +778,11 @@ function olua.is_value_type(ti)
 end
 
 function olua.conv_func(ti, fn)
-    return ti.conv:gsub('[$]+', fn)
+    return ti.conv:gsub("[$]+", fn)
 end
 
 function olua.typedef(typeinfo)
-    for tn in typeinfo.cppcls:gmatch('[^\n\r;]+') do
+    for tn in typeinfo.cppcls:gmatch("[^\n\r;]+") do
         tn = olua.pretty_typename(tn)
         if #tn > 0 then
             local previous = typeinfo_map[tn]
@@ -795,11 +795,11 @@ function olua.typedef(typeinfo)
             ]])
             typeinfo_map[tn] = ti
 
-            local rawtn = tn:gsub('<.*>[ *]*', '')
-            if tn:find('<') and not typeinfo_map[rawtn] then
+            local rawtn = tn:gsub("<.*>[ *]*", "")
+            if tn:find("<") and not typeinfo_map[rawtn] then
                 typeinfo_map[rawtn] = {
                     cppcls = rawtn,
-                    luacls = ti.luacls:gsub('<.*>', ''),
+                    luacls = ti.luacls:gsub("<.*>", ""),
                     conv = ti.conv
                 }
             end
@@ -904,7 +904,7 @@ local function typeconf(cppcls)
             apply_insert(vi.set)
         end
 
-        olua.assert(found, 'function not found: ${cls.cppcls}::${name}')
+        olua.assert(found, "function not found: ${cls.cppcls}::${name}")
     end
 
     function CMD.alias(luafunc, alias)
@@ -915,7 +915,7 @@ local function typeconf(cppcls)
             end
         end
 
-        olua.assert(origin_funcs, 'func not found: ' .. luafunc)
+        olua.assert(origin_funcs, "func not found: " .. luafunc)
 
         local alias_funcs = olua.array()
         for _, fi in ipairs(origin_funcs) do
@@ -959,10 +959,10 @@ local function typeconf(cppcls)
         cls.funcs:push(olua.parse_func(cls, nil, table.unpack(opt.funcs)))
         for i, fi in ipairs(cls.funcs[#cls.funcs]) do
             fi.callback = setmetatable({}, { __index = opt })
-            if type(fi.callback.tag_maker) == 'table' then
+            if type(fi.callback.tag_maker) == "table" then
                 fi.callback.tag_maker = assert(fi.callback.tag_maker[i])
             end
-            if type(fi.callback.tag_mode) == 'table' then
+            if type(fi.callback.tag_mode) == "table" then
                 fi.callback.tag_mode = assert(fi.callback.tag_mode[i])
             end
         end
@@ -976,9 +976,9 @@ local function typeconf(cppcls)
     function CMD.var(name, declstr)
         local readonly, static
         local rawstr = declstr
-        declstr, readonly = declstr:gsub('@readonly *', '')
-        declstr = declstr:gsub('[; ]*$', '')
-        declstr, static = declstr:gsub('^ *static *', '')
+        declstr, readonly = declstr:gsub("@readonly *", "")
+        declstr = declstr:gsub("[; ]*$", "")
+        declstr, static = declstr:gsub("^ *static *", "")
 
         olua.willdo([[
             parse var:
@@ -986,7 +986,7 @@ local function typeconf(cppcls)
                 var = ${declstr}
         ]])
 
-        local args = parse_args(cls, '(' .. declstr .. ')')
+        local args = parse_args(cls, "(" .. declstr .. ")")
         name = name or args[1].varname
 
         -- variable is callback?
@@ -995,15 +995,15 @@ local function typeconf(cppcls)
         if args[1].callback then
             cb_set = {
                 tag_maker = name,
-                tag_mode = 'replace',
+                tag_mode = "replace",
                 tag_store = 0,
-                tag_scope = 'object',
+                tag_scope = "object",
             }
             cb_get = {
                 tag_maker = name,
-                tag_mode = 'equal',
+                tag_mode = "equal",
                 tag_store = 0,
-                tag_scope = 'object',
+                tag_scope = "object",
             }
         end
 
@@ -1012,7 +1012,7 @@ local function typeconf(cppcls)
             name = assert(name),
             get = {
                 luafunc = name,
-                cppfunc = 'get_' .. args[1].varname,
+                cppfunc = "get_" .. args[1].varname,
                 varname = args[1].varname,
                 insert = {},
                 funcdesc = rawstr,
@@ -1028,13 +1028,13 @@ local function typeconf(cppcls)
             },
             set = {
                 luafunc = name,
-                cppfunc = 'set_' .. args[1].varname,
+                cppfunc = "set_" .. args[1].varname,
                 varname = args[1].varname,
                 insert = {},
                 static = static > 0,
                 funcdesc = rawstr,
                 ret = {
-                    type = olua.typeinfo('void', cls),
+                    type = olua.typeinfo("void", cls),
                     attr = {},
                 },
                 variable = true,
@@ -1069,7 +1069,7 @@ local function typeconf(cppcls)
     function CMD.enum(name, value, intvalue, comment)
         cls.enums:push({
             name = name,
-            value = value or (cls.cppcls .. '::' .. name),
+            value = value or (cls.cppcls .. "::" .. name),
             intvalue = intvalue,
             comment = olua.base64_decode(comment)
         })
