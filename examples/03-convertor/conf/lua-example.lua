@@ -1,6 +1,8 @@
+---@format disable
+
 module "example"
 
-path "src"
+outputdir "src"
 
 headers [[
 #include "Example.h"
@@ -14,7 +16,7 @@ typedef "example::vector"
     .conv "olua_$$_array"
 
 typeconf "example::Point"
-    .packable 'true'
+    .packable "true"
 
 typeconf "example::Node"
-    .extend 'example::NodeExtend'
+    .extend "example::NodeExtend"

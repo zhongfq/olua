@@ -1,13 +1,15 @@
+---@format disable
+
 module "example"
 
-path "src"
+outputdir "src"
 
 headers [[
 #include "Example.h"
 #include "olua-custom.h"
 ]]
 
-chunk [[
+codeblock [[
 static std::string makeForeachTag(int value)
 {
     return "foreach" + std::to_string(value);
@@ -23,9 +25,9 @@ import "../common/lua-object.lua"
 typeconf "example::Event"
 typeconf "example::Callback::Listener"
 typeconf "example::Callback"
-    .callback 'setOnceEvent'
-        .tag_scope 'once'
-    .callback 'foreach'
-        .tag_mode 'new'
-        .tag_scope 'function'
-        .tag_maker 'makeForeachTag(#1)'
+    .callback "setOnceEvent"
+        .tag_scope "once"
+    .callback "foreach"
+        .tag_mode "new"
+        .tag_scope "function"
+        .tag_maker "makeForeachTag(#1)"

@@ -1,3 +1,4 @@
+local idl = require "script.idl"
 local clang = require "clang"
 local TypeKind = require "clang.TypeKind"
 local CursorKind = require "clang.CursorKind"
@@ -49,13 +50,13 @@ local clang_tu
 
 local type_cursors    = olua.ordered_map(false)
 local comment_cursors = olua.ordered_map(false)
-local exclude_types   = olua.ordered_map(false)
 local visited_types   = olua.ordered_map(false)
 local alias_types     = olua.ordered_map(false)
-local type_convs      = olua.ordered_map(false)
 local type_checker    = olua.array()
-local clang_args      = {}
-local modules         = olua.ordered_map()
+local exclude_types   = idl.exclude_types
+local type_convs      = idl.type_convs
+local clang_args      = idl.clang_args
+local modules         = idl.modules
 local metamethod      = {
     __index = true,
     __newindex = true,
@@ -407,17 +408,22 @@ local function has_deprecated_attr(cur)
     return cur.isDeprecated
 end
 
+---@param cur clang.Cursor
+---@return boolean
 local function has_exclude_attr(cur)
     for _, c in ipairs(cur.children) do
         if c.kind == CursorKind.AnnotateAttr and c.name:find("@exclude") then
             return true
         end
     end
+    return false
 end
 
+---@param tn string|clang.Type
+---@return boolean
 local function is_func_type(tn)
     if type(tn) == "string" then
-        return tn:find("std::function")
+        return tn:find("std::function") ~= nil
     else
         local kind = tn.kind
         local cur = tn.declaration
@@ -515,10 +521,12 @@ local function get_comment(cur)
     end
 end
 
-local M = {}
+---@class Autoconf : idl.ModuleDescriptor
+local Autoconf = {}
 
-function M:parse()
+function Autoconf:parse()
     assert(not self.class_file)
+    self.filename = self.path:match("([^/\\]+).lua$") ---@type string
     self.class_file = olua.format("autobuild/${self.filename}.idl")
 
     -- scan method, variable, enum, const value
@@ -530,9 +538,9 @@ function M:parse()
     end
 end
 
----@param cls TypeconfDescriptor
+---@param cls idl.TypeconfDescriptor
 ---@param cur clang.Cursor
-function M:visit_method(cls, cur)
+function Autoconf:visit_method(cls, cur)
     if has_deprecated_attr(cur)
         or cur.isCXXMoveConstructor
         or cur.name:find("operator *[%-=+/*><!()]?")
@@ -690,9 +698,9 @@ function M:visit_method(cls, cur)
     end
 end
 
----@param cls TypeconfDescriptor
+---@param cls idl.TypeconfDescriptor
 ---@param cur clang.Cursor
-function M:visit_var(cls, cur)
+function Autoconf:visit_var(cls, cur)
     if is_excluded_type(cur.type)
         or has_exclude_attr(cur)
         or has_deprecated_attr(cur)
@@ -741,8 +749,8 @@ function M:visit_var(cls, cur)
 end
 
 ---@param cppcls string
----@return TypeconfDescriptor
-function M:will_visit(cppcls)
+---@return idl.TypeconfDescriptor
+function Autoconf:will_visit(cppcls)
     local cls = self.class_types:get(cppcls)
     if visited_types:has(cppcls) then
         olua.error([[
@@ -759,7 +767,7 @@ end
 
 ---@param cppcls any
 ---@param cur clang.Cursor
-function M:visit_enum(cppcls, cur)
+function Autoconf:visit_enum(cppcls, cur)
     local cls = self:will_visit(cppcls)
     local filter = {}
     for _, c in ipairs(cur.children) do
@@ -790,7 +798,7 @@ function M:visit_enum(cppcls, cur)
     cls.kind = cls.kind or kFLAG_ENUM
 end
 
-function M:visit_alias_class(alias, cppcls)
+function Autoconf:visit_alias_class(alias, cppcls)
     local cls = self:will_visit(alias)
     cls.kind = cls.kind or kFLAG_POINTER
     if is_func_type(cppcls) then
@@ -809,7 +817,7 @@ end
 ---@param cur clang.Cursor
 ---@param template_types any
 ---@param specializedcls any
-function M:visit_class(cppcls, cur, template_types, specializedcls)
+function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
     local cls = self:will_visit(cppcls)
     local skipsuper = false
 
@@ -884,14 +892,14 @@ function M:visit_class(cppcls, cur, template_types, specializedcls)
                 for i, v in ipairs(c.type.templateArgumentTypes) do
                     arg_types[i] = parse_from_type(v)
                 end
-                self.CMD.typeconf(supercls)
+                typeconf(supercls)
                 self:visit_class(supercls, supercursor, arg_types)
             elseif OLUA_AUTO_EXPORT_PARENT then
                 local super = visited_types:get(rawsupercls)
                 if not super then
                     assert(supercursor, "no cursor for " .. rawsupercls)
                     if not self.class_types:has(rawsupercls) then
-                        self.CMD.typeconf(rawsupercls)
+                        typeconf(rawsupercls)
                     end
                     self:visit_class(rawsupercls, supercursor)
                     super = self.class_types:take(rawsupercls)
@@ -950,7 +958,7 @@ end
 
 ---@param cur clang.Cursor
 ---@param cppcls string
-function M:visit(cur, cppcls)
+function Autoconf:visit(cur, cppcls)
     local kind = cur.kind
     local children = cur.children
     local astcls = parse_from_ast({ declaration = cur, name = cur.name })
@@ -994,7 +1002,6 @@ function M:visit(cur, cppcls)
                 self:visit_class(cppcls, specialized, arg_types, specializedcls)
 
                 if specializedcls:find("^olua::pointer") then
-                    local typedef = self.CMD.typedef
                     local packedcls = specializedcls:match("<(.*)>") .. " *"
                     typedef(packedcls)
                         .luacls(self.luacls(cppcls))
@@ -1024,7 +1031,9 @@ local function try_add_wildcard_type(cppcls, cur)
                                        because '${cppcls}' has been excluded
                     ]=], 1))
                 else
-                    m.CMD._typecopy(cppcls, conf)
+                    idl.current_module = m
+                    idl.typecopy(cppcls, conf)
+                    idl.current_module = nil
                 end
             end
         end
@@ -1080,13 +1089,13 @@ end
 local function write_module_metadata(module, append)
     append(olua.format([[
         name = "${module.name}"
-        path = "${module.path}"
-        metapath = ${module.metapath??}
+        path = "${module.outputdir}"
+        metapath = ${module.apidir??}
         entry = ${module.entry??}
     ]]))
 
     append(olua.format("headers = ${module.headers?}"))
-    append(olua.format("chunk = ${module.chunk??}"))
+    append(olua.format("chunk = ${module.codeblock??}"))
     append(olua.format("luaopen = ${module.luaopen??}"))
     append("")
 end
@@ -1170,8 +1179,8 @@ local function search_using_func(module, cls)
     end
 end
 
----@param module ModuleDescriptor
----@param cls TypeconfDescriptor
+---@param module idl.ModuleDescriptor
+---@param cls idl.TypeconfDescriptor
 ---@param append any
 local function write_cls_func(module, cls, append)
     search_using_func(module, cls)
@@ -1270,8 +1279,8 @@ local function write_cls_func(module, cls, append)
     end
 end
 
----@param module ModuleDescriptor
----@param cls TypeconfDescriptor
+---@param module idl.ModuleDescriptor
+---@param cls idl.TypeconfDescriptor
 ---@param append any
 local function write_cls_options(module, cls, append)
     local out = olua.array():set_joiner("\n")
@@ -1419,7 +1428,7 @@ local function write_module_classes(module, append)
         append(olua.format([[
             typeconf '${cls.cppcls}'
                 .supercls(${cls.supercls??})
-                .chunk(${cls.chunk??})
+                .chunk(${cls.codeblock??})
                 .luaopen(${cls.luaopen??})
                 .comment(${cls.comment??})
         ]]))
@@ -1557,9 +1566,11 @@ local function parse_types()
                 end
             end
         end
-        setmetatable(m, { __index = M })
-        olua.print("parsing: %s", m.file)
+        setmetatable(m, { __index = Autoconf })
+        olua.print("parsing: %s", m.path)
+        idl.current_module = m
         m:parse()
+        idl.current_module = nil
     end
 end
 
@@ -1673,8 +1684,8 @@ local function check_errors()
 end
 
 local function copy_super_funcs()
-    ---@param cls TypeconfDescriptor
-    ---@param super TypeconfDescriptor
+    ---@param cls idl.TypeconfDescriptor
+    ---@param super idl.TypeconfDescriptor
     local function copy_funcs(cls, super)
         local rawsuper = raw_typename(super.cppcls)
         for _, func in ipairs(super.funcs) do
@@ -1699,8 +1710,8 @@ local function copy_super_funcs()
         end
     end
 
-    ---@param cls TypeconfDescriptor
-    ---@param super TypeconfDescriptor
+    ---@param cls idl.TypeconfDescriptor
+    ---@param super idl.TypeconfDescriptor
     local function copy_vars(cls, super)
         local rawsuper = raw_typename(super.cppcls)
         for _, var in ipairs(super.vars) do
@@ -1714,8 +1725,8 @@ local function copy_super_funcs()
         end
     end
 
-    ---@param cls TypeconfDescriptor
-    ---@param super TypeconfDescriptor
+    ---@param cls idl.TypeconfDescriptor
+    ---@param super idl.TypeconfDescriptor
     local function copy_props(cls, super)
         local rawsuper = raw_typename(super.cppcls)
         for _, prop in ipairs(super.props) do
@@ -1733,8 +1744,8 @@ local function copy_super_funcs()
         end
     end
 
-    ---@param cls TypeconfDescriptor
-    ---@param super TypeconfDescriptor
+    ---@param cls idl.TypeconfDescriptor
+    ---@param super idl.TypeconfDescriptor
     local function copy_super(cls, super)
         copy_props(cls, super)
         copy_vars(cls, super)
@@ -1746,14 +1757,14 @@ local function copy_super_funcs()
     end
 
     for _, m in ipairs(modules) do
-        ---@cast m ModuleDescriptor
+        ---@cast m idl.ModuleDescriptor
         for _, cls in ipairs(m.class_types) do
-            ---@cast cls TypeconfDescriptor
+            ---@cast cls idl.TypeconfDescriptor
             for _, supercls in ipairs(cls.supers) do
                 if cls.supercls == supercls then
                     goto continue
                 end
-                ---@type TypeconfDescriptor
+                ---@type idl.TypeconfDescriptor
                 local super = visited_types:get(supercls)
                 copy_super(cls, super)
                 if #cls.supers == 1 and olua.is_templdate_type(super.cppcls) then
@@ -1769,11 +1780,11 @@ end
 
 local function find_as()
     for _, m in ipairs(modules) do
-        ---@cast m ModuleDescriptor
+        ---@cast m idl.ModuleDescriptor
         for _, cls in ipairs(m.class_types) do
             -- find as
             local ascls_map = olua.ordered_map()
-            ---@cast cls TypeconfDescriptor
+            ---@cast cls idl.TypeconfDescriptor
             if #cls.supers > 1 then
                 local function find_as_cls(c)
                     for supercls in pairs(c.supers) do
@@ -1884,6 +1895,7 @@ local function write_typedefs()
     local typedefs = olua.array():set_joiner("\n")
 
     typedefs:push("-- AUTO BUILD, DON'T MODIFY!\n")
+    typedefs:push("local typedef = olua.typedef")
 
     for _, m in ipairs(modules) do
         olua.ipairs(m.typedef_types, function (_, td)
@@ -2088,7 +2100,7 @@ end
 
 ---@param CMD any
 ---@param name any
----@param cls TypeconfDescriptor
+---@param cls idl.TypeconfDescriptor
 local function add_attr_command(CMD, name, cls)
     local entry = {}
     cls.attrs:set(name, entry)
@@ -2102,7 +2114,7 @@ end
 
 ---@param CMD any
 ---@param name any
----@param cls TypeconfDescriptor
+---@param cls idl.TypeconfDescriptor
 local function add_insert_command(CMD, name, cls)
     local entry = { name = name }
     cls.inserts:set(name, entry)
@@ -2112,7 +2124,7 @@ local function add_insert_command(CMD, name, cls)
     add_value_command(CMD, "insert_cafter", entry, "cafter")
 end
 
----@param cls TypeconfDescriptor
+---@param cls idl.TypeconfDescriptor
 ---@param ModuleCMD any
 ---@return table
 local function make_typeconf_command(cls, ModuleCMD)
@@ -2272,14 +2284,14 @@ end
 --
 local has_hook = false
 
-function M.__call(_, path)
+function Autoconf.__call(_, path)
     if not has_hook then
         has_hook = true
         local build_func = debug.getinfo(2, "f").func
         if debug.gethook() then
             build_func()
             deferred_autoconf()
-            M.__call = function () end
+            Autoconf.__call = function () end
             return
         else
             debug.sethook(function ()
@@ -2437,4 +2449,31 @@ function M.__call(_, path)
     end
 end
 
-olua.autoconf = setmetatable({}, M)
+function Autoconf.__call(_, path)
+    if not has_hook then
+        has_hook = true
+        local build_func = debug.getinfo(2, "f").func
+        if debug.gethook() then
+            build_func()
+            deferred_autoconf()
+            Autoconf.__call = function () end
+            return
+        else
+            debug.sethook(function ()
+                if debug.getinfo(2, "f").func == build_func then
+                    debug.sethook(nil)
+                    deferred_autoconf()
+                end
+            end, "r")
+        end
+    end
+
+    dofile(path)
+    if idl.current_module then
+        idl.current_module.path = path
+    end
+    idl.current_module = nil
+    idl.macros:clear()
+end
+
+olua.autoconf = setmetatable({}, Autoconf)

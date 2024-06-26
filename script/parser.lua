@@ -18,6 +18,8 @@ function olua.get_class(cls)
     return cls == "*" and class_map or class_map[cls]
 end
 
+---@param tn string
+---@return string
 function olua.pretty_typename(tn)
     tn = tn:gsub("^ *", "")           -- trim head space
     tn = tn:gsub(" *$", "")           -- trim tail space

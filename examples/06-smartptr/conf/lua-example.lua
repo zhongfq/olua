@@ -1,6 +1,6 @@
 module "example"
 
-path "src"
+outputdir "src"
 
 headers [[
 #include "Example.h"

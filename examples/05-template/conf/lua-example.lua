@@ -1,6 +1,6 @@
 module "example"
 
-path "src"
+outputdir "src"
 
 headers [[
 #include "Example.h"
@@ -12,8 +12,8 @@ import "../common/lua-object.lua"
 typeconf "example::Hello"
 typeconf "example::TestGC"
 
-typeconf '^example::TestWildcard.*Event'
-    .exclude 'hello'
+typeconf "^example::TestWildcard.*Event"
+    .exclude "hello"
     .luaopen [[
         printf("test wildcard luaopen\n");
     ]]

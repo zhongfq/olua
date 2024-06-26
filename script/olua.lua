@@ -16,8 +16,7 @@ end
 
 ---Suppress warnings.
 ---@param ... unknown
-function olua.unuse(...)
-end
+function olua.unuse(...) end
 
 function olua.print(fmt, ...)
     print(string.format(fmt, ...))
@@ -173,6 +172,16 @@ function olua.array(...)
         return self:slice()
     end
 
+    ---Get an element at the given index. If `index` is negative, it is relative to the end of the array.
+    ---@param index integer
+    ---@return any
+    function array:at(index)
+        if index < 0 then
+            index = #self + index + 1
+        end
+        return self[index]
+    end
+
     ---Push an element at the end of the array. If `value` is `nil`, nothing is done.
     ---@param value any
     function array:push(value)
@@ -181,6 +190,8 @@ function olua.array(...)
         end
     end
 
+    ---Push a formatting string at the end of the array.
+    ---@param value string
     function array:pushf(value)
         self:push(olua.format(value))
     end
@@ -460,7 +471,7 @@ function olua.ordered_map(overwritable)
 
     ---Insert an element into the ordered map.
     ---@param mode insertmode
-    ---@param at_key string|number
+    ---@param at_key string|number|nil
     ---@param key string|number
     ---@param value any
     function ordered_map:insert(mode, at_key, key, value)

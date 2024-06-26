@@ -7,6 +7,9 @@
   "settings": {
     "editor.snippetSuggestions": "bottom",
     "editor.formatOnSave": true,
+    "search.exclude": {
+      "addons": true
+    },
     "files.associations": {
       "*.manifest": "json",
       "*.jsfl": "javascript"

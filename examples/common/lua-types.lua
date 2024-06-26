@@ -1,9 +1,9 @@
-module "types"
+module 'types'
 
-path "../common"
+outputdir '../common'
 
 headers [[
 #include "olua-custom.h"
 ]]
 
-import "../../lua-types.lua"
+import '../../lua-types.lua'

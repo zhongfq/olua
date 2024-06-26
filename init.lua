@@ -131,5 +131,4 @@ require "script.gen-callback"
 require "script.autoconf"
 
 _G.export = olua.export
-_G.typedef = olua.typedef
 _G.autoconf = olua.autoconf
