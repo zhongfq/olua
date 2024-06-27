@@ -909,23 +909,6 @@ local function typeconf(cppcls)
         olua.assert(found, "function not found: ${cls.cppcls}::${name}")
     end
 
-    function CMD.alias(luafunc, alias)
-        local origin_funcs
-        for _, arr in ipairs(cls.funcs) do
-            if arr[1].luafunc == luafunc then
-                origin_funcs = arr
-            end
-        end
-
-        olua.assert(origin_funcs, "func not found: " .. luafunc)
-
-        local alias_funcs = olua.array()
-        for _, fi in ipairs(origin_funcs) do
-            alias_funcs:push(setmetatable({ luafunc = assert(alias) }, { __index = fi }))
-        end
-        cls.funcs:push(alias_funcs)
-    end
-
     --[[
         {
             tag_maker    -- make callback key

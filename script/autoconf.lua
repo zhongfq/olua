@@ -521,7 +521,7 @@ local function get_comment(cur)
     end
 end
 
----@class Autoconf : idl.ModuleDescriptor
+---@class Autoconf : idl.model.module_desc
 local Autoconf = {}
 
 function Autoconf:parse()
@@ -538,7 +538,7 @@ function Autoconf:parse()
     end
 end
 
----@param cls idl.TypeconfDescriptor
+---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
 function Autoconf:visit_method(cls, cur)
     if has_deprecated_attr(cur)
@@ -698,7 +698,7 @@ function Autoconf:visit_method(cls, cur)
     end
 end
 
----@param cls idl.TypeconfDescriptor
+---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
 function Autoconf:visit_var(cls, cur)
     if is_excluded_type(cur.type)
@@ -749,7 +749,7 @@ function Autoconf:visit_var(cls, cur)
 end
 
 ---@param cppcls string
----@return idl.TypeconfDescriptor
+---@return idl.model.class_desc
 function Autoconf:will_visit(cppcls)
     local cls = self.class_types:get(cppcls)
     if visited_types:has(cppcls) then
@@ -1089,8 +1089,8 @@ end
 local function write_module_metadata(module, append)
     append(olua.format([[
         name = "${module.name}"
-        path = "${module.outputdir}"
-        metapath = ${module.apidir??}
+        path = "${module.output_dir}"
+        metapath = ${module.api_dir??}
         entry = ${module.entry??}
     ]]))
 
@@ -1179,8 +1179,8 @@ local function search_using_func(module, cls)
     end
 end
 
----@param module idl.ModuleDescriptor
----@param cls idl.TypeconfDescriptor
+---@param module idl.model.module_desc
+---@param cls idl.model.class_desc
 ---@param append any
 local function write_cls_func(module, cls, append)
     search_using_func(module, cls)
@@ -1279,8 +1279,8 @@ local function write_cls_func(module, cls, append)
     end
 end
 
----@param module idl.ModuleDescriptor
----@param cls idl.TypeconfDescriptor
+---@param module idl.model.module_desc
+---@param cls idl.model.class_desc
 ---@param append any
 local function write_cls_options(module, cls, append)
     local out = olua.array():set_joiner("\n")
@@ -1386,18 +1386,6 @@ local function write_cls_insert(module, cls, append)
     end
 end
 
-local function write_cls_alias(module, cls, append)
-    for _, v in ipairs(cls.aliases) do
-        if not v.alias then
-            olua.error([[
-                alias not found for '${v.name}'
-                    from: ${cls.cppcls}
-            ]])
-        end
-        append(olua.format(".alias('${v.name}', '${v.alias}')", 4))
-    end
-end
-
 local function write_module_classes(module, append)
     append("")
     for _, cls in ipairs(module.class_types) do
@@ -1441,7 +1429,6 @@ local function write_module_classes(module, append)
         write_cls_callback(module, cls, append)
         write_cls_prop(module, cls, append)
         write_cls_insert(module, cls, append)
-        write_cls_alias(module, cls, append)
 
         append("")
 
@@ -1684,8 +1671,8 @@ local function check_errors()
 end
 
 local function copy_super_funcs()
-    ---@param cls idl.TypeconfDescriptor
-    ---@param super idl.TypeconfDescriptor
+    ---@param cls idl.model.class_desc
+    ---@param super idl.model.class_desc
     local function copy_funcs(cls, super)
         local rawsuper = raw_typename(super.cppcls)
         for _, func in ipairs(super.funcs) do
@@ -1710,8 +1697,8 @@ local function copy_super_funcs()
         end
     end
 
-    ---@param cls idl.TypeconfDescriptor
-    ---@param super idl.TypeconfDescriptor
+    ---@param cls idl.model.class_desc
+    ---@param super idl.model.class_desc
     local function copy_vars(cls, super)
         local rawsuper = raw_typename(super.cppcls)
         for _, var in ipairs(super.vars) do
@@ -1725,8 +1712,8 @@ local function copy_super_funcs()
         end
     end
 
-    ---@param cls idl.TypeconfDescriptor
-    ---@param super idl.TypeconfDescriptor
+    ---@param cls idl.model.class_desc
+    ---@param super idl.model.class_desc
     local function copy_props(cls, super)
         local rawsuper = raw_typename(super.cppcls)
         for _, prop in ipairs(super.props) do
@@ -1744,8 +1731,8 @@ local function copy_super_funcs()
         end
     end
 
-    ---@param cls idl.TypeconfDescriptor
-    ---@param super idl.TypeconfDescriptor
+    ---@param cls idl.model.class_desc
+    ---@param super idl.model.class_desc
     local function copy_super(cls, super)
         copy_props(cls, super)
         copy_vars(cls, super)
@@ -1757,14 +1744,14 @@ local function copy_super_funcs()
     end
 
     for _, m in ipairs(modules) do
-        ---@cast m idl.ModuleDescriptor
+        ---@cast m idl.model.module_desc
         for _, cls in ipairs(m.class_types) do
-            ---@cast cls idl.TypeconfDescriptor
+            ---@cast cls idl.model.class_desc
             for _, supercls in ipairs(cls.supers) do
                 if cls.supercls == supercls then
                     goto continue
                 end
-                ---@type idl.TypeconfDescriptor
+                ---@type idl.model.class_desc
                 local super = visited_types:get(supercls)
                 copy_super(cls, super)
                 if #cls.supers == 1 and olua.is_templdate_type(super.cppcls) then
@@ -1780,11 +1767,11 @@ end
 
 local function find_as()
     for _, m in ipairs(modules) do
-        ---@cast m idl.ModuleDescriptor
+        ---@cast m idl.model.module_desc
         for _, cls in ipairs(m.class_types) do
             -- find as
             local ascls_map = olua.ordered_map()
-            ---@cast cls idl.TypeconfDescriptor
+            ---@cast cls idl.model.class_desc
             if #cls.supers > 1 then
                 local function find_as_cls(c)
                     for supercls in pairs(c.supers) do

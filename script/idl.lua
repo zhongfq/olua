@@ -5,7 +5,7 @@ local idl = {
     type_convs = olua.ordered_map(false),
     macros = olua.array(),
 
-    ---@type idl.ModuleDescriptor?
+    ---@type idl.model.module_desc?
     current_module = nil
 }
 
@@ -103,14 +103,14 @@ end
 ---Define config module.
 ---@param name string
 function module(name)
-    ---@class idl.ModuleDescriptor
+    ---@class idl.model.module_desc
     ---@field path string # Module config file path.
     ---@field name string
     ---@field headers? string
     ---@field filepath? string
     ---@field codeblock? string
-    ---@field outputdir? string
-    ---@field apidir? string
+    ---@field output_dir? string
+    ---@field api_dir? string
     ---@field luaopen? string
     ---@field entry? string
     ---@field luacls fun(cppcls:string):string
@@ -157,15 +157,15 @@ function entry(cppcls)
 end
 
 ---@param dir string
-function outputdir(dir)
+function output_dir(dir)
     check_module()
-    idl.current_module.outputdir = dir
+    idl.current_module.output_dir = dir
 end
 
 ---@param dir string
-function apidir(dir)
+function api_dir(dir)
     check_module()
-    idl.current_module.apidir = dir
+    idl.current_module.api_dir = dir
 end
 
 ---@param maker fun(cppcls:string):string
@@ -198,11 +198,11 @@ end
 --- Define a type convertor.
 ---
 ---@param cppcls string C++ class name
----@return Typedef
+---@return idl.typedef
 function typedef(cppcls)
     check_module()
 
-    ---@class TypedefDescriptor
+    ---@class idl.model.typedef_desc
     ---@field cppcls string
     ---@field luacls? string
     ---@field conv? string
@@ -220,25 +220,25 @@ function typedef(cppcls)
         idl.type_convs:set(c, t)
     end
 
-    ---@class Typedef
-    ---@field luacls fun(luacls:string):Typedef
-    ---@field conv fun(conv:string):Typedef
-    ---@field luatype fun(luatype:luatype):Typedef
-    ---@field packable fun(packable:booltype):Typedef
-    ---@field packvars fun(packvars:string):Typedef
-    ---@field smartptr fun(smartptr:booltype):Typedef
-    ---@field override fun(override:booltype):Typedef
-    local Typedef = {}
+    ---@class idl.typedef
+    ---@field luacls fun(luacls:string):idl.typedef
+    ---@field conv fun(conv:string):idl.typedef
+    ---@field luatype fun(luatype:luatype):idl.typedef
+    ---@field packable fun(packable:booltype):idl.typedef
+    ---@field packvars fun(packvars:string):idl.typedef
+    ---@field smartptr fun(smartptr:booltype):idl.typedef
+    ---@field override fun(override:booltype):idl.typedef
+    local CMD = {}
 
-    add_value_command(Typedef, cls, "luacls")
-    add_value_command(Typedef, cls, "conv")
-    add_value_command(Typedef, cls, "luatype")
-    add_value_command(Typedef, cls, "packable", checkboolean)
-    add_value_command(Typedef, cls, "packvars", checkinteger)
-    add_value_command(Typedef, cls, "smartptr", checkboolean)
-    add_value_command(Typedef, cls, "override", checkboolean)
+    add_value_command(CMD, cls, "luacls")
+    add_value_command(CMD, cls, "conv")
+    add_value_command(CMD, cls, "luatype")
+    add_value_command(CMD, cls, "packable", checkboolean)
+    add_value_command(CMD, cls, "packvars", checkinteger)
+    add_value_command(CMD, cls, "smartptr", checkboolean)
+    add_value_command(CMD, cls, "override", checkboolean)
 
-    return Typedef
+    return CMD
 end
 
 -------------------------------------------------------------------------------
@@ -246,32 +246,32 @@ end
 -------------------------------------------------------------------------------
 
 ---Set attribute for c++ function parameters or return value.
----@alias TypeconfFuncAttr fun(attr:string):TypeconfFunc
+---@alias idl.typeconf.func_attr fun(attr:string):idl.typeconf.func
 
----@class TypeconfFuncBase : idl.Typeconf
----@field insert_before fun(code:string):TypeconfFunc # Insert codes before the c++ function invoked.
----@field insert_after fun(code:string):TypeconfFunc # Insert codes after the c++ function invoked.
----@field insert_cbefore fun(code:string):TypeconfFunc # Insert codes before the c++ callback function invoked.
----@field insert_cafter fun(code:string):TypeconfFunc # Insert codes after the c++ callback function invoked.
----@field ret TypeconfFuncAttr
----@field arg1 TypeconfFuncAttr
----@field arg2 TypeconfFuncAttr
----@field arg3 TypeconfFuncAttr
----@field arg4 TypeconfFuncAttr
----@field arg5 TypeconfFuncAttr
----@field arg6 TypeconfFuncAttr
----@field arg7 TypeconfFuncAttr
----@field arg8 TypeconfFuncAttr
----@field arg9 TypeconfFuncAttr
----@field arg10 TypeconfFuncAttr
----@field package optional fun(optional:boolean):TypeconfFunc
----@field package readonly fun(readonly:boolean):TypeconfFunc
+---@class idl.typeconf.func_base : idl.typeconf
+---@field insert_before fun(code:string):idl.typeconf.func # Insert codes before the c++ function invoked.
+---@field insert_after fun(code:string):idl.typeconf.func # Insert codes after the c++ function invoked.
+---@field insert_cbefore fun(code:string):idl.typeconf.func # Insert codes before the c++ callback function invoked.
+---@field insert_cafter fun(code:string):idl.typeconf.func # Insert codes after the c++ callback function invoked.
+---@field ret idl.typeconf.func_attr
+---@field arg1 idl.typeconf.func_attr
+---@field arg2 idl.typeconf.func_attr
+---@field arg3 idl.typeconf.func_attr
+---@field arg4 idl.typeconf.func_attr
+---@field arg5 idl.typeconf.func_attr
+---@field arg6 idl.typeconf.func_attr
+---@field arg7 idl.typeconf.func_attr
+---@field arg8 idl.typeconf.func_attr
+---@field arg9 idl.typeconf.func_attr
+---@field arg10 idl.typeconf.func_attr
+---@field package optional fun(optional:boolean):idl.typeconf.func
+---@field package readonly fun(readonly:boolean):idl.typeconf.func
 
----@param cmd TypeconfFuncBase
----@param cls idl.TypeconfDescriptor
----@param func TypeconfFuncDescriptor|TypeconfCallbackDescriptor
+---@param CMD idl.typeconf.func_base
+---@param cls idl.model.class_desc
+---@param func idl.model.func_desc|idl.model.callback_desc
 ---@param name string
-local function add_insert_command(cmd, cls, func, name)
+local function add_insert_command(CMD, cls, func, name)
     ---@class TypeconfInsertDescriptor
     ---@field name string
     ---@field before? string
@@ -281,18 +281,18 @@ local function add_insert_command(cmd, cls, func, name)
     local entry = { name = name }
     cls.inserts:set(name, entry)
 
-    add_value_command(cmd, entry, "insert_before", nil, "before")
-    add_value_command(cmd, entry, "insert_after", nil, "after")
-    add_value_command(cmd, entry, "insert_cbefore", nil, "cbefore")
-    add_value_command(cmd, entry, "insert_cafter", nil, "cafter")
+    add_value_command(CMD, entry, "insert_before", nil, "before")
+    add_value_command(CMD, entry, "insert_after", nil, "after")
+    add_value_command(CMD, entry, "insert_cbefore", nil, "cbefore")
+    add_value_command(CMD, entry, "insert_cafter", nil, "cafter")
 end
 
----@param cmd TypeconfFuncBase
----@param cls idl.TypeconfDescriptor
----@param func TypeconfFuncDescriptor|TypeconfCallbackDescriptor
+---@param CMD idl.typeconf.func_base
+---@param cls idl.model.class_desc
+---@param func idl.model.func_desc|idl.model.callback_desc
 ---@param name string
-local function add_attr_command(cmd, cls, func, name)
-    ---@class TypeconfAttrDescriptor
+local function add_attr_command(CMD, cls, func, name)
+    ---@class idl.model.attr_desc
     ---@field optional? boolean
     ---@field readonly? boolean
     ---@field ret? string
@@ -309,28 +309,28 @@ local function add_attr_command(cmd, cls, func, name)
     local entry = {}
     cls.attrs:set(name, entry)
 
-    add_value_command(cmd, entry, "optional", checkboolean)
-    add_value_command(cmd, entry, "readonly", checkboolean)
-    add_value_command(cmd, entry, "ret")
-    add_value_command(cmd, entry, "arg1")
-    add_value_command(cmd, entry, "arg2")
-    add_value_command(cmd, entry, "arg3")
-    add_value_command(cmd, entry, "arg4")
-    add_value_command(cmd, entry, "arg5")
-    add_value_command(cmd, entry, "arg6")
-    add_value_command(cmd, entry, "arg7")
-    add_value_command(cmd, entry, "arg8")
-    add_value_command(cmd, entry, "arg9")
-    add_value_command(cmd, entry, "arg10")
+    add_value_command(CMD, entry, "optional", checkboolean)
+    add_value_command(CMD, entry, "readonly", checkboolean)
+    add_value_command(CMD, entry, "ret")
+    add_value_command(CMD, entry, "arg1")
+    add_value_command(CMD, entry, "arg2")
+    add_value_command(CMD, entry, "arg3")
+    add_value_command(CMD, entry, "arg4")
+    add_value_command(CMD, entry, "arg5")
+    add_value_command(CMD, entry, "arg6")
+    add_value_command(CMD, entry, "arg7")
+    add_value_command(CMD, entry, "arg8")
+    add_value_command(CMD, entry, "arg9")
+    add_value_command(CMD, entry, "arg10")
 end
 
 
----@param cmd idl.Typeconf
----@param cls idl.TypeconfDescriptor
+---@param parent idl.typeconf
+---@param cls idl.model.class_desc
 ---@param name string
----@return TypeconfFunc
-local function typeconf_func(cmd, cls, name)
-    ---@class TypeconfFuncDescriptor
+---@return idl.typeconf.func
+local function typeconf_func(parent, cls, name)
+    ---@class idl.model.func_desc
     local func = {
         name = name,
         ---@type string|nil
@@ -338,24 +338,24 @@ local function typeconf_func(cmd, cls, name)
     }
     cls.funcs:set(name, func)
 
-    ---@class TypeconfFunc : TypeconfFuncBase
-    ---@field body fun(body:string):TypeconfFunc
-    local TypeconfFunc = {}
+    ---@class idl.typeconf.func : idl.typeconf.func_base
+    ---@field body fun(body:string):idl.typeconf.func
+    local CMD = {}
 
-    add_value_command(TypeconfFunc, func, "body")
-    add_attr_command(TypeconfFunc, cls, func, name)
-    add_insert_command(TypeconfFunc, cls, func, name)
+    add_value_command(CMD, func, "body")
+    add_attr_command(CMD, cls, func, name)
+    add_insert_command(CMD, cls, func, name)
 
-    ---@type TypeconfFunc
-    return setmetatable(TypeconfFunc, { __index = cmd })
+    ---@type idl.typeconf.func
+    return setmetatable(CMD, { __index = parent })
 end
 
----@param cmd idl.Typeconf
----@param cls idl.TypeconfDescriptor
+---@param parent idl.typeconf
+---@param cls idl.model.class_desc
 ---@param name string
----@return idl.typeconf.Callback
-local function typeconf_callback(cmd, cls, name)
-    ---@class TypeconfCallbackDescriptor
+---@return idl.typeconf.callback
+local function typeconf_callback(parent, cls, name)
+    ---@class idl.model.callback_desc
     local callback = {
         name = name,
         tag_scope = "object",
@@ -363,34 +363,34 @@ local function typeconf_callback(cmd, cls, name)
     }
     cls.callbacks:set(name, callback)
 
-    ---@class idl.typeconf.Callback : TypeconfFuncBase
-    ---@field localvar fun(localvar:booltype):idl.typeconf.Callback
-    local TypeconfCallback = {}
+    ---@class idl.typeconf.callback : idl.typeconf.func_base
+    ---@field localvar fun(localvar:booltype):idl.typeconf.callback
+    local CMD = {}
 
-    add_value_command(TypeconfCallback, callback, "localvar", checkboolean)
-    add_attr_command(TypeconfCallback, cls, callback, name)
-    add_insert_command(TypeconfCallback, cls, callback, name)
+    add_value_command(CMD, callback, "localvar", checkboolean)
+    add_attr_command(CMD, cls, callback, name)
+    add_insert_command(CMD, cls, callback, name)
 
 
     ---Make callback key.
     ---@param maker string|string[]
-    function TypeconfCallback.tag_maker(maker)
+    function CMD.tag_maker(maker)
         callback.tag_maker = maker
-        return TypeconfCallback
+        return CMD
     end
 
-    ---@alias idl.TypeCallback.TagMode
+    ---@alias idl.callback_tag_mode
     ---|>'"startwith"'
     ---| '"equal"'
     ---| '"new"'
     ---| '"replace"'
 
     ---How to store or remove the callback.
-    ---@param mode idl.TypeCallback.TagMode|idl.TypeCallback.TagMode[]
-    ---@return idl.typeconf.Callback
-    function TypeconfCallback.tag_mode(mode)
+    ---@param mode idl.callback_tag_mode|idl.callback_tag_mode[]
+    ---@return idl.typeconf.callback
+    function CMD.tag_mode(mode)
         callback.tag_mode = mode
-        return TypeconfCallback
+        return CMD
     end
 
     ---Specify where to store the callback.
@@ -398,10 +398,10 @@ local function typeconf_callback(cmd, cls, name)
     ---* `0`: Store callback in `.classobj` when it is a static function, otherwise store in `self` value.
     ---* `1,2,...N`: Store callback in the `N` argument value.
     ---@param store string
-    ---@return idl.typeconf.Callback
-    function TypeconfCallback.tag_store(store)
+    ---@return idl.typeconf.callback
+    function CMD.tag_store(store)
         callback.tag_store = checkinteger("tag_store", store)
-        return TypeconfCallback
+        return CMD
     end
 
     ---Mark the lifecycle of the callback, default is `object`.
@@ -409,87 +409,87 @@ local function typeconf_callback(cmd, cls, name)
     ---* `function`: Remove callback after the c++ function invoked.
     ---* `object`: Callback will exist until the c++ object die.
     ---@param scope "once"|"function"|"object"
-    function TypeconfCallback.tag_scope(scope)
+    function CMD.tag_scope(scope)
         callback.tag_scope = checkstring("tag_scope", scope)
-        return TypeconfCallback
+        return CMD
     end
 
-    ---@type idl.typeconf.Callback
-    return setmetatable(TypeconfCallback, { __index = cmd })
+    ---@type idl.typeconf.callback
+    return setmetatable(CMD, { __index = parent })
 end
 
----@param cmd idl.Typeconf
----@param cls idl.TypeconfDescriptor
+---@param parent idl.typeconf
+---@param cls idl.model.class_desc
 ---@param name string
----@return idl.TypeconfEnum
-local function typeconf_enum(cmd, cls, name)
-    ---@class ild.typeconf.EnumDescriptor
+---@return idl.typeconf.enum
+local function typeconf_enum(parent, cls, name)
+    ---@class idl.model.enum_desc
     ---@field name string
     ---@field value string
     ---@field comment? string
     local enum = { name = name }
     cls.enums:set(name, enum)
 
-    ---@class idl.TypeconfEnum : idl.Typeconf
-    ---@field value fun(value:string):idl.TypeconfEnum
-    local TypeconfEnum = {}
+    ---@class idl.typeconf.enum : idl.typeconf
+    ---@field value fun(value:string):idl.typeconf.enum
+    local CMD = {}
 
-    add_value_command(TypeconfEnum, enum, "value")
-    add_value_command(TypeconfEnum, enum, "comment")
+    add_value_command(CMD, enum, "value")
+    add_value_command(CMD, enum, "comment")
 
-    ---@type idl.TypeconfEnum
-    return setmetatable(TypeconfEnum, { __index = cmd })
+    ---@type idl.typeconf.enum
+    return setmetatable(CMD, { __index = parent })
 end
 
----@param cmd idl.Typeconf
----@param cls idl.TypeconfDescriptor
+---@param parent idl.typeconf
+---@param cls idl.model.class_desc
 ---@param name string
-local function typeconf_const(cmd, cls, name)
-    ---@class idl.typeconf.ConstDescriptor
+local function typeconf_const(parent, cls, name)
+    ---@class idl.model.const_desc
     ---@field value string
     ---@field typename string
     local const = { name = name }
     cls.consts:set(name, const)
 
-    ---@class idl.TypeconfConst : idl.Typeconf
-    ---@field value fun(value:string):idl.TypeconfConst
-    ---@field typename fun(typename:string):idl.TypeconfConst
-    local TypeconfConst = {}
-    add_value_command(TypeconfConst, const, "value")
-    add_value_command(TypeconfConst, const, "typename")
+    ---@class idl.typeconf.const : idl.typeconf
+    ---@field value fun(value:string):idl.typeconf.const
+    ---@field typename fun(typename:string):idl.typeconf.const
+    local CMD = {}
+    add_value_command(CMD, const, "value")
+    add_value_command(CMD, const, "typename")
 
-    ---@type idl.TypeconfConst
-    return setmetatable(TypeconfConst, { __index = cmd })
+    ---@type idl.typeconf.const
+    return setmetatable(CMD, { __index = parent })
 end
 
----@param cmd idl.Typeconf
----@param cls idl.TypeconfDescriptor
+---@param parent idl.typeconf
+---@param cls idl.model.class_desc
 ---@param name string
-local function typeconf_prop(cmd, cls, name)
-    ---@class idl.Typeconf.PropDescriptor
+local function typeconf_prop(parent, cls, name)
+    ---@class idl.model.prop_desc
     ---@field get string
     ---@field set string
     local prop = { name = name }
 
     cls.props:set(name, prop)
 
-    ---@class idl.TypeconfProp : idl.Typeconf
-    ---@field get fun(get:string):idl.TypeconfProp
-    ---@field set fun(get:string):idl.TypeconfProp
-    local TypeconfProp = {}
+    ---@class idl.typeconf.prop : idl.typeconf
+    ---@field get fun(get:string):idl.typeconf.prop
+    ---@field set fun(get:string):idl.typeconf.prop
+    local CMD = {}
 
-    add_value_command(TypeconfProp, prop, "get")
-    add_value_command(TypeconfProp, prop, "set")
+    add_value_command(CMD, prop, "get")
+    add_value_command(CMD, prop, "set")
 
-    ---@type idl.TypeconfProp
-    return setmetatable(TypeconfProp, { __index = cmd })
+    ---@type idl.typeconf.prop
+    return setmetatable(CMD, { __index = parent })
 end
 
----@param cmd idl.Typeconf
----@param cls idl.TypeconfDescriptor
+---@param parent idl.typeconf
+---@param cls idl.model.class_desc
 ---@param name string
-local function typeconf_var(cmd, cls, name)
-    ---@class idl.Typeconf.VarDescriptor
+local function typeconf_var(parent, cls, name)
+    ---@class idl.model.var_desc
     ---@field body string
     local var = { name = name }
 
@@ -500,53 +500,34 @@ local function typeconf_var(cmd, cls, name)
         name = "var*"
     end
 
-    ---@class idl.TypeconfVar : idl.Typeconf
-    ---@field body fun(body:string):idl.TypeconfVar
-    ---@field ret fun(attr:string):idl.TypeconfVar
-    ---@field optional fun(optional:booltype):idl.TypeconfVar
-    ---@field readonly fun(readonly:booltype):idl.TypeconfVar
-    local TypeconfVar = {}
+    ---@class idl.typeconf.var : idl.typeconf
+    ---@field body fun(body:string):idl.typeconf.var
+    ---@field ret fun(attr:string):idl.typeconf.var
+    ---@field optional fun(optional:booltype):idl.typeconf.var
+    ---@field readonly fun(readonly:booltype):idl.typeconf.var
+    local CMD = {}
 
     local attr = {}
     cls.attrs:set(name, attr)
 
-    add_value_command(TypeconfVar, var, "body")
-    add_value_command(TypeconfVar, attr, "optional", checkboolean)
-    add_value_command(TypeconfVar, attr, "readonly", checkboolean)
-    add_value_command(TypeconfVar, attr, "ret")
+    add_value_command(CMD, var, "body")
+    add_value_command(CMD, attr, "optional", checkboolean)
+    add_value_command(CMD, attr, "readonly", checkboolean)
+    add_value_command(CMD, attr, "ret")
 
-    ---@type idl.TypeconfVar
-    return setmetatable(TypeconfVar, { __index = cmd })
-end
-
----@param cmd idl.Typeconf
----@param cls idl.TypeconfDescriptor
----@param name string
-local function typeconf_alian(cmd, cls, name)
-    ---@class idl.Typeconf.VarDescriptor
-    ---@field alias string
-    local alias = { name = name }
-    cls.aliases:set(name, alias)
-
-    ---@class idl.TypeconfAlias : idl.Typeconf
-    ---@field to fun(to:string):idl.TypeconfAlias
-    local TypeconfAlias = {}
-
-    add_value_command(TypeconfAlias, alias, "to", checkstring, "alias")
-
-    ---@type idl.TypeconfAlias
-    return setmetatable(TypeconfAlias, { __index = cmd })
+    ---@type idl.typeconf.var
+    return setmetatable(CMD, { __index = parent })
 end
 
 ---
 ---Config a c++ class
 ---
 ---@param cppcls string the c++ class name
----@return idl.Typeconf
+---@return idl.typeconf
 function typeconf(cppcls)
     check_module()
 
-    ---@class idl.TypeconfDescriptor
+    ---@class idl.model.class_desc
     ---@field kind integer
     ---@field supercls? string
     ---@field comment? string
@@ -572,7 +553,6 @@ function typeconf(cppcls)
         callbacks = olua.ordered_map(),
         props = olua.ordered_map(),
         vars = olua.ordered_map(),
-        aliases = olua.ordered_map(),
         inserts = olua.ordered_map(),
         macros = olua.ordered_map(),
         supers = olua.ordered_map(),
@@ -606,42 +586,41 @@ function typeconf(cppcls)
         cls.macros:set("*", { name = "*", value = idl.macros:at(-1) })
     end
 
-    ---@class idl.Typeconf
-    ---@field supercls fun(supercls:string):idl.Typeconf
-    ---@field luaopen fun(luaopen:string):idl.Typeconf
-    ---@field codeblock fun(codeblock:string):idl.Typeconf
-    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.Typeconf
-    ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.Typeconf
-    ---@field fromtable fun(fromtable:booltype):idl.Typeconf
-    ---@field packable fun(packable:booltype):idl.Typeconf
-    ---@field packvars fun(packvars:string):idl.Typeconf
-    ---@field private maincls fun(cls:idl.TypeconfDescriptor):idl.Typeconf
-    local Typeconf = {}
+    ---@class idl.typeconf
+    ---@field luaopen fun(luaopen:string):idl.typeconf
+    ---@field codeblock fun(codeblock:string):idl.typeconf
+    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.typeconf
+    ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.typeconf
+    ---@field fromtable fun(fromtable:booltype):idl.typeconf
+    ---@field packable fun(packable:booltype):idl.typeconf
+    ---@field packvars fun(packvars:string):idl.typeconf
+    ---@field private maincls fun(cls:idl.model.class_desc):idl.typeconf
+    local CMD = {}
 
-    add_value_command(Typeconf, cls, "supercls")
-    add_value_command(Typeconf, cls, "luaopen")
-    add_value_command(Typeconf, cls, "codeblock")
-    add_value_command(Typeconf, cls, "luaname", function (_, v) return v end)
-    add_value_command(Typeconf, cls, "maincls", function (_, v) return v end)
-    add_value_command(Typeconf, cls.options, "indexerror")
-    add_value_command(Typeconf, cls.options, "fromtable", checkboolean)
-    add_value_command(Typeconf, cls.options, "packable", checkboolean)
-    add_value_command(Typeconf, cls.options, "packvars", checkinteger)
+    add_value_command(CMD, cls, "luaopen")
+    add_value_command(CMD, cls, "codeblock")
+    add_value_command(CMD, cls, "luaname", function (_, v) return v end)
+    add_value_command(CMD, cls, "maincls", function (_, v) return v end)
+    add_value_command(CMD, cls.options, "indexerror")
+    add_value_command(CMD, cls.options, "fromtable", checkboolean)
+    add_value_command(CMD, cls.options, "packable", checkboolean)
+    add_value_command(CMD, cls.options, "packvars", checkinteger)
 
     ---Extend a c++ class with another class, all static members of `extcls`
-    ---will be copied to the current class.
+    ---will be copied into the current class.
     ---@param extcls string
-    ---@return idl.Typeconf
-    function Typeconf.extend(extcls)
+    ---@return idl.typeconf
+    function CMD.extend(extcls)
         cls.extends:set(extcls, true)
         typeconf(extcls)
             .maincls(cls)
-        return Typeconf
+        return CMD
     end
 
     ---Exclude members from a c++ class, support lua regex.
     ---@param name string
-    function Typeconf.exclude(name)
+    ---@return idl.typeconf
+    function CMD.exclude(name)
         if mode and mode ~= "exclude" then
             olua.unuse(cls) -- get cls as upvalue
             olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cppcls}'")
@@ -652,74 +631,76 @@ function typeconf(cppcls)
         else
             cls.wildcards:set(name, true)
         end
-        return Typeconf
+        return CMD
     end
 
-    ---Include members from a c++ class.
-    function Typeconf.include(name)
+    ---Include members from a c++ class. If use `include`, all members of `class` don't included will be ignored.
+    ---@param name string
+    ---@return idl.typeconf
+    function CMD.include(name)
         if mode and mode ~= "include" then
             olua.unuse(cls) -- get cls as upvalue
             olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cppcls}'")
         end
         mode = "include"
         cls.includes:set(name, true)
-        return Typeconf
+        return CMD
     end
 
     ---@param cond string
-    function Typeconf.macro(cond)
+    ---@return idl.typeconf
+    function CMD.macro(cond)
         if #cond > 0 then
             macros:push(cond)
         else
             macros:pop()
         end
-        return Typeconf
+        return CMD
     end
 
     ---Define a enum value.
     ---@param name string
-    ---@return idl.TypeconfEnum
-    function Typeconf.enum(name)
-        return typeconf_enum(Typeconf, cls, name)
+    ---@return idl.typeconf.enum
+    function CMD.enum(name)
+        return typeconf_enum(CMD, cls, name)
     end
 
-    function Typeconf.const(name)
-        return typeconf_const(Typeconf, cls, name)
+    ---Define a const value.
+    ---@param name string
+    ---@return idl.typeconf.const
+    function CMD.const(name)
+        return typeconf_const(CMD, cls, name)
     end
 
     ---@param name string
-    ---@return TypeconfFunc
-    function Typeconf.func(name)
+    ---@return idl.typeconf.func
+    function CMD.func(name)
         cls.excludes:replace(name, true)
         if #macros > 0 then
             cls.macros:set(name, { name = name, value = macros:at(-1) })
         end
-        return typeconf_func(Typeconf, cls, name)
+        return typeconf_func(CMD, cls, name)
     end
 
     ---@param name string
-    ---@return idl.typeconf.Callback
-    function Typeconf.callback(name)
-        return typeconf_callback(Typeconf, cls, name)
+    ---@return idl.typeconf.callback
+    function CMD.callback(name)
+        return typeconf_callback(CMD, cls, name)
     end
 
     ---@param name string
-    ---@return idl.TypeconfProp
-    function Typeconf.prop(name)
-        return typeconf_prop(Typeconf, cls, name)
+    ---@return idl.typeconf.prop
+    function CMD.prop(name)
+        return typeconf_prop(CMD, cls, name)
     end
 
     ---@param name string
-    ---@return idl.TypeconfVar
-    function Typeconf.var(name)
-        return typeconf_var(Typeconf, cls, name)
+    ---@return idl.typeconf.var
+    function CMD.var(name)
+        return typeconf_var(CMD, cls, name)
     end
 
-    function Typeconf.alias(name)
-        return typeconf_alian(Typeconf, cls, name)
-    end
-
-    return Typeconf
+    return CMD
 end
 
 ---Config a c++ class without export any members.
@@ -731,12 +712,12 @@ function typeonly(cppcls)
 end
 
 ---@param cppcls string
----@param fromcls idl.TypeconfDescriptor
+---@param fromcls idl.model.class_desc
+---@return idl.typeconf
 function idl.typecopy(cppcls, fromcls)
-    typeconf(cppcls)
+    local CMD = typeconf(cppcls)
 
-    ---@type idl.TypeconfDescriptor
-    local cls = idl.current_module.class_types:get(cppcls)
+    local cls = idl.current_module.class_types:get(cppcls) ---@type idl.model.class_desc
     for k, v in pairs(fromcls) do
         if k == "cppcls" or k == "luacls" then
             goto continue
@@ -752,6 +733,8 @@ function idl.typecopy(cppcls, fromcls)
         end
         ::continue::
     end
+
+    return CMD
 end
 
 return idl
