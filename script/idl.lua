@@ -57,7 +57,7 @@ local function checkinteger(key, v)
     if not n or not (n == math.floor(n)) then
         error_value(key, v, "integer")
     end
-    return v
+    return n ---@type integer
 end
 
 ---@return function
@@ -233,10 +233,10 @@ function typedef(cppcls)
     add_value_command(Typedef, cls, "luacls")
     add_value_command(Typedef, cls, "conv")
     add_value_command(Typedef, cls, "luatype")
-    add_value_command(Typedef, cls, "packable")
-    add_value_command(Typedef, cls, "packvars")
-    add_value_command(Typedef, cls, "smartptr")
-    add_value_command(Typedef, cls, "override")
+    add_value_command(Typedef, cls, "packable", checkboolean)
+    add_value_command(Typedef, cls, "packvars", checkinteger)
+    add_value_command(Typedef, cls, "smartptr", checkboolean)
+    add_value_command(Typedef, cls, "override", checkboolean)
 
     return Typedef
 end
@@ -502,14 +502,40 @@ local function typeconf_var(cmd, cls, name)
 
     ---@class idl.TypeconfVar : idl.Typeconf
     ---@field body fun(body:string):idl.TypeconfVar
+    ---@field ret fun(attr:string):idl.TypeconfVar
+    ---@field optional fun(optional:booltype):idl.TypeconfVar
+    ---@field readonly fun(readonly:booltype):idl.TypeconfVar
     local TypeconfVar = {}
 
-    add_value_command(TypeconfVar, var, "body")
+    local attr = {}
+    cls.attrs:set(name, attr)
 
-    add_attr_command()
+    add_value_command(TypeconfVar, var, "body")
+    add_value_command(TypeconfVar, attr, "optional", checkboolean)
+    add_value_command(TypeconfVar, attr, "readonly", checkboolean)
+    add_value_command(TypeconfVar, attr, "ret")
 
     ---@type idl.TypeconfVar
     return setmetatable(TypeconfVar, { __index = cmd })
+end
+
+---@param cmd idl.Typeconf
+---@param cls idl.TypeconfDescriptor
+---@param name string
+local function typeconf_alian(cmd, cls, name)
+    ---@class idl.Typeconf.VarDescriptor
+    ---@field alias string
+    local alias = { name = name }
+    cls.aliases:set(name, alias)
+
+    ---@class idl.TypeconfAlias : idl.Typeconf
+    ---@field to fun(to:string):idl.TypeconfAlias
+    local TypeconfAlias = {}
+
+    add_value_command(TypeconfAlias, alias, "to", checkstring, "alias")
+
+    ---@type idl.TypeconfAlias
+    return setmetatable(TypeconfAlias, { __index = cmd })
 end
 
 ---
@@ -584,7 +610,7 @@ function typeconf(cppcls)
     ---@field supercls fun(supercls:string):idl.Typeconf
     ---@field luaopen fun(luaopen:string):idl.Typeconf
     ---@field codeblock fun(codeblock:string):idl.Typeconf
-    ---@field luaname fun(maker:fun(cppcls:string):string):idl.Typeconf
+    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.Typeconf
     ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.Typeconf
     ---@field fromtable fun(fromtable:booltype):idl.Typeconf
     ---@field packable fun(packable:booltype):idl.Typeconf
@@ -595,12 +621,12 @@ function typeconf(cppcls)
     add_value_command(Typeconf, cls, "supercls")
     add_value_command(Typeconf, cls, "luaopen")
     add_value_command(Typeconf, cls, "codeblock")
-    add_value_command(Typeconf, cls, "luaname")
+    add_value_command(Typeconf, cls, "luaname", function (_, v) return v end)
     add_value_command(Typeconf, cls, "maincls", function (_, v) return v end)
     add_value_command(Typeconf, cls.options, "indexerror")
-    add_value_command(Typeconf, cls.options, "fromtable")
-    add_value_command(Typeconf, cls.options, "packable")
-    add_value_command(Typeconf, cls.options, "packvars")
+    add_value_command(Typeconf, cls.options, "fromtable", checkboolean)
+    add_value_command(Typeconf, cls.options, "packable", checkboolean)
+    add_value_command(Typeconf, cls.options, "packvars", checkinteger)
 
     ---Extend a c++ class with another class, all static members of `extcls`
     ---will be copied to the current class.
@@ -642,7 +668,7 @@ function typeconf(cppcls)
 
     ---@param cond string
     function Typeconf.macro(cond)
-        if #macros > 0 then
+        if #cond > 0 then
             macros:push(cond)
         else
             macros:pop()
@@ -683,8 +709,14 @@ function typeconf(cppcls)
         return typeconf_prop(Typeconf, cls, name)
     end
 
+    ---@param name string
+    ---@return idl.TypeconfVar
     function Typeconf.var(name)
         return typeconf_var(Typeconf, cls, name)
+    end
+
+    function Typeconf.alias(name)
+        return typeconf_alian(Typeconf, cls, name)
     end
 
     return Typeconf
