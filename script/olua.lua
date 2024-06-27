@@ -136,6 +136,28 @@ function olua.clone(t, new)
     return new
 end
 
+---Get the keys of a table.
+---@param t table
+---@return array
+function olua.keys(t)
+    local keys = olua.array()
+    for k in pairs(t) do
+        keys:push(k)
+    end
+    return keys
+end
+
+---Get the values of a table.
+---@param t table
+---@return array
+function olua.values(t)
+    local values = olua.array()
+    for _, v in pairs(t) do
+        values:push(v)
+    end
+    return values
+end
+
 ---Create a new array.
 ---@param ... any
 ---@return array
