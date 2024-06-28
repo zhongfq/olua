@@ -387,9 +387,9 @@ local function gen_func_ret(cls, fi, codeset)
             and not olua.has_pointee_flag(fi.ret.type)
             and not olua.is_value_type(fi.ret.type)
         then
-            codeset.decl_ret = format("${decltype}&ret = ", nil, true)
+            codeset.decl_ret = format("${decltype}&ret = ")
         else
-            codeset.decl_ret = format("${decltype}ret = ", nil, true)
+            codeset.decl_ret = format("${decltype}ret = ")
         end
 
         local retblock = { push_args = olua.array():set_joiner("\n") }

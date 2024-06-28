@@ -685,8 +685,9 @@ end
 ---@return string
 function olua.trim(expr, indent, keepspace)
     if type(expr) == "string" then
-        expr = expr:gsub("[\n\r]", "\n")
-        if not keepspace then
+        local idx
+        expr, idx = expr:gsub("[\n\r]", "\n")
+        if idx > 0 or not keepspace then
             expr = expr:gsub("^[\n]*", "")  -- trim head '\n'
             expr = expr:gsub("[ \n]*$", "") -- trim tail '\n' or ' '
             local space = string.match(expr, "^[ ]*")
@@ -706,7 +707,8 @@ end
 ---@return string
 function olua.format(expr, indent, keepspace)
     curr_expr = expr
-    expr = doeval(olua.trim(expr, indent, keepspace))
+    assert(not keepspace)
+    expr = doeval(olua.trim(expr, indent, true))
 
     while true do
         local s, n = expr:gsub("\n[ ]+\n", "\n\n")

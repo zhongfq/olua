@@ -759,7 +759,7 @@ function olua.initial_value(ti)
     elseif ti.conv == "olua_$$_integer" or ti.conv == "olua_$$_number" then
         return " = 0"
     elseif ti.conv == "olua_$$_enum" then
-        return format(" = (${ti.cppcls})0", nil, true), nil
+        return format(" = (${ti.cppcls})0"), nil
     else
         return ""
     end
