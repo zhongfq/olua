@@ -40,7 +40,7 @@ local function check_meta_method(cls)
             }]])))
         end
         if not has_method(cls, "__call") and cls.options.fromtable then
-            local codeset = { decl_args = olua.array():set_joiner("\n"), check_args = olua.array():set_joiner("\n") }
+            local codeset = { decl_args = olua.array("\n"), check_args = olua.array("\n") }
             olua.gen_class_fill(cls, 2, "ret", codeset)
 
             cls.funcs:push(olua.parse_func(cls, "__call", format([[
@@ -126,7 +126,7 @@ local function gen_class_funcs(cls, write)
 end
 
 local function gen_class_open(cls, write)
-    local funcs = olua.array():set_joiner("\n")
+    local funcs = olua.array("\n")
     local reg_luatype = ""
     local luaopen = cls.luaopen or ""
     local oluacls_class
@@ -230,7 +230,7 @@ local function has_packable_class(module)
 end
 
 function olua.gen_header(module)
-    local arr = olua.array():set_joiner("\n")
+    local arr = olua.array("\n")
     local function write(value)
         if value then
             -- '   #if' => '#if'
@@ -304,7 +304,7 @@ local function gen_classes(module, write)
 end
 
 local function gen_luaopen(module, write)
-    local requires = olua.array():set_joiner("\n")
+    local requires = olua.array("\n")
 
     local last_macro
     for _, cls in ipairs(module.class_types) do
@@ -351,7 +351,7 @@ local function gen_luaopen(module, write)
 end
 
 function olua.gen_source(module)
-    local arr = olua.array():set_joiner("\n")
+    local arr = olua.array("\n")
     local function append(value)
         if value then
             -- '   #if' => '#if'
@@ -435,7 +435,7 @@ local function gen_class_meta(module, cls, write)
     end
 
     if olua.is_enum_type(cls) then
-        local fields = olua.array():set_joiner("\n")
+        local fields = olua.array("\n")
         for _, ei in ipairs(cls.enums) do
             local comment = ei.comment
             if #comment > 0 then
@@ -480,9 +480,9 @@ local function gen_class_meta(module, cls, write)
         end
 
         -- write function parameters
-        local caller_args = olua.array():set_joiner(", ")
+        local caller_args = olua.array(", ")
         if #fi.args > 0 then
-            local params = olua.array():set_joiner("\n")
+            local params = olua.array("\n")
             local skip_first_arg = olua.is_oluaret(fi)
             for _, arg in ipairs(fi.args) do
                 if skip_first_arg then
@@ -516,7 +516,7 @@ local function gen_class_meta(module, cls, write)
                 goto skip_first_fn
             end
 
-            local caller_args = olua.array():set_joiner(", ")
+            local caller_args = olua.array(", ")
 
             local ret_luacls
             if olfi.ret.type.cppcls ~= "void" then
@@ -560,7 +560,7 @@ function olua.gen_metafile(module)
         if luacls:find("<") then
             goto continue
         end
-        local arr = olua.array():set_joiner("\n")
+        local arr = olua.array("\n")
         local function append(value)
             if value then
                 arr:push(value)

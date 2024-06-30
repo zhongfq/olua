@@ -36,7 +36,7 @@ function olua.gen_check_exp(arg, name, i, codeset)
     local argname = name
     local func_check = olua.conv_func(arg.type, arg.attr.pack and "pack" or "check")
     local check_args = codeset.check_args
-    codeset.check_args = olua.array():set_joiner("\n")
+    codeset.check_args = olua.array("\n")
     if arg.attr.pack then
         olua.assert(arg.type.packable, [[
             '${arg.type.cppcls}' is not a packable type
@@ -57,9 +57,9 @@ function olua.gen_check_exp(arg, name, i, codeset)
         ]])
     elseif arg.type.subtypes then
         olua.assert(#arg.type.subtypes <= 2, "unsupport template arg types > 2 ")
-        local subtype_decl_args = olua.array():set_joiner(", ")
-        local subtype_template_args = olua.array():set_joiner(", ")
-        local subtype_check_exp = olua.array():set_joiner("\n")
+        local subtype_decl_args = olua.array(", ")
+        local subtype_template_args = olua.array(", ")
+        local subtype_check_exp = olua.array("\n")
         local idx = -1
         for ii, subtype in ipairs(arg.type.subtypes) do
             local subtype_func_check = olua.conv_func(subtype, "check")
@@ -135,9 +135,9 @@ function olua.gen_push_exp(arg, name, codeset)
         end
     elseif arg.type.subtypes then
         olua.assert(#arg.type.subtypes <= 2, "unsupport template arg types > 2 ")
-        local subtype_decl_args = olua.array():set_joiner(", ")
-        local subtype_template_args = olua.array():set_joiner(", ")
-        local subtype_push_exp = olua.array():set_joiner("\n")
+        local subtype_decl_args = olua.array(", ")
+        local subtype_template_args = olua.array(", ")
+        local subtype_push_exp = olua.array("\n")
         for i, subtype in ipairs(arg.type.subtypes) do
             local subtype_func_push = olua.conv_func(subtype, "push")
             local subtype_func_copy = olua.conv_func(subtype, "pushcopy")
@@ -392,7 +392,7 @@ local function gen_func_ret(cls, fi, codeset)
             codeset.decl_ret = format("${decltype}ret = ")
         end
 
-        local retblock = { push_args = olua.array():set_joiner("\n") }
+        local retblock = { push_args = olua.array("\n") }
 
         if olua.is_oluaret(fi) then
             codeset.num_ret = "(int)ret"
@@ -421,11 +421,11 @@ local function gen_one_func(cls, fi, write, funcidx)
     ---@class GenFuncCodeSet
     local codeset = {
         idx = 0,
-        decl_args = olua.array():set_joiner("\n"),
-        check_args = olua.array():set_joiner("\n"),
-        caller_args = olua.array():set_joiner(", "),
-        insert_after = olua.array(fi.insert.after):set_joiner("\n"),
-        insert_before = olua.array(fi.insert.before):set_joiner("\n"),
+        decl_args = olua.array("\n"),
+        check_args = olua.array("\n"),
+        caller_args = olua.array(", "),
+        insert_after = olua.array("\n"),
+        insert_before = olua.array("\n"),
         has_ref_store = false,
         push_ret = "",
         decl_ret = "",
@@ -435,6 +435,9 @@ local function gen_one_func(cls, fi, write, funcidx)
         push_stub = "",
         remove_function_callback = "",
     }
+
+    codeset.insert_after:push(fi.insert.after)
+    codeset.insert_before:push(fi.insert.before)
 
     olua.willdo([[
         gen one func:
@@ -497,7 +500,7 @@ local function gen_one_func(cls, fi, write, funcidx)
     end
 
     if fi.cppfunc == "as" then
-        local asexp = olua.array():set_joiner("\n")
+        local asexp = olua.array("\n")
         for _, ascls in ipairs(fi.ret.attr.as) do
             local asti = olua.typeinfo(ascls .. "*")
             local asluacls = asti.luacls:match("^[^< ]+")
@@ -667,7 +670,7 @@ end
 local function gen_multi_func(cls, funcs, write)
     local cppfunc = funcs[1].cppfunc
     local subone = funcs[1].static and "" or " - 1"
-    local ifblock = olua.array():set_joiner("\n\n")
+    local ifblock = olua.array("\n\n")
 
     for i, fi in ipairs(funcs) do
         gen_one_func(cls, fi, write, "$" .. fi.index)
@@ -729,7 +732,7 @@ function olua.gen_class_fill(cls, idx, name, codeset)
         olua.gen_decl_exp(var, argname, codeset)
         codeset.check_args:pushf([[olua_getfield(L, ${idx}, "${var.varname}");]])
         if var.attr.optional then
-            local subset = { check_args = olua.array():set_joiner("\n") }
+            local subset = { check_args = olua.array("\n") }
             olua.gen_check_exp(var, argname, -1, subset)
             codeset.check_args:pushf([[
                 if (!olua_isnoneornil(L, -1)) {
@@ -752,8 +755,8 @@ end
 -- packable object
 local function gen_pack_func(cls, write)
     local codeset = {
-        decl_args = olua.array():set_joiner("\n"),
-        check_args = olua.array():set_joiner("\n"),
+        decl_args = olua.array("\n"),
+        check_args = olua.array("\n"),
     }
     for i, var in ipairs(cls.vars) do
         local pi = var.set.args[1]
@@ -781,7 +784,7 @@ end
 
 local function gen_unpack_func(cls, write)
     local num_args = #cls.vars
-    local codeset = { push_args = olua.array():set_joiner("\n") }
+    local codeset = { push_args = olua.array("\n") }
     for _, var in ipairs(cls.vars) do
         local pi = var.set.args[1]
         local argname = format("value->${pi.varname}")
@@ -800,7 +803,7 @@ local function gen_unpack_func(cls, write)
 end
 
 local function gen_canpack_func(cls, write)
-    local exps = olua.array():set_joiner(" && ")
+    local exps = olua.array(" && ")
     for i, var in ipairs(cls.vars) do
         local pi = var.set.args[1]
         local func_is = olua.conv_func(pi.type, "is")

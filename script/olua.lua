@@ -65,29 +65,6 @@ function olua.write(path, content)
     f:close()
 end
 
-function olua.sort(arr, field)
-    if field then
-        table.sort(arr, function (a, b)
-            return a[field] < b[field]
-        end)
-    else
-        table.sort(arr)
-    end
-    return arr
-end
-
-function olua.ipairs(t, walk)
-    for i, v in ipairs(t) do
-        walk(i, v)
-    end
-end
-
-function olua.pairs(t, walk)
-    for k, v in pairs(t) do
-        walk(k, v)
-    end
-end
-
 -------------------------------------------------------------------------------
 -- Error handle
 -------------------------------------------------------------------------------
@@ -125,6 +102,10 @@ function olua.assert(value, message)
     return value
 end
 
+-------------------------------------------------------------------------------
+-- array & map
+-------------------------------------------------------------------------------
+
 ---Clone a table.
 ---@param t table
 ---@param new? table
@@ -147,6 +128,15 @@ function olua.keys(t)
     return keys
 end
 
+---Iterate over the table.
+---@param t table
+---@param fn fun(value:any, key:string|integer, t:table)
+function olua.foreach(t, fn)
+    for k, v in pairs(t) do
+        fn(v, k, t)
+    end
+end
+
 ---Get the values of a table.
 ---@param t table
 ---@return array
@@ -158,14 +148,32 @@ function olua.values(t)
     return values
 end
 
+---Sort the table.
+---@param t table
+---@param field? string|fun(a:any, b:any):boolean
+function olua.sort(t, field)
+    if type(field) == "function" then
+        table.sort(t, field)
+    elseif field then
+        table.sort(t, function (a, b)
+            return a[field] < b[field]
+        end)
+    else
+        table.sort(t)
+    end
+    return t
+end
+
 ---Create a new array.
----@param ... any
+---@param sep? string
+---@param prefix? string
+---@param posfix? string
 ---@return array
-function olua.array(...)
+function olua.array(sep, prefix, posfix)
     ---@class array
     local array = {}
 
-    local joiner = {}
+    local joiner = { sep = sep, prefix = prefix, posfix = posfix }
 
     ---@private
     array.__index = array
@@ -175,17 +183,6 @@ function olua.array(...)
         for i = 1, #self do
             self[i] = nil
         end
-    end
-
-    ---@param sep string
-    ---@param prefix? string
-    ---@param posfix? string
-    ---@return self
-    function array:set_joiner(sep, prefix, posfix)
-        joiner.sep = sep
-        joiner.prefix = prefix
-        joiner.posfix = posfix
-        return self
     end
 
     ---Clone the array.
@@ -206,16 +203,20 @@ function olua.array(...)
 
     ---Push an element at the end of the array. If `value` is `nil`, nothing is done.
     ---@param value any
+    ---@return any # Return `value`.
     function array:push(value)
         if value ~= nil then
             table.insert(self, value)
         end
+        return value
     end
 
     ---Push a formatting string at the end of the array.
     ---@param value string
+    ---@return self
     function array:pushf(value)
         self:push(olua.format(value))
+        return self
     end
 
     ---Remove and return the last element of the array.
@@ -294,16 +295,7 @@ function olua.array(...)
     ---@param field? string | fun(a:any, b:any):boolean
     ---@return self
     function array:sort(field)
-        if type(field) == "function" then
-            table.sort(self, field)
-        elseif field then
-            table.sort(self, function (a, b)
-                return a[field] < b[field]
-            end)
-        else
-            table.sort(self)
-        end
-        return self
+        return olua.sort(self, field)
     end
 
     ---Get a slice of the array.
@@ -311,7 +303,7 @@ function olua.array(...)
     ---@param to? integer
     ---@return array
     function array:slice(from, to)
-        local arr = olua.array():set_joiner(joiner.sep, joiner.prefix, joiner.posfix)
+        local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
         for i = from or 1, to or #self do
             if i > #self then
                 break
@@ -324,15 +316,14 @@ function olua.array(...)
     ---Iterate over the array.
     ---@param fn fun(value:any, index:integer, array:array)
     function array:foreach(fn)
-        for i, v in ipairs(self) do
-            fn(v, i, self)
-        end
+        olua.foreach(self, fn)
     end
 
     ---Join the array with a separator.
     ---@param sep string
     ---@param prefix? string
     ---@param posfix? string
+    ---@diagnostic disable-next-line: redefined-local
     function array:join(sep, prefix, posfix)
         prefix = prefix or ""
         posfix = posfix or ""
@@ -344,7 +335,7 @@ function olua.array(...)
         return self:join(joiner.sep or "", joiner.prefix, joiner.posfix)
     end
 
-    return setmetatable({ ... }, array)
+    return setmetatable({}, array)
 end
 
 ---Create a new ordered map.

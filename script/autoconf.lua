@@ -145,7 +145,7 @@ local function parse_from_ast(type)
         return trim_prefix_colon(type.name)
     end
 
-    local exps = olua.array():set_joiner("::")
+    local exps = olua.array("::")
     while cur and cur.kind ~= CursorKind.TranslationUnit do
         local value = raw_typename(cur.name)
         if cur.isInlineNamespace then
@@ -449,7 +449,7 @@ local function parse_attr_from_annotate(attr, cur, isvar)
             if c.kind == CursorKind.AnnotateAttr then
                 local name = c.name
                 if name:find("^@") then
-                    exps = exps or olua.array():set_joiner(" ")
+                    exps = exps or olua.array(" ")
                     exps:push(name)
                 end
             end
@@ -1208,7 +1208,7 @@ local function write_cls_func(module, cls, append)
         if not arr.has_new then
             goto continue
         end
-        local funcs = olua.array():set_joiner("', '", "'", "'")
+        local funcs = olua.array("', '", "'", "'")
         local has_callback = false
         local fi = arr[1]
         for _, v in ipairs(arr) do
@@ -1283,7 +1283,7 @@ end
 ---@param cls idl.model.class_desc
 ---@param append any
 local function write_cls_options(module, cls, append)
-    local out = olua.array():set_joiner("\n")
+    local out = olua.array("\n")
     for key, value in pairs(cls.options) do
         olua.unuse(key, value)
         out:pushf([[.option('${key}', ${value?})]])
@@ -1335,9 +1335,9 @@ end
 local function write_cls_callback(module, cls, append)
     for i, v in ipairs(cls.callbacks) do
         assert(v.funcs, cls.cppcls .. "::" .. v.name)
-        local funcs = olua.array():set_joiner("',\n'", "'", "'"):concat(v.funcs)
-        local tag_maker = olua.array():set_joiner("', '", "'", "'")
-        local tag_mode = olua.array():set_joiner("', '", "'", "'")
+        local funcs = olua.array("',\n'", "'", "'"):concat(v.funcs)
+        local tag_maker = olua.array("', '", "'", "'")
+        local tag_mode = olua.array("', '", "'", "'")
         local tag_store = v.tag_store or "0"
         local tag_scope = v.tag_scope or "object"
         if type(v.tag_store) == "string" then
@@ -1348,14 +1348,16 @@ local function write_cls_callback(module, cls, append)
         if type(v.tag_maker) == "string" then
             tag_maker:push(v.tag_maker)
         else
-            tag_maker:concat(v.tag_maker)
-            tag_maker = olua.array(olua.format("{${tag_maker}}"))
+            local arr = tag_maker:concat(v.tag_maker)
+            tag_maker = olua.array()
+            tag_maker:pushf("{${arr}}")
         end
         if type(v.tag_mode) == "string" then
             tag_mode:push(v.tag_mode)
         else
-            tag_mode:concat(v.tag_mode)
-            tag_mode = olua.array(olua.format("{${tag_mode}}"))
+            local arr = tag_mode:concat(v.tag_mode)
+            tag_mode = olua.array()
+            tag_mode:pushf("{${arr}}")
         end
         append(olua.format([[
             .callback {
@@ -1437,7 +1439,7 @@ local function write_module_classes(module, append)
 end
 
 local function write_module(module)
-    local t = olua.array():set_joiner("\n")
+    local t = olua.array("\n")
 
     local function append(str)
         t:push(str)
@@ -1453,7 +1455,7 @@ local function write_module(module)
 end
 
 local function parse_headers()
-    local headers = olua.array():set_joiner("\n")
+    local headers = olua.array("\n")
     for _, m in ipairs(modules) do
         headers:push(m.headers)
     end
@@ -1587,7 +1589,7 @@ local function check_errors()
     -- check type info
     table.sort(type_checker, function (e1, e2) return e1.type < e2.type end)
     local filter = {}
-    olua.ipairs(type_checker, function (_, entry)
+    olua.foreach(type_checker, function (entry)
         if is_func_type(entry.type) then
             if not olua.is_pointer_type(entry.type) then
                 return
@@ -1879,13 +1881,13 @@ end
 
 local function write_typedefs()
     local types = olua.array()
-    local typedefs = olua.array():set_joiner("\n")
+    local typedefs = olua.array("\n")
 
     typedefs:push("-- AUTO BUILD, DON'T MODIFY!\n")
     typedefs:push("local typedef = olua.typedef")
 
     for _, m in ipairs(modules) do
-        olua.ipairs(m.typedef_types, function (_, td)
+        olua.foreach(m.typedef_types, function (td)
             if td.packable then
                 olua.assert(td.packvars, [[
                     no 'packvars' for packable type '${td.cppcls}'
@@ -1912,7 +1914,7 @@ local function write_typedefs()
             typedefs:push("")
         end)
 
-        olua.ipairs(m.class_types, function (_, cls)
+        olua.foreach(m.class_types, function (cls)
             if cls.maincls then
                 return
             end
@@ -1938,7 +1940,7 @@ local function write_typedefs()
         end)
     end
 
-    olua.pairs(alias_types, function (alias, cppcls)
+    olua.foreach(alias_types, function (cppcls, alias)
         if visited_types:get(raw_typename(alias)) then
             return
         end
@@ -2005,7 +2007,7 @@ local function write_typedefs()
 end
 
 local function write_makefile()
-    local class_files = olua.array():set_joiner("\n")
+    local class_files = olua.array("\n")
     for _, v in ipairs(modules) do
         class_files:pushf('olua.export "${v.class_file}"')
     end

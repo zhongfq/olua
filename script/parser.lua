@@ -248,7 +248,7 @@ function olua.decltype(ti, checkvalue, addspace, exps)
         return ti
     end
 
-    exps = exps or olua.array():set_joiner("")
+    exps = exps or olua.array()
     if not checkvalue and olua.has_const_flag(ti) then
         exps:push("const ")
     end

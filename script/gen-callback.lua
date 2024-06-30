@@ -115,9 +115,9 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
 
     ---@class CallbackCodeset
     local callbackset = {
-        args = olua.array():set_joiner(", "),
+        args = olua.array(", "),
         num_args = #arg.callback.args,
-        push_args = olua.array():set_joiner("\n"),
+        push_args = olua.array("\n"),
         remove_once_callback = "",
         remove_function_callback = "",
         remove_normal_callback = "",
