@@ -1880,82 +1880,73 @@ local function write_ignored_types()
 end
 
 local function write_typedefs()
-    local types = olua.array()
-    local typedefs = olua.array("\n")
-
-    typedefs:push("-- AUTO BUILD, DON'T MODIFY!\n")
-    typedefs:push("local typedef = olua.typedef")
+    local typdefs = olua.array()
 
     for _, m in ipairs(modules) do
-        olua.foreach(m.typedef_types, function (td)
+        ---@cast m idl.model.module_desc
+        m.typedef_types:foreach(function (td)
+            ---@cast td idl.model.typedef_desc
             if td.packable then
                 olua.assert(td.packvars, [[
                     no 'packvars' for packable type '${td.cppcls}'
                 ]])
             end
-            local filename = m.filename
             local cls = visited_types:get(raw_typename(td.cppcls))
             if cls and has_type_flag(cls, kFLAG_POINTER) then
                 return
             end
-            typedefs:pushf([[
-                typedef {
-                    from = 'module: ${filename}.lua -> typedef "${td.cppcls}"',
-                    cppcls = '${td.cppcls}',
-                    luacls = ${td.luacls??},
-                    luatype = ${td.luatype??},
-                    conv = '${td.conv}',
-                    packable = ${td.packable??},
-                    packvars = ${td.packvars??},
-                    smartptr = ${td.smartptr??},
-                    replace = ${td.replace??},
-                }
-            ]])
-            typedefs:push("")
+            typdefs:push({
+                from = olua.format([[module: ${m.path} -> typedef "${td.cppcls}"]]),
+                cppcls = td.cppcls,
+                luacls = td.luacls,
+                luatype = td.luatype,
+                conv = td.conv,
+                packable = td.packable,
+                packvars = td.packvars,
+                smartptr = td.smartptr,
+                replace = td.override,
+            })
         end)
 
-        olua.foreach(m.class_types, function (cls)
+        m.class_types:foreach(function (cls)
+            ---@cast cls idl.model.class_desc
             if cls.maincls then
                 return
             end
-
             local packvars
-            local filename = m.filename
             if has_type_flag(cls, kFLAG_POINTER) and cls.options.packable then
                 packvars = cls.options.packvars or #cls.vars
             end
-            typedefs:pushf([[
-                typedef {
-                    from = 'module: ${filename}.lua -> typeconf "${cls.cppcls}"',
-                    cppcls = '${cls.cppcls}',
-                    luacls = ${cls.luacls??},
-                    supercls = ${cls.supercls??},
-                    funcdecl = ${cls.funcdecl??},
-                    conv = '${cls.conv}',
-                    packable = ${cls.options.packable??},
-                    packvars = ${packvars??},
-                }
-            ]])
-            typedefs:push("")
+            typdefs:push({
+                from = olua.format([[module: ${m.path} -> typedef "${cls.cppcls}"]]),
+                cppcls = cls.cppcls,
+                luacls = cls.luacls,
+                supercls = cls.supercls,
+                funcdecl = cls.funcdecl,
+                conv = cls.conv,
+                packable = cls.options.packable,
+                packvars = packvars,
+            })
         end)
     end
 
-    olua.foreach(alias_types, function (cppcls, alias)
+    alias_types:foreach(function (cppcls, alias)
         if visited_types:get(raw_typename(alias)) then
             return
         end
+        ---@type idl.model.class_desc
         local cls = visited_types:get(raw_typename(cppcls))
         local from = olua.format("alias: ${alias} -> ${cppcls}")
         if not cls then
             local ti = assert(type_convs:get(cppcls) or olua.typeinfo(cppcls))
-            types:push({
+            typdefs:push({
                 from = from,
                 cppcls = alias,
                 conv = ti.conv,
                 luacls = ti.luacls,
             })
         elseif has_type_flag(cls, kFLAG_FUNC) then
-            types:push({
+            typdefs:push({
                 from = from,
                 cppcls = alias,
                 luacls = cls.luacls,
@@ -1963,7 +1954,7 @@ local function write_typedefs()
                 conv = "olua_$$_callback",
             })
         elseif has_type_flag(cls, kFLAG_ENUM) then
-            types:push({
+            typdefs:push({
                 from = from,
                 cppcls = alias,
                 conv = "olua_$$_enum",
@@ -1977,7 +1968,7 @@ local function write_typedefs()
             if packable then
                 packvars = cls.options.packvars or #cls.vars
             end
-            types:push({
+            typdefs:push({
                 from = from,
                 cppcls = alias,
                 luacls = cls.luacls,
@@ -1988,22 +1979,15 @@ local function write_typedefs()
         end
     end)
 
-    for i, v in ipairs(olua.sort(types, "cppcls")) do
-        typedefs:pushf([[
-            typedef {
-                from = '${v.from}',
-                cppcls = '${v.cppcls}',
-                conv = '${v.conv}',
-                luacls = ${v.luacls??},
-                funcdecl = ${v.funcdecl??},
-                packable = ${v.packable??},
-                packvars = ${v.packvars??},
-            }
-        ]])
-        typedefs:push("")
+    local out = olua.array("\n")
+    out:push("-- AUTO BUILD, DON'T MODIFY!\n")
+    out:push("local typedef = olua.typedef")
+    out:push("")
+    for _, v in ipairs(typdefs:sort("cppcls")) do
+        out:push(olua.lua_stringify(v, { marshal = "typedef" }))
+        out:push("")
     end
-
-    olua.write("autobuild/typedefs.idl", table.concat(typedefs, "\n"))
+    olua.write("autobuild/typedefs.idl", tostring(out))
 end
 
 local function write_makefile()

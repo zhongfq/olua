@@ -955,7 +955,7 @@ end
 
 ---@class olua.lua_options
 ---@field indent? number
----@field append_return? boolean
+---@field marshal? string
 
 ---@param data any
 ---@param options? olua.lua_options
@@ -964,8 +964,8 @@ function olua.lua_stringify(data, options)
     local lua_array_stringify
     local lua_object_stringify
 
-    local indent = options and options.indent or 4
-    local append_return = options and options.append_return or false
+    local indent = (options and options.indent) or 4
+    local marshal = (options and options.marshal) and (options.marshal .. " ") or ""
 
     ---@param value any
     ---@param out array
@@ -1007,7 +1007,7 @@ function olua.lua_stringify(data, options)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            return olua.format("[===[${value}]===]"), nil
+            return '"' .. value:gsub('"', '\\"'):gsub("\n", "\\n") .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
             if mt and mt.__tostring then
@@ -1113,18 +1113,11 @@ function olua.lua_stringify(data, options)
     local out = olua.array("\n")
     local str = lua_value_stringify(data)
     lua_annotation_type(data, out)
-    if append_return then
-        out:pushf([[
-            return {
-                ${str}
-            }
-        ]], indent)
-    else
-        out:pushf([[
-            {
-                ${str}
-            }
-        ]], indent)
-    end
+    olua.unuse(str, marshal)
+    out:pushf([[
+        ${marshal}{
+            ${str}
+        }
+    ]], indent)
     return tostring(out)
 end

@@ -533,13 +533,12 @@ function typeconf(cppcls)
     ---@field comment? string
     ---@field funcdecl? string # std::function declaration
     ---@field luacls? string
+    ---@field maincls? string
     local cls = {
         ---@type string c++ full class name
         cppcls = cppcls,
         ---@type string lua class name
         luacls = idl.current_module.luacls(cppcls),
-        funcdecl = nil,
-        comment = nil,
         conv = "olua_$$_object",
         extends = olua.ordered_map(),
         excludes = olua.ordered_map(),
