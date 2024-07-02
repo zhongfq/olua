@@ -1,4 +1,10 @@
-olua = {}
+local cjson
+
+xpcall(function ()
+    cjson = require "cjson.safe"
+end, function ()
+    cjson = {}
+end)
 
 local is_windows = package.config:find("\\")
 
@@ -13,6 +19,8 @@ function pairs(t)
     local mt = getmetatable(t)
     return (mt and mt.__pairs or _pairs)(t)
 end
+
+olua = {}
 
 ---Suppress warnings.
 ---@param ... unknown
@@ -330,6 +338,20 @@ function olua.array(sep, prefix, posfix)
         return prefix .. table.concat(self, sep) .. posfix
     end
 
+    ---Return a new array with unique values.
+    ---@return array
+    function array:toset()
+        local filter = {}
+        local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
+        for _, v in ipairs(self) do
+            if not filter[v] then
+                arr:push(v)
+                filter[v] = true
+            end
+        end
+        return arr
+    end
+
     ---@private
     function array:__tostring()
         return self:join(joiner.sep or "", joiner.prefix, joiner.posfix)
@@ -553,7 +575,7 @@ local function lookup(level, key)
         end
     end
 
-    if value then
+    if value ~= nil then
         return value
     end
 
@@ -599,9 +621,10 @@ local function eval(line)
         local key = string.match(str, "[%w_]+")
         local opt = string.match(str, "%?+")
         local fix = string.match(str, "#")
-        local value = lookup(level + 2, key) or _G[key]
+        local value = lookup(level + 2, key)
+        value = value == nil and _G[key] or value
         for field in string.gmatch(string.match(str, "[%w_.]+"), "[^.]+") do
-            if not value then
+            if value == nil then
                 break
             elseif field ~= key then
                 value = value[field]
@@ -694,11 +717,9 @@ end
 ---Format the expression.
 ---@param expr string
 ---@param indent? integer
----@param keepspace? boolean
 ---@return string
-function olua.format(expr, indent, keepspace)
+function olua.format(expr, indent)
     curr_expr = expr
-    assert(not keepspace)
     expr = doeval(olua.trim(expr, indent, true))
 
     while true do
@@ -746,4 +767,327 @@ function olua.command_proxy(cmd, parent)
     end
 
     return setmetatable(proxy, proxy)
+end
+
+---@param t any
+---@param name string
+---@return boolean
+function olua.has_metafield(t, name)
+    return olua.get_metafield(t, name) ~= nil
+end
+
+---@param t any
+---@param name string
+---@return unknown
+function olua.get_metafield(t, name)
+    local mt = getmetatable(t)
+    return mt and mt[name]
+end
+
+-------------------------------------------------------------------------------
+--- stringify
+-------------------------------------------------------------------------------
+
+local function is_array(t)
+    local mt = getmetatable(t)
+    if mt and mt.__olua_object then
+        return false
+    end
+    local n = 0
+    for k in pairs(t) do
+        n = n + 1
+    end
+    if #t ~= n then
+        return false
+    else
+        for i = 1, n do
+            if t[i] == nil then
+                return false
+            end
+        end
+        return true
+    end
+end
+
+function olua.as_object(t)
+    local mt = getmetatable(t)
+    if not mt then
+        mt = {}
+        setmetatable(t, mt)
+    end
+    mt.__olua_object = true
+end
+
+---@param data any
+---@return string
+function olua.json_stringify(data)
+    local json_array_stringify
+    local json_object_stringify
+
+    local function json_value_stringify(value)
+        local type_name = type(value)
+        if type_name == "number" then
+            if value == value // 1 then
+                return value >> 0
+            else
+                return value
+            end
+        elseif type_name == "boolean" then
+            return tostring(value)
+        elseif type_name == "string" then
+            return value:gsub('"', '\\"'):gsub("\n", "\\n")
+        elseif type_name == "table" then
+            local mt = getmetatable(value)
+            if mt and mt.__tostring then
+                return mt.__tostring(value)
+            elseif is_array(value) then
+                return json_array_stringify(value)
+            else
+                return json_object_stringify(value)
+            end
+        elseif value == cjson.null then
+            return "null"
+        else
+            olua.error("unsupport type: ${type_name}")
+        end
+    end
+
+    function json_object_stringify(value)
+        local keys = olua.keys(value):sort(function (a, b)
+            if type(a) ~= type(b) then
+                return tostring(a) < tostring(b)
+            else
+                return a < b
+            end
+        end)
+        local out = olua.array(",\n")
+        for _, k in ipairs(keys) do
+            local v = value[k]
+            local v_str = json_value_stringify(v)
+            local type_name = type(v)
+            local k_str
+            if type(k) ~= "string" then
+                k_str = olua.format([["${k}"]])
+            else
+                k_str = string.format("%q", k)
+            end
+            olua.unuse(v_str, k_str)
+            if type_name ~= "table" then
+                out:pushf([[
+                    ${k_str}: ${v_str}
+                ]])
+            elseif is_array(v) then
+                out:pushf([[
+                    ${k_str}: [
+                        ${v_str}
+                    ]
+                ]])
+            else
+                out:pushf([[
+                    ${k_str}: {
+                        ${v_str}
+                    }
+                ]])
+            end
+        end
+        return out
+    end
+
+    function json_array_stringify(value)
+        local out = olua.array(",\n")
+        for _, v in ipairs(value) do
+            local v_str = json_value_stringify(v)
+            local type_name = type(v)
+            olua.unuse(v_str)
+            if type_name ~= "table" then
+                out:pushf([[
+                    ${v_str}
+                ]])
+            elseif is_array(v) then
+                out:pushf([[
+                    [
+                        ${v_str}
+                    ]
+                ]])
+            else
+                out:pushf([[
+                    {
+                        ${v_str}
+                    }
+                ]])
+            end
+        end
+        return out
+    end
+
+    local str = json_value_stringify(data)
+    if is_array(data) then
+        str = olua.format([[
+            [
+                ${str}
+            ]
+        ]])
+    else
+        str = olua.format([[
+            {
+                ${str}
+            }
+        ]])
+    end
+    return str
+end
+
+function olua.lua_stringify(data)
+    local lua_array_stringify
+    local lua_object_stringify
+
+    ---@param value any
+    ---@param out array
+    local function lua_annotation_stringify(value, out)
+        local v_cls_out
+        local k_type_out
+        for k, v in pairs(value) do
+            local olua_class = olua.get_metafield(v, "__olua_class")
+            if olua_class then
+                if not v_cls_out then
+                    v_cls_out = olua.array(" | ")
+                    k_type_out = olua.array(" | ")
+                end
+                v_cls_out:push(olua_class)
+                if type(k) == "string" then
+                    k_type_out:push("string")
+                else
+                    k_type_out:push("integer")
+                end
+            end
+        end
+        if v_cls_out then
+            v_cls_out = v_cls_out:toset():sort()
+            k_type_out = k_type_out:toset():sort()
+            out:pushf([[
+                ---@type { [${k_type_out}]: ${v_cls_out} }
+            ]])
+        end
+    end
+
+    local function lua_value_stringify(value)
+        local type_name = type(value)
+        if type_name == "number" then
+            if value == value // 1 then
+                return value >> 0
+            else
+                return value
+            end
+        elseif type_name == "boolean" then
+            return tostring(value)
+        elseif type_name == "string" then
+            return olua.format("[===[${value}]===]"), nil
+        elseif type_name == "table" then
+            local mt = getmetatable(value)
+            if mt and mt.__tostring then
+                return mt.__tostring(value)
+            elseif is_array(value) then
+                return lua_array_stringify(value)
+            else
+                return lua_object_stringify(value)
+            end
+        elseif value == cjson.null then
+            return "nil"
+        else
+            olua.error("unsupport type: ${type_name}")
+        end
+    end
+
+    function lua_object_stringify(value)
+        local keys = olua.keys(value):sort(function (a, b)
+            if type(a) ~= type(b) then
+                return tostring(a) < tostring(b)
+            else
+                return a < b
+            end
+        end)
+        local out = olua.array("\n")
+        for _, k in ipairs(keys) do
+            local v = value[k]
+            local type_name = type(v)
+            local k_str
+            if type(k) ~= "string" then
+                k_str = olua.format("[${k}]")
+            elseif string.find(k, "[^%w_]") then
+                k_str = olua.format('["${k}"]')
+            else
+                k_str = olua.format("${k}")
+            end
+            if type_name ~= "table" then
+                local v_str = lua_value_stringify(v)
+                olua.unuse(k_str, v_str)
+                out:pushf([[
+                    ${k_str} = ${v_str},
+                ]])
+            elseif olua.has_metafield(v, "__olua_enum") then
+                local olua_enum = olua.get_metafield(v, "__olua_enum")
+                local olua_comment = olua.get_metafield(v, "__olua_comment") or {}
+                local v_out = olua.array("\n")
+                for enum_name, enum_value in pairs(v) do
+                    local comment = olua_comment[enum_name] or ""
+                    if comment ~= "" then
+                        comment = olua.format(" -- ${comment}")
+                    end
+                    enum_value = lua_value_stringify(enum_value)
+                    v_out:pushf([[
+                        ${enum_name} = ${enum_value},${comment}
+                    ]])
+                end
+                v_out:sort()
+                olua.unuse(olua_enum)
+                out:pushf([[
+                    ---@enum ${olua_enum}
+                    ${k_str} = {
+                        ${v_out}
+                    },
+                ]])
+            else
+                local v_str = lua_value_stringify(v)
+                olua.unuse(v_str)
+                lua_annotation_stringify(v, out)
+                out:pushf([[
+                    ${k_str} = {
+                        ${v_str}
+                    },
+                ]])
+            end
+        end
+        return out
+    end
+
+    function lua_array_stringify(value)
+        local out = olua.array("\n")
+        for _, v in ipairs(value) do
+            local v_str = lua_value_stringify(v)
+            local type_name = type(v)
+            olua.unuse(v_str)
+            if type_name == "table" then
+                out:pushf([[
+                    {
+                        ${v_str}
+                    },
+                ]])
+            else
+                out:pushf([[
+                   ${v_str},
+                ]])
+            end
+        end
+        return out
+    end
+
+    local out = olua.array("\n")
+    local str = lua_value_stringify(data)
+    lua_annotation_stringify(data, out)
+    out:pushf([[
+        {
+            ${str}
+        }
+    ]])
+    return tostring(out)
 end

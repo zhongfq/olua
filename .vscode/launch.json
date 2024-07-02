@@ -21,10 +21,13 @@
     {
       "type": "lua",
       "request": "launch",
-      "name": "olua",
+      "name": "test",
       "stopOnEntry": false,
-      "cwd": "${workspaceFolder}/tools",
-      "program": "olua.lua"
+      "cwd": "${workspaceFolder}/script",
+      "program": "test.lua",
+      "osx": {
+        "luaexe": "lua"
+      }
     }
   ]
 }
