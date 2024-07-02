@@ -1019,10 +1019,15 @@ function olua.lua_stringify(data)
                 k_str = olua.format("${k}")
             end
             if type_name ~= "table" then
+                local olua_comment = olua.get_metafield(value, "__olua_comment") or {}
+                local comment = olua_comment[k] or ""
+                if comment ~= "" then
+                    comment = olua.format(" -- ${comment}")
+                end
                 local v_str = lua_value_stringify(v)
                 olua.unuse(k_str, v_str)
                 out:pushf([[
-                    ${k_str} = ${v_str},
+                    ${k_str} = ${v_str},${comment}
                 ]])
             elseif olua.has_metafield(v, "__olua_enum") then
                 local olua_enum = olua.get_metafield(v, "__olua_enum")
