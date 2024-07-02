@@ -221,9 +221,10 @@ function olua.array(sep, prefix, posfix)
 
     ---Push a formatting string at the end of the array.
     ---@param value string
+    ---@param indent? integer
     ---@return self
-    function array:pushf(value)
-        self:push(olua.format(value))
+    function array:pushf(value, indent)
+        self:push(olua.format(value, indent))
         return self
     end
 
@@ -705,10 +706,14 @@ function olua.trim(expr, indent, keepspace)
             expr = expr:gsub("^[\n]*", "")  -- trim head '\n'
             expr = expr:gsub("[ \n]*$", "") -- trim tail '\n' or ' '
             local space = string.match(expr, "^[ ]*")
-            local indent_space = string.rep(" ", indent or 0)
-            expr = expr:gsub("^[ ]*", "") -- trim head space
-            expr = expr:gsub("\n" .. space, "\n" .. indent_space)
-            expr = indent_space .. expr
+            expr = expr:gsub("^[ ]*", "")   -- trim head space
+            expr = expr:gsub("\n" .. space, "\n")
+            if indent and indent ~= 4 then
+                expr = expr:gsub("\n( +)", function (spaces)
+                    local n = #spaces // 4
+                    return "\n" .. string.rep(" ", n * indent)
+                end)
+            end
         end
     end
     return expr
@@ -818,11 +823,22 @@ function olua.as_object(t)
     mt.__olua_object = true
 end
 
+function olua.get_comment(t, k)
+    local comments = olua.get_metafield(t, "__olua_comment")
+    return comments and comments[k] or nil
+end
+
+---@class olua.json_options
+---@field indent? number
+
 ---@param data any
+---@param options? olua.json_options
 ---@return string
-function olua.json_stringify(data)
+function olua.json_stringify(data, options)
     local json_array_stringify
     local json_object_stringify
+
+    local indent = options and options.indent or 4
 
     local function json_value_stringify(value)
         local type_name = type(value)
@@ -835,7 +851,7 @@ function olua.json_stringify(data)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            return value:gsub('"', '\\"'):gsub("\n", "\\n")
+            return '"' .. value:gsub('"', '\\"'):gsub("\n", "\\n") .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
             if mt and mt.__tostring then
@@ -875,19 +891,19 @@ function olua.json_stringify(data)
             if type_name ~= "table" then
                 out:pushf([[
                     ${k_str}: ${v_str}
-                ]])
+                ]], indent)
             elseif is_array(v) then
                 out:pushf([[
                     ${k_str}: [
                         ${v_str}
                     ]
-                ]])
+                ]], indent)
             else
                 out:pushf([[
                     ${k_str}: {
                         ${v_str}
                     }
-                ]])
+                ]], indent)
             end
         end
         return out
@@ -895,26 +911,26 @@ function olua.json_stringify(data)
 
     function json_array_stringify(value)
         local out = olua.array(",\n")
-        for _, v in ipairs(value) do
+        for i, v in ipairs(value) do
             local v_str = json_value_stringify(v)
             local type_name = type(v)
             olua.unuse(v_str)
             if type_name ~= "table" then
                 out:pushf([[
                     ${v_str}
-                ]])
+                ]], indent)
             elseif is_array(v) then
                 out:pushf([[
                     [
                         ${v_str}
                     ]
-                ]])
+                ]], indent)
             else
                 out:pushf([[
                     {
                         ${v_str}
                     }
-                ]])
+                ]], indent)
             end
         end
         return out
@@ -926,24 +942,34 @@ function olua.json_stringify(data)
             [
                 ${str}
             ]
-        ]])
+        ]], indent)
     else
         str = olua.format([[
             {
                 ${str}
             }
-        ]])
+        ]], indent)
     end
     return str
 end
 
-function olua.lua_stringify(data)
+---@class olua.lua_options
+---@field indent? number
+---@field append_return? boolean
+
+---@param data any
+---@param options? olua.lua_options
+---@return string
+function olua.lua_stringify(data, options)
     local lua_array_stringify
     local lua_object_stringify
 
+    local indent = options and options.indent or 4
+    local append_return = options and options.append_return or false
+
     ---@param value any
     ---@param out array
-    local function lua_annotation_stringify(value, out)
+    local function lua_annotation_type(value, out)
         local v_cls_out
         local k_type_out
         for k, v in pairs(value) do
@@ -1019,29 +1045,27 @@ function olua.lua_stringify(data)
                 k_str = olua.format("${k}")
             end
             if type_name ~= "table" then
-                local olua_comment = olua.get_metafield(value, "__olua_comment") or {}
-                local comment = olua_comment[k] or ""
-                if comment ~= "" then
-                    comment = olua.format(" -- ${comment}")
+                local olua_comment = olua.get_comment(value, k) or ""
+                if olua_comment ~= "" then
+                    olua_comment = olua.format(" -- ${olua_comment}")
                 end
                 local v_str = lua_value_stringify(v)
                 olua.unuse(k_str, v_str)
                 out:pushf([[
-                    ${k_str} = ${v_str},${comment}
-                ]])
+                    ${k_str} = ${v_str},${olua_comment}
+                ]], indent)
             elseif olua.has_metafield(v, "__olua_enum") then
                 local olua_enum = olua.get_metafield(v, "__olua_enum")
-                local olua_comment = olua.get_metafield(v, "__olua_comment") or {}
                 local v_out = olua.array("\n")
                 for enum_name, enum_value in pairs(v) do
-                    local comment = olua_comment[enum_name] or ""
-                    if comment ~= "" then
-                        comment = olua.format(" -- ${comment}")
+                    local olua_comment = olua.get_comment(v, enum_name) or ""
+                    if olua_comment ~= "" then
+                        olua_comment = olua.format(" -- ${olua_comment}")
                     end
                     enum_value = lua_value_stringify(enum_value)
                     v_out:pushf([[
-                        ${enum_name} = ${enum_value},${comment}
-                    ]])
+                        ${enum_name} = ${enum_value},${olua_comment}
+                    ]], indent)
                 end
                 v_out:sort()
                 olua.unuse(olua_enum)
@@ -1050,16 +1074,16 @@ function olua.lua_stringify(data)
                     ${k_str} = {
                         ${v_out}
                     },
-                ]])
+                ]], indent)
             else
                 local v_str = lua_value_stringify(v)
                 olua.unuse(v_str)
-                lua_annotation_stringify(v, out)
+                lua_annotation_type(v, out)
                 out:pushf([[
                     ${k_str} = {
                         ${v_str}
                     },
-                ]])
+                ]], indent)
             end
         end
         return out
@@ -1076,11 +1100,11 @@ function olua.lua_stringify(data)
                     {
                         ${v_str}
                     },
-                ]])
+                ]], indent)
             else
                 out:pushf([[
                    ${v_str},
-                ]])
+                ]], indent)
             end
         end
         return out
@@ -1088,11 +1112,19 @@ function olua.lua_stringify(data)
 
     local out = olua.array("\n")
     local str = lua_value_stringify(data)
-    lua_annotation_stringify(data, out)
-    out:pushf([[
-        {
-            ${str}
-        }
-    ]])
+    lua_annotation_type(data, out)
+    if append_return then
+        out:pushf([[
+            return {
+                ${str}
+            }
+        ]], indent)
+    else
+        out:pushf([[
+            {
+                ${str}
+            }
+        ]], indent)
+    end
     return tostring(out)
 end
