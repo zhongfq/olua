@@ -799,6 +799,12 @@ function olua.trim(expr, indent, keepspace)
 end
 
 ---Format the expression.
+---
+--- Example:
+--- ```lua
+--- olua.format("${path}/output")
+--- olua.format("${olua.tostring(file.path)}")
+--- ```
 ---@param expr string
 ---@param indent? integer
 ---@return string
