@@ -592,45 +592,49 @@ end
 local function lookup(level, key)
     assert(key and #key > 0, key)
 
-    local value
-    local searchupvalue = true
+    while true do
+        local value
+        local searchupvalue = true
 
-    local info1 = debug.getinfo(level, "Snfu")
-    local info2 = debug.getinfo(level + 1, "Sn")
+        local info1 = debug.getinfo(level, "Snfu")
+        local info2 = debug.getinfo(level + 1, "Sn")
 
-    for i = 1, 256 do
-        local k, v = debug.getlocal(level, i)
-        if i <= info1.nparams and v == curr_expr then
-            searchupvalue = false
-        end
-        if k == key then
-            if type(v) ~= "string" or not v:find(FORMAT_PATTERN) then
-                value = v
+        for i = 1, 256 do
+            local k, v = debug.getlocal(level, i)
+            if i <= info1.nparams and v == curr_expr then
+                searchupvalue = false
             end
-        elseif not k then
+            if k == key then
+                if type(v) ~= "string" or not v:find(FORMAT_PATTERN) then
+                    value = v
+                end
+            elseif not k then
+                break
+            end
+        end
+
+        if value ~= nil then
+            return value
+        end
+
+        if searchupvalue then
+            for i = 1, 256 do
+                local k, v = debug.getupvalue(info1.func, i)
+                if k == key then
+                    return v
+                end
+            end
+        end
+
+        if info1.source == info2.source or
+            not searchupvalue or
+            string.find(info1.source, "olua.lua$") or
+            string.find(info2.source, "olua.lua$")
+        then
+            level = level + 1
+        else
             break
         end
-    end
-
-    if value ~= nil then
-        return value
-    end
-
-    if searchupvalue then
-        for i = 1, 256 do
-            local k, v = debug.getupvalue(info1.func, i)
-            if k == key then
-                return v
-            end
-        end
-    end
-
-    if info1.source == info2.source or
-        not searchupvalue or
-        string.find(info1.source, "olua.lua$") or
-        string.find(info2.source, "olua.lua$")
-    then
-        return lookup(level + 1, key)
     end
 end
 
