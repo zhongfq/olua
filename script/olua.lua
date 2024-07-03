@@ -359,6 +359,30 @@ function olua.array(sep, prefix, posfix)
         return arr
     end
 
+    ---Return a new array with filtered values.
+    ---@param fn fun(value:any, index:integer, array:array):boolean
+    ---@return array
+    function array:filter(fn)
+        local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
+        for i, v in ipairs(self) do
+            if fn(v, i, self) then
+                arr:push(v)
+            end
+        end
+        return arr
+    end
+
+    ---Calls a defined callback function on each element of an array, and returns an array that contains the results.
+    ---@param fn fun(value:any, index:integer, array:array):any
+    ---@return array
+    function array:map(fn)
+        local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
+        for i, v in ipairs(self) do
+            arr:push(fn(v, i, self))
+        end
+        return arr
+    end
+
     ---@private
     function array:__tostring()
         return self:join(joiner.sep or "", joiner.prefix, joiner.posfix)
@@ -372,11 +396,11 @@ end
 ---@return ordered_map
 function olua.ordered_map(overwritable)
     ---@class ordered_map
-    ---@field private keys array
-    ---@field private map table
+    ---@field private _keys array
+    ---@field private _map table
     local ordered_map = {
-        keys = olua.array(),
-        map = {}
+        _keys = olua.array(),
+        _map = {}
     }
 
     overwritable = overwritable ~= false
@@ -397,12 +421,12 @@ function olua.ordered_map(overwritable)
 
     ---@private
     function ordered_map:__len()
-        return #self.keys
+        return #self._keys
     end
 
     ---@private
     function ordered_map:__pairs()
-        return pairs(self.map)
+        return pairs(self._map)
     end
 
     ---@private
@@ -424,15 +448,15 @@ function olua.ordered_map(overwritable)
     ---@param key any
     ---@param value any
     function ordered_map:set(key, value)
-        if self.keys:index_of(key) == 0 then
+        if self._keys:index_of(key) == 0 then
             if value ~= nil then
-                self.map[key] = value
-                self.keys:push(key)
+                self._map[key] = value
+                self._keys:push(key)
             end
         elseif overwritable then
-            self.map[key] = value
+            self._map[key] = value
             if value == nil then
-                self.keys:remove(key)
+                self._keys:remove(key)
             end
         else
             error(string.format("key '%s' already exists", key))
@@ -443,9 +467,9 @@ function olua.ordered_map(overwritable)
     ---@param key string|integer
     ---@param value any
     function ordered_map:replace(key, value)
-        self.map[key] = value
-        if self.keys:index_of(key) == 0 then
-            self.keys:push(key)
+        self._map[key] = value
+        if self._keys:index_of(key) == 0 then
+            self._keys:push(key)
         end
     end
 
@@ -453,56 +477,62 @@ function olua.ordered_map(overwritable)
     ---@param key string|integer
     ---@return unknown
     function ordered_map:get(key)
-        return self.map[key]
+        return self._map[key]
     end
 
     ---Check if the key exists.
     ---@param key string|integer
     ---@return boolean
     function ordered_map:has(key)
-        return self.map[key] ~= nil
+        return self._map[key] ~= nil
     end
 
     ---Remove value with the key.
     ---@param key string|integer
     function ordered_map:remove(key)
-        self.keys:remove(key)
-        self.map[key] = nil
+        self._keys:remove(key)
+        self._map[key] = nil
     end
 
     ---Take value with the key.
     ---@param key string|integer
     ---@return any
     function ordered_map:take(key)
-        local value = self.map[key]
-        self.keys:remove(key)
-        self.map[key] = nil
+        local value = self._map[key]
+        self._keys:remove(key)
+        self._map[key] = nil
         return value
     end
 
     ---Iterate over the ordered map.
     ---@param fn fun(value:any, key:string|integer, map:ordered_map)
     function ordered_map:foreach(fn)
-        local keys = self.keys:slice()
+        local keys = self._keys:slice()
         for _, key in ipairs(keys) do
-            fn(self.map[key], key, self)
+            fn(self._map[key], key, self)
         end
     end
 
     ---Clear the ordered map.
     function ordered_map:clear()
-        self.keys:clear()
-        self.map = {}
+        self._keys:clear()
+        self._map = {}
     end
 
     ---Return values of the ordered.
     ---@return array
     function ordered_map:values()
         local arr = olua.array()
-        for _, key in ipairs(self.keys) do
-            arr:push(self.map[key])
+        for _, key in ipairs(self._keys) do
+            arr:push(self._map[key])
         end
         return arr
+    end
+
+    ---Return keys of the ordered.
+    ---@return array
+    function ordered_map:keys()
+        return self._keys
     end
 
     ---@alias insertmode
@@ -521,24 +551,24 @@ function olua.ordered_map(overwritable)
         if mode == "front" then
             idx = 1
         elseif mode == "after" then
-            idx = self.keys:index_of(at_key)
+            idx = self._keys:index_of(at_key)
             if idx == 0 then
-                idx = #self.keys + 1
+                idx = #self._keys + 1
             else
                 idx = idx + 1
             end
         elseif mode == "before" then
-            idx = self.keys:index_of(at_key)
+            idx = self._keys:index_of(at_key)
             if idx == 0 then
                 idx = 1
             end
         elseif mode == "back" then
-            idx = #self.keys + 1
+            idx = #self._keys + 1
         else
             olua.error("invalid insert mode: ${insertmode}")
         end
-        self.keys:insert(idx, key)
-        self.map[key] = value
+        self._keys:insert(idx, key)
+        self._map[key] = value
     end
 
     return setmetatable(ordered_map, ordered_map)
