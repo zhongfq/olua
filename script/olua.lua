@@ -823,9 +823,18 @@ function olua.as_object(t)
     mt.__olua_object = true
 end
 
-function olua.get_comment(t, k)
+---Get the comment of a field. If not found, return empty string.
+---@param t any
+---@param k string
+---@param marshal? string
+---@return string
+function olua.get_comment(t, k, marshal)
     local comments = olua.get_metafield(t, "__olua_comment")
-    return comments and comments[k] or nil
+    local str = comments and comments[k] or ""
+    if marshal and str ~= "" then
+        str = marshal .. str
+    end
+    return str
 end
 
 ---@class olua.json_options
@@ -996,6 +1005,16 @@ function olua.lua_stringify(data, options)
         end
     end
 
+    ---@param value any
+    ---@param out array
+    local function lua_annotation_class(value, out)
+        local annotation = olua.get_metafield(value, "__olua_annotation")
+        if annotation then
+            out:push(annotation)
+            out:push("")
+        end
+    end
+
     local function lua_value_stringify(value)
         local type_name = type(value)
         if type_name == "number" then
@@ -1045,12 +1064,9 @@ function olua.lua_stringify(data, options)
                 k_str = olua.format("${k}")
             end
             if type_name ~= "table" then
-                local olua_comment = olua.get_comment(value, k) or ""
-                if olua_comment ~= "" then
-                    olua_comment = olua.format(" -- ${olua_comment}")
-                end
+                local olua_comment = olua.get_comment(value, k, " -- ")
                 local v_str = lua_value_stringify(v)
-                olua.unuse(k_str, v_str)
+                olua.unuse(k_str, v_str, olua_comment)
                 out:pushf([[
                     ${k_str} = ${v_str},${olua_comment}
                 ]], indent)
@@ -1058,11 +1074,9 @@ function olua.lua_stringify(data, options)
                 local olua_enum = olua.get_metafield(v, "__olua_enum")
                 local v_out = olua.array("\n")
                 for enum_name, enum_value in pairs(v) do
-                    local olua_comment = olua.get_comment(v, enum_name) or ""
-                    if olua_comment ~= "" then
-                        olua_comment = olua.format(" -- ${olua_comment}")
-                    end
+                    local olua_comment = olua.get_comment(v, enum_name, " -- ")
                     enum_value = lua_value_stringify(enum_value)
+                    olua.unuse(olua_comment)
                     v_out:pushf([[
                         ${enum_name} = ${enum_value},${olua_comment}
                     ]], indent)
@@ -1112,6 +1126,7 @@ function olua.lua_stringify(data, options)
 
     local out = olua.array("\n")
     local str = lua_value_stringify(data)
+    lua_annotation_class(data, out)
     lua_annotation_type(data, out)
     olua.unuse(str, marshal)
     out:pushf([[
