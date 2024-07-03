@@ -578,7 +578,7 @@ end
 --- string util
 -------------------------------------------------------------------------------
 
-local FORMAT_PATTERN = "${[%w_.?#]+}"
+local FORMAT_PATTERN = "${[%w_.?#()]+}"
 local curr_expr = nil
 
 function olua.is_end_with(str, substr)
@@ -638,6 +638,23 @@ local function lookup(level, key)
     end
 end
 
+local function lookup_key_expr(level, key_expr)
+    local key = string.match(key_expr, "[%w_]+")
+    local value = lookup(level, key)
+    local first = true
+    value = value == nil and _G[key] or value
+    for field in string.gmatch(key_expr, "[^.]+") do
+        if first then
+            first = false
+        elseif value == nil then
+            break
+        else
+            value = value[field]
+        end
+    end
+    return value
+end
+
 ---@param line string
 local function eval(line)
     local drop = false
@@ -658,18 +675,39 @@ local function eval(line)
             end
         end
 
-        -- search in the functin local value
         local indent = string.match(line, " *")
-        local key = string.match(str, "[%w_]+")
-        local opt = string.match(str, "%?+")
-        local fix = string.match(str, "#")
-        local value = lookup(level + 2, key)
-        value = value == nil and _G[key] or value
-        for field in string.gmatch(string.match(str, "[%w_.]+"), "[^.]+") do
+        local value, opt, fix
+
+        local fn, key = string.match(str, "([%w_.]+)%(([%w_.]+)%)")
+        if fn then
+            --- in lookup func, olua.format is level + 2(lookup_key_expr + lookup)
+            local func = lookup_key_expr(level + 3, fn)
+            if not func then
+                throw_error(string.format("function '%s' not found used by '%s'", fn, str))
+            end
+
+            value = lookup_key_expr(level + 3, key)
+            if not value then
+                throw_error(string.format("value '%s' not found used by '%s'", key, str))
+            end
+
+            value = func(value)
             if value == nil then
-                break
-            elseif field ~= key then
-                value = value[field]
+                throw_error(string.format("%s(%s) return nil in '%s'", fn, key, str))
+            end
+        else
+            -- search in the functin local value
+            key = string.match(str, "[%w_]+")
+            opt = string.match(str, "%?+")
+            fix = string.match(str, "#")
+            value = lookup(level + 2, key)
+            value = value == nil and _G[key] or value
+            for field in string.gmatch(string.match(str, "[%w_.]+"), "[^.]+") do
+                if value == nil then
+                    break
+                elseif field ~= key then
+                    value = value[field]
+                end
             end
         end
 
@@ -728,7 +766,7 @@ local function doeval(expr)
             from = #expr + 1
             to = from
         end
-        arr[#arr+1] = eval(string.sub(expr, idx, from - 1))
+        arr[#arr + 1] = eval(string.sub(expr, idx, from - 1))
         idx = to + 1
     end
     return table.concat(arr, "\n")
