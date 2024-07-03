@@ -9,7 +9,7 @@ if not olua.isdir("autobuild") then
     olua.mkdir("autobuild")
 end
 
-olua.print("lua clang: v%s", clang.version)
+olua.print("lua clang: v${clang.version}")
 
 -- auto export after config
 if OLUA_AUTO_BUILD == nil then
@@ -1556,7 +1556,7 @@ local function parse_types()
             end
         end
         setmetatable(m, { __index = Autoconf })
-        olua.print("parsing: %s", m.path)
+        olua.print("parsing: ${m.path}")
         idl.current_module = m
         m:parse()
         idl.current_module = nil

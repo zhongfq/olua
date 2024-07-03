@@ -26,8 +26,8 @@ olua = {}
 ---@param ... unknown
 function olua.unuse(...) end
 
-function olua.print(fmt, ...)
-    print(string.format(fmt, ...))
+function olua.print(fmt)
+    print(olua.format(fmt))
 end
 
 function olua.isdir(path)
@@ -54,17 +54,23 @@ function olua.mkdir(dir)
 end
 
 function olua.write(path, content)
+    path = olua.format(path)
     local f = io.open(path, "rb")
     if f then
         local flag = f:read("*a") == content
         f:close()
         if flag then
-            olua.print("up-to-date: %s", path)
+            olua.print("up-to-date: ${path}")
             return
         end
     end
 
-    olua.print("write: %s", path)
+    olua.print("write: ${path}")
+
+    local dir = path:match("(.*)/[^/]+$")
+    if dir then
+        olua.mkdir(dir)
+    end
 
     f = io.open(path, "w+b")
     assert(f, path)
@@ -590,6 +596,7 @@ local function lookup(level, key)
     end
 
     if info1.source == info2.source or
+        not searchupvalue or
         string.find(info1.source, "olua.lua$") or
         string.find(info2.source, "olua.lua$")
     then
@@ -945,8 +952,9 @@ function olua.json_stringify(data, options)
         return out
     end
 
+    local olua_object = olua.get_metafield(data, "__olua_object")
     local str = json_value_stringify(data)
-    if is_array(data) then
+    if not olua_object and is_array(data) then
         str = olua.format([[
             [
                 ${str}
