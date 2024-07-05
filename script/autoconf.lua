@@ -564,7 +564,18 @@ function Autoconf:visit_method(cls, cur)
 
     parse_attr_from_annotate(attr, cur)
 
+    ---@type idl.model.func_model
+    local func_model = {
+        cppfunc = fn,
+        luafunc = fn,
+        prototype = "",
+        ret = { type = "" },
+        args = {},
+        is_contructor = cur.kind == CursorKind.Constructor,
+    }
+
     local comment = get_comment(cur)
+    func_model.comment = comment
     if comment then
         declexps:pushf("@comment(${comment})")
         declexps:push(" ")
@@ -583,14 +594,17 @@ function Autoconf:visit_method(cls, cur)
         end
     end
 
+    func_model.is_variadic = cur.isVariadic
     if cur.isVariadic then
         declexps:push("@variadic ")
     end
 
     declexps:push(attr.ret and (attr.ret .. " ") or nil)
+    func_model.ret.attr = attr.ret
 
     if cur.kind == CursorKind.FunctionDecl then
         static = true
+        func_model.is_static = true
     end
     declexps:push(static and "static " or nil)
 
@@ -607,11 +621,16 @@ function Autoconf:visit_method(cls, cur)
         declexps:push(olua.decltype(tn, nil, true))
         protoexps:push(declexps[#declexps])
         luaname = cls.luaname(fn, "func")
+        func_model.luafunc = luaname
+        func_model.ret.type = tn
+    else
+        func_model.ret.type = cls.cppcls .. " *"
     end
 
     local name_from_attr = string.match(attr.ret or "", "@name%(([^)]+)%)")
     if name_from_attr then
         luaname = name_from_attr
+        func_model.luafunc = luaname
     end
 
     local optional = false
@@ -622,9 +641,15 @@ function Autoconf:visit_method(cls, cur)
     for i, arg in ipairs(arguments) do
         local tn = typename(arg.type, cls.template_types, nil, typefrom)
         local argn = "arg" .. i
+        local arg_attr = olua.array("")
         declexps:push(i > 1 and ", " or nil)
         protoexps:push(i > 1 and ", " or nil)
         protoexps:push(tn)
+        func_model.args[i] = {
+            type = tn,
+            name = arg.name,
+            attr = attr[argn],
+        }
         if is_func_type(arg.type) then
             if cb_kind then
                 olua.error([[
@@ -636,11 +661,17 @@ function Autoconf:visit_method(cls, cur)
             cb_kind = "arg"
             if callback.localvar ~= false then
                 declexps:push("@localvar ")
+                func_model.localvar = true
             end
         end
         if has_default_value(arg) then
             declexps:push("@optional ")
             optional = true
+            if func_model.args[i].attr then
+                func_model.args[i].attr = func_model.args[i].attr .. "@optional"
+            else
+                func_model.args[i].attr = "@optional"
+            end
         else
             min_args = min_args + 1
             assert(not optional, cls.cppcls .. "::" .. display_name)
@@ -670,6 +701,14 @@ function Autoconf:visit_method(cls, cur)
     cls.excludes:replace(display_name, true)
     cls.excludes:replace(prototype, true)
 
+    local funcs = cls.model.funcs[func_model.cppfunc]
+    if not funcs then
+        funcs = {}
+        cls.model.funcs[func_model.cppfunc] = funcs
+    end
+
+    funcs[#funcs + 1] = func_model
+
     if decl:find("@getter") or decl:find("@setter") then
         local what = decl:find("@getter") and "get" or "set"
         olua.assert((what == "get" and num_args == 0) or num_args == 1, [[
@@ -682,7 +721,11 @@ function Autoconf:visit_method(cls, cur)
             cls.props:set(luaname, prop)
         end
         prop[what] = decl
+        func_model.is_exposed = false
+        func_model.prototype = prototype
     else
+        func_model.is_exposed = true
+        func_model.prototype = prototype
         cls.funcs:set(prototype, {
             decl = decl,
             luaname = luaname == fn and "nil" or olua.format([['${luaname}']]),
@@ -1084,6 +1127,29 @@ local function prepare_cursor(cur)
 end
 
 -------------------------------------------------------------------------------
+-- New config
+-------------------------------------------------------------------------------
+
+---@param module idl.model.module_desc
+local function write_new_module(module)
+    local m = {
+        name = module.name,
+        api_dir = module.api_dir,
+        output_dir = module.output_dir,
+        entry = module.entry,
+        headers = module.headers,
+        codeblock = module.codeblock,
+        luaopen = module.luaopen,
+        class_types = {}
+    }
+    for _, cls in ipairs(module.class_types) do
+        ---@cast cls idl.model.class_desc
+        m.class_types[#m.class_types + 1] = cls.model
+    end
+    olua.write("${module.class_file}.new", olua.lua_stringify(m, { marshal = "return", indent = 2 }))
+end
+
+-------------------------------------------------------------------------------
 -- output config
 -------------------------------------------------------------------------------
 local function write_module_metadata(module, append)
@@ -1149,7 +1215,7 @@ local function search_using_func(module, cls)
         if super then
             for _, func in ipairs(super.funcs) do
                 if func.name == name then
-                    arr[#arr+1] = func
+                    arr[#arr + 1] = func
                 end
             end
             if #arr == 0 and super.supercls then
@@ -1201,7 +1267,7 @@ local function write_cls_func(module, cls, append)
                 decl = "@using " .. func.decl
             }, { __index = func })
         end
-        arr[#arr+1] = func
+        arr[#arr + 1] = func
     end
 
     for _, arr in ipairs(group) do
@@ -1215,7 +1281,7 @@ local function write_cls_func(module, cls, append)
             if v.cb_kind or cls.callbacks:has(v.name) then
                 has_callback = true
             end
-            funcs[#funcs+1] = v.decl
+            funcs[#funcs + 1] = v.decl
         end
 
         if #arr == 1 and OLUA_AUTO_GEN_PROP then
@@ -1476,7 +1542,7 @@ local function parse_headers()
     local flags = olua.array()
     flags:push("-DOLUA_AUTOCONF")
     for i, v in ipairs(clang_args) do
-        flags[#flags+1] = v
+        flags[#flags + 1] = v
         if v:find("^-target") then
             has_target = true
         end
@@ -1852,6 +1918,7 @@ local function parse_modules()
 
     for _, m in ipairs(modules) do
         write_module(m)
+        write_new_module(m)
     end
 end
 
@@ -1870,7 +1937,7 @@ local function write_ignored_types()
                 or alias_types:has(cppcls)
                 or type_convs:has(cppcls))
         then
-            ignored_types[#ignored_types+1] = cppcls
+            ignored_types[#ignored_types + 1] = cppcls
         end
     end
     table.sort(ignored_types)

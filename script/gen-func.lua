@@ -571,7 +571,7 @@ local function get_func_with_num_args(cls, funcs, num_args)
     for _, fi in ipairs(funcs) do
         local n = olua.is_oluaret(fi) and (num_args + 1) or num_args
         if fi.max_args == n then
-            arr[#arr+1] = fi
+            arr[#arr + 1] = fi
         end
     end
     return arr
@@ -602,16 +602,16 @@ local function gen_test_and_call(cls, fns)
 
                 if olua.is_pointer_type(ai.type) or olua.is_func_type(ai.type) then
                     if ai.attr.pack then
-                        test_exps[#test_exps+1] = format([[
+                        test_exps[#test_exps + 1] = format([[
                             (${func_is}(L, ${argn}, (${ai.type.cppcls} *)nullptr)${test_nil})
                         ]])
                     else
-                        test_exps[#test_exps+1] = format([[
+                        test_exps[#test_exps + 1] = format([[
                             (${func_is}(L, ${argn}, "${ai.type.luacls}")${test_nil})
                         ]])
                     end
                 else
-                    test_exps[#test_exps+1] = format([[
+                    test_exps[#test_exps + 1] = format([[
                         (${func_is}(L, ${argn})${test_nil})
                     ]])
                 end
@@ -624,7 +624,7 @@ local function gen_test_and_call(cls, fns)
             end
 
             test_exps = table.concat(test_exps, " && ")
-            callblock[#callblock+1] = {
+            callblock[#callblock + 1] = {
                 max_vars = max_vars,
                 exp1 = format([[
                     // if (${test_exps}) {
@@ -646,7 +646,7 @@ local function gen_test_and_call(cls, fns)
                 end
             end
             assert(#fns == 1, fi.cppfunc)
-            callblock[#callblock+1] = {
+            callblock[#callblock + 1] = {
                 max_vars = 1,
                 exp1 = format([[
                     // ${fi.funcdesc}

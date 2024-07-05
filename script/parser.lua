@@ -60,7 +60,7 @@ local function search_type_from_class(cls, cpptype, errors)
     if cls and cls.cppcls then
         local nsarr = {}
         for ns in cls.cppcls:gmatch("[^:]+") do
-            nsarr[#nsarr+1] = ns:match("[^ *&]+") -- remove * &
+            nsarr[#nsarr + 1] = ns:match("[^ *&]+") -- remove * &
         end
         while #nsarr > 0 do
             -- const Object * => const ns::Object *
@@ -92,7 +92,7 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
                     subtype: ${subcpptype}
             ]])
         end
-        subtis[#subtis+1] = subti
+        subtis[#subtis + 1] = subti
     end
     if throwerror then
         olua.assert(next(subtis), "not found subtype: " .. cpptype)
@@ -306,7 +306,7 @@ local function parse_attr(str)
         if name then
             local arr = {}
             for v in value:gmatch("[^ ]+") do
-                arr[#arr+1] = v
+                arr[#arr + 1] = v
             end
             attr[name] = arr
             str = str:gsub("^@(%w+)%(([^)]+)%)", "")
@@ -451,7 +451,7 @@ function parse_args(cls, declstr)
         -- is callback
         if olua.is_func_type(tn, cls) then
             local cb = parse_callback(cls, tn)
-            args[#args+1] = {
+            args[#args + 1] = {
                 type = type_func_info(tn, cls, cb),
                 varname = varname or "",
                 attr = attr,
@@ -459,7 +459,7 @@ function parse_args(cls, declstr)
             }
         else
             local ti = olua.typeinfo(tn, cls)
-            args[#args+1] = {
+            args[#args + 1] = {
                 type = ti,
                 varname = varname or "",
                 attr = attr,
@@ -536,7 +536,7 @@ local function gen_func_pack(cls, fi, funcs)
             fi.ret.attr.unpack = true
         end
         gen_func_prototype(cls, newfi)
-        funcs[#funcs+1] = newfi
+        funcs[#funcs + 1] = newfi
         newfi.index = #funcs
     end
 end
@@ -624,7 +624,7 @@ function olua.parse_func(cls, name, ...)
             gen_func_pack(cls, fi, arr)
             cls.parsed_funcs:set(funcdecl, fi)
         end
-        arr[#arr+1] = fi
+        arr[#arr + 1] = fi
         arr.max_args = math.max(arr.max_args, fi.max_args)
         fi.index = #arr
     end
@@ -993,7 +993,7 @@ local function typeconf(cppcls)
         end
 
         -- make getter/setter function
-        cls.vars[#cls.vars+1] = {
+        cls.vars[#cls.vars + 1] = {
             name = assert(name),
             get = {
                 luafunc = name,
@@ -1078,7 +1078,7 @@ function olua.export(path)
 
     function CMD.typeconf(cppcls)
         local cls, SubCMD = typeconf(cppcls)
-        m.class_types[#m.class_types+1] = cls
+        m.class_types[#m.class_types + 1] = cls
         return olua.command_proxy(SubCMD)
     end
 

@@ -245,6 +245,45 @@ end
 -- typeconf
 -------------------------------------------------------------------------------
 
+---@class idl.model.class_option
+---@field reg_luatype? boolean
+---@field indexerror? "r" | "w" | "rw"
+---@field fromtable? boolean
+
+---@class idl.model.type_model
+---@field type string
+---@field name? string
+---@field comment? string
+---@field attr? string
+
+---@class idl.model.func_model
+---@field cppfunc string
+---@field luafunc string
+---@field prototype string
+---@field comment? string
+---@field macro? string
+---@field is_exposed? boolean
+---@field is_static? boolean
+---@field is_contructor? boolean
+---@field is_variadic? boolean
+---@field ret idl.model.type_model
+---@field args idl.model.type_model[]
+---@field tag_scope? idl.callback_tag_scope
+---@field tag_mode? idl.callback_tag_mode
+---@field tag_maker? string
+---@field tag_store? integer
+---@field localvar? boolean
+---@field insert_before? string
+---@field insert_after? string
+---@field insert_cbefore? string
+---@field insert_cafter? string
+
+---@class idl.model.class_model
+---@field cppcls string
+---@field option idl.model.class_option
+---@field comment? string
+---@field funcs table<string, idl.model.func_model[]>
+
 ---Set attribute for c++ function parameters or return value.
 ---@alias idl.typeconf.func_attr fun(attr:string):idl.typeconf.func
 
@@ -385,6 +424,11 @@ local function typeconf_callback(parent, cls, name)
     ---| '"new"'
     ---| '"replace"'
 
+    ---@alias idl.callback_tag_scope
+    ---|>'"once"'       # Remove callback after the callback invoked.
+    ---| '"function"'   # Remove callback after the c++ function invoked.
+    ---| '"object"'     # Callback will exist until the c++ object die.
+
     ---How to store or remove the callback.
     ---@param mode idl.callback_tag_mode|idl.callback_tag_mode[]
     ---@return idl.typeconf.callback
@@ -405,10 +449,7 @@ local function typeconf_callback(parent, cls, name)
     end
 
     ---Mark the lifecycle of the callback, default is `object`.
-    ---* `once`: Remove callback after the callback invoked.
-    ---* `function`: Remove callback after the c++ function invoked.
-    ---* `object`: Callback will exist until the c++ object die.
-    ---@param scope "once"|"function"|"object"
+    ---@param scope idl.callback_tag_scope
     function CMD.tag_scope(scope)
         callback.tag_scope = checkstring("tag_scope", scope)
         return CMD
@@ -559,6 +600,13 @@ function typeconf(cppcls)
         options = { reg_luatype = true, fromtable = true },
         ---@type fun(name:string, kind?:'func'|'var'|'enum'):string
         luaname = function (name, kind) return name end,
+
+        ---@type idl.model.class_model
+        model = {
+            cppcls = cppcls,
+            option = {},
+            funcs = {},
+        }
     }
 
     ---@type 'exclude'|'include'|nil
