@@ -24,7 +24,7 @@ end
 function olua.gen_decl_exp(arg, argname, codeset)
     local decltype = olua.decltype(arg.type, true, true)
     local initial_value = olua.initial_value(arg.type)
-    local varname = arg.varname or argname
+    local varname = arg.varname or arg.name or argname
     codeset.decl_args:pushf([[
         ${decltype}${argname}${initial_value};       /** ${varname} */
     ]])
@@ -183,13 +183,13 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
         table.insert(arg.attr.addref, 1, string.lower(ref_name))
     end
 
-    olua.assert(not fi.static or fi.ret.type.luacls or arg.attr.addref[3])
+    olua.assert(not fi.is_static or fi.ret.type.luacls or arg.attr.addref[3])
 
     local argn = i
     local argname = name
     local ref_name = assert(arg.attr.addref[1], fi.cppfunc .. " no addref name")
     local ref_mode = assert(arg.attr.addref[2], fi.cppfunc .. " no addref flag")
-    local ref_store = arg.attr.addref[3] or (fi.static and "-1" or "1")
+    local ref_store = arg.attr.addref[3] or (fi.is_static and "-1" or "1")
 
     if ref_store:find("^::") then
         if not codeset.has_ref_store then
@@ -203,7 +203,7 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
 
     if arg.type.cppcls == "void" then
         olua.assert(fi.ret == arg)
-        olua.assert(not fi.static, "no addref object")
+        olua.assert(not fi.is_static, "no addref object")
         olua.assert(arg.attr.addref[3], "must supply where to addref object")
         argn = 1
     elseif arg.type.subtypes then
@@ -274,13 +274,13 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
         table.insert(arg.attr.delref, 1, string.lower(ref_name))
     end
 
-    olua.assert(not fi.static or arg.type.luacls or arg.attr.delref[3])
+    olua.assert(not fi.is_static or arg.type.luacls or arg.attr.delref[3])
 
     local argn = i
     local argname = name
     local ref_name = assert(arg.attr.delref[1], fi.cppfunc .. " no ref name")
     local ref_mode = assert(arg.attr.delref[2], fi.cppfunc .. " no delref flag")
-    local ref_store = arg.attr.delref[3] or (fi.static and "-1" or "1")
+    local ref_store = arg.attr.delref[3] or (fi.is_static and "-1" or "1")
 
     if ref_store:find("^::") then
         if not codeset.has_ref_store then
@@ -294,7 +294,7 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
 
     if ref_mode == "|" or ref_mode == "^" then
         if arg.type.cppcls == "void" then
-            olua.assert(not fi.static, "no delref object")
+            olua.assert(not fi.is_static, "no delref object")
             olua.assert(arg.attr.delref[3], "must supply where to delref object")
             argn = 1
         else
@@ -326,7 +326,7 @@ end
 ---@param fi any
 ---@param codeset GenFuncCodeSet
 local function gen_func_args(cls, fi, codeset)
-    if not fi.static then
+    if not fi.is_static then
         -- first argument is cpp userdata object
         codeset.idx = codeset.idx + 1
         local ti = olua.typeinfo(cls.cppcls)
@@ -411,7 +411,7 @@ local function gen_func_ret(cls, fi, codeset)
 end
 
 local function gen_one_func(cls, fi, write, funcidx)
-    local caller = fi.static and (cls.cppcls .. "::") or "self->"
+    local caller = fi.is_static and (cls.cppcls .. "::") or "self->"
     local cppfunc = not fi.variable and fi.cppfunc or fi.varname
     local args_begin = not fi.variable and "(" or (fi.ret.type.cppcls ~= "void" and "" or " = ")
     local args_end = not fi.variable and ")" or ""
@@ -436,8 +436,8 @@ local function gen_one_func(cls, fi, write, funcidx)
         remove_function_callback = "",
     }
 
-    codeset.insert_after:push(fi.insert.after)
-    codeset.insert_before:push(fi.insert.before)
+    codeset.insert_after:push(fi.insert_after)
+    codeset.insert_before:push(fi.insert_before)
 
     olua.willdo([[
         gen one func:
@@ -482,7 +482,7 @@ local function gen_one_func(cls, fi, write, funcidx)
         table.insert(codeset.insert_after, 1, "// insert code after call")
     end
 
-    if fi.ctor then
+    if fi.is_contructor then
         caller = "new " .. cls.cppcls
         codeset.post_new = "olua_postnew(L, ret);"
     else
@@ -494,7 +494,7 @@ local function gen_one_func(cls, fi, write, funcidx)
         codeset.push_ret = format [[
             ${codeset.push_stub};
         ]]
-        if not fi.ctor then
+        if not fi.is_contructor then
             codeset.post_new = ""
         end
     end
@@ -583,7 +583,7 @@ local function gen_test_and_call(cls, fns)
         if #fi.args > 0 then
             local test_exps = {}
             local max_vars = 1
-            local argn = (fi.static and 0 or 1)
+            local argn = (fi.is_static and 0 or 1)
             for i, ai in ipairs(fi.args) do
                 if olua.is_oluaret(fi) and i == 1 then
                     goto continue
@@ -669,15 +669,18 @@ end
 
 local function gen_multi_func(cls, funcs, write)
     local cppfunc = funcs[1].cppfunc
-    local subone = funcs[1].static and "" or " - 1"
+    local subone = funcs[1].is_static and "" or " - 1"
     local ifblock = olua.array("\n\n")
 
+    local max_args = 0
+
     for i, fi in ipairs(funcs) do
+        max_args = math.max(max_args, fi.max_args)
         gen_one_func(cls, fi, write, "$" .. fi.index)
         write("")
     end
 
-    for i = 0, funcs.max_args do
+    for i = 0, max_args do
         local arr = get_func_with_num_args(cls, funcs, i)
         if #arr > 0 then
             local test_and_call = gen_test_and_call(cls, arr)

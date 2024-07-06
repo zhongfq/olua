@@ -178,6 +178,30 @@ function olua.sort(t, field)
     return t
 end
 
+---@param t any
+---@return array
+function olua.make_array(t)
+    local arr = olua.array()
+    setmetatable(t, getmetatable(arr))
+    return t
+end
+
+---@param t any
+---@return ordered_map
+function olua.make_ordered_map(t)
+    local map = olua.ordered_map()
+    for k, v in pairs(t) do
+        map:set(k, v)
+        t[k] = nil
+    end
+    setmetatable(map, nil)
+    for k, v in pairs(map) do
+        t[k] = v
+    end
+    setmetatable(t, t)
+    return t
+end
+
 ---Create a new array.
 ---@param sep? string
 ---@param prefix? string
@@ -307,10 +331,10 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Sort the array.
-    ---@param field? string | fun(a:any, b:any):boolean
+    ---@param fn? fun(a:any, b:any):boolean
     ---@return self
-    function array:sort(field)
-        return olua.sort(self, field)
+    function array:sort(fn)
+        return olua.sort(self, fn)
     end
 
     ---Get a slice of the array.
@@ -331,7 +355,9 @@ function olua.array(sep, prefix, posfix)
     ---Iterate over the array.
     ---@param fn fun(value:any, index:integer, array:array)
     function array:foreach(fn)
-        olua.foreach(self, fn)
+        for k, v in ipairs(self) do
+            fn(v, k, self)
+        end
     end
 
     ---Join the array with a separator.
@@ -370,6 +396,17 @@ function olua.array(sep, prefix, posfix)
             end
         end
         return arr
+    end
+
+    ---Find an element in the array.
+    ---@param fn fun(value:any, index:integer, array:array):boolean
+    ---@return any
+    function array:find(fn)
+        for i, v in ipairs(self) do
+            if fn(v, i, self) then
+                return v
+            end
+        end
     end
 
     ---Calls a defined callback function on each element of an array, and returns an array that contains the results.
@@ -533,6 +570,13 @@ function olua.ordered_map(overwritable)
     ---@return array
     function ordered_map:keys()
         return self._keys
+    end
+
+    ---Sort the ordered map.
+    ---@param fn? fun(a:any, b:any):boolean
+    function ordered_map:sort(fn)
+        self._keys:sort(fn)
+        return self
     end
 
     ---@alias insertmode

@@ -16,7 +16,7 @@ end
 
 local function check_meta_method(cls)
     if olua.is_func_type(cls) then
-        cls.funcs:push(olua.parse_func(cls, "__call", format([[
+        cls.funcs:set("__call", olua.parse_func(cls, "__call", format([[
         {
             luaL_checktype(L, -1, LUA_TFUNCTION);
             olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.luacls}");
@@ -24,7 +24,7 @@ local function check_meta_method(cls)
         }]])))
     elseif not olua.is_enum_type(cls) and cls.options.reg_luatype then
         if not cls.options.disallow_gc and not has_method(cls, "__gc", true) then
-            cls.funcs:push(olua.parse_func(cls, "__gc", format([[
+            cls.funcs:set("__gc", olua.parse_func(cls, "__gc", format([[
             {
                 auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
                 olua_postgc(L, self);
@@ -32,7 +32,7 @@ local function check_meta_method(cls)
             }]])))
         end
         if not has_method(cls, "__olua_move", true) then
-            cls.funcs:push(olua.parse_func(cls, "__olua_move", format([[
+            cls.funcs:set("__olua_move", olua.parse_func(cls, "__olua_move", format([[
             {
                 auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
                 olua_push_object(L, self, "${cls.luacls}");
@@ -43,7 +43,7 @@ local function check_meta_method(cls)
             local codeset = { decl_args = olua.array("\n"), check_args = olua.array("\n") }
             olua.gen_class_fill(cls, 2, "ret", codeset)
 
-            cls.funcs:push(olua.parse_func(cls, "__call", format([[
+            cls.funcs:set("__call", olua.parse_func(cls, "__call", format([[
             {
                 ${cls.cppcls} ret;
 
@@ -66,6 +66,9 @@ local function check_gen_class_func(cls, fis, write)
     end
 
     local cppfunc = fis[1].cppfunc
+    if not cppfunc then
+        print("xx")
+    end
     local fn = format([[_${cls.cppcls#}_${cppfunc}]])
     if symbols[fn] then
         return
@@ -76,7 +79,7 @@ local function check_gen_class_func(cls, fis, write)
     if pts and getmetatable(pts) then
         local supermeta = getmetatable(pts).__index
         for _, f in ipairs(fis) do
-            if not f.static
+            if not f.is_static
                 and f.prototype
                 and f.cppfunc ~= "as"
                 and rawget(pts, f.prototype)
@@ -105,21 +108,16 @@ local function gen_class_funcs(cls, write)
     end
     prototypes[cls.cppcls] = pts
 
-    table.sort(cls.funcs, function (a, b)
-        return a[1].luafunc < b[1].luafunc
-    end)
-    for _, fi in ipairs(cls.funcs) do
+    for _, fi in ipairs(cls.funcs:sort()) do
         check_gen_class_func(cls, fi, write)
     end
 
-    olua.sort(cls.props, "name")
-    for _, pi in ipairs(cls.props) do
+    for _, pi in ipairs(cls.props:sort()) do
         check_gen_class_func(cls, { pi.get }, write)
         check_gen_class_func(cls, { pi.set }, write)
     end
 
-    olua.sort(cls.vars, "name")
-    for _, ai in ipairs(cls.vars) do
+    for _, ai in ipairs(cls.vars:sort()) do
         check_gen_class_func(cls, { ai.get }, write)
         check_gen_class_func(cls, { ai.set }, write)
     end
@@ -143,10 +141,12 @@ local function gen_class_open(cls, write)
     for _, fis in ipairs(cls.funcs) do
         local cppfunc = fis[1].cppfunc
         local luafunc = fis[1].luafunc
-        local macro = cls.macros[cppfunc]
-        funcs:push(macro)
-        funcs:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
-        funcs:push(macro and "#endif" or nil)
+        if fis[1].is_exposed ~= false then
+            local macro = cls.macros[cppfunc]
+            funcs:push(macro)
+            funcs:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
+            funcs:push(macro and "#endif" or nil)
+        end
     end
 
     for _, pi in ipairs(cls.props) do
@@ -176,8 +176,7 @@ local function gen_class_open(cls, write)
         funcs:push(macro and "#endif" or nil)
     end
 
-    olua.sort(cls.consts, "name")
-    for _, ci in ipairs(cls.consts) do
+    for _, ci in ipairs(cls.consts:sort()) do
         local cast = ""
         if olua.is_pointer_type(ci.type) and not olua.has_pointer_flag(ci.type) then
             cast = "&"
@@ -185,8 +184,7 @@ local function gen_class_open(cls, write)
         funcs:pushf('oluacls_const(L, "${ci.name}", ${cast}${ci.value});')
     end
 
-    olua.sort(cls.enums, "name")
-    for _, ei in ipairs(cls.enums) do
+    for _, ei in ipairs(cls.enums:sort()) do
         funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
@@ -263,7 +261,7 @@ function olua.gen_header(module)
 
     write("#endif")
 
-    local path = format("${module.path}/lua_${module.name}.h")
+    local path = format("${module.output_dir}/lua_${module.name}.h")
     olua.write(path, tostring(arr))
 end
 
@@ -363,7 +361,7 @@ function olua.gen_source(module)
     gen_classes(module, append)
     gen_luaopen(module, append)
 
-    local path = format("${module.path}/lua_${module.name}.cpp")
+    local path = format("${module.output_dir}/lua_${module.name}.cpp")
     olua.write(path, tostring(arr))
 end
 
@@ -525,7 +523,7 @@ local function gen_class_meta(module, cls, write)
                 ret_luacls = ""
             end
 
-            if not olfi.static then
+            if not olfi.is_static then
                 caller_args:pushf("self: ${cls.luacls}")
             end
 
@@ -541,7 +539,7 @@ local function gen_class_meta(module, cls, write)
         end
 
         -- write function prototype
-        local static = fi.static and "." or ":"
+        local static = fi.is_static and "." or ":"
         write(format [[
             function ${luacls}${static}${fi.luafunc}(${caller_args}) end
         ]])

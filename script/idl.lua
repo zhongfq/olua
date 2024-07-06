@@ -260,6 +260,7 @@ end
 ---@field cppfunc string
 ---@field luafunc string
 ---@field prototype string
+---@field funcdesc string
 ---@field comment? string
 ---@field macro? string
 ---@field is_exposed? boolean
@@ -280,7 +281,7 @@ end
 
 ---@class idl.model.class_model
 ---@field cppcls string
----@field option idl.model.class_option
+---@field options idl.model.class_option
 ---@field comment? string
 ---@field funcs table<string, idl.model.func_model[]>
 
@@ -378,10 +379,14 @@ local function typeconf_func(parent, cls, name)
     cls.funcs:set(name, func)
 
     ---@class idl.typeconf.func : idl.typeconf.func_base
-    ---@field body fun(body:string):idl.typeconf.func
     local CMD = {}
 
-    add_value_command(CMD, func, "body")
+    ---@param body string
+    function CMD.body(body)
+        func.body = olua.trim(body)
+        return CMD
+    end
+
     add_attr_command(CMD, cls, func, name)
     add_insert_command(CMD, cls, func, name)
 
@@ -604,8 +609,10 @@ function typeconf(cppcls)
         ---@type idl.model.class_model
         model = {
             cppcls = cppcls,
-            option = {},
+            options = {},
             funcs = {},
+            props = {},
+            vars = {},
         }
     }
 

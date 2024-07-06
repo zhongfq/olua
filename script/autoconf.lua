@@ -569,15 +569,15 @@ function Autoconf:visit_method(cls, cur)
         cppfunc = fn,
         luafunc = fn,
         prototype = "",
+        funcdesc = "",
         ret = { type = "" },
         args = {},
-        is_contructor = cur.kind == CursorKind.Constructor,
     }
 
     local comment = get_comment(cur)
     func_model.comment = comment
     if comment then
-        declexps:pushf("@comment(${comment})")
+        -- declexps:pushf("@comment(${comment})")
         declexps:push(" ")
     end
 
@@ -594,8 +594,8 @@ function Autoconf:visit_method(cls, cur)
         end
     end
 
-    func_model.is_variadic = cur.isVariadic
     if cur.isVariadic then
+        func_model.is_variadic = true
         declexps:push("@variadic ")
     end
 
@@ -604,9 +604,11 @@ function Autoconf:visit_method(cls, cur)
 
     if cur.kind == CursorKind.FunctionDecl then
         static = true
-        func_model.is_static = true
     end
     declexps:push(static and "static " or nil)
+    if static then
+        func_model.is_static = true
+    end
 
     local cb_kind
 
@@ -625,6 +627,10 @@ function Autoconf:visit_method(cls, cur)
         func_model.ret.type = tn
     else
         func_model.ret.type = cls.cppcls .. " *"
+        func_model.luafunc = "new"
+        func_model.cppfunc = "new"
+        func_model.is_static = true
+        func_model.is_contructor = true
     end
 
     local name_from_attr = string.match(attr.ret or "", "@name%(([^)]+)%)")
@@ -709,6 +715,12 @@ function Autoconf:visit_method(cls, cur)
 
     funcs[#funcs + 1] = func_model
 
+    func_model.prototype = tostring(protoexps)
+    func_model.funcdesc = tostring(declexps)
+    func_model.min_args = min_args
+    func_model.max_args = num_args
+    func_model.num_args = num_args
+
     if decl:find("@getter") or decl:find("@setter") then
         local what = decl:find("@getter") and "get" or "set"
         olua.assert((what == "get" and num_args == 0) or num_args == 1, [[
@@ -720,12 +732,9 @@ function Autoconf:visit_method(cls, cur)
             prop = { name = luaname }
             cls.props:set(luaname, prop)
         end
-        prop[what] = decl
+        prop[what] = func_model.prototype
         func_model.is_exposed = false
-        func_model.prototype = prototype
     else
-        func_model.is_exposed = true
-        func_model.prototype = prototype
         cls.funcs:set(prototype, {
             decl = decl,
             luaname = luaname == fn and "nil" or olua.format([['${luaname}']]),
@@ -1127,29 +1136,6 @@ local function prepare_cursor(cur)
 end
 
 -------------------------------------------------------------------------------
--- New config
--------------------------------------------------------------------------------
-
----@param module idl.model.module_desc
-local function write_new_module(module)
-    local m = {
-        name = module.name,
-        api_dir = module.api_dir,
-        output_dir = module.output_dir,
-        entry = module.entry,
-        headers = module.headers,
-        codeblock = module.codeblock,
-        luaopen = module.luaopen,
-        class_types = {}
-    }
-    for _, cls in ipairs(module.class_types) do
-        ---@cast cls idl.model.class_desc
-        m.class_types[#m.class_types + 1] = cls.model
-    end
-    olua.write("${module.class_file}.new", olua.lua_stringify(m, { marshal = "return", indent = 2 }))
-end
-
--------------------------------------------------------------------------------
 -- output config
 -------------------------------------------------------------------------------
 local function write_module_metadata(module, append)
@@ -1182,15 +1168,16 @@ local function is_new_func(module, supercls, func)
 end
 
 local function parse_prop_name(func)
-    if (func.name:find("^[gG]et") or func.name:find("^[iI]s"))
+    if (func.cppfunc:find("^[gG]et") or func.cppfunc:find("^[iI]s"))
         and (func.num_args == 0 or (func.extended and func.num_args == 1))
+        and func.is_exposed ~= false
     then
         -- getABCd isAbc => ABCd Abc
         local name
-        if func.name:find("^[gG]et") then
-            name = func.name:gsub("^[gG]et_*", "")
+        if func.cppfunc:find("^[gG]et") then
+            name = func.cppfunc:gsub("^[gG]et_*", "")
         else
-            name = func.name:gsub("^[iI]s_*", "")
+            name = func.cppfunc:gsub("^[iI]s_*", "")
         end
         return string.gsub(name, "^%u+", function (str)
             if #str > 1 and #str ~= #name then
@@ -1908,6 +1895,92 @@ local function validate_fromtable()
     end
 end
 
+-------------------------------------------------------------------------------
+-- New config
+-------------------------------------------------------------------------------
+
+---@param module idl.model.module_desc
+local function write_new_module(module)
+    local m = {
+        name = module.name,
+        api_dir = module.api_dir,
+        output_dir = module.output_dir,
+        entry = module.entry,
+        headers = module.headers,
+        codeblock = module.codeblock,
+        luaopen = module.luaopen,
+        class_types = {}
+    }
+    for _, cls in ipairs(module.class_types) do
+        ---@cast cls idl.model.class_desc
+        m.class_types[#m.class_types + 1] = cls.model
+        cls.model.options = cls.options
+        cls.model.macros = cls.macros
+        cls.model.supercls = cls.supercls
+        cls.model.props = {}
+
+        cls.props:foreach(function (value, key)
+            cls.model.props[key] = value
+        end)
+
+        cls.funcs:foreach(function (value, key)
+            if value.body then
+                cls.model.funcs[key] = {
+                    {
+                        cppfunc = key,
+                        luafunc = key,
+                        funcdesc = "",
+                        body = value.body,
+                    }
+                }
+            end
+        end)
+
+        -- property
+        for k, arr in pairs(cls.model.funcs) do
+            if not (#arr == 1 and OLUA_AUTO_GEN_PROP) then
+                goto no_prop
+            end
+
+            local name = parse_prop_name(arr[1])
+            if name then
+                local setfunc
+                local getfunc = arr[1]
+                local setname = "^set_*" .. name:lower() .. "$"
+                local lessone, moreone
+                for set_k, set_arr in pairs(cls.model.funcs) do
+                    if #set_arr == 1 and set_k:lower():find(setname) then
+                        setfunc = set_arr[1]
+                        --[[
+                            void setName(n)
+                            void setName(n, i)
+                        ]]
+                        if setfunc.num_args <= (setfunc.extended and 2 or 1) then
+                            lessone = true
+                        end
+                        if setfunc.num_args > (setfunc.extended and 2 or 1) then
+                            moreone = true
+                        end
+                    end
+                    -- TODO: strick num_args == 1
+                    if lessone or not moreone then
+                    end
+                end
+                if lessone or not moreone then
+                    cls.model.props[name] = {
+                        name = name,
+                        get = getfunc.prototype,
+                        set = setfunc and setfunc.prototype or nil
+                    }
+                end
+            end
+
+            ::no_prop::
+        end
+    end
+    olua.write("${module.class_file}", olua.lua_stringify(m, { marshal = "return", indent = 2 }))
+end
+
 local function parse_modules()
     parse_headers()
     parse_types()
@@ -1917,7 +1990,7 @@ local function parse_modules()
     validate_fromtable()
 
     for _, m in ipairs(modules) do
-        write_module(m)
+        -- write_module(m)
         write_new_module(m)
     end
 end

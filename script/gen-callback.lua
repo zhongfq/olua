@@ -49,7 +49,7 @@ local function gen_callback_store(cls, fi)
     if tag_store > 0 then
         check_tag_store(fi, tag_store)
         cb_store = "arg" .. tag_store
-    elseif fi.static then
+    elseif fi.is_static then
         cb_store = format 'olua_pushclassobj(L, "${cls.luacls}")'
     else
         cb_store = "self"
@@ -104,7 +104,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     local cb_tag = gen_callback_tag(cls, fi)
     local cb_store
 
-    if not fi.static then
+    if not fi.is_static then
         argn = argn + 1 -- 1st is userdata(self)
     end
 
@@ -125,8 +125,8 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         decl_result = "",
         return_result = "",
         check_result = "",
-        insert_cbefore = fi.insert.cbefore or "",
-        insert_cafter = fi.insert.cafter or "",
+        insert_cbefore = fi.insert_cbefore or "",
+        insert_cafter = fi.insert_cafter or "",
     }
 
     local pool_enabled = false
@@ -201,7 +201,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     end
 
     if tag_store == -1 then
-        local post_push = fi.ctor and
+        local post_push = fi.is_contructor and
             "olua_postnew(L, ret);" or
             "olua_postpush(L, ret, OLUA_OBJ_NEW);"
         local remove_callback = ""

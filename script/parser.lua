@@ -542,6 +542,9 @@ local function gen_func_pack(cls, fi, funcs)
 end
 
 local function gen_func_overload(cls, fi, funcs)
+    if fi.body then
+        return
+    end
     local min_args = math.maxinteger
     for i, arg in ipairs(fi.args) do
         if arg.attr.optional then
@@ -552,7 +555,6 @@ local function gen_func_overload(cls, fi, funcs)
     for i = min_args, #fi.args - 1 do
         local newfi = copy(fi)
         newfi.args = {}
-        newfi.insert = {}
         for k = 1, i do
             newfi.args[k] = copy(fi.args[k])
         end
@@ -584,7 +586,6 @@ function olua.parse_func(cls, name, ...)
             fi.ret.type = olua.typeinfo("void", cls)
             fi.ret.attr = {}
             fi.args = {}
-            fi.insert = {}
             fi.prototype = false
             fi.max_args = #fi.args
         else
@@ -604,7 +605,6 @@ function olua.parse_func(cls, name, ...)
             fi.luafunc = name or fi.cppfunc
             fi.static = attr.static
             fi.funcdesc = funcdecl:gsub("@comment%([^()]+%) *", "")
-            fi.insert = {}
             if olua.is_func_type(tn, fromcls) then
                 local cb = parse_callback(fromcls, tn)
                 fi.ret = {
@@ -1064,26 +1064,73 @@ local function typeconf(cppcls)
 end
 
 function olua.export(path)
-    local m = { class_types = {} }
+    -- local m = { class_types = {} }
 
-    local CMD = {}
+    -- local CMD = {}
 
-    function CMD.__index(_, k)
-        return olua[k] or _ENV[k]
-    end
+    -- function CMD.__index(_, k)
+    --     return olua[k] or _ENV[k]
+    -- end
 
-    function CMD.__newindex(_, k, v)
-        m[k] = v
-    end
+    -- function CMD.__newindex(_, k, v)
+    --     m[k] = v
+    -- end
 
-    function CMD.typeconf(cppcls)
-        local cls, SubCMD = typeconf(cppcls)
-        m.class_types[#m.class_types + 1] = cls
-        return olua.command_proxy(SubCMD)
-    end
+    -- function CMD.typeconf(cppcls)
+    --     local cls, SubCMD = typeconf(cppcls)
+    --     m.class_types[#m.class_types + 1] = cls
+    --     return olua.command_proxy(SubCMD)
+    -- end
 
-    setmetatable(CMD, CMD)
-    assert(loadfile(path, nil, CMD))()
+    -- setmetatable(CMD, CMD)
+    -- assert(loadfile(path, nil, CMD))()
+
+    local m = dofile(path)
+
+    olua.make_array(m.class_types)
+
+    m.class_types:foreach(function (cls)
+        class_map[cls.cppcls] = cls
+        cls.prototypes = olua.ordered_map()
+        cls.funcs = olua.make_ordered_map(cls.funcs)
+
+        olua.make_ordered_map(cls.props):foreach(function (prop)
+            for _, arr in ipairs(cls.funcs) do
+                -- TODO: check get set exist
+                for _, func in ipairs(arr) do
+                    if prop.get and func.prototype == prop.get then
+                        prop.get = func
+                    end
+                    if prop.set and func.prototype == prop.set then
+                        prop.set = func
+                    end
+                end
+            end
+        end)
+
+        cls.vars = olua.make_ordered_map(cls.vars or {})
+        cls.consts = olua.make_ordered_map(cls.consts or {})
+        cls.enums = olua.make_ordered_map(cls.enums or {})
+        cls.funcs:foreach(function (arr)
+            olua.make_array(arr):foreach(function (func, idx)
+                if func.body then
+                    return
+                end
+                func.index = idx
+                func.ret.type = olua.typeinfo(func.ret.type, cls)
+                func.ret.attr = parse_attr(func.ret.attr or "")
+                cls.prototypes:set(func.prototype, true)
+                olua.make_array(func.args):foreach(function (arg)
+                    arg.type = olua.typeinfo(arg.type, cls)
+                    arg.attr = parse_attr(arg.attr or "")
+                end)
+            end)
+            for idx = 1, #arr do
+                gen_func_overload(cls, arr[idx], arr)
+            end
+        end)
+    end)
+
     olua.gen_header(m)
     olua.gen_source(m)
     olua.gen_metafile(m)
