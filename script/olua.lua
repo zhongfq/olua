@@ -209,9 +209,21 @@ end
 ---@return array
 function olua.array(sep, prefix, posfix)
     ---@class array
-    local array = {}
+    ---@field private __tostring fun(self):string
+    ---@field private __olua_type string
+    local array = {
+        __olua_type = "olua.array"
+    }
 
     local joiner = { sep = sep, prefix = prefix, posfix = posfix }
+
+    local function __tostring(self)
+        return self:join(joiner.sep or "", joiner.prefix, joiner.posfix)
+    end
+
+    if sep then
+        array.__tostring = __tostring
+    end
 
     ---@private
     array.__index = array
@@ -420,11 +432,6 @@ function olua.array(sep, prefix, posfix)
         return arr
     end
 
-    ---@private
-    function array:__tostring()
-        return self:join(joiner.sep or "", joiner.prefix, joiner.posfix)
-    end
-
     return setmetatable({}, array)
 end
 
@@ -436,6 +443,7 @@ function olua.ordered_map(overwritable)
     ---@field private _keys array
     ---@field private _map table
     local ordered_map = {
+        __olua_type = "olua.ordered_map",
         _keys = olua.array(),
         _map = {}
     }
@@ -1159,7 +1167,11 @@ function olua.lua_stringify(data, options)
             return '"' .. value:gsub('"', '\\"'):gsub("\n", "\\n") .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
-            if mt and mt.__tostring then
+            if mt and mt.__olua_type == "olua.array" then
+                return lua_array_stringify(value)
+            elseif mt and mt.__olua_type == "olua.ordered_map" then
+                return lua_object_stringify(value._map)
+            elseif mt and mt.__tostring then
                 return mt.__tostring(value)
             elseif is_array(value) then
                 return lua_array_stringify(value)

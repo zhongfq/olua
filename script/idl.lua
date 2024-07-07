@@ -268,7 +268,7 @@ end
 ---@field is_contructor? boolean
 ---@field is_variadic? boolean
 ---@field ret idl.model.type_model
----@field args idl.model.type_model[]
+---@field args array # idl.model.type_model[]
 ---@field tag_scope? idl.callback_tag_scope
 ---@field tag_mode? idl.callback_tag_mode
 ---@field tag_maker? string
@@ -283,7 +283,7 @@ end
 ---@field cppcls string
 ---@field options idl.model.class_option
 ---@field comment? string
----@field funcs table<string, idl.model.func_model[]>
+---@field funcs ordered_map # table<string, idl.model.func_model[]>
 
 ---Set attribute for c++ function parameters or return value.
 ---@alias idl.typeconf.func_attr fun(attr:string):idl.typeconf.func
@@ -599,7 +599,6 @@ function typeconf(cppcls)
         props = olua.ordered_map(),
         vars = olua.ordered_map(),
         inserts = olua.ordered_map(),
-        macros = olua.ordered_map(),
         supers = olua.ordered_map(),
         template_types = olua.ordered_map(),
         options = { reg_luatype = true, fromtable = true },
@@ -610,9 +609,9 @@ function typeconf(cppcls)
         model = {
             cppcls = cppcls,
             options = {},
-            funcs = {},
-            props = {},
-            vars = {},
+            funcs = olua.ordered_map(),
+            props = olua.ordered_map(),
+            vars = olua.ordered_map(),
         }
     }
 
@@ -637,7 +636,7 @@ function typeconf(cppcls)
 
     idl.type_convs:set(cppcls, cls)
     if #idl.macros > 0 then
-        cls.macros:set("*", { name = "*", value = idl.macros:at(-1) })
+        cls.model.macro = idl.macros:at(-1)
     end
 
     ---@class idl.typeconf
@@ -730,10 +729,11 @@ function typeconf(cppcls)
     ---@return idl.typeconf.func
     function CMD.func(name)
         cls.excludes:replace(name, true)
+        local func = typeconf_func(CMD, cls, name)
         if #macros > 0 then
-            cls.macros:set(name, { name = name, value = macros:at(-1) })
+            cls.funcs:get(name).macro = macros:at(-1)
         end
-        return typeconf_func(CMD, cls, name)
+        return func
     end
 
     ---@param name string

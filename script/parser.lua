@@ -248,7 +248,7 @@ function olua.decltype(ti, checkvalue, addspace, exps)
         return ti
     end
 
-    exps = exps or olua.array()
+    exps = exps or olua.array("")
     if not checkvalue and olua.has_const_flag(ti) then
         exps:push("const ")
     end
@@ -484,7 +484,7 @@ end
 
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
-    local exps = olua.array()
+    local exps = olua.array("")
     exps:push(fi.static and "static " or nil)
     exps:push(olua.decltype(fi.ret.type, nil, true))
     exps:push(fi.cppfunc)

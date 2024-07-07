@@ -175,7 +175,7 @@ local function parse_from_type(type, template_types, try_underlying, level, will
         pointee = type.unqualifiedType
         return "const " .. parse_from_type(pointee, template_types, try_underlying, level, willcheck)
     elseif #template_arg_types > 0 and (not try_underlying or not underlying) then
-        local exps = olua.array()
+        local exps = olua.array("")
         local astname = parse_from_ast(type)
         exps:push(astname)
         if olua.is_templdate_type(tn) then
@@ -198,7 +198,7 @@ local function parse_from_type(type, template_types, try_underlying, level, will
     elseif kind == TypeKind.Pointer then
         return parse_from_type(pointee, template_types, try_underlying, level) .. " *"
     elseif kind == TypeKind.FunctionProto then
-        local exps = olua.array()
+        local exps = olua.array("")
         local result_type = typename(type.resultType, template_types, level, willcheck)
         exps:push(result_type)
         exps:push(result_type:find("[*&]") and "" or " ")
@@ -559,8 +559,8 @@ function Autoconf:visit_method(cls, cur)
     local attr = get_attr_copy(cls, fn)
     local callback = cls.callbacks:get(fn) or {}
     local static = cur.isCXXMethodStatic
-    local declexps = olua.array()
-    local protoexps = olua.array()
+    local declexps = olua.array("")
+    local protoexps = olua.array("")
 
     parse_attr_from_annotate(attr, cur)
 
@@ -571,7 +571,7 @@ function Autoconf:visit_method(cls, cur)
         prototype = "",
         funcdesc = "",
         ret = { type = "" },
-        args = {},
+        args = olua.array(),
     }
 
     local comment = get_comment(cur)
@@ -651,11 +651,11 @@ function Autoconf:visit_method(cls, cur)
         declexps:push(i > 1 and ", " or nil)
         protoexps:push(i > 1 and ", " or nil)
         protoexps:push(tn)
-        func_model.args[i] = {
+        func_model.args:push({
             type = tn,
             name = arg.name,
             attr = attr[argn],
-        }
+        })
         if is_func_type(arg.type) then
             if cb_kind then
                 olua.error([[
@@ -707,13 +707,13 @@ function Autoconf:visit_method(cls, cur)
     cls.excludes:replace(display_name, true)
     cls.excludes:replace(prototype, true)
 
-    local funcs = cls.model.funcs[func_model.cppfunc]
+    local funcs = cls.model.funcs:get(func_model.cppfunc)
     if not funcs then
-        funcs = {}
-        cls.model.funcs[func_model.cppfunc] = funcs
+        funcs = olua.array()
+        cls.model.funcs:set(func_model.cppfunc, funcs)
     end
 
-    funcs[#funcs + 1] = func_model
+    funcs:push(func_model)
 
     func_model.prototype = tostring(protoexps)
     func_model.funcdesc = tostring(declexps)
@@ -735,18 +735,18 @@ function Autoconf:visit_method(cls, cur)
         prop[what] = func_model.prototype
         func_model.is_exposed = false
     else
-        cls.funcs:set(prototype, {
-            decl = decl,
-            luaname = luaname == fn and "nil" or olua.format([['${luaname}']]),
-            name = fn,
-            static = static,
-            num_args = num_args,
-            min_args = min_args,
-            cb_kind = cb_kind,
-            prototype = prototype,
-            display_name = display_name,
-            isctor = cur.kind == CursorKind.Constructor,
-        })
+        -- cls.funcs:set(prototype, {
+        --     decl = decl,
+        --     luaname = luaname == fn and "nil" or olua.format([['${luaname}']]),
+        --     name = fn,
+        --     static = static,
+        --     num_args = num_args,
+        --     min_args = min_args,
+        --     cb_kind = cb_kind,
+        --     prototype = prototype,
+        --     display_name = display_name,
+        --     isctor = cur.kind == CursorKind.Constructor,
+        -- })
     end
 end
 
@@ -761,7 +761,7 @@ function Autoconf:visit_var(cls, cur)
         return
     end
 
-    local exps = olua.array()
+    local exps = olua.array("")
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
     local attr = get_attr_copy(cls, cur.name, "var*")
     local tn = typename(cur.type, cls.template_types, nil, typefrom)
@@ -1402,14 +1402,14 @@ local function write_cls_callback(module, cls, append)
             tag_maker:push(v.tag_maker)
         else
             local arr = tag_maker:concat(v.tag_maker)
-            tag_maker = olua.array()
+            tag_maker = olua.array("")
             tag_maker:pushf("{${arr}}")
         end
         if type(v.tag_mode) == "string" then
             tag_mode:push(v.tag_mode)
         else
             local arr = tag_mode:concat(v.tag_mode)
-            tag_mode = olua.array()
+            tag_mode = olua.array("")
             tag_mode:pushf("{${arr}}")
         end
         append(olua.format([[
@@ -1526,7 +1526,7 @@ local function parse_headers()
     header:close()
     local has_target = false
     local has_stdv = false
-    local flags = olua.array()
+    local flags = olua.array("")
     flags:push("-DOLUA_AUTOCONF")
     for i, v in ipairs(clang_args) do
         flags[#flags + 1] = v
@@ -1597,7 +1597,7 @@ local function parse_types()
         for _, cls in ipairs(m.class_types) do
             for fn, func in pairs(cls.funcs) do
                 if not func.body then
-                    cls.funcs:take(fn)
+                    -- cls.funcs:take(fn)
                     cls.excludes:take(fn)
                 end
             end
@@ -1915,12 +1915,21 @@ local function write_new_module(module)
         ---@cast cls idl.model.class_desc
         m.class_types[#m.class_types + 1] = cls.model
         cls.model.options = cls.options
-        cls.model.macros = cls.macros
         cls.model.supercls = cls.supercls
         cls.model.props = {}
 
         cls.props:foreach(function (value, key)
             cls.model.props[key] = value
+        end)
+
+        cls.model.funcs:foreach(function (arr, key)
+            ---@cast arr array
+            arr:foreach(function (func)
+                local desc = cls.funcs:get(key) or cls.funcs:get(func.prototype)
+                if desc and desc.macro then
+                    func.macro = desc.macro
+                end
+            end)
         end)
 
         cls.funcs:foreach(function (value, key)

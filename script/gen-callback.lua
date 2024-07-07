@@ -175,8 +175,8 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     local callback_ret = arg.callback.ret
     if callback_ret.type.cppcls ~= "void" then
         local retset = {
-            decl_args = olua.array(),
-            check_args = olua.array(),
+            decl_args = olua.array(""),
+            check_args = olua.array(""),
         }
         olua.gen_decl_exp(callback_ret, "ret", retset)
         olua.gen_check_exp(callback_ret, "ret", -1, retset)

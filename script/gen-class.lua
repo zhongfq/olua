@@ -90,7 +90,7 @@ local function check_gen_class_func(cls, fis, write)
             end
         end
     end
-    local macro = cls.macros[cppfunc]
+    local macro = fis[1].macro
     write(macro)
     olua.gen_class_func(cls, fis, write)
     write(macro and "#endif" or nil)
@@ -142,7 +142,7 @@ local function gen_class_open(cls, write)
         local cppfunc = fis[1].cppfunc
         local luafunc = fis[1].luafunc
         if fis[1].is_exposed ~= false then
-            local macro = cls.macros[cppfunc]
+            local macro = fis[1].macro
             funcs:push(macro)
             funcs:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
             funcs:push(macro and "#endif" or nil)
@@ -152,7 +152,7 @@ local function gen_class_open(cls, write)
     for _, pi in ipairs(cls.props) do
         local func_get = "nullptr"
         local func_set = "nullptr"
-        local macro = cls.macros[pi.get.cppfunc]
+        local macro = pi.get.macro
         funcs:push(macro)
         if pi.get then
             func_get = format("_${cls.cppcls#}_${pi.get.cppfunc}")
@@ -167,7 +167,7 @@ local function gen_class_open(cls, write)
     for _, vi in ipairs(cls.vars) do
         local func_get = format("_${cls.cppcls#}_${vi.get.cppfunc}")
         local func_set = "nullptr"
-        local macro = cls.macros[vi.get.varname]
+        local macro = vi.get.macro
         funcs:push(macro)
         if vi.set and vi.set.cppfunc then
             func_set = format("_${cls.cppcls#}_${vi.set.cppfunc}")
@@ -290,7 +290,7 @@ end
 local function gen_classes(module, write)
     for _, cls in ipairs(module.class_types) do
         cls.luacls = olua.luacls(cls.cppcls)
-        local macro = cls.macros["*"]
+        local macro = cls.macro
         write(macro)
         check_meta_method(cls)
         gen_class_chunk(cls, write)
@@ -306,7 +306,7 @@ local function gen_luaopen(module, write)
 
     local last_macro
     for _, cls in ipairs(module.class_types) do
-        local macro = cls.macros["*"]
+        local macro = cls.macro
         if last_macro ~= macro then
             if last_macro then
                 requires:push("#endif")
@@ -353,6 +353,9 @@ function olua.gen_source(module)
     local function append(value)
         if value then
             -- '   #if' => '#if'
+            if not value then
+                print("value is nil")
+            end
             arr:push(value:gsub("\n *#", "\n#"))
         end
     end
