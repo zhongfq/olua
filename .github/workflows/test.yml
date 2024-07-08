@@ -1,39 +1,41 @@
 name: test
 
-on: [push]
+on:
+  push:
+    branches:
+      - main
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
     steps:
-    - name: Checkout github repo
-      uses: actions/checkout@v2
-      with:
-        submodules: 'recursive'
-      
-    - name: Setup Lua
-      uses: xpol/setup-lua@v0.2
-      with:
-        lua-version: "5.3.5"
+      - name: Checkout github repo
+        uses: actions/checkout@v2
+        with:
+          submodules: "recursive"
 
-    - name: Create Build Environment
-      run: cmake -E make_directory build
+      - name: Setup Lua
+        uses: xpol/setup-lua@v0.2
+        with:
+          lua-version: "5.3.5"
 
-    - name: Configure CMake
-      shell: bash
-      working-directory: build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+      - name: Create Build Environment
+        run: cmake -E make_directory build
 
-    - name: Build
-      working-directory: build
-      shell: bash
-      run: cmake --build .
+      - name: Configure CMake
+        shell: bash
+        working-directory: build
+        run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE
 
-    - name: Test
-      working-directory: build
-      shell: bash
-      run: ctest .
+      - name: Build
+        working-directory: build
+        shell: bash
+        run: cmake --build .
+
+      - name: Test
+        working-directory: build
+        shell: bash
+        run: ctest .

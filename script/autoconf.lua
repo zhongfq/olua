@@ -572,17 +572,10 @@ function Autoconf:visit_method(cls, cur)
         funcdesc = "",
         ret = { type = "" },
         args = olua.array(),
+        comment = get_comment(cur),
     }
 
-    local comment = get_comment(cur)
-    func_model.comment = comment
-    if comment then
-        -- declexps:pushf("@comment(${comment})")
-        declexps:push(" ")
-    end
-
-    for i, c in ipairs({ { type = result_type }, table.unpack(arguments) }) do
-        local mark = (attr["arg" .. (i - 1)]) or ""
+    for _, c in ipairs({ { type = result_type }, table.unpack(arguments) }) do
         if is_excluded_type(c.type) then
             if cls.includes:has(fn) then
                 print(olua.format([=[
@@ -1926,8 +1919,12 @@ local function write_new_module(module)
             ---@cast arr array
             arr:foreach(function (func)
                 local desc = cls.funcs:get(key) or cls.funcs:get(func.prototype)
-                if desc and desc.macro then
+                if desc then
                     func.macro = desc.macro
+                    func.insert_before = desc.insert_before
+                    func.insert_after = desc.insert_after
+                    func.insert_cbefore = desc.insert_cbefore
+                    func.insert_cafter = desc.insert_cafter
                 end
             end)
         end)

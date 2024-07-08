@@ -319,7 +319,7 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Concatenate the array with another array.
-    ---@param arr array
+    ---@param arr any[]
     ---@return self
     function array:concat(arr)
         for _, v in ipairs(arr) do

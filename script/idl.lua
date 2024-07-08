@@ -311,26 +311,6 @@ end
 ---@param cls idl.model.class_desc
 ---@param func idl.model.func_desc|idl.model.callback_desc
 ---@param name string
-local function add_insert_command(CMD, cls, func, name)
-    ---@class TypeconfInsertDescriptor
-    ---@field name string
-    ---@field before? string
-    ---@field after? string
-    ---@field cbefore? string
-    ---@field cafter? string
-    local entry = { name = name }
-    cls.inserts:set(name, entry)
-
-    add_value_command(CMD, entry, "insert_before", nil, "before")
-    add_value_command(CMD, entry, "insert_after", nil, "after")
-    add_value_command(CMD, entry, "insert_cbefore", nil, "cbefore")
-    add_value_command(CMD, entry, "insert_cafter", nil, "cafter")
-end
-
----@param CMD idl.typeconf.func_base
----@param cls idl.model.class_desc
----@param func idl.model.func_desc|idl.model.callback_desc
----@param name string
 local function add_attr_command(CMD, cls, func, name)
     ---@class idl.model.attr_desc
     ---@field optional? boolean
@@ -388,7 +368,10 @@ local function typeconf_func(parent, cls, name)
     end
 
     add_attr_command(CMD, cls, func, name)
-    add_insert_command(CMD, cls, func, name)
+    add_value_command(CMD, func, "insert_before")
+    add_value_command(CMD, func, "insert_after")
+    add_value_command(CMD, func, "insert_cbefore")
+    add_value_command(CMD, func, "insert_cafter")
 
     ---@type idl.typeconf.func
     return setmetatable(CMD, { __index = parent })
@@ -413,7 +396,10 @@ local function typeconf_callback(parent, cls, name)
 
     add_value_command(CMD, callback, "localvar", checkboolean)
     add_attr_command(CMD, cls, callback, name)
-    add_insert_command(CMD, cls, callback, name)
+    add_value_command(CMD, callback, "insert_before")
+    add_value_command(CMD, callback, "insert_after")
+    add_value_command(CMD, callback, "insert_cbefore")
+    add_value_command(CMD, callback, "insert_cafter")
 
 
     ---Make callback key.
