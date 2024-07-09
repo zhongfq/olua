@@ -279,12 +279,6 @@ end
 ---@field insert_cbefore? string
 ---@field insert_cafter? string
 
----@class idl.model.class_model
----@field cppcls string
----@field options idl.model.class_option
----@field comment? string
----@field funcs ordered_map # table<string, idl.model.func_model[]>
-
 ---Set attribute for c++ function parameters or return value.
 ---@alias idl.typeconf.func_attr fun(attr:string):idl.typeconf.func
 
@@ -327,7 +321,7 @@ local function add_attr_command(CMD, cls, func, name)
     ---@field arg9? string
     ---@field arg10? string
     local entry = {}
-    cls.attrs:set(name, entry)
+    cls.conf.attrs:set(name, entry)
 
     add_value_command(CMD, entry, "optional", checkboolean)
     add_value_command(CMD, entry, "readonly", checkboolean)
@@ -356,7 +350,7 @@ local function typeconf_func(parent, cls, name)
         ---@type string|nil
         body = nil
     }
-    cls.funcs:set(name, func)
+    cls.conf.funcs:set(name, func)
 
     ---@class idl.typeconf.func : idl.typeconf.func_base
     local CMD = {}
@@ -388,7 +382,7 @@ local function typeconf_callback(parent, cls, name)
         tag_scope = "object",
         localvar = true,
     }
-    cls.callbacks:set(name, callback)
+    cls.conf.callbacks:set(name, callback)
 
     ---@class idl.typeconf.callback : idl.typeconf.func_base
     ---@field localvar fun(localvar:booltype):idl.typeconf.callback
@@ -460,7 +454,7 @@ local function typeconf_enum(parent, cls, name)
     ---@field value string
     ---@field comment? string
     local enum = { name = name }
-    cls.enums:set(name, enum)
+    cls.conf.enums:set(name, enum)
 
     ---@class idl.typeconf.enum : idl.typeconf
     ---@field value fun(value:string):idl.typeconf.enum
@@ -481,7 +475,7 @@ local function typeconf_const(parent, cls, name)
     ---@field value string
     ---@field typename string
     local const = { name = name }
-    cls.consts:set(name, const)
+    cls.conf.consts:set(name, const)
 
     ---@class idl.typeconf.const : idl.typeconf
     ---@field value fun(value:string):idl.typeconf.const
@@ -503,7 +497,7 @@ local function typeconf_prop(parent, cls, name)
     ---@field set string
     local prop = { name = name }
 
-    cls.props:set(name, prop)
+    cls.conf.props:set(name, prop)
 
     ---@class idl.typeconf.prop : idl.typeconf
     ---@field get fun(get:string):idl.typeconf.prop
@@ -526,8 +520,8 @@ local function typeconf_var(parent, cls, name)
     local var = { name = name }
 
     if name ~= "*" then
-        cls.excludes:replace(name, true)
-        cls.vars:set(name, var)
+        cls.conf.excludes:replace(name, true)
+        cls.conf.vars:set(name, var)
     else
         name = "var*"
     end
@@ -540,7 +534,7 @@ local function typeconf_var(parent, cls, name)
     local CMD = {}
 
     local attr = {}
-    cls.attrs:set(name, attr)
+    cls.conf.attrs:set(name, attr)
 
     add_value_command(CMD, var, "body")
     add_value_command(CMD, attr, "optional", checkboolean)
@@ -559,17 +553,12 @@ end
 function typeconf(cppcls)
     check_module()
 
-    ---@class idl.model.class_desc
+    ---@class idl.model.typeconf
     ---@field kind integer
-    ---@field supercls? string
-    ---@field comment? string
-    ---@field funcdecl? string # std::function declaration
-    ---@field luacls? string
+    ---@field luacls string
     ---@field maincls? string
-    local cls = {
-        ---@type string c++ full class name
-        cppcls = cppcls,
-        ---@type string lua class name
+    ---@field funcdecl? string # std::function declaration
+    local conf = {
         luacls = idl.current_module.luacls(cppcls),
         conv = "olua_$$_object",
         extends = olua.ordered_map(),
@@ -587,18 +576,21 @@ function typeconf(cppcls)
         inserts = olua.ordered_map(),
         supers = olua.ordered_map(),
         template_types = olua.ordered_map(),
-        options = { reg_luatype = true, fromtable = true },
         ---@type fun(name:string, kind?:'func'|'var'|'enum'):string
         luaname = function (name, kind) return name end,
+    }
 
-        ---@type idl.model.class_model
-        model = {
-            cppcls = cppcls,
-            options = {},
-            funcs = olua.ordered_map(),
-            props = olua.ordered_map(),
-            vars = olua.ordered_map(),
-        }
+    ---@class idl.model.class_desc
+    ---@field supercls? string
+    ---@field comment? string
+    local cls = {
+        ---@type string c++ full class name
+        cppcls = cppcls,
+        options = { reg_luatype = true, fromtable = true },
+        funcs = olua.ordered_map(),
+        props = olua.ordered_map(),
+        vars = olua.ordered_map(),
+        conf = conf,
     }
 
     ---@type 'exclude'|'include'|nil
@@ -622,7 +614,7 @@ function typeconf(cppcls)
 
     idl.type_convs:set(cppcls, cls)
     if #idl.macros > 0 then
-        cls.model.macro = idl.macros:at(-1)
+        cls.macro = idl.macros:at(-1)
     end
 
     ---@class idl.typeconf
@@ -638,8 +630,8 @@ function typeconf(cppcls)
 
     add_value_command(CMD, cls, "luaopen")
     add_value_command(CMD, cls, "codeblock")
-    add_value_command(CMD, cls, "luaname", function (_, v) return v end)
-    add_value_command(CMD, cls, "maincls", function (_, v) return v end)
+    add_value_command(CMD, cls.conf, "luaname", function (_, v) return v end)
+    add_value_command(CMD, cls.conf, "maincls", function (_, v) return v end)
     add_value_command(CMD, cls.options, "indexerror")
     add_value_command(CMD, cls.options, "fromtable", checkboolean)
     add_value_command(CMD, cls.options, "packable", checkboolean)
@@ -650,7 +642,7 @@ function typeconf(cppcls)
     ---@param extcls string
     ---@return idl.typeconf
     function CMD.extend(extcls)
-        cls.extends:set(extcls, true)
+        cls.conf.extends:set(extcls, true)
         typeconf(extcls)
             .maincls(cls)
         return CMD
@@ -666,9 +658,9 @@ function typeconf(cppcls)
         end
         mode = "exclude"
         if name == "*" or not name:find("[^_%w]") then
-            cls.excludes:set(name, true)
+            cls.conf.excludes:set(name, true)
         else
-            cls.wildcards:set(name, true)
+            cls.conf.wildcards:set(name, true)
         end
         return CMD
     end
@@ -682,7 +674,7 @@ function typeconf(cppcls)
             olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cppcls}'")
         end
         mode = "include"
-        cls.includes:set(name, true)
+        cls.conf.includes:set(name, true)
         return CMD
     end
 
@@ -714,10 +706,10 @@ function typeconf(cppcls)
     ---@param name string
     ---@return idl.typeconf.func
     function CMD.func(name)
-        cls.excludes:replace(name, true)
+        cls.conf.excludes:replace(name, true)
         local func = typeconf_func(CMD, cls, name)
         if #macros > 0 then
-            cls.funcs:get(name).macro = macros:at(-1)
+            cls.conf.funcs:get(name).macro = macros:at(-1)
         end
         return func
     end
@@ -758,18 +750,18 @@ function idl.typecopy(cppcls, fromcls)
     local CMD = typeconf(cppcls)
 
     local cls = idl.current_module.class_types:get(cppcls) ---@type idl.model.class_desc
-    for k, v in pairs(fromcls) do
+    for k, v in pairs(fromcls.conf) do
         if k == "cppcls" or k == "luacls" then
             goto continue
         end
         if type(v) == "table" then
             if v.clone then
-                cls[k] = v:clone()
+                cls.conf[k] = v:clone()
             else
-                cls[k] = olua.clone(v)
+                cls.conf[k] = olua.clone(v)
             end
         else
-            cls[k] = v
+            cls.conf[k] = v
         end
         ::continue::
     end

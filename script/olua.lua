@@ -343,7 +343,7 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Sort the array.
-    ---@param fn? fun(a:any, b:any):boolean
+    ---@param fn? string | fun(a:any, b:any):boolean
     ---@return self
     function array:sort(fn)
         return olua.sort(self, fn)
