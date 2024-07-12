@@ -7,15 +7,15 @@ local tag_mode_map = {
     equal = "OLUA_TAG_EQUAL",
 }
 
-local function get_tag_mode(fi)
-    local tag_mode = tag_mode_map[fi.callback.tag_mode]
-    olua.assert(tag_mode, "unknown tag mode: ${fi.callback.tag_mode}")
+local function get_tag_mode(fi, arg)
+    local tag_mode = tag_mode_map[arg.tag_mode]
+    olua.assert(tag_mode, "unknown tag mode: ${fi.tag_mode}")
     return tag_mode
 end
 
-local function get_tag_store(fi, idx)
+local function get_tag_store(fi, arg, idx)
     if not idx then
-        idx = olua.assert(fi.callback.tag_store, "no tag store")
+        idx = olua.assert(arg.tag_store, "no tag store")
     elseif idx < 0 then
         idx = idx + #fi.args + 1
     end
@@ -32,13 +32,13 @@ local function check_tag_store(fi, idx)
     end
 end
 
-local function gen_callback_tag(cls, fi)
-    if not string.find(fi.callback.tag_maker, "[()]+") then
-        return format([["${fi.callback.tag_maker}"]]), nil
+local function gen_callback_tag(cls, fi, arg)
+    if not string.find(arg.tag_maker, "[()]+") then
+        return format([["${arg.tag_maker}"]]), nil
     end
     -- tag_maker: makeTag(#1) or makeTag(#-1)
-    return string.gsub(fi.callback.tag_maker, "#(%-?%d+)", function (n)
-        local idx = get_tag_store(fi, tonumber(n))
+    return string.gsub(arg.tag_maker, "#(%-?%d+)", function (n)
+        local idx = get_tag_store(fi, arg, tonumber(n))
         return idx == 0 and "self" or ("arg" .. idx)
     end)
 end
@@ -85,8 +85,8 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     if olua.is_func_type(fi.ret.type) then
         codeset.callback = gen_ret_callback(cls, fi)
         return
-    elseif fi.callback.tag_mode == "equal"
-        or fi.callback.tag_mode == "startwith"
+    elseif arg.tag_mode == "equal"
+        or arg.tag_mode == "startwith"
     then
         codeset.callback = gen_remove_callback(cls, fi)
         return
@@ -94,14 +94,14 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         return
     end
 
-    olua.assert(fi.callback.tag_mode == "replace" or fi.callback.tag_mode == "new",
+    olua.assert(arg.tag_mode == "replace" or arg.tag_mode == "new",
         "expect 'replace' or 'new', got '${fi.callback.tag_mode}'")
 
     local argname = "arg" .. argn
-    local tag_mode = get_tag_mode(fi)
-    local tag_store = get_tag_store(fi)
-    local tag_scope = fi.callback.tag_scope
-    local cb_tag = gen_callback_tag(cls, fi)
+    local tag_mode = get_tag_mode(fi, arg)
+    local tag_store = get_tag_store(fi, arg)
+    local tag_scope = arg.tag_scope
+    local cb_tag = gen_callback_tag(cls, fi, arg)
     local cb_store
 
     if not fi.is_static then
@@ -116,7 +116,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     ---@class CallbackCodeset
     local callbackset = {
         args = olua.array(", "),
-        num_args = #arg.callback.args,
+        num_args = #arg.type.callback.args,
         push_args = olua.array("\n"),
         remove_once_callback = "",
         remove_function_callback = "",
@@ -130,8 +130,8 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
     }
 
     local pool_enabled = false
-    if arg.attr.localvar then
-        for _, v in ipairs(arg.callback.args) do
+    if arg.tag_usepool then
+        for _, v in ipairs(arg.type.callback.args) do
             if not olua.is_value_type(v.type) then
                 pool_enabled = true
             end
@@ -147,7 +147,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         ]])
     end
 
-    for i, v in ipairs(arg.callback.args) do
+    for i, v in ipairs(arg.type.callback.args) do
         local cb_argname = "arg" .. i
         local decltype = olua.decltype(v.type, false, true)
         olua.gen_push_exp(v, cb_argname, callbackset)
@@ -172,7 +172,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         olua.assert(tag_scope == "object", tag_scope)
     end
 
-    local callback_ret = arg.callback.ret
+    local callback_ret = arg.type.callback.ret
     if callback_ret.type.cppcls ~= "void" then
         local retset = {
             decl_args = olua.array(""),
@@ -286,7 +286,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
             std::string cb_tag = ${cb_tag};
             std::string cb_name;
             if (olua_isfunction(L, ${argn})) {
-                cb_name = olua_setcallback(L, cb_store,  ${argn}, cb_tag.c_str(), ${tag_mode});
+                cb_name = olua_setcallback(L, cb_store, ${argn}, cb_tag.c_str(), ${tag_mode});
                 ${callback_block}
             } else {
                 ${callbackset.remove_normal_callback}
@@ -297,7 +297,7 @@ function olua.gen_callback(cls, fi, arg, argn, codeset)
         callback_block = format([[
             void *cb_store = (void *)${cb_store};
             std::string cb_tag = ${cb_tag};
-            std::string cb_name = olua_setcallback(L, cb_store,  ${argn}, cb_tag.c_str(), ${tag_mode});
+            std::string cb_name = olua_setcallback(L, cb_store, ${argn}, cb_tag.c_str(), ${tag_mode});
             ${callback_block}
         ]])
     end

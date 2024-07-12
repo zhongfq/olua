@@ -350,13 +350,14 @@ local function gen_func_args(cls, fi, codeset)
             goto continue
         end
 
+        if olua.is_func_type(ai.type) then
+            olua.assert(ai.tag_maker, "no callback option")
+            olua.gen_callback(cls, fi, ai, i, codeset)
+        end
+
         local argname = "arg" .. i
         local argn = codeset.idx + 1
         codeset.idx = argn
-
-        if olua.is_func_type(ai.type) then
-            olua.assert(fi.callback, "no callback option")
-        end
 
         if olua.has_cast_flag(ai.type) then
             codeset.caller_args:pushf("*${argname}")
@@ -415,7 +416,6 @@ local function gen_one_func(cls, fi, write, funcidx)
     local cppfunc = not fi.variable and fi.cppfunc or fi.varname
     local args_begin = not fi.variable and "(" or (fi.ret.type.cppcls ~= "void" and "" or " = ")
     local args_end = not fi.variable and ")" or ""
-    local cb_arg, cb_argn
     funcidx = funcidx or ""
 
     ---@class GenFuncCodeSet
@@ -461,18 +461,6 @@ local function gen_one_func(cls, fi, write, funcidx)
 
     gen_func_args(cls, fi, codeset)
     gen_func_ret(cls, fi, codeset)
-
-    for i, arg in ipairs(fi.args) do
-        if arg.callback then
-            olua.assert(not cb_arg, "not support multi callback")
-            cb_arg = arg
-            cb_argn = i
-        end
-    end
-
-    if fi.callback then
-        olua.gen_callback(cls, fi, cb_arg, cb_argn, codeset)
-    end
 
     if #codeset.insert_before > 0 then
         table.insert(codeset.insert_before, 1, "// insert code before call")

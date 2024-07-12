@@ -22,9 +22,9 @@ end
 
 olua = {}
 
----Suppress warnings.
+---Suppress warnings and hook the value used in `olua.format`.
 ---@param ... unknown
-function olua.unuse(...) end
+function olua.use(...) end
 
 function olua.print(fmt)
     print(olua.format(fmt))
@@ -648,9 +648,7 @@ local function lookup(level, key)
         local value
         local searchupvalue = true
 
-        local info1 = debug.getinfo(level, "Snfu")
-        local info2 = debug.getinfo(level + 1, "Sn")
-
+        local info1 = debug.getinfo(level, "fu")
         for i = 1, 256 do
             local k, v = debug.getlocal(level, i)
             if i <= info1.nparams and v == curr_expr then
@@ -670,22 +668,15 @@ local function lookup(level, key)
         end
 
         if searchupvalue then
-            for i = 1, 256 do
+            for i = 1, info1.nups do
                 local k, v = debug.getupvalue(info1.func, i)
                 if k == key then
                     return v
                 end
             end
-        end
-
-        if info1.source == info2.source or
-            not searchupvalue or
-            string.find(info1.source, "olua.lua$") or
-            string.find(info2.source, "olua.lua$")
-        then
-            level = level + 1
-        else
             break
+        else
+            level = level + 1
         end
     end
 end
@@ -1035,7 +1026,7 @@ function olua.json_stringify(data, options)
             else
                 k_str = string.format("%q", k)
             end
-            olua.unuse(v_str, k_str)
+            olua.use(v_str, k_str)
             if type_name ~= "table" then
                 out:pushf([[
                     ${k_str}: ${v_str}
@@ -1062,7 +1053,7 @@ function olua.json_stringify(data, options)
         for i, v in ipairs(value) do
             local v_str = json_value_stringify(v)
             local type_name = type(v)
-            olua.unuse(v_str)
+            olua.use(v_str)
             if type_name ~= "table" then
                 out:pushf([[
                     ${v_str}
@@ -1210,7 +1201,7 @@ function olua.lua_stringify(data, options)
             if type_name ~= "table" then
                 local olua_comment = olua.get_comment(value, k, " -- ")
                 local v_str = lua_value_stringify(v)
-                olua.unuse(k_str, v_str, olua_comment)
+                olua.use(k_str, v_str, olua_comment)
                 out:pushf([[
                     ${k_str} = ${v_str},${olua_comment}
                 ]], indent)
@@ -1220,13 +1211,13 @@ function olua.lua_stringify(data, options)
                 for enum_name, enum_value in pairs(v) do
                     local olua_comment = olua.get_comment(v, enum_name, " -- ")
                     enum_value = lua_value_stringify(enum_value)
-                    olua.unuse(olua_comment)
+                    olua.use(olua_comment)
                     v_out:pushf([[
                         ${enum_name} = ${enum_value},${olua_comment}
                     ]], indent)
                 end
                 v_out:sort()
-                olua.unuse(olua_enum)
+                olua.use(olua_enum)
                 out:pushf([[
                     ---@enum ${olua_enum}
                     ${k_str} = {
@@ -1235,7 +1226,7 @@ function olua.lua_stringify(data, options)
                 ]], indent)
             else
                 local v_str = lua_value_stringify(v)
-                olua.unuse(v_str)
+                olua.use(v_str)
                 lua_annotation_type(v, out)
                 out:pushf([[
                     ${k_str} = {
@@ -1252,7 +1243,7 @@ function olua.lua_stringify(data, options)
         for _, v in ipairs(value) do
             local v_str = lua_value_stringify(v)
             local type_name = type(v)
-            olua.unuse(v_str)
+            olua.use(v_str)
             if type_name == "table" then
                 out:pushf([[
                     {
@@ -1272,7 +1263,7 @@ function olua.lua_stringify(data, options)
     local str = lua_value_stringify(data)
     lua_annotation_class(data, out)
     lua_annotation_type(data, out)
-    olua.unuse(str, marshal)
+    olua.use(str, marshal)
     out:pushf([[
         ${marshal}{
             ${str}
@@ -1368,7 +1359,7 @@ function olua.ts_stringify(data, options)
                     /** ${olua_comment} */
                 ]])
             end
-            olua.unuse(v_str, k_str)
+            olua.use(v_str, k_str)
             if type_name ~= "table" or olua.get_metafield(v, "__olua_enum") then
                 out:pushf([[
                     ${k_str}: ${v_str},
@@ -1395,7 +1386,7 @@ function olua.ts_stringify(data, options)
         for i, v in ipairs(value) do
             local v_str = ts_value_stringify(v)
             local type_name = type(v)
-            olua.unuse(v_str)
+            olua.use(v_str)
             if type_name ~= "table" then
                 out:pushf([[
                     ${v_str},
@@ -1420,7 +1411,7 @@ function olua.ts_stringify(data, options)
     local out = olua.array("\n")
     local olua_object = olua.get_metafield(data, "__olua_object")
     local str = ts_value_stringify(data)
-    olua.unuse(str, marshal)
+    olua.use(str, marshal)
     if #enums > 0 then
         out:push(tostring(enums))
         out:push("")

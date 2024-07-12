@@ -15,7 +15,7 @@
         "luaexe": "lua"
       },
       "stopOnEntry": false,
-      "cwd": "${workspaceFolder}/examples/00-testapi",
+      "cwd": "${workspaceFolder}/examples/01-helloworld",
       "program": "build.lua"
     },
     {

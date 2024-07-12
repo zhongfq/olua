@@ -116,7 +116,7 @@ function module(name)
     ---@field luacls fun(cppcls:string):string
     idl.current_module = {
         name = name,
-        class_types = olua.ordered_map(),
+        class_types = olua.ordered_map(false),
         wildcard_types = olua.ordered_map(),
         typedef_types = olua.ordered_map(),
         type_convs = olua.ordered_map(),
@@ -250,11 +250,10 @@ end
 ---@field indexerror? "r" | "w" | "rw"
 ---@field fromtable? boolean
 
----@class idl.model.type_model
+---@class idl.model.type_model : idl.conf.func_annotation
 ---@field type string
 ---@field name? string
 ---@field comment? string
----@field attr? string
 
 ---@class idl.model.func_model
 ---@field cppfunc string
@@ -269,137 +268,52 @@ end
 ---@field is_variadic? boolean
 ---@field ret idl.model.type_model
 ---@field args array # idl.model.type_model[]
----@field tag_scope? idl.callback_tag_scope
----@field tag_mode? idl.callback_tag_mode
----@field tag_maker? string
----@field tag_store? integer
----@field localvar? boolean
 ---@field insert_before? string
 ---@field insert_after? string
 ---@field insert_cbefore? string
 ---@field insert_cafter? string
 
----Set attribute for c++ function parameters or return value.
----@alias idl.typeconf.func_attr fun(attr:string):idl.typeconf.func
 
----@class idl.typeconf.func_base : idl.typeconf
----@field insert_before fun(code:string):idl.typeconf.func # Insert codes before the c++ function invoked.
----@field insert_after fun(code:string):idl.typeconf.func # Insert codes after the c++ function invoked.
----@field insert_cbefore fun(code:string):idl.typeconf.func # Insert codes before the c++ callback function invoked.
----@field insert_cafter fun(code:string):idl.typeconf.func # Insert codes after the c++ callback function invoked.
----@field ret idl.typeconf.func_attr
----@field arg1 idl.typeconf.func_attr
----@field arg2 idl.typeconf.func_attr
----@field arg3 idl.typeconf.func_attr
----@field arg4 idl.typeconf.func_attr
----@field arg5 idl.typeconf.func_attr
----@field arg6 idl.typeconf.func_attr
----@field arg7 idl.typeconf.func_attr
----@field arg8 idl.typeconf.func_attr
----@field arg9 idl.typeconf.func_attr
----@field arg10 idl.typeconf.func_attr
----@field package optional fun(optional:boolean):idl.typeconf.func
----@field package readonly fun(readonly:boolean):idl.typeconf.func
-
----@param CMD idl.typeconf.func_base
----@param cls idl.model.class_desc
----@param func idl.model.func_desc|idl.model.callback_desc
+---@param parent idl.typeconf.func
+---@param func idl.model.func_conf
 ---@param name string
-local function add_attr_command(CMD, cls, func, name)
-    ---@class idl.model.attr_desc
-    ---@field optional? boolean
-    ---@field readonly? boolean
-    ---@field ret? string
-    ---@field arg1? string
-    ---@field arg2? string
-    ---@field arg3? string
-    ---@field arg4? string
-    ---@field arg5? string
-    ---@field arg6? string
-    ---@field arg7? string
-    ---@field arg8? string
-    ---@field arg9? string
-    ---@field arg10? string
-    local entry = {}
-    cls.conf.attrs:set(name, entry)
+local function typeconf_func_annotate(parent, func, name)
+    ---@class idl.conf.func_annotation
+    local conf = {}
 
-    add_value_command(CMD, entry, "optional", checkboolean)
-    add_value_command(CMD, entry, "readonly", checkboolean)
-    add_value_command(CMD, entry, "ret")
-    add_value_command(CMD, entry, "arg1")
-    add_value_command(CMD, entry, "arg2")
-    add_value_command(CMD, entry, "arg3")
-    add_value_command(CMD, entry, "arg4")
-    add_value_command(CMD, entry, "arg5")
-    add_value_command(CMD, entry, "arg6")
-    add_value_command(CMD, entry, "arg7")
-    add_value_command(CMD, entry, "arg8")
-    add_value_command(CMD, entry, "arg9")
-    add_value_command(CMD, entry, "arg10")
-end
+    func.annotations:set(name, conf)
 
-
----@param parent idl.typeconf
----@param cls idl.model.class_desc
----@param name string
----@return idl.typeconf.func
-local function typeconf_func(parent, cls, name)
-    ---@class idl.model.func_desc
-    local func = {
-        name = name,
-        ---@type string|nil
-        body = nil
-    }
-    cls.conf.funcs:set(name, func)
-
-    ---@class idl.typeconf.func : idl.typeconf.func_base
+    ---@class idl.typeconf.func_annotate : idl.typeconf.func
     local CMD = {}
 
-    ---@param body string
-    function CMD.body(body)
-        func.body = olua.trim(body)
+    ---@param attr string
+    ---@return idl.typeconf.func_annotate
+    function CMD.attr(attr)
+        conf.attr = checkstring("attr", attr)
         return CMD
     end
 
-    add_attr_command(CMD, cls, func, name)
-    add_value_command(CMD, func, "insert_before")
-    add_value_command(CMD, func, "insert_after")
-    add_value_command(CMD, func, "insert_cbefore")
-    add_value_command(CMD, func, "insert_cafter")
+    ---@alias idl.callback_tag_scope
+    ---|>'"once"'       # Remove callback after the callback invoked.
+    ---| '"invoker"'    # Remove callback after the c++ function invoked.
+    ---| '"object"'     # Callback will exist until the c++ object die.
 
-    ---@type idl.typeconf.func
-    return setmetatable(CMD, { __index = parent })
-end
+    ---@param scope idl.callback_tag_scope
+    ---@return idl.typeconf.func_annotate
+    function CMD.tag_scope(scope)
+        ---@type idl.callback_tag_scope
+        conf.tag_scope = checkstring("tag_scope", scope)
+        return CMD
+    end
 
----@param parent idl.typeconf
----@param cls idl.model.class_desc
----@param name string
----@return idl.typeconf.callback
-local function typeconf_callback(parent, cls, name)
-    ---@class idl.model.callback_desc
-    local callback = {
-        name = name,
-        tag_scope = "object",
-        localvar = true,
-    }
-    cls.conf.callbacks:set(name, callback)
-
-    ---@class idl.typeconf.callback : idl.typeconf.func_base
-    ---@field localvar fun(localvar:booltype):idl.typeconf.callback
-    local CMD = {}
-
-    add_value_command(CMD, callback, "localvar", checkboolean)
-    add_attr_command(CMD, cls, callback, name)
-    add_value_command(CMD, callback, "insert_before")
-    add_value_command(CMD, callback, "insert_after")
-    add_value_command(CMD, callback, "insert_cbefore")
-    add_value_command(CMD, callback, "insert_cafter")
-
-
-    ---Make callback key.
-    ---@param maker string|string[]
-    function CMD.tag_maker(maker)
-        callback.tag_maker = maker
+    ---Specify where to store the callback.
+    ---* `-1`: Store callback in return value.
+    ---* `0`: Store callback in `.classobj` when it is a static function, otherwise store in `self` value.
+    ---* `1,2,...N`: Store callback in the `N` argument value.
+    ---@param store string
+    ---@return idl.typeconf.func_annotate
+    function CMD.tag_store(store)
+        conf.tag_store = checkinteger("callback_store", store)
         return CMD
     end
 
@@ -409,38 +323,76 @@ local function typeconf_callback(parent, cls, name)
     ---| '"new"'
     ---| '"replace"'
 
-    ---@alias idl.callback_tag_scope
-    ---|>'"once"'       # Remove callback after the callback invoked.
-    ---| '"function"'   # Remove callback after the c++ function invoked.
-    ---| '"object"'     # Callback will exist until the c++ object die.
-
     ---How to store or remove the callback.
-    ---@param mode idl.callback_tag_mode|idl.callback_tag_mode[]
-    ---@return idl.typeconf.callback
+    ---@param mode idl.callback_tag_mode
+    ---@return idl.typeconf.func_annotate
     function CMD.tag_mode(mode)
-        callback.tag_mode = mode
+        ---@type idl.callback_tag_mode
+        conf.tag_mode = checkstring("tag_mode", mode)
         return CMD
     end
 
-    ---Specify where to store the callback.
-    ---* `-1`: Store callback in return value.
-    ---* `0`: Store callback in `.classobj` when it is a static function, otherwise store in `self` value.
-    ---* `1,2,...N`: Store callback in the `N` argument value.
-    ---@param store string
-    ---@return idl.typeconf.callback
-    function CMD.tag_store(store)
-        callback.tag_store = checkinteger("tag_store", store)
+    ---Make callback key.
+    ---@param maker string
+    ---@return idl.typeconf.func_annotate
+    function CMD.tag_maker(maker)
+        conf.tag_maker = checkstring("tag_maker", maker)
         return CMD
     end
 
-    ---Mark the lifecycle of the callback, default is `object`.
-    ---@param scope idl.callback_tag_scope
-    function CMD.tag_scope(scope)
-        callback.tag_scope = checkstring("tag_scope", scope)
+    ---Use object pool in callback, default is `true`.
+    ---@param usepool booltype
+    ---@return idl.typeconf.func_annotate
+    function CMD.tag_usepool(usepool)
+        conf.tag_usepool = checkboolean("tag_usepool", usepool)
         return CMD
     end
 
-    ---@type idl.typeconf.callback
+    ---@type idl.typeconf.func_annotate
+    return setmetatable(CMD, { __index = parent })
+end
+
+---@param parent idl.typeconf
+---@param cls idl.model.class_desc
+---@param name string
+---@return idl.typeconf.func
+local function typeconf_func(parent, cls, name)
+    ---@class idl.typeconf.func : idl.typeconf
+    ---@field insert_before fun(code:string):idl.typeconf.func # Insert codes before the c++ function invoked.
+    ---@field insert_after fun(code:string):idl.typeconf.func # Insert codes after the c++ function invoked.
+    ---@field insert_cbefore fun(code:string):idl.typeconf.func # Insert codes before the c++ callback function invoked.
+    ---@field insert_cafter fun(code:string):idl.typeconf.func # Insert codes after the c++ callback function invoked.
+    local CMD = {}
+
+    ---@class idl.model.func_conf
+    ---@field body string|nil
+    ---@field annotations ordered_map # table<string, idl.conf.func_annotation>
+    ---@field CMD idl.typeconf.func
+    local func = {
+        name = name,
+        body = nil,
+        annotations = olua.ordered_map(false),
+        CMD = CMD,
+    }
+    cls.conf.funcs:set(name, func)
+
+    ---@param body string
+    function CMD.body(body)
+        func.body = olua.trim(body)
+        return CMD
+    end
+
+    ---@param at "return"|"arg1"|"arg2"|"arg3"|"arg4"|"arg5"|"arg6"|"arg7"|"arg8"|"arg9"|"arg10"
+    function CMD.annotate(at)
+        return typeconf_func_annotate(CMD, func, at)
+    end
+
+    add_value_command(CMD, func, "insert_before")
+    add_value_command(CMD, func, "insert_after")
+    add_value_command(CMD, func, "insert_cbefore")
+    add_value_command(CMD, func, "insert_cafter")
+
+    ---@type idl.typeconf.func
     return setmetatable(CMD, { __index = parent })
 end
 
@@ -520,7 +472,6 @@ local function typeconf_var(parent, cls, name)
     local var = { name = name }
 
     if name ~= "*" then
-        cls.conf.excludes:replace(name, true)
         cls.conf.vars:set(name, var)
     else
         name = "var*"
@@ -553,6 +504,17 @@ end
 function typeconf(cppcls)
     check_module()
 
+    ---@class idl.typeconf
+    ---@field luaopen fun(luaopen:string):idl.typeconf
+    ---@field codeblock fun(codeblock:string):idl.typeconf
+    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.typeconf
+    ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.typeconf
+    ---@field fromtable fun(fromtable:booltype):idl.typeconf
+    ---@field packable fun(packable:booltype):idl.typeconf
+    ---@field packvars fun(packvars:string):idl.typeconf
+    ---@field private maincls fun(cls:idl.model.class_desc):idl.typeconf
+    local CMD = {}
+
     ---@class idl.model.typeconf
     ---@field kind integer
     ---@field luacls string
@@ -561,21 +523,19 @@ function typeconf(cppcls)
     local conf = {
         luacls = idl.current_module.luacls(cppcls),
         conv = "olua_$$_object",
-        extends = olua.ordered_map(),
+        extends = olua.ordered_map(false),
         excludes = olua.ordered_map(),
         wildcards = olua.ordered_map(),
         includes = olua.ordered_map(),
-        usings = olua.ordered_map(),
-        attrs = olua.ordered_map(),
-        enums = olua.ordered_map(),
-        consts = olua.ordered_map(),
-        funcs = olua.ordered_map(),
-        callbacks = olua.ordered_map(),
-        props = olua.ordered_map(),
-        vars = olua.ordered_map(),
-        inserts = olua.ordered_map(),
-        supers = olua.ordered_map(),
-        template_types = olua.ordered_map(),
+        usings = olua.ordered_map(false),
+        enums = olua.ordered_map(false),
+        consts = olua.ordered_map(false),
+        funcs = olua.ordered_map(false),
+        props = olua.ordered_map(false),
+        vars = olua.ordered_map(false),
+        inserts = olua.ordered_map(false),
+        supers = olua.ordered_map(false),
+        template_types = olua.ordered_map(false),
         ---@type fun(name:string, kind?:'func'|'var'|'enum'):string
         luaname = function (name, kind) return name end,
     }
@@ -583,14 +543,17 @@ function typeconf(cppcls)
     ---@class idl.model.class_desc
     ---@field supercls? string
     ---@field comment? string
+    ---@field conf idl.model.typeconf
+    ---@field CMD idl.typeconf
     local cls = {
         ---@type string c++ full class name
         cppcls = cppcls,
         options = { reg_luatype = true, fromtable = true },
-        funcs = olua.ordered_map(),
-        props = olua.ordered_map(),
-        vars = olua.ordered_map(),
+        funcs = olua.ordered_map(false),
+        props = olua.ordered_map(false),
+        vars = olua.ordered_map(false),
         conf = conf,
+        CMD = CMD,
     }
 
     ---@type 'exclude'|'include'|nil
@@ -617,17 +580,6 @@ function typeconf(cppcls)
         cls.macro = idl.macros:at(-1)
     end
 
-    ---@class idl.typeconf
-    ---@field luaopen fun(luaopen:string):idl.typeconf
-    ---@field codeblock fun(codeblock:string):idl.typeconf
-    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.typeconf
-    ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.typeconf
-    ---@field fromtable fun(fromtable:booltype):idl.typeconf
-    ---@field packable fun(packable:booltype):idl.typeconf
-    ---@field packvars fun(packvars:string):idl.typeconf
-    ---@field private maincls fun(cls:idl.model.class_desc):idl.typeconf
-    local CMD = {}
-
     add_value_command(CMD, cls, "luaopen")
     add_value_command(CMD, cls, "codeblock")
     add_value_command(CMD, cls.conf, "luaname", function (_, v) return v end)
@@ -653,7 +605,7 @@ function typeconf(cppcls)
     ---@return idl.typeconf
     function CMD.exclude(name)
         if mode and mode ~= "exclude" then
-            olua.unuse(cls) -- get cls as upvalue
+            olua.use(cls) -- get cls as upvalue
             olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cppcls}'")
         end
         mode = "exclude"
@@ -670,7 +622,7 @@ function typeconf(cppcls)
     ---@return idl.typeconf
     function CMD.include(name)
         if mode and mode ~= "include" then
-            olua.unuse(cls) -- get cls as upvalue
+            olua.use(cls) -- get cls as upvalue
             olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cppcls}'")
         end
         mode = "include"
@@ -706,18 +658,11 @@ function typeconf(cppcls)
     ---@param name string
     ---@return idl.typeconf.func
     function CMD.func(name)
-        cls.conf.excludes:replace(name, true)
         local func = typeconf_func(CMD, cls, name)
         if #macros > 0 then
             cls.conf.funcs:get(name).macro = macros:at(-1)
         end
         return func
-    end
-
-    ---@param name string
-    ---@return idl.typeconf.callback
-    function CMD.callback(name)
-        return typeconf_callback(CMD, cls, name)
     end
 
     ---@param name string

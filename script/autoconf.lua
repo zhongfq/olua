@@ -448,7 +448,20 @@ local function is_func_type(tn)
     end
 end
 
-local function parse_attr_from_annotate(attr, cur, isvar)
+---@param cls idl.model.class_desc
+---@param cur clang.Cursor
+---@param isvar? boolean
+local function parse_attr_from_annotate(cls, cur, isvar)
+    local fn = cur.name
+    local func = cls.conf.funcs:get(fn)
+
+    local display_name = cur.displayName
+    cls.CMD.func(display_name)
+    local display_func = cls.conf.funcs:get(display_name)
+
+
+    ---@param node clang.Cursor
+    ---@param key string
     local function parse_and_merge_attr(node, key)
         local exps = nil
         for _, c in ipairs(node.children) do
@@ -460,13 +473,20 @@ local function parse_attr_from_annotate(attr, cur, isvar)
                 end
             end
         end
+
+        ---@cast func idl.model.func_conf
+        local olua_conf = func and func.annotations:get(key) or {}
+        display_func.CMD.annotate(key)
+        local conf = display_func.annotations:get(key)
+
         if exps then
-            exps:push(attr[key])
-            attr[key] = tostring(exps)
+            ---@cast conf idl.conf.func_annotation
+            exps:push(olua_conf.attr)
+            conf.attr = tostring(exps)
         end
     end
 
-    parse_and_merge_attr(cur, "ret")
+    parse_and_merge_attr(cur, "return")
     if not isvar then
         for i, arg in ipairs(cur.arguments) do
             parse_and_merge_attr(arg, "arg" .. i)
@@ -571,13 +591,13 @@ function Autoconf:visit_method(cls, cur)
     local arguments = cur.arguments
     local result_type = cur.resultType
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
-    local attr = get_attr_copy(cls, fn)
-    local callback = cls.conf.callbacks:get(fn) or {}
     local static = cur.isCXXMethodStatic
     local declexps = olua.array("")
     local protoexps = olua.array("")
 
-    parse_attr_from_annotate(attr, cur)
+    parse_attr_from_annotate(cls, cur)
+
+    local func_conf = cls.conf.funcs:get(display_name) ---@type idl.model.func_conf
 
     ---@type idl.model.func_model
     local func_model = {
@@ -607,8 +627,10 @@ function Autoconf:visit_method(cls, cur)
         declexps:push("@variadic ")
     end
 
-    declexps:push(attr.ret and (attr.ret .. " ") or nil)
-    func_model.ret.attr = attr.ret
+    local ret_annotate = func_conf.annotations:get("return") ---@type idl.conf.func_annotation
+
+    declexps:push(ret_annotate.attr and (ret_annotate.attr .. " ") or nil)
+    func_model.ret.attr = ret_annotate.attr
 
     if cur.kind == CursorKind.FunctionDecl then
         static = true
@@ -624,7 +646,7 @@ function Autoconf:visit_method(cls, cur)
         local tn = typename(result_type, cls.conf.template_types, nil, typefrom)
         if is_func_type(result_type) then
             cb_kind = "ret"
-            if callback.localvar ~= false then
+            if ret_annotate.tag_usepool ~= false then
                 declexps:push("@localvar ")
             end
         end
@@ -641,7 +663,7 @@ function Autoconf:visit_method(cls, cur)
         func_model.is_contructor = true
     end
 
-    local name_from_attr = string.match(attr.ret or "", "@name%(([^)]+)%)")
+    local name_from_attr = string.match(ret_annotate.attr or "", "@name%(([^)]+)%)")
     if name_from_attr then
         luaname = name_from_attr
         func_model.luafunc = luaname
@@ -655,15 +677,17 @@ function Autoconf:visit_method(cls, cur)
     for i, arg in ipairs(arguments) do
         local tn = typename(arg.type, cls.conf.template_types, nil, typefrom)
         local argn = "arg" .. i
-        local arg_attr = olua.array("")
+        local arg_annotate = func_conf.annotations:get(argn) ---@type idl.conf.func_annotation
         declexps:push(i > 1 and ", " or nil)
         protoexps:push(i > 1 and ", " or nil)
         protoexps:push(tn)
-        func_model.args:push({
+        ---@type idl.model.type_model
+        local arg_type = {
             type = tn,
             name = arg.name,
-            attr = attr[argn],
-        })
+            attr = arg_annotate.attr,
+        }
+        func_model.args:push(arg_type)
         if is_func_type(arg.type) then
             if cb_kind then
                 olua.error([[
@@ -673,9 +697,31 @@ function Autoconf:visit_method(cls, cur)
                 ]])
             end
             cb_kind = "arg"
-            if callback.localvar ~= false then
+            if arg_annotate.tag_usepool ~= false then
                 declexps:push("@localvar ")
-                func_model.localvar = true
+                arg_type.tag_usepool = true
+            else
+                arg_type.tag_usepool = false
+            end
+            if not arg_annotate.tag_maker then
+                arg_type.tag_maker = fn:gsub("^[sS]et", ""):gsub("^[gG]et", "")
+            else
+                arg_type.tag_maker = arg_annotate.tag_maker
+            end
+            if not arg_annotate.tag_mode then
+                arg_type.tag_mode = "replace"
+            else
+                arg_type.tag_mode = arg_annotate.tag_mode
+            end
+            if not arg_annotate.tag_store then
+                arg_type.tag_store = func_model.is_contructor and -1 or 0
+            else
+                arg_type.tag_store = arg_annotate.tag_store
+            end
+            if not arg_annotate.tag_scope then
+                arg_type.tag_scope = "object"
+            else
+                arg_type.tag_scope = arg_annotate.tag_scope
             end
         end
         if has_default_value(arg) then
@@ -690,7 +736,7 @@ function Autoconf:visit_method(cls, cur)
             min_args = min_args + 1
             assert(not optional, cls.cppcls .. "::" .. display_name)
         end
-        declexps:push(attr[argn] and (attr[argn] .. " ") or nil)
+        declexps:push(arg_annotate.attr and (arg_annotate.attr .. " ") or nil)
         declexps:push(olua.decltype(tn, nil, true))
         declexps:push(arg.name)
 
@@ -700,7 +746,7 @@ function Autoconf:visit_method(cls, cur)
                 protoexps:push(tn)
                 declexps:push(", ")
                 declexps:push("@optional ")
-                declexps:push(attr[argn] and (attr[argn] .. " ") or nil)
+                declexps:push(arg_annotate.attr and (arg_annotate.attr .. " ") or nil)
                 declexps:push(olua.decltype(tn, nil, true))
                 declexps:pushf("${arg.name}_$${vi}")
             end
@@ -1346,7 +1392,7 @@ end
 local function write_cls_options(module, cls, append)
     local out = olua.array("\n")
     for key, value in pairs(cls.options) do
-        olua.unuse(key, value)
+        olua.use(key, value)
         out:pushf([[.option('${key}', ${value?})]])
     end
     out:sort()
@@ -1603,16 +1649,15 @@ local function parse_types()
 
     for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
+            ---@cast cls idl.model.class_desc
             for fn, func in pairs(cls.conf.funcs) do
-                if not func.body then
-                    -- cls.funcs:take(fn)
-                    cls.conf.excludes:take(fn)
+                if func.body then
+                    cls.conf.excludes:set(fn, true)
                 end
             end
             for vn, vi in pairs(cls.conf.vars) do
-                if not vi.body then
-                    cls.conf.vars:take(vn)
-                    cls.conf.excludes:take(vn)
+                if vi.body then
+                    cls.conf.excludes:set(vn, true)
                 end
             end
         end
@@ -2001,8 +2046,8 @@ local function write_new_module(module)
 
     module.class_types:foreach(function (cls)
         ---@cast cls idl.model.class_desc
-        ---@diagnostic disable-next-line: inject-field
         cls.conf = nil
+        cls.CMD = nil
     end)
 
     olua.write("${module.class_file}", olua.lua_stringify(m, { marshal = "return", indent = 2 }))
@@ -2057,6 +2102,7 @@ local function write_typedefs()
             if cls and has_type_flag(cls, kFLAG_POINTER) then
                 return
             end
+            olua.use(m)
             typdefs:push({
                 from = olua.format([[module: ${m.path} -> typedef "${td.cppcls}"]]),
                 cppcls = td.cppcls,
@@ -2079,6 +2125,7 @@ local function write_typedefs()
             if has_type_flag(cls, kFLAG_POINTER) and cls.options.packable then
                 packvars = cls.options.packvars or #cls.conf.vars
             end
+            olua.use(m)
             typdefs:push({
                 from = olua.format([[module: ${m.path} -> typedef "${cls.cppcls}"]]),
                 cppcls = cls.cppcls,

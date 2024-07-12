@@ -43,9 +43,11 @@ local function lookup_typeinfo(cpptype)
     return ti, tn
 end
 
+---@param cpptype string
+---@param errors ordered_map
 local function throw_type_error(cpptype, errors)
     print("try type:")
-    print("    " .. table.concat(errors.values, "\n    "))
+    print("    " .. table.concat(errors:values(), "\n    "))
     local rawtn = cpptype:gsub(" [*&]+$", "")
     olua.error([[
         type info not found: ${cpptype}
@@ -259,11 +261,11 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     end
     if olua.has_callback_flag(ti) then
         exps:push("<")
-        olua.decltype(ti.callback[0], false, true, exps)
+        olua.decltype(ti.callback.ret.type, false, true, exps)
         exps:push("(")
-        for i, ai in ipairs(ti.callback) do
+        for i, ai in ipairs(ti.callback.args) do
             exps:push(i > 1 and ", " or nil)
-            olua.decltype(ai, false, false, exps)
+            olua.decltype(ai.type, false, false, exps)
         end
         exps:push(")")
         exps:push(">")
@@ -390,10 +392,7 @@ local function type_func_info(tn, cls, cb)
     else
         ti = olua.typeinfo("std::function", cls)
         ti.flag = ti.flag | kFLAG_CALLBACK
-        ti.callback = { [0] = cb.ret.type }
-        for i, arg in ipairs(cb.args) do
-            ti.callback[i] = arg.type
-        end
+        ti.callback = cb
     end
     return ti
 end
@@ -475,6 +474,17 @@ function parse_args(cls, declstr)
     end
 
     return args, count
+end
+
+function olua.parse_type(tn, cls)
+    if olua.is_func_type(tn, cls) then
+        local cb = parse_callback(cls, tn)
+        local ti = type_func_info(tn, cls, cb)
+        -- ti.callback = cb
+        return ti
+    else
+        return olua.typeinfo(tn, cls)
+    end
 end
 
 function olua.func_name(funcdecl)
@@ -1117,11 +1127,11 @@ function olua.export(path)
                     return
                 end
                 func.index = idx
-                func.ret.type = olua.typeinfo(func.ret.type, cls)
+                func.ret.type = olua.parse_type(func.ret.type, cls)
                 func.ret.attr = parse_attr(func.ret.attr or "")
                 cls.prototypes:set(func.prototype, true)
                 olua.make_array(func.args):foreach(function (arg)
-                    arg.type = olua.typeinfo(arg.type, cls)
+                    arg.type = olua.parse_type(arg.type, cls)
                     arg.attr = parse_attr(arg.attr or "")
                 end)
             end)
