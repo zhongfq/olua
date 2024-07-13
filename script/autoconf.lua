@@ -592,7 +592,6 @@ function Autoconf:visit_method(cls, cur)
     local result_type = cur.resultType
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
     local static = cur.isCXXMethodStatic
-    local declexps = olua.array("")
     local protoexps = olua.array("")
 
     parse_attr_from_annotate(cls, cur)
@@ -604,7 +603,6 @@ function Autoconf:visit_method(cls, cur)
         cppfunc = fn,
         luafunc = fn,
         prototype = "",
-        funcdesc = "",
         ret = { type = "" },
         args = olua.array(),
         comment = get_comment(cur),
@@ -624,18 +622,16 @@ function Autoconf:visit_method(cls, cur)
 
     if cur.isVariadic then
         func_model.is_variadic = true
-        declexps:push("@variadic ")
+        -- declexps:push("@variadic ")
     end
 
     local ret_annotate = func_conf.annotations:get("return") ---@type idl.conf.func_annotation
 
-    declexps:push(ret_annotate.attr and (ret_annotate.attr .. " ") or nil)
     func_model.ret.attr = ret_annotate.attr
 
     if cur.kind == CursorKind.FunctionDecl then
         static = true
     end
-    declexps:push(static and "static " or nil)
     if static then
         func_model.is_static = true
     end
@@ -646,12 +642,8 @@ function Autoconf:visit_method(cls, cur)
         local tn = typename(result_type, cls.conf.template_types, nil, typefrom)
         if is_func_type(result_type) then
             cb_kind = "ret"
-            if ret_annotate.tag_usepool ~= false then
-                declexps:push("@localvar ")
-            end
         end
-        declexps:push(olua.decltype(tn, nil, true))
-        protoexps:push(declexps[#declexps])
+        protoexps:push(olua.decltype(tn, nil, true))
         luaname = cls.conf.luaname(fn, "func")
         func_model.luafunc = luaname
         func_model.ret.type = tn
@@ -672,13 +664,11 @@ function Autoconf:visit_method(cls, cur)
     local optional = false
     local min_args = 0
     local num_args = #arguments
-    declexps:push(fn .. "(")
     protoexps:push(fn .. "(")
     for i, arg in ipairs(arguments) do
         local tn = typename(arg.type, cls.conf.template_types, nil, typefrom)
         local argn = "arg" .. i
         local arg_annotate = func_conf.annotations:get(argn) ---@type idl.conf.func_annotation
-        declexps:push(i > 1 and ", " or nil)
         protoexps:push(i > 1 and ", " or nil)
         protoexps:push(tn)
         ---@type idl.model.type_model
@@ -698,7 +688,6 @@ function Autoconf:visit_method(cls, cur)
             end
             cb_kind = "arg"
             if arg_annotate.tag_usepool ~= false then
-                declexps:push("@localvar ")
                 arg_type.tag_usepool = true
             else
                 arg_type.tag_usepool = false
@@ -725,7 +714,6 @@ function Autoconf:visit_method(cls, cur)
             end
         end
         if has_default_value(arg) then
-            declexps:push("@optional ")
             optional = true
             if func_model.args[i].attr then
                 func_model.args[i].attr = func_model.args[i].attr .. "@optional"
@@ -736,27 +724,17 @@ function Autoconf:visit_method(cls, cur)
             min_args = min_args + 1
             assert(not optional, cls.cppcls .. "::" .. display_name)
         end
-        declexps:push(arg_annotate.attr and (arg_annotate.attr .. " ") or nil)
-        declexps:push(olua.decltype(tn, nil, true))
-        declexps:push(arg.name)
 
         if cur.isVariadic and i == num_args then
             for vi = 1, OLUA_MAX_VARIADIC_ARGS do
                 protoexps:push(", ")
                 protoexps:push(tn)
-                declexps:push(", ")
-                declexps:push("@optional ")
-                declexps:push(arg_annotate.attr and (arg_annotate.attr .. " ") or nil)
-                declexps:push(olua.decltype(tn, nil, true))
-                declexps:pushf("${arg.name}_$${vi}")
             end
         end
     end
 
-    declexps:push(")")
     protoexps:push(")")
 
-    local decl = tostring(declexps)
     local prototype = tostring(protoexps)
     cls.conf.excludes:replace(display_name, true)
     cls.conf.excludes:replace(prototype, true)
@@ -770,13 +748,13 @@ function Autoconf:visit_method(cls, cur)
     funcs:push(func_model)
 
     func_model.prototype = tostring(protoexps)
-    func_model.funcdesc = tostring(declexps)
     func_model.min_args = min_args
     func_model.max_args = num_args
     func_model.num_args = num_args
 
-    if decl:find("@getter") or decl:find("@setter") then
-        local what = decl:find("@getter") and "get" or "set"
+    local ret_attr = func_model.ret.attr or ""
+    if ret_attr:find("@getter") or ret_attr:find("@setter") then
+        local what = ret_attr:find("@getter") and "get" or "set"
         olua.assert((what == "get" and num_args == 0) or num_args == 1, [[
             ${what}ter function has wrong argument:
                 prototype: ${decl}
@@ -788,19 +766,6 @@ function Autoconf:visit_method(cls, cur)
         end
         prop[what] = func_model.prototype
         func_model.is_exposed = false
-    else
-        -- cls.funcs:set(prototype, {
-        --     decl = decl,
-        --     luaname = luaname == fn and "nil" or olua.format([['${luaname}']]),
-        --     name = fn,
-        --     static = static,
-        --     num_args = num_args,
-        --     min_args = min_args,
-        --     cb_kind = cb_kind,
-        --     prototype = prototype,
-        --     display_name = display_name,
-        --     isctor = cur.kind == CursorKind.Constructor,
-        -- })
     end
 end
 
@@ -1994,7 +1959,6 @@ local function write_new_module(module)
                     {
                         cppfunc = key,
                         luafunc = key,
-                        funcdesc = "",
                         body = value.body,
                     }
                 }

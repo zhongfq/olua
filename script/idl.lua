@@ -259,7 +259,6 @@ end
 ---@field cppfunc string
 ---@field luafunc string
 ---@field prototype string
----@field funcdesc string
 ---@field comment? string
 ---@field macro? string
 ---@field is_exposed? boolean

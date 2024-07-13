@@ -492,6 +492,29 @@ function olua.func_name(funcdecl)
     return str:match("[^ ()]+")
 end
 
+local function gen_func_desc(cls, fi)
+    local exps = olua.array("")
+    if fi.ret.attr then
+        exps:push(fi.ret.attr)
+        exps:push(" ")
+    end
+    exps:push(fi.is_static and "static " or nil)
+    exps:push(olua.decltype(fi.ret.type, nil, true))
+    exps:push(fi.cppfunc)
+    exps:push("(")
+    for i, v in ipairs(fi.args) do
+        exps:push(i > 1 and ", " or nil)
+        if v.attr then
+            exps:push(v.attr)
+            exps:push(" ")
+        end
+        exps:push(olua.decltype(v.type, false, true))
+        exps:push(v.name)
+    end
+    exps:push(")")
+    return tostring(exps)
+end
+
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
     local exps = olua.array("")
@@ -1124,9 +1147,11 @@ function olua.export(path)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
                 if func.body then
+                    func.funcdesc = ""
                     return
                 end
                 func.index = idx
+                func.funcdesc = gen_func_desc(cls, func)
                 func.ret.type = olua.parse_type(func.ret.type, cls)
                 func.ret.attr = parse_attr(func.ret.attr or "")
                 cls.prototypes:set(func.prototype, true)
