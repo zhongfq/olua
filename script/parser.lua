@@ -498,9 +498,13 @@ local function gen_func_desc(cls, fi)
         exps:push(fi.ret.attr)
         exps:push(" ")
     end
-    exps:push(fi.is_static and "static " or nil)
-    exps:push(olua.decltype(fi.ret.type, nil, true))
-    exps:push(fi.cppfunc)
+    exps:push(fi.is_static and not fi.is_contructor and "static " or nil)
+    if fi.is_contructor then
+        exps:push(cls.cppcls)
+    else
+        exps:push(olua.decltype(fi.ret.type, nil, true))
+        exps:push(fi.cppfunc)
+    end
     exps:push("(")
     for i, v in ipairs(fi.args) do
         exps:push(i > 1 and ", " or nil)

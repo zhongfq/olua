@@ -352,7 +352,7 @@ local function gen_func_args(cls, fi, codeset)
 
         if olua.is_func_type(ai.type) then
             olua.assert(ai.tag_maker, "no callback option")
-            olua.gen_callback(cls, fi, ai, i, codeset)
+            olua.gen_arg_callback(cls, fi, ai, i, codeset)
         end
 
         local argname = "arg" .. i
@@ -379,6 +379,9 @@ local function gen_func_args(cls, fi, codeset)
 end
 
 local function gen_func_ret(cls, fi, codeset)
+    if olua.is_func_type(fi.ret.type) then
+        olua.gen_ret_callback(cls, fi, codeset)
+    end
     if fi.ret.type.cppcls ~= "void" then
         local decltype = olua.decltype(fi.ret.type, nil, true)
         if olua.has_cast_flag(fi.ret.type) then

@@ -453,36 +453,30 @@ end
 ---@param isvar? boolean
 local function parse_attr_from_annotate(cls, cur, isvar)
     local fn = cur.name
-    local func = cls.conf.funcs:get(fn)
+    local func = cls.conf.funcs:get(fn) ---@type idl.model.func_conf
+    local annotations
 
-    local display_name = cur.displayName
-    cls.CMD.func(display_name)
-    local display_func = cls.conf.funcs:get(display_name)
-
+    if func then
+        annotations = func.annotations:clone()
+    else
+        annotations = olua.ordered_map(false)
+    end
 
     ---@param node clang.Cursor
     ---@param key string
     local function parse_and_merge_attr(node, key)
-        local exps = nil
+        local conf = annotations:get(key) ---@type idl.conf.func_annotation
+        if not conf then
+            conf = { attr = olua.array(" ") }
+            annotations:set(key, conf)
+        end
         for _, c in ipairs(node.children) do
             if c.kind == CursorKind.AnnotateAttr then
                 local name = c.name
                 if name:find("^@") then
-                    exps = exps or olua.array(" ")
-                    exps:push(name)
+                    conf.attr:push(name)
                 end
             end
-        end
-
-        ---@cast func idl.model.func_conf
-        local olua_conf = func and func.annotations:get(key) or {}
-        display_func.CMD.annotate(key)
-        local conf = display_func.annotations:get(key)
-
-        if exps then
-            ---@cast conf idl.conf.func_annotation
-            exps:push(olua_conf.attr)
-            conf.attr = tostring(exps)
         end
     end
 
@@ -492,6 +486,8 @@ local function parse_attr_from_annotate(cls, cur, isvar)
             parse_and_merge_attr(arg, "arg" .. i)
         end
     end
+
+    return annotations
 end
 
 ---@param cls idl.model.class_desc
@@ -591,19 +587,17 @@ function Autoconf:visit_method(cls, cur)
     local arguments = cur.arguments
     local result_type = cur.resultType
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
-    local static = cur.isCXXMethodStatic
     local protoexps = olua.array("")
-
-    parse_attr_from_annotate(cls, cur)
-
-    local func_conf = cls.conf.funcs:get(display_name) ---@type idl.model.func_conf
+    local annotations = parse_attr_from_annotate(cls, cur)
 
     ---@type idl.model.func_model
-    local func_model = {
+    local func = {
         cppfunc = fn,
         luafunc = fn,
         prototype = "",
-        ret = { type = "" },
+        is_static = cur.isCXXMethodStatic or cur.kind == CursorKind.FunctionDecl,
+        is_contructor = cur.kind == CursorKind.Constructor,
+        ret = annotations:get("return"),
         args = olua.array(),
         comment = get_comment(cur),
     }
@@ -621,44 +615,42 @@ function Autoconf:visit_method(cls, cur)
     end
 
     if cur.isVariadic then
-        func_model.is_variadic = true
-        -- declexps:push("@variadic ")
+        func.is_variadic = true
+        func.ret.attr:push("@variadic")
     end
 
-    local ret_annotate = func_conf.annotations:get("return") ---@type idl.conf.func_annotation
-
-    func_model.ret.attr = ret_annotate.attr
-
-    if cur.kind == CursorKind.FunctionDecl then
-        static = true
-    end
-    if static then
-        func_model.is_static = true
-    end
-
-    local cb_kind
-
-    if cur.kind ~= CursorKind.Constructor then
-        local tn = typename(result_type, cls.conf.template_types, nil, typefrom)
-        if is_func_type(result_type) then
-            cb_kind = "ret"
+    ---@param conf idl.model.type_model
+    ---@param is_arg boolean
+    local function init_callback(conf, is_arg)
+        if is_arg then
+            conf.tag_usepool = conf.tag_usepool ~= false
         end
+        conf.tag_maker = conf.tag_maker or fn:gsub("^[sS]et", ""):gsub("^[gG]et", "")
+        conf.tag_mode = conf.tag_mode or (is_arg and "replace" or "equal")
+        conf.tag_store = conf.tag_store or (func.is_contructor and -1 or 0)
+        conf.tag_scope = conf.tag_scope or "object"
+    end
+
+    if func.is_contructor then
+        func.ret.type = cls.cppcls .. " *"
+        func.luafunc = "new"
+        func.cppfunc = "new"
+        func.is_static = true
+    else
+        local tn = typename(result_type, cls.conf.template_types, nil, typefrom)
         protoexps:push(olua.decltype(tn, nil, true))
         luaname = cls.conf.luaname(fn, "func")
-        func_model.luafunc = luaname
-        func_model.ret.type = tn
-    else
-        func_model.ret.type = cls.cppcls .. " *"
-        func_model.luafunc = "new"
-        func_model.cppfunc = "new"
-        func_model.is_static = true
-        func_model.is_contructor = true
+        func.luafunc = luaname
+        func.ret.type = tn
+        if is_func_type(result_type) then
+            init_callback(func.ret, false)
+        end
     end
 
-    local name_from_attr = string.match(ret_annotate.attr or "", "@name%(([^)]+)%)")
+    local name_from_attr = tostring(func.ret.attr):match("@name%(([^)]+)%)")
     if name_from_attr then
         luaname = name_from_attr
-        func_model.luafunc = luaname
+        func.luafunc = luaname
     end
 
     local optional = false
@@ -668,58 +660,18 @@ function Autoconf:visit_method(cls, cur)
     for i, arg in ipairs(arguments) do
         local tn = typename(arg.type, cls.conf.template_types, nil, typefrom)
         local argn = "arg" .. i
-        local arg_annotate = func_conf.annotations:get(argn) ---@type idl.conf.func_annotation
+        local arg_type = annotations:get(argn) ---@type idl.model.type_model
+        arg_type.type = tn
+        arg_type.name = arg.name
         protoexps:push(i > 1 and ", " or nil)
         protoexps:push(tn)
-        ---@type idl.model.type_model
-        local arg_type = {
-            type = tn,
-            name = arg.name,
-            attr = arg_annotate.attr,
-        }
-        func_model.args:push(arg_type)
+        func.args:push(arg_type)
         if is_func_type(arg.type) then
-            if cb_kind then
-                olua.error([[
-                    has more than one std::function:
-                        class: ${cls.cppcls}
-                         func: ${display_name}
-                ]])
-            end
-            cb_kind = "arg"
-            if arg_annotate.tag_usepool ~= false then
-                arg_type.tag_usepool = true
-            else
-                arg_type.tag_usepool = false
-            end
-            if not arg_annotate.tag_maker then
-                arg_type.tag_maker = fn:gsub("^[sS]et", ""):gsub("^[gG]et", "")
-            else
-                arg_type.tag_maker = arg_annotate.tag_maker
-            end
-            if not arg_annotate.tag_mode then
-                arg_type.tag_mode = "replace"
-            else
-                arg_type.tag_mode = arg_annotate.tag_mode
-            end
-            if not arg_annotate.tag_store then
-                arg_type.tag_store = func_model.is_contructor and -1 or 0
-            else
-                arg_type.tag_store = arg_annotate.tag_store
-            end
-            if not arg_annotate.tag_scope then
-                arg_type.tag_scope = "object"
-            else
-                arg_type.tag_scope = arg_annotate.tag_scope
-            end
+            init_callback(arg_type, true)
         end
         if has_default_value(arg) then
             optional = true
-            if func_model.args[i].attr then
-                func_model.args[i].attr = func_model.args[i].attr .. "@optional"
-            else
-                func_model.args[i].attr = "@optional"
-            end
+            arg_type.attr:push("@optional")
         else
             min_args = min_args + 1
             assert(not optional, cls.cppcls .. "::" .. display_name)
@@ -739,21 +691,23 @@ function Autoconf:visit_method(cls, cur)
     cls.conf.excludes:replace(display_name, true)
     cls.conf.excludes:replace(prototype, true)
 
-    local funcs = cls.funcs:get(func_model.cppfunc)
+    local funcs = cls.funcs:get(func.cppfunc)
     if not funcs then
         funcs = olua.array()
-        cls.funcs:set(func_model.cppfunc, funcs)
+        cls.funcs:set(func.cppfunc, funcs)
     end
 
-    funcs:push(func_model)
+    funcs:push(func)
 
-    func_model.prototype = tostring(protoexps)
-    func_model.min_args = min_args
-    func_model.max_args = num_args
-    func_model.num_args = num_args
+    func.prototype = tostring(protoexps)
+    func.min_args = min_args
+    func.max_args = num_args
+    func.num_args = num_args
 
-    local ret_attr = func_model.ret.attr or ""
-    if ret_attr:find("@getter") or ret_attr:find("@setter") then
+    local ret_attr = func.ret.attr:find(function (value)
+        return value:find("@getter") or value:find("@setter")
+    end)
+    if ret_attr then
         local what = ret_attr:find("@getter") and "get" or "set"
         olua.assert((what == "get" and num_args == 0) or num_args == 1, [[
             ${what}ter function has wrong argument:
@@ -764,8 +718,8 @@ function Autoconf:visit_method(cls, cur)
             prop = { name = luaname }
             cls.conf.props:set(luaname, prop)
         end
-        prop[what] = func_model.prototype
-        func_model.is_exposed = false
+        prop[what] = func.prototype
+        func.is_exposed = false
     end
 end
 
@@ -1919,6 +1873,16 @@ end
 -- New config
 -------------------------------------------------------------------------------
 
+---@param conf idl.model.type_model
+local function attr_tostring(conf)
+    ---@diagnostic disable-next-line: inject-field, assign-type-mismatch
+    conf.attr = conf.attr:join(" ")
+    if conf.attr == "" then
+        ---@diagnostic disable-next-line: inject-field
+        conf.attr = nil
+    end
+end
+
 ---@param module idl.model.module_desc
 local function write_new_module(module)
     local m = {
@@ -1937,32 +1901,6 @@ local function write_new_module(module)
 
         cls.conf.props:foreach(function (value, key)
             cls.props[key] = value
-        end)
-
-        cls.funcs:foreach(function (arr, key)
-            ---@cast arr array
-            arr:foreach(function (func)
-                local desc = cls.conf.funcs:get(key) or cls.conf.funcs:get(func.prototype)
-                if desc then
-                    func.macro = desc.macro
-                    func.insert_before = desc.insert_before
-                    func.insert_after = desc.insert_after
-                    func.insert_cbefore = desc.insert_cbefore
-                    func.insert_cafter = desc.insert_cafter
-                end
-            end)
-        end)
-
-        cls.conf.funcs:foreach(function (value, key)
-            if value.body then
-                cls.funcs[key] = {
-                    {
-                        cppfunc = key,
-                        luafunc = key,
-                        body = value.body,
-                    }
-                }
-            end
         end)
 
         -- property
@@ -2006,6 +1944,38 @@ local function write_new_module(module)
 
             ::no_prop::
         end
+
+        cls.funcs:foreach(function (arr, key)
+            ---@cast arr array
+            arr:foreach(function (func)
+                ---@cast func idl.model.func_model
+                local desc = cls.conf.funcs:get(key) or cls.conf.funcs:get(func.prototype)
+                if desc then
+                    func.macro = desc.macro
+                    func.insert_before = desc.insert_before
+                    func.insert_after = desc.insert_after
+                    func.insert_cbefore = desc.insert_cbefore
+                    func.insert_cafter = desc.insert_cafter
+                end
+                func.min_args = nil
+                attr_tostring(func.ret)
+                func.args:foreach(function (arg)
+                    attr_tostring(arg)
+                end)
+            end)
+        end)
+
+        cls.conf.funcs:foreach(function (value, key)
+            if value.body then
+                cls.funcs[key] = {
+                    {
+                        cppfunc = key,
+                        luafunc = key,
+                        body = value.body,
+                    }
+                }
+            end
+        end)
     end
 
     module.class_types:foreach(function (cls)

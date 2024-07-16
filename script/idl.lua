@@ -278,7 +278,9 @@ end
 ---@param name string
 local function typeconf_func_annotate(parent, func, name)
     ---@class idl.conf.func_annotation
-    local conf = {}
+    local conf = {
+        attr = olua.array(" ")
+    }
 
     func.annotations:set(name, conf)
 
@@ -288,7 +290,7 @@ local function typeconf_func_annotate(parent, func, name)
     ---@param attr string
     ---@return idl.typeconf.func_annotate
     function CMD.attr(attr)
-        conf.attr = checkstring("attr", attr)
+        conf.attr:push(checkstring("attr", attr))
         return CMD
     end
 
@@ -699,11 +701,7 @@ function idl.typecopy(cppcls, fromcls)
             goto continue
         end
         if type(v) == "table" then
-            if v.clone then
-                cls.conf[k] = v:clone()
-            else
-                cls.conf[k] = olua.clone(v)
-            end
+            cls.conf[k] = olua.clone(v)
         else
             cls.conf[k] = v
         end

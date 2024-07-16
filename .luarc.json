@@ -1,3 +1,4 @@
 {
-  "diagnostics.disable": ["redundant-return-value", "lowercase-global"]
+  "diagnostics.disable": ["redundant-return-value"],
+  "diagnostics.globals": ["olua", "typeconf", "typeonly"]
 }

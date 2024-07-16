@@ -126,7 +126,15 @@ end
 function olua.clone(t, new)
     new = new or {}
     for k, v in pairs(t) do
-        new[k] = v
+        if type(v) == "table" then
+            if v.clone then
+                new[k] = v:clone()
+            else
+                new[k] = olua.clone(v)
+            end
+        else
+            new[k] = v
+        end
     end
     return new
 end
@@ -238,7 +246,11 @@ function olua.array(sep, prefix, posfix)
     ---Clone the array.
     ---@return array
     function array:clone()
-        return self:slice()
+        local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
+        for _, v in ipairs(self) do
+            arr:push(olua.clone(v))
+        end
+        return arr
     end
 
     ---Get an element at the given index. If `index` is negative, it is relative to the end of the array.
@@ -484,7 +496,7 @@ function olua.ordered_map(overwritable)
     function ordered_map:clone()
         local new_map = olua.ordered_map(overwritable)
         self:foreach(function (value, key)
-            new_map:set(key, value)
+            new_map:set(key, olua.clone(value))
         end)
         return new_map
     end
@@ -995,6 +1007,10 @@ function olua.json_stringify(data, options)
             local mt = getmetatable(value)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
+            elseif mt and mt.__olua_type == "olua.array" then
+                return json_array_stringify(value)
+            elseif mt and mt.__olua_type == "olua.ordered_map" then
+                return json_object_stringify(value._map)
             elseif is_array(value) then
                 return json_array_stringify(value)
             else
@@ -1160,12 +1176,12 @@ function olua.lua_stringify(data, options)
             return '"' .. value:gsub('"', '\\"'):gsub("\n", "\\n") .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
-            if mt and mt.__olua_type == "olua.array" then
+            if mt and mt.__tostring then
+                return mt.__tostring(value)
+            elseif mt and mt.__olua_type == "olua.array" then
                 return lua_array_stringify(value)
             elseif mt and mt.__olua_type == "olua.ordered_map" then
                 return lua_object_stringify(value._map)
-            elseif mt and mt.__tostring then
-                return mt.__tostring(value)
             elseif is_array(value) then
                 return lua_array_stringify(value)
             else
@@ -1327,6 +1343,10 @@ function olua.ts_stringify(data, options)
             local mt = getmetatable(value)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
+            elseif mt and mt.__olua_type == "olua.array" then
+                return ts_array_stringify(value)
+            elseif mt and mt.__olua_type == "olua.ordered_map" then
+                return ts_object_stringify(value._map)
             elseif is_array(value) then
                 return ts_array_stringify(value)
             else
