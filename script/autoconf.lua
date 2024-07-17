@@ -467,7 +467,7 @@ local function parse_attr_from_annotate(cls, cur, isvar)
     local function parse_and_merge_attr(node, key)
         local conf = annotations:get(key) ---@type idl.conf.func_annotation
         if not conf then
-            conf = { attr = olua.array(" ") }
+            conf = idl.create_annotation()
             annotations:set(key, conf)
         end
         for _, c in ipairs(node.children) do
@@ -647,7 +647,7 @@ function Autoconf:visit_method(cls, cur)
         end
     end
 
-    local name_from_attr = tostring(func.ret.attr):match("@name%(([^)]+)%)")
+    local name_from_attr = olua.join(func.ret.attr, " "):match("@name%(([^)]+)%)")
     if name_from_attr then
         luaname = name_from_attr
         func.luafunc = luaname
@@ -1958,10 +1958,10 @@ local function write_new_module(module)
                     func.insert_cafter = desc.insert_cafter
                 end
                 func.min_args = nil
-                attr_tostring(func.ret)
-                func.args:foreach(function (arg)
-                    attr_tostring(arg)
-                end)
+                -- attr_tostring(func.ret)
+                -- func.args:foreach(function (arg)
+                --     attr_tostring(arg)
+                -- end)
             end)
         end)
 

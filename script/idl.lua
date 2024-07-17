@@ -272,15 +272,18 @@ end
 ---@field insert_cbefore? string
 ---@field insert_cafter? string
 
+---@return idl.conf.func_annotation
+function idl.create_annotation()
+    return { attr = olua.array() }
+end
 
 ---@param parent idl.typeconf.func
 ---@param func idl.model.func_conf
 ---@param name string
 local function typeconf_func_annotate(parent, func, name)
     ---@class idl.conf.func_annotation
-    local conf = {
-        attr = olua.array(" ")
-    }
+    ---@field attr array
+    local conf = idl.create_annotation()
 
     func.annotations:set(name, conf)
 

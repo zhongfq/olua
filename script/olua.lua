@@ -117,8 +117,32 @@ function olua.assert(value, message)
 end
 
 -------------------------------------------------------------------------------
--- array & map
+-- array & map & string
 -------------------------------------------------------------------------------
+
+---Split the string.
+---@param str string
+---@param sep string
+---@return array
+function olua.split(str, sep)
+    local arr = olua.array()
+    for s in str:gmatch("([^" .. sep .. "]+)") do
+        arr:push(s)
+    end
+    return arr
+end
+
+---Join the array.
+---@param arr array
+---@param sep string
+---@param prefix? string
+---@param posfix? string
+---@return unknown
+function olua.join(arr, sep, prefix, posfix)
+    prefix = prefix or ""
+    posfix = posfix or ""
+    return prefix .. table.concat(arr, sep) .. posfix
+end
 
 ---Clone a table.
 ---@param t table

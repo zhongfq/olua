@@ -1,4 +1,10 @@
 {
   "diagnostics.disable": ["redundant-return-value"],
-  "diagnostics.globals": ["olua", "typeconf", "typeonly"]
+  "diagnostics.globals": [
+    "olua",
+    "typeconf",
+    "typeonly",
+    "typedef",
+    "output_dir"
+  ]
 }

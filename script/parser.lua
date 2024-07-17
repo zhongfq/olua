@@ -299,33 +299,18 @@ end
 -- eg: @delref(cmp children) void removeChild(@addref(map children) child)
 -- reutrn: {delref={cmp, children}}, void removeChild(@addref(map children) child)
 --
-local function parse_attr(str)
+local function parse_attr(t)
     local attr = {}
-    local static
-    str = str:gsub("^ *", "")
-    while true do
+    olua.foreach(t, function (str)
         local name, value = str:match("^@(%w+)%(([^)]+)%)")
         if name then
-            local arr = {}
-            for v in value:gmatch("[^ ]+") do
-                arr[#arr + 1] = v
-            end
-            attr[name] = arr
-            str = str:gsub("^@(%w+)%(([^)]+)%)", "")
+            attr[name] = olua.split(value, " ")
         else
             name = str:match("^@(%w+)")
-            if name then
-                attr[name] = {}
-                str = str:gsub("^@%w+", "")
-            else
-                break
-            end
+            attr[name] = {}
         end
-        str = str:gsub("^ *", "")
-    end
-    str, static = str:gsub("^ *static *", "")
-    attr.static = static > 0
-    return attr, str
+    end)
+    return attr
 end
 
 local composite_types = {
@@ -343,10 +328,9 @@ local composite_types = {
 }
 
 local function parse_type(str)
-    local attr, tn
-    attr, str = parse_attr(str)
     -- str = std::function <void (float int)> &arg, ...
-    tn = str:match("^[%w_: ]+%b<>[ &*]*") -- parse template type
+    local attr = {}
+    local tn = str:match("^[%w_: ]+%b<>[ &*]*") -- parse template type
     if not tn then
         local substr = str
         while true do
@@ -494,8 +478,8 @@ end
 
 local function gen_func_desc(cls, fi)
     local exps = olua.array("")
-    if fi.ret.attr then
-        exps:push(fi.ret.attr)
+    if #fi.ret.attr > 0 then
+        exps:push(olua.join(fi.ret.attr, " "))
         exps:push(" ")
     end
     exps:push(fi.is_static and not fi.is_contructor and "static " or nil)
@@ -508,8 +492,8 @@ local function gen_func_desc(cls, fi)
     exps:push("(")
     for i, v in ipairs(fi.args) do
         exps:push(i > 1 and ", " or nil)
-        if v.attr then
-            exps:push(v.attr)
+        if #v.attr > 0 then
+            exps:push(olua.join(v.attr, " "))
             exps:push(" ")
         end
         exps:push(olua.decltype(v.type, false, true))
@@ -522,7 +506,7 @@ end
 local function gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
     local exps = olua.array("")
-    exps:push(fi.static and "static " or nil)
+    exps:push(fi.is_static and "static " or nil)
     exps:push(olua.decltype(fi.ret.type, nil, true))
     exps:push(fi.cppfunc)
     exps:push("(")
@@ -1157,11 +1141,11 @@ function olua.export(path)
                 func.index = idx
                 func.funcdesc = gen_func_desc(cls, func)
                 func.ret.type = olua.parse_type(func.ret.type, cls)
-                func.ret.attr = parse_attr(func.ret.attr or "")
+                func.ret.attr = parse_attr(func.ret.attr)
                 cls.prototypes:set(func.prototype, true)
                 olua.make_array(func.args):foreach(function (arg)
                     arg.type = olua.parse_type(arg.type, cls)
-                    arg.attr = parse_attr(arg.attr or "")
+                    arg.attr = parse_attr(arg.attr)
                 end)
             end)
             for idx = 1, #arr do
