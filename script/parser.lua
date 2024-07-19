@@ -294,21 +294,11 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     return tostring(exps)
 end
 
---
--- parse type attribute and return the rest of string
--- eg: @delref(cmp children) void removeChild(@addref(map children) child)
--- reutrn: {delref={cmp, children}}, void removeChild(@addref(map children) child)
---
 local function parse_attr(t)
     local attr = {}
-    olua.foreach(t, function (str)
-        local name, value = str:match("^@(%w+)%(([^)]+)%)")
-        if name then
-            attr[name] = olua.split(value, " ")
-        else
-            name = str:match("^@(%w+)")
-            attr[name] = {}
-        end
+    olua.foreach(t, function (v)
+        local name, value = v:match("@(%w+)%(?([^)]*)%)?")
+        attr[name] = olua.split(value, " ")
     end)
     return attr
 end

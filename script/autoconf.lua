@@ -1140,35 +1140,6 @@ local function is_new_func(module, supercls, func)
     end
 end
 
-local function parse_prop_name(func)
-    if (func.cppfunc:find("^[gG]et") or func.cppfunc:find("^[iI]s"))
-        and (func.num_args == 0 or (func.extended and func.num_args == 1))
-        and func.is_exposed ~= false
-    then
-        -- getABCd isAbc => ABCd Abc
-        local name
-        if func.cppfunc:find("^[gG]et") then
-            name = func.cppfunc:gsub("^[gG]et_*", "")
-        else
-            name = func.cppfunc:gsub("^[iI]s_*", "")
-        end
-        return string.gsub(name, "^%u+", function (str)
-            if #str > 1 and #str ~= #name then
-                if #str == #name - 1 then
-                    -- ABCDs => abcds
-                    return str:lower()
-                else
-                    -- ABCd => abCd
-                    return str:sub(1, #str - 1):lower() .. str:sub(#str)
-                end
-            else
-                -- AbcdEF => abcdEF
-                return str:lower()
-            end
-        end)
-    end
-end
-
 local function search_using_func(module, cls)
     local function search_parent(arr, name, supercls)
         local super = visited_types:get(supercls)
@@ -1873,13 +1844,103 @@ end
 -- New config
 -------------------------------------------------------------------------------
 
----@param conf idl.model.type_model
-local function attr_tostring(conf)
-    ---@diagnostic disable-next-line: inject-field, assign-type-mismatch
-    conf.attr = conf.attr:join(" ")
-    if conf.attr == "" then
-        ---@diagnostic disable-next-line: inject-field
-        conf.attr = nil
+---@param module idl.model.module_desc
+---@param cls idl.model.class_desc
+local function merge_cls_extends(module, cls)
+    cls.conf.extends:foreach(function (_, cppcls)
+        ---@type idl.model.class_desc
+        local extcls = module.class_types:get(cppcls)
+        extcls.funcs:foreach(function (extfuncs, cppfunc)
+            local funcs = cls.funcs:get(cppfunc)
+            if not funcs then
+                funcs = olua.array()
+                cls.funcs:set(cppfunc, funcs)
+            end
+            ---@cast extfuncs array
+            for _, func in ipairs(extfuncs) do
+                olua.use(extcls)
+                ---@cast func idl.model.func_model
+                if not func.is_static then
+                    olua.error([[
+                        extend only support static function:
+                            class: ${extcls.cppcls}
+                                func: ${func.prototype}
+                    ]])
+                end
+                func.is_extended = true
+                func.ret.attr:pushf("@extend(${extcls.cppcls})")
+                funcs:push(func)
+            end
+        end)
+    end)
+end
+
+local function parse_cls_props(cls)
+    local function parse_prop_name(func)
+        if (func.cppfunc:find("^[gG]et") or func.cppfunc:find("^[iI]s"))
+            and (func.num_args == 0 or (func.is_extended and func.num_args == 1))
+            and func.is_exposed ~= false
+        then
+            -- getABCd isAbc => ABCd Abc
+            local name
+            if func.cppfunc:find("^[gG]et") then
+                name = func.cppfunc:gsub("^[gG]et_*", "")
+            else
+                name = func.cppfunc:gsub("^[iI]s_*", "")
+            end
+            return string.gsub(name, "^%u+", function (str)
+                if #str > 1 and #str ~= #name then
+                    if #str == #name - 1 then
+                        -- ABCDs => abcds
+                        return str:lower()
+                    else
+                        -- ABCd => abCd
+                        return str:sub(1, #str - 1):lower() .. str:sub(#str)
+                    end
+                else
+                    -- AbcdEF => abcdEF
+                    return str:lower()
+                end
+            end)
+        end
+    end
+
+    for _, arr in pairs(cls.funcs) do
+        if not (#arr == 1 and OLUA_AUTO_GEN_PROP) then
+            goto no_prop
+        end
+
+        local name = parse_prop_name(arr[1])
+        if name then
+            local setfunc
+            local getfunc = arr[1]
+            local setname = "^set_*" .. name:lower() .. "$"
+            local lessone, moreone
+            for set_k, set_arr in pairs(cls.funcs) do
+                if #set_arr == 1 and set_k:lower():find(setname) then
+                    setfunc = set_arr[1]
+                    --[[
+                        void setName(n)
+                        void setName(n, i)
+                    ]]
+                    if setfunc.num_args <= (setfunc.is_extended and 2 or 1) then
+                        lessone = true
+                    end
+                    if setfunc.num_args > (setfunc.is_extended and 2 or 1) then
+                        moreone = true
+                    end
+                end
+            end
+            if lessone or not moreone then
+                cls.props[name] = {
+                    name = name,
+                    get = getfunc.prototype,
+                    set = setfunc and setfunc.prototype or nil
+                }
+            end
+        end
+
+        ::no_prop::
     end
 end
 
@@ -1893,57 +1954,22 @@ local function write_new_module(module)
         headers = module.headers,
         codeblock = module.codeblock,
         luaopen = module.luaopen,
-        class_types = {}
+        class_types = olua.array(),
     }
     for _, cls in ipairs(module.class_types) do
         ---@cast cls idl.model.class_desc
-        m.class_types[#m.class_types + 1] = cls
+        if not cls.conf.maincls then
+            m.class_types:push(cls)
+        end
+
+        merge_cls_extends(module, cls)
 
         cls.conf.props:foreach(function (value, key)
             cls.props[key] = value
         end)
 
         -- property
-        for k, arr in pairs(cls.funcs) do
-            if not (#arr == 1 and OLUA_AUTO_GEN_PROP) then
-                goto no_prop
-            end
-
-            local name = parse_prop_name(arr[1])
-            if name then
-                local setfunc
-                local getfunc = arr[1]
-                local setname = "^set_*" .. name:lower() .. "$"
-                local lessone, moreone
-                for set_k, set_arr in pairs(cls.funcs) do
-                    if #set_arr == 1 and set_k:lower():find(setname) then
-                        setfunc = set_arr[1]
-                        --[[
-                            void setName(n)
-                            void setName(n, i)
-                        ]]
-                        if setfunc.num_args <= (setfunc.extended and 2 or 1) then
-                            lessone = true
-                        end
-                        if setfunc.num_args > (setfunc.extended and 2 or 1) then
-                            moreone = true
-                        end
-                    end
-                    -- TODO: strick num_args == 1
-                    if lessone or not moreone then
-                    end
-                end
-                if lessone or not moreone then
-                    cls.props[name] = {
-                        name = name,
-                        get = getfunc.prototype,
-                        set = setfunc and setfunc.prototype or nil
-                    }
-                end
-            end
-
-            ::no_prop::
-        end
+        parse_cls_props(cls)
 
         cls.funcs:foreach(function (arr, key)
             ---@cast arr array
@@ -1958,10 +1984,6 @@ local function write_new_module(module)
                     func.insert_cafter = desc.insert_cafter
                 end
                 func.min_args = nil
-                -- attr_tostring(func.ret)
-                -- func.args:foreach(function (arg)
-                --     attr_tostring(arg)
-                -- end)
             end)
         end)
 
@@ -1978,13 +2000,17 @@ local function write_new_module(module)
         end)
     end
 
-    module.class_types:foreach(function (cls)
+    module.class_types:foreach(function (cls, cppcls)
         ---@cast cls idl.model.class_desc
         cls.conf = nil
         cls.CMD = nil
     end)
 
-    olua.write("${module.class_file}", olua.lua_stringify(m, { marshal = "return", indent = 2 }))
+    olua.write("${module.class_file}", olua.lua_stringify(m, {
+        marshal = "return",
+        indent = 2,
+        oluatype = true,
+    }))
 end
 
 local function parse_modules()

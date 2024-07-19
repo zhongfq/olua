@@ -263,6 +263,7 @@ end
 ---@field macro? string
 ---@field is_exposed? boolean
 ---@field is_static? boolean
+---@field is_extended? boolean
 ---@field is_contructor? boolean
 ---@field is_variadic? boolean
 ---@field ret idl.model.type_model
@@ -522,7 +523,7 @@ function typeconf(cppcls)
     ---@class idl.model.typeconf
     ---@field kind integer
     ---@field luacls string
-    ---@field maincls? string
+    ---@field maincls? idl.model.class_desc
     ---@field funcdecl? string # std::function declaration
     local conf = {
         luacls = idl.current_module.luacls(cppcls),
