@@ -595,12 +595,21 @@ function Autoconf:visit_method(cls, cur)
         cppfunc = fn,
         luafunc = fn,
         prototype = "",
-        is_static = cur.isCXXMethodStatic or cur.kind == CursorKind.FunctionDecl,
-        is_contructor = cur.kind == CursorKind.Constructor,
         ret = annotations:get("return"),
         args = olua.array(),
         comment = get_comment(cur),
     }
+
+    if cur.isCXXMethodStatic or
+        cur.kind == CursorKind.FunctionDecl or
+        cur.kind == CursorKind.Constructor
+    then
+        func.is_static = true
+    end
+
+    if cur.kind == CursorKind.Constructor then
+        func.is_contructor = true
+    end
 
     for _, c in ipairs({ { type = result_type }, table.unpack(arguments) }) do
         if is_excluded_type(c.type) then
@@ -635,7 +644,6 @@ function Autoconf:visit_method(cls, cur)
         func.ret.type = cls.cppcls .. " *"
         func.luafunc = "new"
         func.cppfunc = "new"
-        func.is_static = true
     else
         local tn = typename(result_type, cls.conf.template_types, nil, typefrom)
         protoexps:push(olua.decltype(tn, nil, true))
@@ -811,7 +819,7 @@ function Autoconf:visit_enum(cppcls, cur)
         if c.kind == CursorKind.EnumConstantDecl then
             intvalue = c.enumConstantDeclValue
         end
-        cls.conf.enums:set(name, {
+        cls.enums:set(name, {
             name = name,
             value = value,
             intvalue = intvalue,
@@ -819,7 +827,9 @@ function Autoconf:visit_enum(cppcls, cur)
         })
     end
     type_convs:get(cppcls).conv = "olua_$$_enum"
-    cls.options.indexerror = "rw"
+    if not cls.options.indexerror then
+        cls.options.indexerror = "rw"
+    end
     cls.conf.kind = cls.conf.kind or kFLAG_ENUM
 end
 
@@ -854,7 +864,10 @@ function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
     end
 
     if cur.kind == CursorKind.ClassTemplate then
-        type_convs:replace(raw_typename(cppcls), true)
+        local tn = raw_typename(cppcls)
+        if not type_convs:has(tn) then
+            type_convs:replace(raw_typename(cppcls), true)
+        end
         olua.assert(template_types, [[
             don't config template class:
                 you should remove: typeconf '${cls.cppcls}'
@@ -1215,83 +1228,7 @@ local function write_cls_func(module, cls, append)
             funcs[#funcs + 1] = v.decl
         end
 
-        if #arr == 1 and OLUA_AUTO_GEN_PROP then
-            local name = parse_prop_name(fi)
-            if name then
-                local setfunc
-                local getfunc = fi
-                local setname = "^set_*" .. name:lower() .. "$"
-                local lessone, moreone
-                for _, f in ipairs(cls.funcs) do
-                    if f.name:lower():find(setname) then
-                        setfunc = f
-                        --[[
-                            void setName(n)
-                            void setName(n, i)
-                        ]]
-                        if f.min_args <= (f.extended and 2 or 1) then
-                            lessone = true
-                        end
-                        if f.min_args > (f.extended and 2 or 1) then
-                            moreone = true
-                        end
-                    end
-                end
-                if lessone or not moreone then
-                    cls.props:replace(name, {
-                        name = name,
-                        get = getfunc.decl,
-                        set = setfunc and setfunc.decl or nil
-                    })
-                end
-            end
-        end
-        if not has_callback then
-            if #funcs > 0 then
-                append(olua.format(".func(${fi.luaname}, ${funcs})", 4))
-            else
-                append(olua.format(".func('${fi.name}', ${fi.body?})", 4))
-            end
-        else
-            local tag_maker = fi.name:gsub("^set", ""):gsub("^get", "")
-            local mode = fi.cb_kind == "ret" and "equal" or "replace"
-            local callback = cls.conf.callbacks:get(fi.name)
-            if callback then
-                callback.funcs = funcs
-                callback.tag_maker = callback.tag_maker or olua.format("${tag_maker}")
-                callback.tag_mode = callback.tag_mode or mode
-                callback.tag_store = callback.tag_store or (fi.isctor and -1 or nil)
-            else
-                cls.conf.callbacks:set(fi.name, {
-                    name = fi.name,
-                    funcs = funcs,
-                    tag_maker = olua.format "${tag_maker}",
-                    tag_mode = mode,
-                    tag_store = (fi.isctor and -1 or nil),
-                })
-            end
-        end
-
         ::continue::
-    end
-end
-
----@param module idl.model.module_desc
----@param cls idl.model.class_desc
----@param append any
-local function write_cls_options(module, cls, append)
-    local out = olua.array("\n")
-    for key, value in pairs(cls.options) do
-        olua.use(key, value)
-        out:pushf([[.option('${key}', ${value?})]])
-    end
-    out:sort()
-    append(tostring(out))
-end
-
-local function write_cls_macro(module, cls, append)
-    for _, v in ipairs(cls.macros) do
-        append(olua.format([[.macro('${v.name}', '${v.value}')]], 4))
     end
 end
 
@@ -1905,6 +1842,10 @@ local function parse_cls_props(cls)
         end
     end
 
+    cls.conf.props:foreach(function (value, key)
+        cls.props[key] = value
+    end)
+
     for _, arr in pairs(cls.funcs) do
         if not (#arr == 1 and OLUA_AUTO_GEN_PROP) then
             goto no_prop
@@ -1958,17 +1899,14 @@ local function write_new_module(module)
     }
     for _, cls in ipairs(module.class_types) do
         ---@cast cls idl.model.class_desc
-        if not cls.conf.maincls then
+        if has_type_flag(cls, kFLAG_ALIAS) or
+            has_type_flag(cls, kFLAG_SKIP) or
+            not cls.conf.maincls
+        then
             m.class_types:push(cls)
         end
 
         merge_cls_extends(module, cls)
-
-        cls.conf.props:foreach(function (value, key)
-            cls.props[key] = value
-        end)
-
-        -- property
         parse_cls_props(cls)
 
         cls.funcs:foreach(function (arr, key)
@@ -2092,7 +2030,7 @@ local function write_typedefs()
                 luacls = cls.conf.luacls,
                 supercls = cls.supercls,
                 funcdecl = cls.conf.funcdecl,
-                conv = cls.conf.conv,
+                conv = type_convs:get(cls.cppcls).conv,
                 packable = cls.options.packable,
                 packvars = packvars,
             })

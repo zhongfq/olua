@@ -1121,7 +1121,7 @@ function olua.export(path)
 
         cls.vars = olua.make_ordered_map(cls.vars or {})
         cls.consts = olua.make_ordered_map(cls.consts or {})
-        cls.enums = olua.make_ordered_map(cls.enums or {})
+        cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
                 if func.body then

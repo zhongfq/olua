@@ -119,7 +119,6 @@ function module(name)
         class_types = olua.ordered_map(false),
         wildcard_types = olua.ordered_map(),
         typedef_types = olua.ordered_map(),
-        type_convs = olua.ordered_map(),
         luacls = function (cppcls)
             return string.gsub(cppcls, "::", ".")
         end,
@@ -404,29 +403,6 @@ end
 ---@param parent idl.typeconf
 ---@param cls idl.model.class_desc
 ---@param name string
----@return idl.typeconf.enum
-local function typeconf_enum(parent, cls, name)
-    ---@class idl.model.enum_desc
-    ---@field name string
-    ---@field value string
-    ---@field comment? string
-    local enum = { name = name }
-    cls.conf.enums:set(name, enum)
-
-    ---@class idl.typeconf.enum : idl.typeconf
-    ---@field value fun(value:string):idl.typeconf.enum
-    local CMD = {}
-
-    add_value_command(CMD, enum, "value")
-    add_value_command(CMD, enum, "comment")
-
-    ---@type idl.typeconf.enum
-    return setmetatable(CMD, { __index = parent })
-end
-
----@param parent idl.typeconf
----@param cls idl.model.class_desc
----@param name string
 local function typeconf_const(parent, cls, name)
     ---@class idl.model.const_desc
     ---@field value string
@@ -525,6 +501,7 @@ function typeconf(cppcls)
     ---@field luacls string
     ---@field maincls? idl.model.class_desc
     ---@field funcdecl? string # std::function declaration
+    ---@field conv string
     local conf = {
         luacls = idl.current_module.luacls(cppcls),
         conv = "olua_$$_object",
@@ -533,7 +510,6 @@ function typeconf(cppcls)
         wildcards = olua.ordered_map(),
         includes = olua.ordered_map(),
         usings = olua.ordered_map(false),
-        enums = olua.ordered_map(false),
         consts = olua.ordered_map(false),
         funcs = olua.ordered_map(false),
         props = olua.ordered_map(false),
@@ -555,6 +531,7 @@ function typeconf(cppcls)
         cppcls = cppcls,
         options = { reg_luatype = true, fromtable = true },
         funcs = olua.ordered_map(false),
+        enums = olua.ordered_map(false),
         props = olua.ordered_map(false),
         vars = olua.ordered_map(false),
         conf = conf,
@@ -580,7 +557,7 @@ function typeconf(cppcls)
         idl.current_module.class_types:set(cppcls, cls)
     end
 
-    idl.type_convs:set(cppcls, cls)
+    idl.type_convs:set(cppcls, setmetatable({ cppcls = cppcls }, { __index = cls.conf }))
     if #idl.macros > 0 then
         cls.macro = idl.macros:at(-1)
     end
@@ -644,13 +621,6 @@ function typeconf(cppcls)
             macros:pop()
         end
         return CMD
-    end
-
-    ---Define a enum value.
-    ---@param name string
-    ---@return idl.typeconf.enum
-    function CMD.enum(name)
-        return typeconf_enum(CMD, cls, name)
     end
 
     ---Define a const value.
