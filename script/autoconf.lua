@@ -453,7 +453,7 @@ end
 ---@param isvar? boolean
 local function parse_attr_from_annotate(cls, cur, isvar)
     local fn = cur.name
-    local func = cls.conf.funcs:get(fn) ---@type idl.model.func_conf
+    local func = cls.conf.members:get(fn) ---@type idl.model.func_conf
     local annotations
 
     if func then
@@ -480,8 +480,11 @@ local function parse_attr_from_annotate(cls, cur, isvar)
         end
     end
 
-    parse_and_merge_attr(cur, "return")
-    if not isvar then
+    parse_and_merge_attr(cur, isvar and "self" or "return")
+    if isvar then
+        annotations:set("return", olua.clone(annotations:get("self")))
+        annotations:set("arg1", olua.clone(annotations:get("self")))
+    else
         for i, arg in ipairs(cur.arguments) do
             parse_and_merge_attr(arg, "arg" .. i)
         end
@@ -744,41 +747,95 @@ function Autoconf:visit_var(cls, cur)
 
     local exps = olua.array("")
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
-    local attr = get_attr_copy(cls, cur.name, "var*")
     local tn = typename(cur.type, cls.conf.template_types, nil, typefrom)
-    local cb_kind
+    local decltype = olua.decltype(tn, nil, true)
 
-    parse_attr_from_annotate(attr, cur, true)
+    local fn = cur.name
+    local annotations = parse_attr_from_annotate(cls, cur, true)
 
-    if attr.readonly or cur.type.isConstQualified then
-        exps:push("@readonly ")
-    end
+    ---@type idl.model.func_model
+    local getter = {
+        cppfunc = fn,
+        luafunc = cls.conf.luaname(fn, "var"),
+        prototype = "",
+        ret = annotations:get("return"),
+        args = olua.array(),
+        is_variable = true,
+        is_exposed = false,
+        min_args = 0,
+        num_args = 0,
+        max_args = 0,
+    }
+    getter.ret.type = tn
+    getter.ret.name = nil
+    getter.prototype = olua.format("${decltype}${fn}()")
 
-    if attr.optional or (has_default_value(cur) and attr.optional == nil) then
-        exps:push("@optional ")
-    end
+    ---@type idl.model.func_model
+    local setter = {
+        cppfunc = fn,
+        luafunc = cls.conf.luaname(fn, "var"),
+        prototype = "",
+        ret = { attr = olua.array(), type = "void" },
+        args = olua.array(),
+        is_variable = true,
+        is_exposed = false,
+        min_args = 1,
+        num_args = 1,
+        max_args = 1,
+    }
+    setter.prototype = olua.format("void ${fn}(${decltype})")
+
+    ---@type idl.model.type_model
+    local arg1 = setter.args:push(annotations:get("arg1"))
+    arg1.type = tn
 
     if is_func_type(cur.type) then
-        cb_kind = "var"
-        exps:push("@nullable ")
-        local callback = cls.conf.callbacks:take(cur.name) or {}
-        if callback.localvar ~= false then
-            exps:push("@localvar ")
-        end
+        getter.ret.tag_maker = getter.ret.tag_maker or fn
+        getter.ret.tag_mode = getter.ret.tag_mode or "equal"
+        getter.ret.tag_store = 0
+        getter.ret.tag_scope = "object"
+        getter.ret.tag_usepool = getter.ret.tag_usepool ~= false
+        arg1.tag_maker = arg1.tag_maker or fn
+        arg1.tag_mode = arg1.tag_mode or "replace"
+        arg1.tag_store = 0
+        arg1.tag_scope = "object"
+        arg1.tag_usepool = arg1.tag_usepool ~= false
+        arg1.attr:push("@nullable")
+    else
+        arg1.name = "value"
     end
 
-    exps:push(attr.ret and (attr.ret .. " ") or nil)
-    exps:push(cur.kind == CursorKind.VarDecl and "static " or nil)
-    exps:push(olua.decltype(tn, nil, true))
-    exps:push(cur.name)
+    if cur.kind == CursorKind.VarDecl then
+        getter.is_static = true
+        setter.is_static = true
+    end
 
-    local decl = tostring(exps)
-    local name = cls.conf.luaname(cur.name, "var")
-    cls.conf.vars:set(name, {
-        name = name,
-        body = decl,
-        cb_kind = cb_kind
-    })
+    local funcs = cls.funcs:get(fn)
+    if not funcs then
+        funcs = olua.array()
+        cls.funcs:set(fn, funcs)
+    end
+
+    if cur.type.isConstQualified then
+        getter.ret.attr:push("@readonly")
+        funcs:push(getter)
+        cls.conf.props:set(fn, {
+            name = getter.luafunc,
+            get = getter.prototype,
+        })
+    else
+        funcs:push(getter)
+        funcs:push(setter)
+        cls.conf.props:set(fn, {
+            name = getter.luafunc,
+            get = getter.prototype,
+            set = setter.prototype,
+        })
+    end
+
+    -- if attr.optional or (has_default_value(cur) and attr.optional == nil) then
+    --     exps:push("@optional ")
+    -- end
 end
 
 ---@param cppcls string
@@ -969,7 +1026,11 @@ function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
             end
             if vartype.isConstQualified and kind == CursorKind.VarDecl then
                 if not is_excluded_type(vartype) then
-                    cls.conf.consts:set(varname, { name = varname, typename = vartype.name })
+                    cls.consts:set(varname, {
+                        name = varname,
+                        type = vartype.name,
+                        value = olua.format("${cls.cppcls}::${varname}")
+                    })
                 end
             else
                 self:visit_var(cls, c)
@@ -1477,14 +1538,9 @@ local function parse_types()
     for _, m in ipairs(modules) do
         for _, cls in ipairs(m.class_types) do
             ---@cast cls idl.model.class_desc
-            for fn, func in pairs(cls.conf.funcs) do
+            for fn, func in pairs(cls.conf.members) do
                 if func.body then
                     cls.conf.excludes:set(fn, true)
-                end
-            end
-            for vn, vi in pairs(cls.conf.vars) do
-                if vi.body then
-                    cls.conf.excludes:set(vn, true)
                 end
             end
         end
@@ -1611,20 +1667,20 @@ local function copy_super_funcs()
     ---@param super idl.model.class_desc
     local function copy_funcs(cls, super)
         local rawsuper = raw_typename(super.cppcls)
-        for _, func in ipairs(super.conf.funcs) do
+        for _, func in ipairs(super.conf.members) do
             if func.name == "__gc" then
                 goto continue
             end
             if func.body then
-                if not cls.conf.funcs:has(func.name) and not cls.conf.excludes:has(func.name) then
-                    cls.conf.funcs:set(func.name, setmetatable({}, { __index = func }))
+                if not cls.conf.members:has(func.name) and not cls.conf.excludes:has(func.name) then
+                    cls.conf.members:set(func.name, setmetatable({}, { __index = func }))
                 end
             else
-                if not cls.conf.funcs:has(func.prototype)
+                if not cls.conf.members:has(func.prototype)
                     and not func.isctor
                     and not cls.conf.excludes:has(func.display_name)
                 then
-                    cls.conf.funcs:set(func.prototype, setmetatable({
+                    cls.conf.members:set(func.prototype, setmetatable({
                         decl = olua.format("@copyfrom(${rawsuper}) ${func.decl}")
                     }, { __index = func }))
                 end
@@ -1732,7 +1788,7 @@ local function find_as()
             if #ascls_arr > 0 then
                 ascls_arr:sort()
                 local ascls_str = ascls_arr:join(" ")
-                cls.conf.funcs:set("as", {
+                cls.conf.members:set("as", {
                     name = "as",
                     luaname = "nil",
                     decl = olua.format("@as(${ascls_str}) void *as(const char *cls)")
@@ -1748,11 +1804,11 @@ local function validate_fromtable()
             ---@cast cls idl.model.class_desc
             local options = cls.options
             local has_var = false
-            for _, var in ipairs(cls.conf.vars) do
-                if not var.body:find("static ") then
-                    has_var = true
-                end
-            end
+            -- for _, var in ipairs(cls.conf.vars) do
+            --     if not var.body:find("static ") then
+            --         has_var = true
+            --     end
+            -- end
             if not has_var then
                 options.fromtable = false
             end
@@ -1760,7 +1816,7 @@ local function validate_fromtable()
             if options.fromtable then
                 local has_ctor = false
                 local min_args = math.maxinteger
-                for _, func in ipairs(cls.conf.funcs) do
+                for _, func in ipairs(cls.conf.members) do
                     if func.isctor then
                         has_ctor = true
                         min_args = math.min(min_args, func.min_args)
@@ -1913,7 +1969,7 @@ local function write_new_module(module)
             ---@cast arr array
             arr:foreach(function (func)
                 ---@cast func idl.model.func_model
-                local desc = cls.conf.funcs:get(key) or cls.conf.funcs:get(func.prototype)
+                local desc = cls.conf.members:get(key) or cls.conf.members:get(func.prototype)
                 if desc then
                     func.macro = desc.macro
                     func.insert_before = desc.insert_before
@@ -1925,7 +1981,7 @@ local function write_new_module(module)
             end)
         end)
 
-        cls.conf.funcs:foreach(function (value, key)
+        cls.conf.members:foreach(function (value, key)
             if value.body then
                 cls.funcs[key] = {
                     {

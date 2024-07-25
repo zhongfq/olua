@@ -378,7 +378,7 @@ local function typeconf_func(parent, cls, name)
         annotations = olua.ordered_map(false),
         CMD = CMD,
     }
-    cls.conf.funcs:set(name, func)
+    cls.conf.members:set(name, func)
 
     ---@param body string
     function CMD.body(body)
@@ -403,27 +403,6 @@ end
 ---@param parent idl.typeconf
 ---@param cls idl.model.class_desc
 ---@param name string
-local function typeconf_const(parent, cls, name)
-    ---@class idl.model.const_desc
-    ---@field value string
-    ---@field typename string
-    local const = { name = name }
-    cls.conf.consts:set(name, const)
-
-    ---@class idl.typeconf.const : idl.typeconf
-    ---@field value fun(value:string):idl.typeconf.const
-    ---@field typename fun(typename:string):idl.typeconf.const
-    local CMD = {}
-    add_value_command(CMD, const, "value")
-    add_value_command(CMD, const, "typename")
-
-    ---@type idl.typeconf.const
-    return setmetatable(CMD, { __index = parent })
-end
-
----@param parent idl.typeconf
----@param cls idl.model.class_desc
----@param name string
 local function typeconf_prop(parent, cls, name)
     ---@class idl.model.prop_desc
     ---@field get string
@@ -441,39 +420,6 @@ local function typeconf_prop(parent, cls, name)
     add_value_command(CMD, prop, "set")
 
     ---@type idl.typeconf.prop
-    return setmetatable(CMD, { __index = parent })
-end
-
----@param parent idl.typeconf
----@param cls idl.model.class_desc
----@param name string
-local function typeconf_var(parent, cls, name)
-    ---@class idl.model.var_desc
-    ---@field body string
-    local var = { name = name }
-
-    if name ~= "*" then
-        cls.conf.vars:set(name, var)
-    else
-        name = "var*"
-    end
-
-    ---@class idl.typeconf.var : idl.typeconf
-    ---@field body fun(body:string):idl.typeconf.var
-    ---@field ret fun(attr:string):idl.typeconf.var
-    ---@field optional fun(optional:booltype):idl.typeconf.var
-    ---@field readonly fun(readonly:booltype):idl.typeconf.var
-    local CMD = {}
-
-    local attr = {}
-    cls.conf.attrs:set(name, attr)
-
-    add_value_command(CMD, var, "body")
-    add_value_command(CMD, attr, "optional", checkboolean)
-    add_value_command(CMD, attr, "readonly", checkboolean)
-    add_value_command(CMD, attr, "ret")
-
-    ---@type idl.typeconf.var
     return setmetatable(CMD, { __index = parent })
 end
 
@@ -510,11 +456,8 @@ function typeconf(cppcls)
         wildcards = olua.ordered_map(),
         includes = olua.ordered_map(),
         usings = olua.ordered_map(false),
-        consts = olua.ordered_map(false),
-        funcs = olua.ordered_map(false),
+        members = olua.ordered_map(false),
         props = olua.ordered_map(false),
-        vars = olua.ordered_map(false),
-        inserts = olua.ordered_map(false),
         supers = olua.ordered_map(false),
         template_types = olua.ordered_map(false),
         ---@type fun(name:string, kind?:'func'|'var'|'enum'):string
@@ -534,6 +477,7 @@ function typeconf(cppcls)
         enums = olua.ordered_map(false),
         props = olua.ordered_map(false),
         vars = olua.ordered_map(false),
+        consts = olua.ordered_map(false),
         conf = conf,
         CMD = CMD,
     }
@@ -623,19 +567,12 @@ function typeconf(cppcls)
         return CMD
     end
 
-    ---Define a const value.
-    ---@param name string
-    ---@return idl.typeconf.const
-    function CMD.const(name)
-        return typeconf_const(CMD, cls, name)
-    end
-
     ---@param name string
     ---@return idl.typeconf.func
     function CMD.func(name)
         local func = typeconf_func(CMD, cls, name)
         if #macros > 0 then
-            cls.conf.funcs:get(name).macro = macros:at(-1)
+            cls.conf.members:get(name).macro = macros:at(-1)
         end
         return func
     end
@@ -649,7 +586,11 @@ function typeconf(cppcls)
     ---@param name string
     ---@return idl.typeconf.var
     function CMD.var(name)
-        return typeconf_var(CMD, cls, name)
+        if name == "*" then
+            name = "var*"
+        end
+        ---@class idl.typeconf.var : idl.typeconf.func
+        return typeconf_func(CMD, cls, name)
     end
 
     return CMD

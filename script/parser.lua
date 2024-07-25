@@ -1120,7 +1120,7 @@ function olua.export(path)
         end)
 
         cls.vars = olua.make_ordered_map(cls.vars or {})
-        cls.consts = olua.make_ordered_map(cls.consts or {})
+        cls.consts = olua.make_ordered_map(cls.consts)
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)

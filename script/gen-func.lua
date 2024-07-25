@@ -236,7 +236,7 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
                     lua_pop(L, 1);
                 ]])
             else
-                if fi.variable then
+                if fi.is_variable then
                     codeset.insert_after:puhs(olua.format('olua_delallrefs(L, ${ref_store}, "${ref_name}");'))
                 end
                 codeset.insert_after:pushf(
@@ -387,7 +387,7 @@ local function gen_func_ret(cls, fi, codeset)
         if olua.has_cast_flag(fi.ret.type) then
             decltype = decltype:gsub(" %*$", " &")
         end
-        if fi.variable
+        if fi.is_variable
             and not olua.has_pointee_flag(fi.ret.type)
             and not olua.is_value_type(fi.ret.type)
         then
@@ -416,9 +416,9 @@ end
 
 local function gen_one_func(cls, fi, write, funcidx)
     local caller = fi.is_static and (cls.cppcls .. "::") or "self->"
-    local cppfunc = not fi.variable and fi.cppfunc or fi.varname
-    local args_begin = not fi.variable and "(" or (fi.ret.type.cppcls ~= "void" and "" or " = ")
-    local args_end = not fi.variable and ")" or ""
+    local cppfunc = fi.cppfunc
+    local args_begin = not fi.is_variable and "(" or (fi.ret.type.cppcls ~= "void" and "" or " = ")
+    local args_end = not fi.is_variable and ")" or ""
     funcidx = funcidx or ""
 
     ---@class GenFuncCodeSet
