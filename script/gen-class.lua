@@ -66,9 +66,6 @@ local function check_gen_class_func(cls, fis, write)
     end
 
     local cppfunc = fis[1].cppfunc
-    if not cppfunc then
-        print("xx")
-    end
     local fn = format([[_${cls.cppcls#}_${cppfunc}]])
     if symbols[fn] then
         return
@@ -108,18 +105,12 @@ local function gen_class_funcs(cls, write)
     end
     prototypes[cls.cppcls] = pts
 
-    for _, fi in ipairs(cls.funcs:sort()) do
+    cls.funcs:sort()
+    cls.props:sort()
+    cls.vars:sort()
+
+    for _, fi in ipairs(cls.funcs) do
         check_gen_class_func(cls, fi, write)
-    end
-
-    for _, pi in ipairs(cls.props:sort()) do
-        check_gen_class_func(cls, { pi.get }, write)
-        check_gen_class_func(cls, { pi.set }, write)
-    end
-
-    for _, ai in ipairs(cls.vars:sort()) do
-        check_gen_class_func(cls, { ai.get }, write)
-        check_gen_class_func(cls, { ai.set }, write)
     end
 end
 

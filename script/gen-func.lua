@@ -24,7 +24,7 @@ end
 function olua.gen_decl_exp(arg, argname, codeset)
     local decltype = olua.decltype(arg.type, true, true)
     local initial_value = olua.initial_value(arg.type)
-    local varname = arg.varname or arg.name or argname
+    local varname = arg.name or argname
     codeset.decl_args:pushf([[
         ${decltype}${argname}${initial_value};       /** ${varname} */
     ]])
@@ -758,7 +758,7 @@ local function gen_pack_func(cls, write)
         olua.gen_decl_exp(pi, argname, codeset)
         olua.gen_check_exp(pi, argname, "idx + " .. (i - 1), codeset)
         codeset.check_args:pushf([[
-            value->${pi.varname} = ${argname};
+            value->${var.set.cppfunc} = ${argname};
         ]])
         codeset.check_args:push("")
     end
@@ -781,7 +781,7 @@ local function gen_unpack_func(cls, write)
     local codeset = { push_args = olua.array("\n") }
     for _, var in ipairs(cls.vars) do
         local pi = var.set.args[1]
-        local argname = format("value->${pi.varname}")
+        local argname = format("value->${var.set.cppfunc}")
         olua.gen_push_exp(pi, argname, codeset)
     end
 
@@ -819,15 +819,14 @@ end
 function olua.gen_pack_header(module, write)
     for _, cls in ipairs(module.class_types) do
         if cls.options.packable and not cls.options.packvars then
-            local macro = cls.macros["*"]
-            write(macro)
+            write(cls.macro)
             write(format([[
                 // ${cls.cppcls}
                 OLUA_LIB void olua_pack_object(lua_State *L, int idx, ${cls.cppcls} *value);
                 OLUA_LIB int olua_unpack_object(lua_State *L, const ${cls.cppcls} *value);
                 OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const ${cls.cppcls} *);
             ]]))
-            write(macro and "#endif" or nil)
+            write(cls.macro and "#endif" or nil)
             write("")
         end
     end
@@ -836,12 +835,12 @@ end
 function olua.gen_pack_source(module, write)
     for _, cls in ipairs(module.class_types) do
         if cls.options.packable and not cls.options.packvars then
-            local macro = cls.macros["*"]
-            write(macro)
+            write(cls.macro)
+            cls.vars:sort()
             gen_pack_func(cls, write)
             gen_unpack_func(cls, write)
             gen_canpack_func(cls, write)
-            write(macro and "#endif" or nil)
+            write(cls.macro and "#endif" or nil)
             write("")
         end
     end

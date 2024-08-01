@@ -144,23 +144,21 @@ function olua.join(arr, sep, prefix, posfix)
     return prefix .. table.concat(arr, sep) .. posfix
 end
 
----Clone a table.
----@param t table
+---Clone a value.
+---@param t unknown
 ---@param new? table
 function olua.clone(t, new)
-    new = new or {}
-    for k, v in pairs(t) do
-        if type(v) == "table" then
-            if v.clone then
-                new[k] = v:clone()
-            else
-                new[k] = olua.clone(v)
-            end
-        else
-            new[k] = v
+    if type(t) ~= "table" then
+        return t
+    elseif t.clone then
+        return t:clone()
+    else
+        new = new or {}
+        for k, v in pairs(t) do
+            new[k] = olua.clone(v)
         end
+        return new
     end
-    return new
 end
 
 ---Get the keys of a table.

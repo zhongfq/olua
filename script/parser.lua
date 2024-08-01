@@ -363,6 +363,7 @@ local function type_func_info(tn, cls, cb)
     local ti
     if not tn:find("std::function") then
         ti = olua.typeinfo(tn, cls)
+        ti.callback = cb
     else
         ti = olua.typeinfo("std::function", cls)
         ti.flag = ti.flag | kFLAG_CALLBACK
@@ -453,9 +454,7 @@ end
 function olua.parse_type(tn, cls)
     if olua.is_func_type(tn, cls) then
         local cb = parse_callback(cls, tn)
-        local ti = type_func_info(tn, cls, cb)
-        -- ti.callback = cb
-        return ti
+        return type_func_info(tn, cls, cb)
     else
         return olua.typeinfo(tn, cls)
     end
@@ -493,7 +492,7 @@ local function gen_func_desc(cls, fi)
     return tostring(exps)
 end
 
-local function gen_func_prototype(cls, fi)
+function olua.gen_func_prototype(cls, fi)
     -- generate function prototype: void func(int, A *, B *)
     local exps = olua.array("")
     exps:push(fi.is_static and "static " or nil)
@@ -506,7 +505,7 @@ local function gen_func_prototype(cls, fi)
     end
     exps:push(")")
     fi.prototype = tostring(exps)
-    cls.prototypes[fi.prototype] = true
+    return fi
 end
 
 local function copy(t)
@@ -546,7 +545,8 @@ local function gen_func_pack(cls, fi, funcs)
             newfi.ret.attr.unpack = fi.ret.attr.unpack or false
             fi.ret.attr.unpack = true
         end
-        gen_func_prototype(cls, newfi)
+        olua.gen_func_prototype(cls, newfi)
+        cls.prototypes[fi.prototype] = true
         funcs[#funcs + 1] = newfi
         newfi.index = #funcs
     end
@@ -569,7 +569,8 @@ local function gen_func_overload(cls, fi, funcs)
         for k = 1, i do
             newfi.args[k] = copy(fi.args[k])
         end
-        gen_func_prototype(cls, newfi)
+        olua.gen_func_prototype(cls, newfi)
+        cls.prototypes[fi.prototype] = true
         newfi.max_args = i
         newfi.index = #funcs + 1
         funcs[newfi.index] = newfi
@@ -631,7 +632,8 @@ function olua.parse_func(cls, name, ...)
                 end
             end
             fi.args, fi.max_args = parse_args(fromcls, str:sub(#fi.cppfunc + 1))
-            gen_func_prototype(cls, fi)
+            olua.gen_func_prototype(cls, fi)
+            cls.prototypes[fi.prototype] = true
             gen_func_pack(cls, fi, arr)
             cls.parsed_funcs:set(funcdecl, fi)
         end
@@ -1109,17 +1111,30 @@ function olua.export(path)
             for _, arr in ipairs(cls.funcs) do
                 -- TODO: check get set exist
                 for _, func in ipairs(arr) do
-                    if prop.get and func.prototype == prop.get then
+                    if prop.get and prop.get == func.prototype then
                         prop.get = func
                     end
-                    if prop.set and func.prototype == prop.set then
+                    if prop.set and prop.set == func.prototype then
                         prop.set = func
                     end
                 end
             end
         end)
 
-        cls.vars = olua.make_ordered_map(cls.vars or {})
+        olua.make_ordered_map(cls.vars):foreach(function (var)
+            for _, arr in ipairs(cls.funcs) do
+                -- TODO: check get set exist
+                for _, func in ipairs(arr) do
+                    if var.get and var.get == func.prototype then
+                        var.get = func
+                    end
+                    if var.set and var.set == func.prototype then
+                        var.set = func
+                    end
+                end
+            end
+        end)
+
         cls.consts = olua.make_ordered_map(cls.consts)
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)

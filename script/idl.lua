@@ -287,11 +287,11 @@ local function typeconf_func_annotate(parent, func, name)
 
     func.annotations:set(name, conf)
 
-    ---@class idl.typeconf.func_annotate : idl.typeconf.func
+    ---@class idl.typeconf.annotate : idl.typeconf.func
     local CMD = {}
 
     ---@param attr string
-    ---@return idl.typeconf.func_annotate
+    ---@return idl.typeconf.annotate
     function CMD.attr(attr)
         conf.attr:push(checkstring("attr", attr))
         return CMD
@@ -303,7 +303,7 @@ local function typeconf_func_annotate(parent, func, name)
     ---| '"object"'     # Callback will exist until the c++ object die.
 
     ---@param scope idl.callback_tag_scope
-    ---@return idl.typeconf.func_annotate
+    ---@return idl.typeconf.annotate
     function CMD.tag_scope(scope)
         ---@type idl.callback_tag_scope
         conf.tag_scope = checkstring("tag_scope", scope)
@@ -315,7 +315,7 @@ local function typeconf_func_annotate(parent, func, name)
     ---* `0`: Store callback in `.classobj` when it is a static function, otherwise store in `self` value.
     ---* `1,2,...N`: Store callback in the `N` argument value.
     ---@param store string
-    ---@return idl.typeconf.func_annotate
+    ---@return idl.typeconf.annotate
     function CMD.tag_store(store)
         conf.tag_store = checkinteger("callback_store", store)
         return CMD
@@ -329,7 +329,7 @@ local function typeconf_func_annotate(parent, func, name)
 
     ---How to store or remove the callback.
     ---@param mode idl.callback_tag_mode
-    ---@return idl.typeconf.func_annotate
+    ---@return idl.typeconf.annotate
     function CMD.tag_mode(mode)
         ---@type idl.callback_tag_mode
         conf.tag_mode = checkstring("tag_mode", mode)
@@ -338,7 +338,7 @@ local function typeconf_func_annotate(parent, func, name)
 
     ---Make callback key.
     ---@param maker string
-    ---@return idl.typeconf.func_annotate
+    ---@return idl.typeconf.annotate
     function CMD.tag_maker(maker)
         conf.tag_maker = checkstring("tag_maker", maker)
         return CMD
@@ -346,13 +346,13 @@ local function typeconf_func_annotate(parent, func, name)
 
     ---Use object pool in callback, default is `true`.
     ---@param usepool booltype
-    ---@return idl.typeconf.func_annotate
+    ---@return idl.typeconf.annotate
     function CMD.tag_usepool(usepool)
         conf.tag_usepool = checkboolean("tag_usepool", usepool)
         return CMD
     end
 
-    ---@type idl.typeconf.func_annotate
+    ---@type idl.typeconf.annotate
     return setmetatable(CMD, { __index = parent })
 end
 
@@ -386,7 +386,7 @@ local function typeconf_func(parent, cls, name)
         return CMD
     end
 
-    ---@param at "return"|"arg1"|"arg2"|"arg3"|"arg4"|"arg5"|"arg6"|"arg7"|"arg8"|"arg9"|"arg10"
+    ---@param at "fn"|"ret"|"arg1"|"arg2"|"arg3"|"arg4"|"arg5"|"arg6"|"arg7"|"arg8"|"arg9"|"arg10"
     function CMD.annotate(at)
         return typeconf_func_annotate(CMD, func, at)
     end
@@ -590,6 +590,7 @@ function typeconf(cppcls)
             name = "var*"
         end
         ---@class idl.typeconf.var : idl.typeconf.func
+        ---@field annotate fun(at:"fn"):idl.typeconf.annotate
         return typeconf_func(CMD, cls, name)
     end
 
@@ -615,11 +616,7 @@ function idl.typecopy(cppcls, fromcls)
         if k == "cppcls" or k == "luacls" then
             goto continue
         end
-        if type(v) == "table" then
-            cls.conf[k] = olua.clone(v)
-        else
-            cls.conf[k] = v
-        end
+        cls.conf[k] = olua.clone(v)
         ::continue::
     end
 
