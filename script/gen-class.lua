@@ -39,24 +39,6 @@ local function check_meta_method(cls)
                 return 1;
             }]])))
         end
-        if not has_method(cls, "__call") and cls.options.fromtable then
-            local codeset = { decl_args = olua.array("\n"), check_args = olua.array("\n") }
-            olua.gen_class_fill(cls, 2, "ret", codeset)
-
-            cls.funcs:set("__call", olua.parse_func(cls, "__call", format([[
-            {
-                ${cls.cppcls} ret;
-
-                luaL_checktype(L, 2, LUA_TTABLE);
-
-                ${codeset.decl_args}
-
-                ${codeset.check_args}
-
-                olua_pushcopy_object(L, ret, "${cls.luacls}");
-                return 1;
-            }]])))
-        end
     end
 end
 
@@ -72,14 +54,14 @@ local function check_gen_class_func(cls, fis, write)
     end
     symbols[fn] = true
 
-    local pts = assert(prototypes[cls.cppcls], cls.cppcls)
-    if pts and getmetatable(pts) then
-        local supermeta = getmetatable(pts).__index
+    local cls_protos = assert(prototypes[cls.cppcls], cls.cppcls)
+    if cls_protos and getmetatable(cls_protos) then
+        local supermeta = getmetatable(cls_protos).__index
         for _, f in ipairs(fis) do
             if not f.is_static
                 and f.prototype
                 and f.cppfunc ~= "as"
-                and rawget(pts, f.prototype)
+                and rawget(cls_protos, f.prototype)
                 and supermeta[f.prototype]
                 and not f.ret.attr.using
             then
@@ -95,15 +77,23 @@ local function check_gen_class_func(cls, fis, write)
 end
 
 local function gen_class_funcs(cls, write)
-    local pts = cls.prototypes
+    local cls_protos = {}
+
+    cls.funcs:foreach(function (arr)
+        for _, fi in ipairs(arr) do
+            if fi.prototype then
+                cls_protos[fi.prototype] = true
+            end
+        end
+    end)
 
     if cls.supercls then
         if not prototypes[cls.supercls] then
             error(format("super class '${cls.supercls}' must be exported before '${cls.cppcls}'"))
         end
-        pts = setmetatable(pts, { __index = prototypes[cls.supercls] })
+        cls_protos = setmetatable(cls_protos, { __index = prototypes[cls.supercls] })
     end
-    prototypes[cls.cppcls] = pts
+    prototypes[cls.cppcls] = cls_protos
 
     cls.funcs:sort()
     cls.props:sort()

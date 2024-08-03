@@ -145,15 +145,16 @@ function olua.join(arr, sep, prefix, posfix)
 end
 
 ---Clone a value.
----@param t unknown
----@param new? table
-function olua.clone(t, new)
+---@generic T
+---@param t T
+---@return T
+function olua.clone(t)
     if type(t) ~= "table" then
         return t
     elseif t.clone then
         return t:clone()
     else
-        new = new or {}
+        local new = {}
         for k, v in pairs(t) do
             new[k] = olua.clone(v)
         end
@@ -374,6 +375,13 @@ function olua.array(sep, prefix, posfix)
             end
         end
         return 0
+    end
+
+    ---Check if the array contains the value.
+    ---@param value any
+    ---@return boolean
+    function array:contain(value)
+        return self:index_of(value) > 0
     end
 
     ---Sort the array.

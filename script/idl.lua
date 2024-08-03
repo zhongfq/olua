@@ -247,7 +247,6 @@ end
 ---@class idl.model.class_option
 ---@field reg_luatype? boolean
 ---@field indexerror? "r" | "w" | "rw"
----@field fromtable? boolean
 
 ---@class idl.model.type_model : idl.conf.func_annotation
 ---@field type string
@@ -267,6 +266,7 @@ end
 ---@field is_variadic? boolean
 ---@field ret idl.model.type_model
 ---@field args array # idl.model.type_model[]
+---@field max_args? integer
 ---@field insert_before? string
 ---@field insert_after? string
 ---@field insert_cbefore? string
@@ -436,7 +436,6 @@ function typeconf(cppcls)
     ---@field codeblock fun(codeblock:string):idl.typeconf
     ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.typeconf
     ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.typeconf
-    ---@field fromtable fun(fromtable:booltype):idl.typeconf
     ---@field packable fun(packable:booltype):idl.typeconf
     ---@field packvars fun(packvars:string):idl.typeconf
     ---@field private maincls fun(cls:idl.model.class_desc):idl.typeconf
@@ -472,7 +471,7 @@ function typeconf(cppcls)
     local cls = {
         ---@type string c++ full class name
         cppcls = cppcls,
-        options = { reg_luatype = true, fromtable = true },
+        options = { reg_luatype = true },
         funcs = olua.ordered_map(false),
         enums = olua.ordered_map(false),
         props = olua.ordered_map(false),
@@ -511,7 +510,6 @@ function typeconf(cppcls)
     add_value_command(CMD, cls.conf, "luaname", function (_, v) return v end)
     add_value_command(CMD, cls.conf, "maincls", function (_, v) return v end)
     add_value_command(CMD, cls.options, "indexerror")
-    add_value_command(CMD, cls.options, "fromtable", checkboolean)
     add_value_command(CMD, cls.options, "packable", checkboolean)
     add_value_command(CMD, cls.options, "packvars", checkinteger)
 

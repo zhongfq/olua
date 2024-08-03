@@ -633,7 +633,7 @@ local function gen_test_and_call(cls, fns)
         else
             if #fns > 1 then
                 for _, v in ipairs(fns) do
-                    print("same func", v, v.cppfunc)
+                    olua.print("same func ${cls.cppcls}::${v.cppfunc}")
                 end
             end
             assert(#fns == 1, fi.cppfunc)

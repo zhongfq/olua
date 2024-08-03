@@ -513,6 +513,9 @@ local function copy(t)
 end
 
 local function gen_func_pack(cls, fi, funcs)
+    if fi.body then
+        return
+    end
     local has_pack = false
     for i, arg in ipairs(fi.args) do
         if arg.attr.pack then
@@ -546,34 +549,8 @@ local function gen_func_pack(cls, fi, funcs)
             fi.ret.attr.unpack = true
         end
         olua.gen_func_prototype(cls, newfi)
-        cls.prototypes[fi.prototype] = true
         funcs[#funcs + 1] = newfi
         newfi.index = #funcs
-    end
-end
-
-local function gen_func_overload(cls, fi, funcs)
-    if fi.body then
-        return
-    end
-    local min_args = math.maxinteger
-    for i, arg in ipairs(fi.args) do
-        if arg.attr.optional then
-            min_args = i - 1
-            break
-        end
-    end
-    for i = min_args, #fi.args - 1 do
-        local newfi = copy(fi)
-        newfi.args = {}
-        for k = 1, i do
-            newfi.args[k] = copy(fi.args[k])
-        end
-        olua.gen_func_prototype(cls, newfi)
-        cls.prototypes[fi.prototype] = true
-        newfi.max_args = i
-        newfi.index = #funcs + 1
-        funcs[newfi.index] = newfi
     end
 end
 
@@ -633,7 +610,6 @@ function olua.parse_func(cls, name, ...)
             end
             fi.args, fi.max_args = parse_args(fromcls, str:sub(#fi.cppfunc + 1))
             olua.gen_func_prototype(cls, fi)
-            cls.prototypes[fi.prototype] = true
             gen_func_pack(cls, fi, arr)
             cls.parsed_funcs:set(funcdecl, fi)
         end
@@ -833,7 +809,6 @@ local function typeconf(cppcls)
         props = olua.array(),
         vars = olua.array(),
         macros = {},
-        prototypes = {},
         options = {},
         parsed_funcs = olua.ordered_map(),
     }
@@ -869,7 +844,7 @@ local function typeconf(cppcls)
 
         local arr = cls.funcs[#cls.funcs]
         for idx = 1, #arr do
-            gen_func_overload(cls, arr[idx], arr)
+            -- gen_func_overload(cls, arr[idx], arr)
         end
     end
 
@@ -967,7 +942,7 @@ local function typeconf(cppcls)
 
         local arr = cls.funcs[#cls.funcs]
         for idx = 1, #arr do
-            gen_func_overload(cls, arr[idx], arr)
+            -- gen_func_overload(cls, arr[idx], arr)
         end
     end
 
@@ -1104,7 +1079,6 @@ function olua.export(path)
 
     m.class_types:foreach(function (cls)
         class_map[cls.cppcls] = cls
-        cls.prototypes = olua.ordered_map()
         cls.funcs = olua.make_ordered_map(cls.funcs)
 
         olua.make_ordered_map(cls.props):foreach(function (prop)
@@ -1147,14 +1121,13 @@ function olua.export(path)
                 func.funcdesc = gen_func_desc(cls, func)
                 func.ret.type = olua.parse_type(func.ret.type, cls)
                 func.ret.attr = parse_attr(func.ret.attr)
-                cls.prototypes:set(func.prototype, true)
                 olua.make_array(func.args):foreach(function (arg)
                     arg.type = olua.parse_type(arg.type, cls)
                     arg.attr = parse_attr(arg.attr)
                 end)
             end)
             for idx = 1, #arr do
-                gen_func_overload(cls, arr[idx], arr)
+                gen_func_pack(cls, arr[idx], arr)
             end
         end)
     end)

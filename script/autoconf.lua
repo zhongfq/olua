@@ -545,6 +545,30 @@ local function get_comment(cur)
     end
 end
 
+---@param cls idl.model.class_desc
+---@param cur clang.Cursor
+---@return boolean
+local function check_included_method(cls, cur)
+    local types = olua.array()
+    for _, arg in ipairs(cur.arguments) do
+        types:push(arg.type)
+    end
+    types:push(cur.resultType)
+    local fn = cur.name
+    for _, t in ipairs(types) do
+        if is_excluded_type(t) then
+            if cls.conf.includes:has(fn) then
+                print(olua.format([=[
+                    [WARNING]: function '${fn}' included in class '${cls.cppcls}' will be ignored
+                                   because '${c.type.name}' has been excluded
+                ]=], 1))
+            end
+            return false
+        end
+    end
+    return true
+end
+
 ---@class Autoconf : idl.model.module_desc
 local Autoconf = {}
 
@@ -565,15 +589,6 @@ end
 ---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
 function Autoconf:visit_method(cls, cur)
-    if has_deprecated_attr(cur)
-        or cur.isCXXMoveConstructor
-        or cur.name:find("operator *[%-=+/*><!()]?")
-        or cur.name == "as" -- 'as used to cast object'
-        or has_exclude_attr(cur)
-    then
-        return
-    end
-
     local fn = cur.name
     local display_name = cur.displayName
     local luaname = fn
@@ -601,18 +616,6 @@ function Autoconf:visit_method(cls, cur)
 
     if cur.kind == CursorKind.Constructor then
         func.is_contructor = true
-    end
-
-    for _, c in ipairs({ { type = result_type }, table.unpack(arguments) }) do
-        if is_excluded_type(c.type) then
-            if cls.conf.includes:has(fn) then
-                print(olua.format([=[
-                    [WARNING]: function '${fn}' included in class '${cls.cppcls}' will be ignored
-                                   because '${c.type.name}' has been excluded
-                ]=], 1))
-            end
-            return
-        end
     end
 
     if cur.isVariadic then
@@ -652,7 +655,7 @@ function Autoconf:visit_method(cls, cur)
         func.luafunc = luaname
     end
 
-    local optional = false
+    local has_optional = false
     local min_args = 0
     local num_args = #arguments
     for i, arg in ipairs(arguments) do
@@ -666,19 +669,12 @@ function Autoconf:visit_method(cls, cur)
             init_callback(arg_type, true)
         end
         if has_default_value(arg) then
-            optional = true
+            has_optional = true
             arg_type.attr:push("@optional")
         else
             min_args = min_args + 1
-            assert(not optional, cls.cppcls .. "::" .. display_name)
+            assert(not has_optional, cls.cppcls .. "::" .. display_name)
         end
-
-        -- if cur.isVariadic and i == num_args then
-        --     for vi = 1, OLUA_MAX_VARIADIC_ARGS do
-        --         protoexps:push(", ")
-        --         protoexps:push(tn)
-        --     end
-        -- end
     end
 
     olua.gen_func_prototype(cls, func)
@@ -693,9 +689,7 @@ function Autoconf:visit_method(cls, cur)
 
     funcs:push(func)
 
-    func.min_args = min_args
     func.max_args = num_args
-    func.num_args = num_args
 
     local ret_attr = func.ret.attr:find(function (value)
         return value:find("@getter") or value:find("@setter")
@@ -713,6 +707,24 @@ function Autoconf:visit_method(cls, cur)
         end
         prop[what] = func.prototype
         func.is_exposed = false
+    elseif cur.isVariadic then
+        for n = 1, OLUA_MAX_VARIADIC_ARGS do
+            local variadic_func = olua.clone(func)
+            for i = 1, n do
+                local arg = olua.clone(variadic_func.args[num_args])
+                arg.name = olua.format("${arg.name}_$${i}")
+                variadic_func.args:push(arg)
+            end
+            variadic_func.max_args = #variadic_func.args
+            funcs:push(variadic_func)
+        end
+    elseif has_optional then
+        for n = min_args, #func.args - 1 do
+            local overload_func = olua.clone(func)
+            overload_func.max_args = n
+            overload_func.args = overload_func.args:slice(1, n)
+            funcs:push(overload_func)
+        end
     end
 end
 
@@ -743,8 +755,6 @@ function Autoconf:visit_var(cls, cur)
         args = olua.array(),
         is_variable = true,
         is_exposed = false,
-        min_args = 0,
-        num_args = 0,
         max_args = 0,
     }
     getter.ret.type = tn
@@ -760,8 +770,6 @@ function Autoconf:visit_var(cls, cur)
         args = olua.array(),
         is_variable = true,
         is_exposed = false,
-        min_args = 1,
-        num_args = 1,
         max_args = 1,
     }
     setter.prototype = olua.format("void ${fn}(${decltype})")
@@ -913,20 +921,13 @@ function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
         if specializedcls then
             cls.conf.template_types:set(specializedcls, cppcls)
         end
-        cls.options.fromtable = false
     elseif cur.kind == CursorKind.Namespace then
         cls.options.reg_luatype = false
-        cls.options.fromtable = false
     end
 
     for _, c in ipairs(cur.children) do
         local kind = c.kind
         local access = c.cxxAccessSpecifier
-        if kind == CursorKind.Constructor then
-            if c.isCXXMethodDeleted then
-                cls.options.fromtable = false
-            end
-        end
         if access == CXXAccessSpecifier.Private
             or access == CXXAccessSpecifier.Protected
         then
@@ -953,8 +954,6 @@ function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
             local supercls = parse_from_type(c.type)
             local rawsupercls = raw_typename(supercls)
             local supercursor = type_cursors:get(rawsupercls)
-
-            cls.options.fromtable = false
 
             if is_excluded_typename(rawsupercls) then
                 skipsuper = true
@@ -1022,9 +1021,15 @@ function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
             local isConstructor = kind == CursorKind.Constructor
             if is_excluded_memeber(cls, c)
                 or c.isCXXMethodDeleted
+                or c.isCXXMoveConstructor
                 or (isConstructor and (cls.conf.excludes:has("new")))
                 or (isConstructor and cur.kind == CursorKind.ClassTemplate)
                 or (isConstructor and cur.isCXXAbstract)
+                or has_deprecated_attr(c)
+                or has_exclude_attr(c)
+                or c.name:find("operator *[%-=+/*><!()]?")
+                or c.name == "as" -- 'as used to cast object'
+                or not check_included_method(cls, c)
             then
                 goto continue
             end
@@ -1533,9 +1538,9 @@ local function parse_types()
 end
 
 local function check_errors()
-    local class_not_found = olua.array()
-    local supercls_not_found = olua.array()
-    local type_not_found = olua.array()
+    local class_not_found = olua.array("\n")
+    local supercls_not_found = olua.array("\n")
+    local type_not_found = olua.array("\n")
 
     -- check class and super class
     for _, m in ipairs(modules) do
@@ -1764,41 +1769,6 @@ local function find_as()
     end
 end
 
-local function validate_fromtable()
-    for _, m in ipairs(modules) do
-        for _, cls in ipairs(m.class_types) do
-            ---@cast cls idl.model.class_desc
-            local options = cls.options
-            local has_var = false
-            -- for _, var in ipairs(cls.conf.vars) do
-            --     if not var.body:find("static ") then
-            --         has_var = true
-            --     end
-            -- end
-            if not has_var then
-                options.fromtable = false
-            end
-
-            if options.fromtable then
-                local has_ctor = false
-                local min_args = math.maxinteger
-                for _, func in ipairs(cls.conf.members) do
-                    if func.isctor then
-                        has_ctor = true
-                        min_args = math.min(min_args, func.min_args)
-                    end
-                end
-                if has_ctor then
-                    options.fromtable = min_args == 0
-                end
-            end
-
-            options.fromtable = options.fromtable or nil
-            options.reg_luatype = options.reg_luatype or nil
-        end
-    end
-end
-
 -------------------------------------------------------------------------------
 -- New config
 -------------------------------------------------------------------------------
@@ -1836,9 +1806,11 @@ end
 
 ---@param cls idl.model.class_desc
 local function parse_cls_props(cls)
+    ---@param func idl.model.func_model
+    ---@return string
     local function parse_prop_name(func)
         if (func.cppfunc:find("^[gG]et") or func.cppfunc:find("^[iI]s"))
-            and (func.num_args == 0 or (func.is_extended and func.num_args == 1))
+            and (#func.args == 0 or (func.is_extended and #func.args == 1))
             and func.is_exposed ~= false
         then
             -- getABCd isAbc => ABCd Abc
@@ -1877,20 +1849,22 @@ local function parse_cls_props(cls)
         local name = parse_prop_name(arr[1])
         if name then
             local setfunc
+            ---@type idl.model.func_model
             local getfunc = arr[1]
             local setname = "^set_*" .. name:lower() .. "$"
             local lessone, moreone
             for set_k, set_arr in pairs(cls.funcs) do
                 if #set_arr == 1 and set_k:lower():find(setname) then
+                    ---@type idl.model.func_model
                     setfunc = set_arr[1]
                     --[[
                         void setName(n)
                         void setName(n, i)
                     ]]
-                    if setfunc.num_args <= (setfunc.is_extended and 2 or 1) then
+                    if #setfunc.args <= (setfunc.is_extended and 2 or 1) then
                         lessone = true
                     end
-                    if setfunc.num_args > (setfunc.is_extended and 2 or 1) then
+                    if #setfunc.args > (setfunc.is_extended and 2 or 1) then
                         moreone = true
                     end
                 end
@@ -1944,7 +1918,6 @@ local function write_new_module(module)
                     func.insert_cbefore = desc.insert_cbefore
                     func.insert_cafter = desc.insert_cafter
                 end
-                func.min_args = nil
             end)
         end)
 
@@ -1980,7 +1953,6 @@ local function parse_modules()
     check_errors()
     copy_super_funcs()
     find_as()
-    validate_fromtable()
 end
 
 local function write_ignored_types()
