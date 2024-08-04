@@ -1019,6 +1019,7 @@ function olua.json_stringify(data, options)
     local json_array_stringify
     local json_object_stringify
 
+    local stacks = olua.array("->")
     local indent = options and options.indent or 4
 
     local function json_value_stringify(value)
@@ -1054,6 +1055,10 @@ function olua.json_stringify(data, options)
     end
 
     function json_object_stringify(value)
+        if #stacks > 256 then
+            olua.error("json stringify stack overflow: ${stacks}")
+        end
+
         local keys = olua.keys(value):sort(function (a, b)
             if type(a) ~= type(b) then
                 return tostring(a) < tostring(b)
@@ -1067,6 +1072,7 @@ function olua.json_stringify(data, options)
             local v_str = json_value_stringify(v)
             local type_name = type(v)
             local k_str
+            stacks:push(k)
             if type(k) ~= "string" then
                 k_str = olua.format([["${k}"]])
             else
@@ -1090,6 +1096,7 @@ function olua.json_stringify(data, options)
                     }
                 ]], indent)
             end
+            stacks:pop()
         end
         return out
     end
@@ -1150,6 +1157,7 @@ function olua.lua_stringify(data, options)
     local lua_array_stringify
     local lua_object_stringify
 
+    local stacks = olua.array("->")
     local indent = (options and options.indent) or 4
     local marshal = (options and options.marshal) and (options.marshal .. " ") or ""
 
@@ -1225,6 +1233,10 @@ function olua.lua_stringify(data, options)
     end
 
     function lua_object_stringify(value)
+        if #stacks > 256 then
+            olua.error("lua stringify stack overflow: ${stacks}")
+        end
+
         local keys = olua.keys(value):sort(function (a, b)
             if type(a) ~= type(b) then
                 return tostring(a) < tostring(b)
@@ -1237,6 +1249,7 @@ function olua.lua_stringify(data, options)
             local v = value[k]
             local type_name = type(v)
             local k_str
+            stacks:push(k)
             if type(k) ~= "string" then
                 k_str = olua.format("[${k}]")
             elseif string.find(k, "[^%w_]") then
@@ -1280,6 +1293,7 @@ function olua.lua_stringify(data, options)
                     },
                 ]], indent)
             end
+            stacks:pop()
         end
         return out
     end
@@ -1330,6 +1344,7 @@ function olua.ts_stringify(data, options)
 
     local enums = olua.array("\n")
 
+    local stacks = olua.array("->")
     local indent = (options and options.indent) or 4
     local marshal = (options and options.marshal) and (options.marshal .. " ") or ""
 
@@ -1390,6 +1405,10 @@ function olua.ts_stringify(data, options)
     end
 
     function ts_object_stringify(value)
+        if #stacks > 256 then
+            olua.error("ts stringify stack overflow: ${stacks}")
+        end
+
         local keys = olua.keys(value):sort(function (a, b)
             if type(a) ~= type(b) then
                 return tostring(a) < tostring(b)
@@ -1404,6 +1423,7 @@ function olua.ts_stringify(data, options)
             local k_str = k
             local type_name = type(v)
             local olua_comment = olua.get_comment(value, k)
+            stacks:push(k)
             if olua_comment ~= "" then
                 out:pushf([[
                     /** ${olua_comment} */
@@ -1427,6 +1447,7 @@ function olua.ts_stringify(data, options)
                     },
                 ]], indent)
             end
+            stacks:pop()
         end
         return out
     end

@@ -715,6 +715,7 @@ function Autoconf:visit_method(cls, cur)
                 arg.name = olua.format("${arg.name}_$${i}")
                 variadic_func.args:push(arg)
             end
+            variadic_func.prototype = olua.gen_func_prototype(cls, variadic_func)
             variadic_func.max_args = #variadic_func.args
             funcs:push(variadic_func)
         end
@@ -723,6 +724,7 @@ function Autoconf:visit_method(cls, cur)
             local overload_func = olua.clone(func)
             overload_func.max_args = n
             overload_func.args = overload_func.args:slice(1, n)
+            overload_func.prototype = olua.gen_func_prototype(cls, overload_func)
             funcs:push(overload_func)
         end
     end

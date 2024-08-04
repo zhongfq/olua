@@ -159,7 +159,7 @@ function olua.gen_arg_callback(cls, fi, arg, argn, codeset)
         callbackset.remove_once_callback = olua.format([[
             olua_removecallback(L, cb_store, cb_name.c_str(), OLUA_TAG_WHOLE);
         ]])
-    elseif tag_scope == "function" then
+    elseif tag_scope == "invoker" then
         callbackset.remove_function_callback = olua.format([[
             olua_removecallback(L, cb_store, cb_name.c_str(), OLUA_TAG_WHOLE);
         ]])

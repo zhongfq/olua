@@ -505,7 +505,7 @@ function olua.gen_func_prototype(cls, fi)
     end
     exps:push(")")
     fi.prototype = tostring(exps)
-    return fi
+    return fi.prototype
 end
 
 local function copy(t)
