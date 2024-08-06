@@ -53,6 +53,7 @@ local comment_cursors = olua.ordered_map(false)
 local visited_types   = olua.ordered_map(false)
 local alias_types     = olua.ordered_map(false)
 local type_checker    = olua.array()
+local type_packvars   = olua.ordered_map()
 local exclude_types   = idl.exclude_types
 local type_convs      = idl.type_convs
 local clang_args      = idl.clang_args
@@ -602,6 +603,7 @@ function Autoconf:visit_method(cls, cur)
         cppfunc = fn,
         luafunc = fn,
         prototype = "",
+        display_name = display_name,
         ret = annotations:get("ret"),
         args = olua.array(),
         comment = get_comment(cur),
@@ -752,7 +754,8 @@ function Autoconf:visit_var(cls, cur)
     local getter = {
         cppfunc = fn,
         luafunc = cls.conf.luaname(fn, "var"),
-        prototype = "",
+        prototype = olua.format("${decltype}${fn}()"),
+        display_name = olua.format("${fn}()"),
         ret = annotations:get("ret"),
         args = olua.array(),
         is_variable = true,
@@ -761,20 +764,19 @@ function Autoconf:visit_var(cls, cur)
     }
     getter.ret.type = tn
     getter.ret.name = nil
-    getter.prototype = olua.format("${decltype}${fn}()")
 
     ---@type idl.model.func_model
     local setter = {
         cppfunc = fn,
         luafunc = cls.conf.luaname(fn, "var"),
-        prototype = "",
+        prototype = olua.format("void ${fn}(${decltype})"),
+        display_name = olua.format("${fn}(${decltype})"),
         ret = { attr = olua.array(), type = "void" },
         args = olua.array(),
         is_variable = true,
         is_exposed = false,
         max_args = 1,
     }
-    setter.prototype = olua.format("void ${fn}(${decltype})")
 
     ---@type idl.model.type_model
     local arg1 = setter.args:push(annotations:get("arg1"))
@@ -1654,53 +1656,33 @@ local function copy_super_funcs()
     ---@param super idl.model.class_desc
     local function copy_funcs(cls, super)
         local rawsuper = raw_typename(super.cppcls)
-        for _, func in ipairs(super.conf.members) do
-            if func.name == "__gc" then
-                goto continue
-            end
-            if func.body then
-                if not cls.conf.members:has(func.name) and not cls.conf.excludes:has(func.name) then
-                    cls.conf.members:set(func.name, setmetatable({}, { __index = func }))
-                end
-            else
-                if not cls.conf.members:has(func.prototype)
-                    and not func.isctor
-                    and not cls.conf.excludes:has(func.display_name)
+        super.funcs:foreach(function (arr)
+            ---@cast arr array
+            arr:foreach(function (func)
+                ---@cast func idl.model.func_model
+                if func.is_contructor
+                    or func.cppfunc == "__gc"
+                    or cls.conf.excludes:has(func.display_name)
                 then
-                    cls.conf.members:set(func.prototype, setmetatable({
-                        decl = olua.format("@copyfrom(${rawsuper}) ${func.decl}")
-                    }, { __index = func }))
+                    return
                 end
-            end
-            ::continue::
-        end
-    end
-
-    ---@param cls idl.model.class_desc
-    ---@param super idl.model.class_desc
-    local function copy_props(cls, super)
-        local rawsuper = raw_typename(super.cppcls)
-        for _, prop in ipairs(super.conf.props) do
-            if not cls.conf.excludes:has(prop.name) and not cls.conf.props:has(prop.name) then
-                local get = prop.get
-                local set = prop.set
-                if get and not get:find("{") then
-                    get = olua.format("@copyfrom(${rawsuper}) ${get}")
+                cls.conf.excludes:set(func.display_name, true)
+                local funcs = cls.funcs:get(func.cppfunc)
+                if not funcs then
+                    funcs = olua.array()
+                    cls.funcs:set(func.cppfunc, funcs)
                 end
-                if set and not set:find("{") then
-                    set = olua.format("@copyfrom(${rawsuper}) ${set}")
-                end
-                cls.conf.props:set(prop.name, { name = prop.name, get = get, set = set })
-            end
-        end
+                olua.use(rawsuper)
+                func.ret.attr:pushf("@copyfrom(${rawsuper})")
+                funcs:push(func)
+            end)
+        end)
     end
 
     ---@param cls idl.model.class_desc
     ---@param super idl.model.class_desc
     local function copy_super(cls, super)
-        copy_props(cls, super)
         copy_funcs(cls, super)
-
         for _, sc in ipairs(super.conf.supers) do
             copy_super(cls, visited_types:get(sc))
         end
@@ -1760,12 +1742,29 @@ local function find_as()
             local ascls_arr = ascls_map:values()
             if #ascls_arr > 0 then
                 ascls_arr:sort()
+                ---@type idl.model.func_model
+                local as_func = {
+                    cppfunc = "as",
+                    luafunc = "as",
+                    prototype = "void *as(const char *cls)",
+                    display_name = "as(const char *cls)",
+                    ret = {
+                        type = "void *",
+                        attr = olua.array(),
+                    },
+                    args = olua.array(),
+                    max_args = 1,
+                }
                 local ascls_str = ascls_arr:join(" ")
-                cls.conf.members:set("as", {
-                    name = "as",
-                    luaname = "nil",
-                    decl = olua.format("@as(${ascls_str}) void *as(const char *cls)")
+                as_func.ret.attr:pushf("@as(${ascls_str})")
+                as_func.args:push({
+                    type = "const char *",
+                    name = "cls",
+                    attr = olua.array(),
                 })
+                local funcs = olua.array()
+                funcs:push(as_func)
+                cls.funcs:replace("as", funcs)
             end
         end
     end
@@ -1807,9 +1806,56 @@ local function merge_cls_extends(module, cls)
 end
 
 ---@param cls idl.model.class_desc
+local function gen_cls_func_pack(cls)
+    ---@param arr array
+    ---@param func idl.model.func_model
+    local function gen_pack_overload(arr, func)
+        if func.body then
+            return
+        end
+        local pack_arg
+        for _, arg in ipairs(func.args) do
+            ---@cast arg idl.model.type_model
+            if arg.attr:contain("@pack") then
+                if pack_arg then
+                    olua.error("${cls.cppcls}.${func.cppfunc}: only support one pack arg")
+                end
+                pack_arg = arg
+            end
+        end
+        if not pack_arg then
+            return
+        end
+
+        local arg_tn = raw_typename(pack_arg.type)
+        local packvars = type_packvars:get(arg_tn)
+        if not packvars then
+            olua.error("${arg_tn} is not packable type")
+        end
+
+        local func_pack = olua.clone(func)
+        func_pack.max_args = func_pack.max_args + packvars - 1
+        if raw_typename(func_pack.ret.type) == arg_tn then
+            if not func_pack.ret.attr:contain("@unpack") then
+                func_pack.ret.attr:push("@unpack")
+            end
+        end
+        arr:push(func_pack)
+
+        pack_arg.attr:remove("@pack")
+    end
+    cls.funcs:foreach(function (arr)
+        ---@cast arr array
+        for i = 1, #arr do
+            gen_pack_overload(arr, arr[i])
+        end
+    end)
+end
+
+---@param cls idl.model.class_desc
 local function parse_cls_props(cls)
     ---@param func idl.model.func_model
-    ---@return string
+    ---@return string | nil
     local function parse_prop_name(func)
         if (func.cppfunc:find("^[gG]et") or func.cppfunc:find("^[iI]s"))
             and (#func.args == 0 or (func.is_extended and #func.args == 1))
@@ -1900,12 +1946,15 @@ local function write_new_module(module)
         ---@cast cls idl.model.class_desc
         if has_type_flag(cls, kFLAG_ALIAS) or
             has_type_flag(cls, kFLAG_SKIP) or
-            not cls.conf.maincls
+            cls.conf.maincls
         then
-            m.class_types:push(cls)
+            goto skip_alias_or_template
         end
 
+        m.class_types:push(cls)
+
         merge_cls_extends(module, cls)
+        gen_cls_func_pack(cls)
         parse_cls_props(cls)
 
         cls.funcs:foreach(function (arr, key)
@@ -1920,6 +1969,7 @@ local function write_new_module(module)
                     func.insert_cbefore = desc.insert_cbefore
                     func.insert_cafter = desc.insert_cafter
                 end
+                func.display_name = nil
             end)
         end)
 
@@ -1934,6 +1984,8 @@ local function write_new_module(module)
                 }
             end
         end)
+
+        ::skip_alias_or_template::
     end
 
     module.class_types:foreach(function (cls, cppcls)
@@ -2009,6 +2061,9 @@ local function write_typedefs()
                 smartptr = td.smartptr,
                 replace = td.override,
             })
+            if td.packable then
+                type_packvars[td.cppcls] = td.packvars
+            end
         end)
 
         m.class_types:foreach(function (cls)
@@ -2019,6 +2074,7 @@ local function write_typedefs()
             local packvars
             if has_type_flag(cls, kFLAG_POINTER) and cls.options.packable then
                 packvars = cls.options.packvars or #cls.vars:keys()
+                type_packvars[cls.cppcls] = packvars
             end
             olua.use(m)
             typdefs:push({
@@ -2126,6 +2182,8 @@ local function deferred_autoconf()
         dofile("autobuild/make.lua")
     end
 end
+
+local has_hook = false
 
 function autoconf(path)
     if not has_hook then

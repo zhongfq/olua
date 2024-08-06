@@ -192,9 +192,9 @@ local function gen_class_open(cls, write)
     ]]))
 end
 
-local function gen_class_chunk(cls, write)
-    if cls.chunk and #cls.chunk > 0 then
-        write(format(cls.chunk))
+local function gen_class_codeblock(cls, write)
+    if cls.codeblock and #cls.codeblock > 0 then
+        write(format(cls.codeblock))
         write("")
     end
 end
@@ -260,8 +260,8 @@ local function gen_include(module, write)
     ]]))
     write("")
 
-    if module.chunk and #module.chunk > 0 then
-        write(format(module.chunk))
+    if module.codeblock and #module.codeblock > 0 then
+        write(format(module.codeblock))
         write("")
     end
 
@@ -274,7 +274,7 @@ local function gen_classes(module, write)
         local macro = cls.macro
         write(macro)
         check_meta_method(cls)
-        gen_class_chunk(cls, write)
+        gen_class_codeblock(cls, write)
         gen_class_funcs(cls, write)
         gen_class_open(cls, write)
         write(macro and "#endif" or nil)

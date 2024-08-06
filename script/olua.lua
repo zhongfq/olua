@@ -1033,7 +1033,10 @@ function olua.json_stringify(data, options)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            return '"' .. value:gsub('"', '\\"'):gsub("\n", "\\n") .. '"'
+            value = value:gsub("\\", "\\\\")
+            value = value:gsub("\n", "\\n")
+            value = value:gsub('"', '\\"')
+            return '"' .. value .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
             if mt and mt.__tostring then
@@ -1211,7 +1214,10 @@ function olua.lua_stringify(data, options)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            return '"' .. value:gsub('"', '\\"'):gsub("\n", "\\n") .. '"'
+            value = value:gsub("\\", "\\\\")
+            value = value:gsub("\n", "\\n")
+            value = value:gsub('"', '\\"')
+            return '"' .. value .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
             if mt and mt.__tostring then
@@ -1383,7 +1389,10 @@ function olua.ts_stringify(data, options)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            return '"' .. value:gsub('"', '\\"'):gsub("\n", "\\n") .. '"'
+            value = value:gsub("\\", "\\\\")
+            value = value:gsub("\n", "\\n")
+            value = value:gsub('"', '\\"')
+            return '"' .. value .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
             if mt and mt.__tostring then

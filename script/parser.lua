@@ -508,52 +508,6 @@ function olua.gen_func_prototype(cls, fi)
     return fi.prototype
 end
 
-local function copy(t)
-    return setmetatable({}, { __index = t })
-end
-
-local function gen_func_pack(cls, fi, funcs)
-    if fi.body then
-        return
-    end
-    local has_pack = false
-    for i, arg in ipairs(fi.args) do
-        if arg.attr.pack then
-            has_pack = true
-            break
-        end
-    end
-    -- has @pack? gen one more func
-    if has_pack then
-        local packarg
-        local newfi = copy(fi)
-        newfi.ret = copy(fi.ret)
-        newfi.ret.attr = copy(fi.ret.attr)
-        newfi.args = {}
-        newfi.funcdesc = fi.funcdesc:gsub("@pack *", "")
-        for i in ipairs(fi.args) do
-            newfi.args[i] = copy(fi.args[i])
-            newfi.args[i].attr = copy(fi.args[i].attr)
-            if fi.args[i].attr.pack then
-                assert(not packarg, "too many pack args")
-                packarg = fi.args[i]
-                newfi.args[i].attr.pack = false
-                local packvars = packarg.type.packvars
-                if packvars and packvars > 1 then
-                    newfi.max_args = newfi.max_args + 1 - packvars
-                end
-            end
-        end
-        if packarg.type.cppcls == fi.ret.type.cppcls then
-            newfi.ret.attr.unpack = fi.ret.attr.unpack or false
-            fi.ret.attr.unpack = true
-        end
-        olua.gen_func_prototype(cls, newfi)
-        funcs[#funcs + 1] = newfi
-        newfi.index = #funcs
-    end
-end
-
 ---@param cls ParserTypeconf
 ---@param name any
 ---@param ... unknown
@@ -610,7 +564,6 @@ function olua.parse_func(cls, name, ...)
             end
             fi.args, fi.max_args = parse_args(fromcls, str:sub(#fi.cppfunc + 1))
             olua.gen_func_prototype(cls, fi)
-            gen_func_pack(cls, fi, arr)
             cls.parsed_funcs:set(funcdecl, fi)
         end
         arr[#arr + 1] = fi
@@ -1109,7 +1062,10 @@ function olua.export(path)
             end
         end)
 
-        cls.consts = olua.make_ordered_map(cls.consts)
+        olua.make_ordered_map(cls.consts):foreach(function (const)
+            const.type = olua.typeinfo(const.type, cls)
+        end)
+
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
@@ -1126,9 +1082,6 @@ function olua.export(path)
                     arg.attr = parse_attr(arg.attr)
                 end)
             end)
-            for idx = 1, #arr do
-                gen_func_pack(cls, arr[idx], arr)
-            end
         end)
     end)
 

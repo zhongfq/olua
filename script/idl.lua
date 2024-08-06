@@ -138,14 +138,14 @@ end
 ---@param codeblock string
 function codeblock(codeblock)
     check_module()
-    idl.current_module.codeblock = codeblock
+    idl.current_module.codeblock = olua.trim(codeblock)
 end
 
 ---Insert codes into the `luaopen_[moudle]` function.
 ---@param luaopen string
 function luaopen(luaopen)
     check_module()
-    idl.current_module.luaopen = luaopen
+    idl.current_module.luaopen = olua.trim(luaopen)
 end
 
 ---Specify the entry `class`, when you require a module, return this `class`.
@@ -259,6 +259,7 @@ end
 ---@field prototype string
 ---@field comment? string
 ---@field macro? string
+---@field display_name? string
 ---@field is_exposed? boolean
 ---@field is_static? boolean
 ---@field is_extended? boolean
@@ -267,6 +268,7 @@ end
 ---@field ret idl.model.type_model
 ---@field args array # idl.model.type_model[]
 ---@field max_args? integer
+---@field body? string
 ---@field insert_before? string
 ---@field insert_after? string
 ---@field insert_cbefore? string
@@ -362,10 +364,6 @@ end
 ---@return idl.typeconf.func
 local function typeconf_func(parent, cls, name)
     ---@class idl.typeconf.func : idl.typeconf
-    ---@field insert_before fun(code:string):idl.typeconf.func # Insert codes before the c++ function invoked.
-    ---@field insert_after fun(code:string):idl.typeconf.func # Insert codes after the c++ function invoked.
-    ---@field insert_cbefore fun(code:string):idl.typeconf.func # Insert codes before the c++ callback function invoked.
-    ---@field insert_cafter fun(code:string):idl.typeconf.func # Insert codes after the c++ callback function invoked.
     local CMD = {}
 
     ---@class idl.model.func_conf
@@ -391,10 +389,37 @@ local function typeconf_func(parent, cls, name)
         return typeconf_func_annotate(CMD, func, at)
     end
 
-    add_value_command(CMD, func, "insert_before")
-    add_value_command(CMD, func, "insert_after")
-    add_value_command(CMD, func, "insert_cbefore")
-    add_value_command(CMD, func, "insert_cafter")
+    ---Insert codes before the c++ function invoked.
+    ---@param code string
+    ---@return idl.typeconf.func
+    function CMD.insert_before(code)
+        func.insert_before = olua.trim(code)
+        return CMD
+    end
+
+    ---Insert codes after the c++ function invoked.
+    ---@param code string
+    ---@return idl.typeconf.func
+    function CMD.insert_after(code)
+        func.insert_after = olua.trim(code)
+        return CMD
+    end
+
+    ---Insert codes before the c++ callback function invoked.
+    ---@param code string
+    ---@return idl.typeconf.func
+    function CMD.insert_cbefore(code)
+        func.insert_cbefore = olua.trim(code)
+        return CMD
+    end
+
+    ---Insert codes after the c++ callback function invoked.
+    ---@param code string
+    ---@return idl.typeconf.func
+    function CMD.insert_cafter(code)
+        func.insert_cafter = olua.trim(code)
+        return CMD
+    end
 
     ---@type idl.typeconf.func
     return setmetatable(CMD, { __index = parent })
@@ -432,8 +457,6 @@ function typeconf(cppcls)
     check_module()
 
     ---@class idl.typeconf
-    ---@field luaopen fun(luaopen:string):idl.typeconf
-    ---@field codeblock fun(codeblock:string):idl.typeconf
     ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.typeconf
     ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.typeconf
     ---@field packable fun(packable:booltype):idl.typeconf
@@ -466,6 +489,8 @@ function typeconf(cppcls)
     ---@class idl.model.class_desc
     ---@field supercls? string
     ---@field comment? string
+    ---@field luaopen? string
+    ---@field codeblock? string
     ---@field conf idl.model.typeconf
     ---@field CMD idl.typeconf
     local cls = {
@@ -505,8 +530,20 @@ function typeconf(cppcls)
         cls.macro = idl.macros:at(-1)
     end
 
-    add_value_command(CMD, cls, "luaopen")
-    add_value_command(CMD, cls, "codeblock")
+    ---@param luaopen string
+    ---@return idl.typeconf
+    function CMD.luaopen(luaopen)
+        cls.luaopen = olua.trim(luaopen)
+        return CMD
+    end
+
+    ---@param codeblock string
+    ---@return idl.typeconf
+    function CMD.codeblock(codeblock)
+        cls.codeblock = olua.trim(codeblock)
+        return CMD
+    end
+
     add_value_command(CMD, cls.conf, "luaname", function (_, v) return v end)
     add_value_command(CMD, cls.conf, "maincls", function (_, v) return v end)
     add_value_command(CMD, cls.options, "indexerror")
@@ -616,6 +653,14 @@ function idl.typecopy(cppcls, fromcls)
         end
         cls.conf[k] = olua.clone(v)
         ::continue::
+    end
+
+    if fromcls.luaopen then
+        CMD.luaopen(fromcls.luaopen)
+    end
+
+    if fromcls.codeblock then
+        CMD.codeblock(fromcls.codeblock)
     end
 
     return CMD

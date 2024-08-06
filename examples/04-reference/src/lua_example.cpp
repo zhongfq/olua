@@ -64,7 +64,7 @@ static int _example_Object_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Object()
+    // example::Object()
     example::Object *ret = new example::Object();
     int num_ret = olua_push_object(L, ret, "example.Object");
     olua_postnew(L, ret);
@@ -272,7 +272,7 @@ static int _example_Node_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Node()
+    // example::Node()
     example::Node *ret = new example::Node();
     int num_ret = olua_push_object(L, ret, "example.Node");
     olua_postnew(L, ret);

@@ -1,4 +1,4 @@
-local path = (...):gsub('test.lua$', '') .. '../../common/?.lua;'
+local path = (...):gsub("test.lua$", "") .. "../../common/?.lua;"
 package.path = path .. package.path
 
 local olua = require "olua.c"
@@ -13,8 +13,8 @@ local NoGC = require "example.NoGC"
 local ClickCallback = require "example.ClickCallback"
 local util = require "util"
 
-local SubHello = olua.class('SubHello', Hello)
-print('SubHello', SubHello, SubHello.class, SubHello.classname)
+local SubHello = olua.class("SubHello", Hello)
+print("SubHello", SubHello, SubHello.class, SubHello.classname)
 
 -- excluded
 assert(not Hello.getExcludeType)
@@ -29,18 +29,18 @@ olua.printobj("after take  ", nogc)
 
 olua.debug(true)
 
-print(Point.new(2, 4), Point {x = 4, y = 8}, Point.new(3, 4):length())
-print("point.x == 4", (Point {x = 4, y = 8}).x == 4)
+print(Point.new(2, 4), Point.new(4, 8), Point.new(3, 4):length())
+print("point.x == 4", (Point.new(4, 8)).x == 4)
 
 local obj = Hello.new()
-obj.name = 'codetypes'
+obj.name = "codetypes"
 obj.id = 100
 olua.printobj("TAG", obj);
 olua.printobj(obj);
-print('convert', obj:convertPoint(3, 10))
+print("convert", obj:convertPoint(3, 10))
 print("referenceCount", obj.referenceCount)
-print('name', obj.name, obj.id, obj.ptr)
-print('as', obj, obj:as('example.Singleton'))
+print("name", obj.name, obj.id, obj.ptr)
+print("as", obj, obj:as("example.Singleton"))
 -- print('ptr', obj.ptr, obj.point, obj.valuePoint)
 -- -- obj:say()
 
@@ -72,20 +72,20 @@ local str = olua.string.new()
 num.name = "num *"
 obj:getIntRef(num)
 obj:getStringRef(str)
-print('sizeof(int)', num.sizeof)
-print('sizeof(string)', str.sizeof)
-print('ref', num.value, str.value)
-print('rawdata', num.rawdata)
+print("sizeof(int)", num.sizeof)
+print("sizeof(string)", str.sizeof)
+print("ref", num.value, str.value)
+print("rawdata", num.rawdata)
 assert(num.value == 120)
 assert(str.value == "120")
-assert(olua.isa(obj, 'void *'))
+assert(olua.isa(obj, "void *"))
 
 -- callback
 obj:setClickCallback(ClickCallback(function (...)
-    print('click', ...)
+    print("click", ...)
 end))
 obj:setClickCallback(function (...)
-    print('click', ...)
+    print("click", ...)
 end)
 obj:setCallback(function (this, p)
     print("callback", this, p, p.x, p.y)
@@ -96,7 +96,7 @@ obj:doCallback()
 local result = olua.char.new(12)
 local result_len = olua.size_t.new()
 obj:read(result, result_len)
-assert(result:tostring(11) == 'hello read!')
+assert(result:tostring(11) == "hello read!")
 assert(result_len.value == 11)
 
 -- test enum
@@ -116,7 +116,7 @@ assert(Type.POINTER < 3)
 local VectorInt = require "example.VectorInt"
 local vect = VectorInt.new()
 obj:checkVectorInt(vect)
-print('sizeof(VectorInt)', vect.sizeof)
+print("sizeof(VectorInt)", vect.sizeof)
 vect = vect.value
 assert(vect[1] == 1)
 assert(vect[2] == 2)
@@ -125,7 +125,7 @@ assert(vect[2] == 2)
 local VectorPoint = require "example.VectorPoint"
 local vectP = VectorPoint.new()
 obj:checkVectorPoint(vectP)
-print('sizeof(VectorPoint)', vectP.sizeof)
+print("sizeof(VectorPoint)", vectP.sizeof)
 vectP = vectP.value
 assert(vectP[1].x == 10)
 assert(vectP[2].y == 100)
@@ -153,16 +153,16 @@ print("------------olua.ref------------")
 --     object = obja,
 --     flags = OLUA_REF_MULTI,
 -- }
-olua.ref('add', obj, 'children', obja, OLUA_REF_MULTI)
-olua.ref('add', obj, 'children', objb, OLUA_REF_MULTI)
-olua.ref('add', obj, 'objecta', obja, OLUA_REF_ALONE)
+olua.ref("add", obj, "children", obja, OLUA_REF_MULTI)
+olua.ref("add", obj, "children", objb, OLUA_REF_MULTI)
+olua.ref("add", obj, "objecta", obja, OLUA_REF_ALONE)
 util.dumpUserValue(obj)
 assert(util.hasRef(obj, "children", obja))
 assert(util.hasRef(obj, "children", objb))
-olua.ref('del', obj, 'children', obja, OLUA_REF_MULTI)
-assert(util.hasNoRef(obj, 'children', obja))
-olua.ref('delall', obj, 'children')
-assert(util.hasNoRef(obj, 'children', objb))
+olua.ref("del", obj, "children", obja, OLUA_REF_MULTI)
+assert(util.hasNoRef(obj, "children", obja))
+olua.ref("delall", obj, "children")
+assert(util.hasNoRef(obj, "children", objb))
 util.dumpUserValue(obj)
 util.dump(olua.uservalue(obj))
 
@@ -174,10 +174,10 @@ print(shared.this)
 local int8 = require "olua.int8"
 local chars = int8.new(10)
 local slice = chars:slice(2, 4)
-chars:assign('hello', 4)
+chars:assign("hello", 4)
 print("slice", slice:tostring(2))
-assert(slice[1] == string.byte('e'))
-assert(slice[2] == string.byte('l'))
+assert(slice[1] == string.byte("e"))
+assert(slice[2] == string.byte("l"))
 print(chars:tostring(4))
 print(chars:sub(2):tostring(4))
 print(chars:sub(2, 3):tostring(2))

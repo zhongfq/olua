@@ -1,10 +1,21 @@
 {
   "diagnostics.disable": ["redundant-return-value"],
   "diagnostics.globals": [
+    "api_dir",
+    "autoconf",
+    "clang",
+    "codeblock",
+    "entry",
+    "excludetype",
+    "headers",
+    "import",
+    "luacls",
+    "luaopen",
+    "macro",
     "olua",
+    "output_dir",
     "typeconf",
-    "typeonly",
     "typedef",
-    "output_dir"
+    "typeonly"
   ]
 }

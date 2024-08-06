@@ -41,7 +41,7 @@ static int _example_GC_gc(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.GC");
 
-    // void gc()
+    // @copyfrom(example::GC) void gc()
     self->gc();
 
     olua_endinvoke(L);
@@ -93,7 +93,7 @@ static int _example_TestWildcardListener_hello(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.TestWildcardListener");
 
-    // void hello()
+    // @copyfrom(example::TestWildcardListener) void hello()
     self->hello();
 
     olua_endinvoke(L);
@@ -109,7 +109,7 @@ static int _example_TestWildcardListener_onClick(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.TestWildcardListener");
 
-    // void onClick()
+    // @copyfrom(example::TestWildcardListener) void onClick()
     self->onClick();
 
     olua_endinvoke(L);
@@ -189,7 +189,7 @@ static int _example_Object_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Object()
+    // example::Object()
     example::Object *ret = new example::Object();
     int num_ret = olua_push_object(L, ret, "example.Object");
     olua_postnew(L, ret);
@@ -395,7 +395,7 @@ static int _example_Hello_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Hello()
+    // example::Hello()
     example::Hello *ret = new example::Hello();
     int num_ret = olua_push_object(L, ret, "example.Hello");
     olua_postnew(L, ret);
@@ -583,7 +583,7 @@ static int _example_TestGC_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // TestGC()
+    // example::TestGC()
     example::TestGC *ret = new example::TestGC();
     int num_ret = olua_push_object(L, ret, "example.TestGC");
     olua_postnew(L, ret);
@@ -682,7 +682,7 @@ static int _example_Singleton_example_Hello_create(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // static example::Hello *create()
+    // @copyfrom(example::Singleton) static example::Hello *create()
     example::Hello *ret = example::Singleton<example::Hello>::create();
     int num_ret = olua_push_object(L, ret, "example.Hello");
 
@@ -699,7 +699,7 @@ static int _example_Singleton_example_Hello_printSingleton(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Singleton<example.Hello>");
 
-    // void printSingleton()
+    // @copyfrom(example::Singleton) void printSingleton()
     self->printSingleton();
 
     olua_endinvoke(L);
