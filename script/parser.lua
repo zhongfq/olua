@@ -359,6 +359,10 @@ local function parse_type(str)
     return olua.pretty_typename(tn), attr, str
 end
 
+---@param tn any
+---@param cls any
+---@param cb any
+---@return any
 local function type_func_info(tn, cls, cb)
     local ti
     if not tn:find("std::function") then
@@ -451,13 +455,27 @@ function parse_args(cls, declstr)
     return args, count
 end
 
-function olua.parse_type(tn, cls)
+---@param type_model idl.model.type_model
+---@param cls any
+function olua.parse_type(type_model, cls)
+    local attr = parse_attr(type_model.attr)
+
+    type_model.attr = attr
+
+    local tn = type_model.type
+
+    if attr.type then
+        tn = olua.assert(table.concat(attr.type, " "), "no replaceable type")
+    end
+
     if olua.is_func_type(tn, cls) then
         local cb = parse_callback(cls, tn)
-        return type_func_info(tn, cls, cb)
+        type_model.type = type_func_info(tn, cls, cb)
     else
-        return olua.typeinfo(tn, cls)
+        type_model.type = olua.typeinfo(tn, cls)
     end
+
+    return type_model
 end
 
 function olua.func_name(funcdecl)
@@ -1005,32 +1023,9 @@ local function typeconf(cppcls)
 end
 
 function olua.export(path)
-    -- local m = { class_types = {} }
-
-    -- local CMD = {}
-
-    -- function CMD.__index(_, k)
-    --     return olua[k] or _ENV[k]
-    -- end
-
-    -- function CMD.__newindex(_, k, v)
-    --     m[k] = v
-    -- end
-
-    -- function CMD.typeconf(cppcls)
-    --     local cls, SubCMD = typeconf(cppcls)
-    --     m.class_types[#m.class_types + 1] = cls
-    --     return olua.command_proxy(SubCMD)
-    -- end
-
-    -- setmetatable(CMD, CMD)
-    -- assert(loadfile(path, nil, CMD))()
-
     local m = dofile(path)
 
-    olua.make_array(m.class_types)
-
-    m.class_types:foreach(function (cls)
+    olua.make_array(m.class_types):foreach(function (cls)
         class_map[cls.cppcls] = cls
         cls.funcs = olua.make_ordered_map(cls.funcs)
 
@@ -1069,17 +1064,17 @@ function olua.export(path)
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
+                ---@cast func idl.model.func_model
                 if func.body then
                     func.funcdesc = ""
                     return
                 end
                 func.index = idx
                 func.funcdesc = gen_func_desc(cls, func)
-                func.ret.type = olua.parse_type(func.ret.type, cls)
-                func.ret.attr = parse_attr(func.ret.attr)
-                olua.make_array(func.args):foreach(function (arg)
-                    arg.type = olua.parse_type(arg.type, cls)
-                    arg.attr = parse_attr(arg.attr)
+                func.ret = olua.parse_type(func.ret, cls)
+                olua.make_array(func.args):foreach(function (arg, idx)
+                    ---@cast arg idl.model.type_model
+                    func.args[idx] = olua.parse_type(arg, cls)
                 end)
             end)
         end)

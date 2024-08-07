@@ -90,7 +90,7 @@ static int _example_Object_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Object()
+    // example::Object()
     example::Object *ret = new example::Object();
     int num_ret = olua_push_object(L, ret, "example.Object");
     olua_postnew(L, ret);
@@ -114,34 +114,6 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
     return 1;
 }
 OLUA_END_DECLS
-
-static int _example_Point___call(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    example::Point ret;
-
-    luaL_checktype(L, 2, LUA_TTABLE);
-
-    int arg1 = 0;       /** x */
-    int arg2 = 0;       /** y */
-
-    olua_getfield(L, 2, "x");
-    olua_check_integer(L, -1, &arg1);
-    ret.x = arg1;
-    lua_pop(L, 1);
-
-    olua_getfield(L, 2, "y");
-    olua_check_integer(L, -1, &arg2);
-    ret.y = arg2;
-    lua_pop(L, 1);
-
-    olua_pushcopy_object(L, ret, "example.Point");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
 
 static int _example_Point___gc(lua_State *L)
 {
@@ -167,7 +139,7 @@ static int _example_Point___olua_move(lua_State *L)
     return 1;
 }
 
-static int _example_Point_get_x(lua_State *L)
+static int _example_Point_x$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -175,7 +147,7 @@ static int _example_Point_get_x(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Point");
 
-    // int x
+    // int x()
     int ret = self->x;
     int num_ret = olua_push_integer(L, ret);
 
@@ -184,7 +156,7 @@ static int _example_Point_get_x(lua_State *L)
     return num_ret;
 }
 
-static int _example_Point_set_x(lua_State *L)
+static int _example_Point_x$2(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -194,7 +166,7 @@ static int _example_Point_set_x(lua_State *L)
     olua_to_object(L, 1, &self, "example.Point");
     olua_check_integer(L, 2, &arg1);
 
-    // int x
+    // void x(int x)
     self->x = arg1;
 
     olua_endinvoke(L);
@@ -202,7 +174,28 @@ static int _example_Point_set_x(lua_State *L)
     return 0;
 }
 
-static int _example_Point_get_y(lua_State *L)
+static int _example_Point_x(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // int x()
+        return _example_Point_x$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // void x(int x)
+            return _example_Point_x$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Point::x' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
+static int _example_Point_y$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -210,7 +203,7 @@ static int _example_Point_get_y(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Point");
 
-    // int y
+    // int y()
     int ret = self->y;
     int num_ret = olua_push_integer(L, ret);
 
@@ -219,7 +212,7 @@ static int _example_Point_get_y(lua_State *L)
     return num_ret;
 }
 
-static int _example_Point_set_y(lua_State *L)
+static int _example_Point_y$2(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -229,10 +222,31 @@ static int _example_Point_set_y(lua_State *L)
     olua_to_object(L, 1, &self, "example.Point");
     olua_check_integer(L, 2, &arg1);
 
-    // int y
+    // void y(int y)
     self->y = arg1;
 
     olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Point_y(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // int y()
+        return _example_Point_y$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // void y(int y)
+            return _example_Point_y$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Point::y' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -241,11 +255,10 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Point(lua_State *L)
 {
     oluacls_class<example::Point>(L, "example.Point");
-    oluacls_func(L, "__call", _example_Point___call);
     oluacls_func(L, "__gc", _example_Point___gc);
     oluacls_func(L, "__olua_move", _example_Point___olua_move);
-    oluacls_prop(L, "x", _example_Point_get_x, _example_Point_set_x);
-    oluacls_prop(L, "y", _example_Point_get_y, _example_Point_set_y);
+    oluacls_prop(L, "x", _example_Point_x, _example_Point_x);
+    oluacls_prop(L, "y", _example_Point_y, _example_Point_y);
 
     return 1;
 }
@@ -337,7 +350,7 @@ static int _example_Node_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Node()
+    // example::Node()
     example::Node *ret = new example::Node();
     int num_ret = olua_push_object(L, ret, "example.Node");
     olua_postnew(L, ret);

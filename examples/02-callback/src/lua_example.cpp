@@ -69,7 +69,7 @@ static int _example_Object_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Object()
+    // example::Object()
     example::Object *ret = new example::Object();
     int num_ret = olua_push_object(L, ret, "example.Object");
     olua_postnew(L, ret);
@@ -93,34 +93,6 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
     return 1;
 }
 OLUA_END_DECLS
-
-static int _example_Event___call(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    example::Event ret;
-
-    luaL_checktype(L, 2, LUA_TTABLE);
-
-    std::string arg1;       /** name */
-    std::string arg2;       /** data */
-
-    olua_getfield(L, 2, "name");
-    olua_check_string(L, -1, &arg1);
-    ret.name = arg1;
-    lua_pop(L, 1);
-
-    olua_getfield(L, 2, "data");
-    olua_check_string(L, -1, &arg2);
-    ret.data = arg2;
-    lua_pop(L, 1);
-
-    olua_pushcopy_object(L, ret, "example.Event");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
 
 static int _example_Event___gc(lua_State *L)
 {
@@ -146,7 +118,7 @@ static int _example_Event___olua_move(lua_State *L)
     return 1;
 }
 
-static int _example_Event_get_data(lua_State *L)
+static int _example_Event_data$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -154,7 +126,7 @@ static int _example_Event_get_data(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Event");
 
-    // std::string data
+    // std::string data()
     std::string ret = self->data;
     int num_ret = olua_push_string(L, ret);
 
@@ -163,7 +135,7 @@ static int _example_Event_get_data(lua_State *L)
     return num_ret;
 }
 
-static int _example_Event_set_data(lua_State *L)
+static int _example_Event_data$2(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -173,7 +145,7 @@ static int _example_Event_set_data(lua_State *L)
     olua_to_object(L, 1, &self, "example.Event");
     olua_check_string(L, 2, &arg1);
 
-    // std::string data
+    // void data(std::string data)
     self->data = arg1;
 
     olua_endinvoke(L);
@@ -181,7 +153,28 @@ static int _example_Event_set_data(lua_State *L)
     return 0;
 }
 
-static int _example_Event_get_name(lua_State *L)
+static int _example_Event_data(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // std::string data()
+        return _example_Event_data$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_string(L, 2))) {
+            // void data(std::string data)
+            return _example_Event_data$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Event::data' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
+static int _example_Event_name$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -189,7 +182,7 @@ static int _example_Event_get_name(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Event");
 
-    // std::string name
+    // std::string name()
     std::string ret = self->name;
     int num_ret = olua_push_string(L, ret);
 
@@ -198,7 +191,7 @@ static int _example_Event_get_name(lua_State *L)
     return num_ret;
 }
 
-static int _example_Event_set_name(lua_State *L)
+static int _example_Event_name$2(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -208,10 +201,31 @@ static int _example_Event_set_name(lua_State *L)
     olua_to_object(L, 1, &self, "example.Event");
     olua_check_string(L, 2, &arg1);
 
-    // std::string name
+    // void name(std::string name)
     self->name = arg1;
 
     olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Event_name(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // std::string name()
+        return _example_Event_name$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_string(L, 2))) {
+            // void name(std::string name)
+            return _example_Event_name$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Event::name' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -220,11 +234,10 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Event(lua_State *L)
 {
     oluacls_class<example::Event>(L, "example.Event");
-    oluacls_func(L, "__call", _example_Event___call);
     oluacls_func(L, "__gc", _example_Event___gc);
     oluacls_func(L, "__olua_move", _example_Event___olua_move);
-    oluacls_prop(L, "data", _example_Event_get_data, _example_Event_set_data);
-    oluacls_prop(L, "name", _example_Event_get_name, _example_Event_set_name);
+    oluacls_prop(L, "data", _example_Event_data, _example_Event_data);
+    oluacls_prop(L, "name", _example_Event_name, _example_Event_name);
 
     return 1;
 }
@@ -284,7 +297,7 @@ static int _example_Callback_foreach(lua_State *L)
 
     void *cb_store = (void *)self;
     std::string cb_tag = makeForeachTag(arg1);
-    std::string cb_name = olua_setcallback(L, cb_store,  4, cb_tag.c_str(), OLUA_TAG_NEW);
+    std::string cb_name = olua_setcallback(L, cb_store, 4, cb_tag.c_str(), OLUA_TAG_NEW);
     olua_Context cb_ctx = olua_context(L);
     arg3 = [cb_store, cb_name, cb_ctx](int arg1) {
         lua_State *L = olua_mainthread(NULL);
@@ -300,7 +313,7 @@ static int _example_Callback_foreach(lua_State *L)
         }
     };
 
-    // void foreach(int start, int to, @localvar const std::function<void (int)> &callback)
+    // void foreach(int start, int to, const std::function<void (int)> &callback)
     self->foreach(arg1, arg2, arg3);
 
     olua_removecallback(L, cb_store, cb_name.c_str(), OLUA_TAG_WHOLE);
@@ -314,7 +327,7 @@ static int _example_Callback_new(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // Callback()
+    // example::Callback()
     example::Callback *ret = new example::Callback();
     int num_ret = olua_push_object(L, ret, "example.Callback");
     olua_postnew(L, ret);
@@ -336,7 +349,7 @@ static int _example_Callback_setEvent(lua_State *L)
 
     void *cb_store = (void *)self;
     std::string cb_tag = "Event";
-    std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
+    std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
     arg1 = [cb_store, cb_name, cb_ctx](const example::Event *arg1) {
         lua_State *L = olua_mainthread(NULL);
@@ -357,7 +370,7 @@ static int _example_Callback_setEvent(lua_State *L)
         }
     };
 
-    // void setEvent(@localvar const std::function<void (const example::Event *)> &callback)
+    // void setEvent(const std::function<void (const example::Event *)> &callback)
     self->setEvent(arg1);
 
     olua_endinvoke(L);
@@ -377,7 +390,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
 
     void *cb_store = (void *)self;
     std::string cb_tag = "OnceEvent";
-    std::string cb_name = olua_setcallback(L, cb_store,  2, cb_tag.c_str(), OLUA_TAG_REPLACE);
+    std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
     arg1 = [cb_store, cb_name, cb_ctx](const example::Event *arg1) {
         lua_State *L = olua_mainthread(NULL);
@@ -400,7 +413,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
         }
     };
 
-    // void setOnceEvent(@localvar const example::Callback::Listener &callback)
+    // void setOnceEvent(const example::Callback::Listener &callback)
     self->setOnceEvent(arg1);
 
     olua_endinvoke(L);

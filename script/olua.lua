@@ -967,8 +967,14 @@ end
 
 local function is_array(t)
     local mt = getmetatable(t)
-    if mt and mt.__olua_object then
-        return false
+    if mt then
+        if mt.__olua_array then
+            return true
+        elseif mt.__olua_object then
+            return false
+        elseif mt.__olua_object then
+            return false
+        end
     end
     local n = 0
     for k in pairs(t) do
