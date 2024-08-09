@@ -1637,7 +1637,7 @@ local function check_errors()
             you should do one of:
                 * if has the type convertor, use typedef 'NotFoundType'
                 * if type is pointer or enum, use typeconf 'NotFoundType'
-                * if type not wanted, use excludetype 'NotFoundType' or .exclude 'MethodName'
+                * if type not wanted, use exclude_type 'NotFoundType' or .exclude 'MethodName'
             more debug info set 'OLUA_VERBOSE = true'
         ]]))
     end

@@ -6,7 +6,7 @@
     "clang",
     "codeblock",
     "entry",
-    "excludetype",
+    "exclude_type",
     "headers",
     "import",
     "luacls",

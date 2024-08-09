@@ -152,7 +152,7 @@ end
 ---@param cppcls string
 function entry(cppcls)
     check_module()
-    idl.current_module.entry = checkstring(cppcls)
+    idl.current_module.entry = checkstring("entry", cppcls)
 end
 
 ---@param dir string
@@ -174,7 +174,7 @@ function luacls(maker)
 end
 
 ---@param cppcls string
-function excludetype(cppcls)
+function exclude_type(cppcls)
     idl.exclude_types:replace(olua.pretty_typename(cppcls), true)
     idl.exclude_types:replace(olua.pretty_typename(cppcls .. " *"), true)
 end
@@ -515,7 +515,7 @@ function typeconf(cppcls)
         olua.error([[
             typeconf '${cls.cppcls}' will not configured
                 you should do one of:
-                    * remove excludetype '${cls.cppcls}'
+                    * remove exclude_type '${cls.cppcls}'
         ]])
     end
 
