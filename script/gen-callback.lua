@@ -6,14 +6,14 @@ local tag_mode_map = {
 }
 
 local function get_tag_mode(fi, arg)
-    local tag_mode = tag_mode_map[arg.tag_mode]
+    local tag_mode = tag_mode_map[fi.tag_mode]
     olua.assert(tag_mode, "unknown tag mode: ${fi.tag_mode}")
     return tag_mode
 end
 
-local function get_tag_store(fi, arg, idx)
+local function get_tag_store(fi, idx)
     if not idx then
-        idx = olua.assert(arg.tag_store, "no tag store")
+        idx = olua.assert(fi.tag_store, "no tag store")
     elseif idx < 0 then
         idx = idx + #fi.args + 1
     end
@@ -31,18 +31,18 @@ local function check_tag_store(fi, idx)
 end
 
 local function gen_callback_tag(cls, fi, arg)
-    if not string.find(arg.tag_maker, "[()]+") then
-        return olua.format([["${arg.tag_maker}"]]), nil
+    if not string.find(fi.tag_maker, "[()]+") then
+        return olua.format([["${fi.tag_maker}"]]), nil
     end
     -- tag_maker: makeTag(#1) or makeTag(#-1)
-    return string.gsub(arg.tag_maker, "#(%-?%d+)", function (n)
-        local idx = get_tag_store(fi, arg, tonumber(n))
+    return string.gsub(fi.tag_maker, "#(%-?%d+)", function (n)
+        local idx = get_tag_store(fi, tonumber(n))
         return idx == 0 and "self" or ("arg" .. idx)
     end)
 end
 
 local function gen_callback_store(cls, fi)
-    local tag_store = get_tag_store(fi, fi.ret)
+    local tag_store = get_tag_store(fi)
     local cb_store
     if tag_store > 0 then
         check_tag_store(fi, tag_store)
@@ -84,18 +84,18 @@ function olua.gen_ret_callback(cls, fi, codeset)
 end
 
 function olua.gen_arg_callback(cls, fi, arg, argn, codeset)
-    if arg.tag_mode == "equal" or arg.tag_mode == "startwith" then
+    if fi.tag_mode == "equal" or fi.tag_mode == "startwith" then
         codeset.callback = gen_remove_callback(cls, fi)
         return
     end
 
-    olua.assert(arg.tag_mode == "replace" or arg.tag_mode == "new",
+    olua.assert(fi.tag_mode == "replace" or fi.tag_mode == "new",
         "expect 'replace' or 'new', got '${fi.callback.tag_mode}'")
 
     local argname = "arg" .. argn
     local tag_mode = get_tag_mode(fi, arg)
-    local tag_store = get_tag_store(fi, arg)
-    local tag_scope = arg.tag_scope
+    local tag_store = get_tag_store(fi)
+    local tag_scope = fi.tag_scope
     local cb_tag = gen_callback_tag(cls, fi, arg)
     local cb_store
 
@@ -125,7 +125,7 @@ function olua.gen_arg_callback(cls, fi, arg, argn, codeset)
     }
 
     local pool_enabled = false
-    if arg.tag_usepool then
+    if fi.tag_usepool then
         for _, v in ipairs(arg.type.callback.args) do
             if not olua.is_value_type(v.type) then
                 pool_enabled = true

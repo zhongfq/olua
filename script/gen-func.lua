@@ -338,39 +338,47 @@ local function gen_func_args(cls, fi, codeset)
     local skip_first_arg = false
 
     if olua.is_oluaret(fi) then
-        local ai = fi.args[1]
-        olua.assert(ai and ai.type.cppcls == "lua_State", "first arg type must be 'lua_State *'")
+        local arg = fi.args[1]
+        olua.assert(arg and arg.type.cppcls == "lua_State", "first arg type must be 'lua_State *'")
         codeset.caller_args:push("L")
         skip_first_arg = true
     end
 
-    for i, ai in ipairs(fi.args) do
+    local callback_arg
+    local callback_arg_i
+
+    for i, arg in ipairs(fi.args) do
         if skip_first_arg then
             skip_first_arg = false
             goto continue
         end
 
-        if olua.is_func_type(ai.type) then
-            olua.assert(ai.tag_maker, "no callback option")
-            olua.gen_arg_callback(cls, fi, ai, i, codeset)
+        if olua.is_func_type(arg.type) then
+            olua.assert(not callback_arg, "only support one callback arg")
+            callback_arg = arg
+            callback_arg_i = i
         end
 
         local argname = "arg" .. i
         local argn = codeset.idx + 1
         codeset.idx = argn
 
-        if olua.has_cast_flag(ai.type) then
+        if olua.has_cast_flag(arg.type) then
             codeset.caller_args:pushf("*${argname}")
         else
             codeset.caller_args:pushf("${argname}")
         end
 
-        olua.gen_decl_exp(ai, argname, codeset)
-        olua.gen_check_exp(ai, argname, argn, codeset)
-        olua.gen_addref_exp(cls, fi, ai, argn, argname, codeset)
-        olua.gen_delref_exp(cls, fi, ai, argn, argname, codeset)
+        olua.gen_decl_exp(arg, argname, codeset)
+        olua.gen_check_exp(arg, argname, argn, codeset)
+        olua.gen_addref_exp(cls, fi, arg, argn, argname, codeset)
+        olua.gen_delref_exp(cls, fi, arg, argn, argname, codeset)
 
         ::continue::
+    end
+
+    if callback_arg then
+        olua.gen_arg_callback(cls, fi, callback_arg, callback_arg_i, codeset)
     end
 
     if fi.ret.attr.variadic then

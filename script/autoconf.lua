@@ -454,44 +454,46 @@ end
 ---@param isvar? boolean
 local function parse_attr_from_annotate(cls, cur, isvar)
     local fn = cur.name
-    local func = cls.conf.members:get(fn) ---@type idl.model.func_conf
-    local annotations
+    local display_name = cur.displayName
+    local func = cls.conf.members:get(fn) or cls.conf.members:get(display_name)
 
-    if func then
-        annotations = func.annotations:clone()
-    else
-        annotations = olua.ordered_map(false)
+    if not func then
+        if isvar then
+            cls.CMD.var(display_name)
+        else
+            cls.CMD.func(display_name)
+        end
+        func = cls.conf.members:get(display_name)
     end
+
+    local attrs = func.attrs:clone()
 
     ---@param node clang.Cursor
     ---@param key string
     local function parse_and_merge_attr(node, key)
-        local conf = annotations:get(key) ---@type idl.conf.func_annotation
-        if not conf then
-            conf = idl.create_annotation()
-            annotations:set(key, conf)
-        end
+        ---@type array
+        local arr = attrs:get(key)
         for _, c in ipairs(node.children) do
             if c.kind == CursorKind.AnnotateAttr then
                 local name = c.name
                 if name:find("^@") then
-                    conf.attr:push(name)
+                    arr:push(name)
                 end
             end
         end
     end
 
-    parse_and_merge_attr(cur, isvar and "fn" or "ret")
+    parse_and_merge_attr(cur, isvar and "field" or "ret")
     if isvar then
-        annotations:set("ret", olua.clone(annotations:get("fn")))
-        annotations:set("arg1", olua.clone(annotations:get("fn")))
+        attrs:set("ret", olua.clone(attrs:get("field")))
+        attrs:set("arg1", olua.clone(attrs:get("field")))
     else
         for i, arg in ipairs(cur.arguments) do
             parse_and_merge_attr(arg, "arg" .. i)
         end
     end
 
-    return annotations
+    return attrs
 end
 
 ---@param cls idl.model.class_desc
@@ -596,15 +598,22 @@ function Autoconf:visit_method(cls, cur)
     local arguments = cur.arguments
     local result_type = cur.resultType
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
-    local annotations = parse_attr_from_annotate(cls, cur)
+    local attrs = parse_attr_from_annotate(cls, cur)
 
-    ---@type idl.model.func_model
+    ---@type idl.model.member_desc
+    local member = cls.conf.members:get(display_name) or cls.conf.members:get(fn)
+    if not member then
+        cls.CMD.func(display_name)
+        member = cls.conf.members:get(display_name)
+    end
+
+    ---@type idl.model.func_desc
     local func = {
         cppfunc = fn,
         luafunc = fn,
         prototype = "",
         display_name = display_name,
-        ret = annotations:get("ret"),
+        ret = { type = "void", attr = attrs:get("ret") },
         args = olua.array(),
         comment = get_comment(cur),
     }
@@ -625,16 +634,15 @@ function Autoconf:visit_method(cls, cur)
         func.ret.attr:push("@variadic")
     end
 
-    ---@param conf idl.model.type_model
     ---@param is_arg boolean
-    local function init_callback(conf, is_arg)
+    local function init_callback(is_arg)
         if is_arg then
-            conf.tag_usepool = conf.tag_usepool ~= false
+            func.tag_usepool = member.tag_usepool ~= false
         end
-        conf.tag_maker = conf.tag_maker or fn:gsub("^[sS]et", ""):gsub("^[gG]et", "")
-        conf.tag_mode = conf.tag_mode or (is_arg and "replace" or "equal")
-        conf.tag_store = conf.tag_store or (func.is_contructor and -1 or 0)
-        conf.tag_scope = conf.tag_scope or "object"
+        func.tag_maker = member.tag_maker or fn:gsub("^[sS]et", ""):gsub("^[gG]et", "")
+        func.tag_mode = member.tag_mode or (is_arg and "replace" or "equal")
+        func.tag_store = member.tag_store or (func.is_contructor and -1 or 0)
+        func.tag_scope = member.tag_scope or "object"
     end
 
     if func.is_contructor then
@@ -647,7 +655,7 @@ function Autoconf:visit_method(cls, cur)
         func.luafunc = luaname
         func.ret.type = tn
         if is_func_type(result_type) then
-            init_callback(func.ret, false)
+            init_callback(false)
         end
     end
 
@@ -663,12 +671,15 @@ function Autoconf:visit_method(cls, cur)
     for i, arg in ipairs(arguments) do
         local tn = typename(arg.type, cls.conf.template_types, nil, typefrom)
         local argn = "arg" .. i
-        local arg_type = annotations:get(argn) ---@type idl.model.type_model
-        arg_type.type = tn
-        arg_type.name = arg.name
+        ---@type idl.model.type_model
+        local arg_type = {
+            type = tn,
+            name = arg.name,
+            attr = attrs:get(argn) or olua.array()
+        }
         func.args:push(arg_type)
         if is_func_type(arg.type) then
-            init_callback(arg_type, true)
+            init_callback(true)
         end
         if has_default_value(arg) then
             has_optional = true
@@ -745,33 +756,32 @@ function Autoconf:visit_var(cls, cur)
 
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
     local tn = typename(cur.type, cls.conf.template_types, nil, typefrom)
-    local decltype = olua.decltype(tn, nil, true)
+    local ret_tn = olua.decltype(tn, nil, true)
+    local arg_tn = olua.decltype(tn, nil, false)
 
     local fn = cur.name
-    local annotations = parse_attr_from_annotate(cls, cur, true)
+    local attrs = parse_attr_from_annotate(cls, cur, true)
 
-    ---@type idl.model.func_model
+    ---@type idl.model.func_desc
     local getter = {
         cppfunc = fn,
         luafunc = cls.conf.luaname(fn, "var"),
-        prototype = olua.format("${decltype}${fn}()"),
+        prototype = olua.format("${ret_tn}${fn}()"),
         display_name = olua.format("${fn}()"),
-        ret = annotations:get("ret"),
+        ret = { type = tn, attr = attrs:get("ret") },
         args = olua.array(),
         is_variable = true,
         is_exposed = false,
         max_args = 0,
     }
-    getter.ret.type = tn
-    getter.ret.name = nil
 
-    ---@type idl.model.func_model
+    ---@type idl.model.func_desc
     local setter = {
         cppfunc = fn,
         luafunc = cls.conf.luaname(fn, "var"),
-        prototype = olua.format("void ${fn}(${decltype})"),
-        display_name = olua.format("${fn}(${decltype})"),
-        ret = { attr = olua.array(), type = "void" },
+        prototype = olua.format("void ${fn}(${arg_tn})"),
+        display_name = olua.format("${fn}(${arg_tn})"),
+        ret = { type = "void", attr = olua.array() },
         args = olua.array(),
         is_variable = true,
         is_exposed = false,
@@ -779,21 +789,23 @@ function Autoconf:visit_var(cls, cur)
     }
 
     ---@type idl.model.type_model
-    local arg1 = setter.args:push(annotations:get("arg1"))
-    arg1.type = tn
-    arg1.name = fn
+    local arg1 = setter.args:push({
+        type = tn,
+        name = fn,
+        attr = attrs:get("arg1"),
+    })
 
     if is_func_type(cur.type) then
-        getter.ret.tag_maker = getter.ret.tag_maker or fn
-        getter.ret.tag_mode = getter.ret.tag_mode or "equal"
-        getter.ret.tag_store = 0
-        getter.ret.tag_scope = "object"
-        getter.ret.tag_usepool = getter.ret.tag_usepool ~= false
-        arg1.tag_maker = arg1.tag_maker or fn
-        arg1.tag_mode = arg1.tag_mode or "replace"
-        arg1.tag_store = 0
-        arg1.tag_scope = "object"
-        arg1.tag_usepool = arg1.tag_usepool ~= false
+        getter.tag_maker = getter.tag_maker or fn
+        getter.tag_mode = getter.tag_mode or "equal"
+        getter.tag_store = 0
+        getter.tag_scope = "object"
+        getter.tag_usepool = getter.tag_usepool ~= false
+        setter.tag_maker = setter.tag_maker or fn
+        setter.tag_mode = setter.tag_mode or "replace"
+        setter.tag_store = 0
+        setter.tag_scope = "object"
+        setter.tag_usepool = setter.tag_usepool ~= false
         arg1.attr:push("@nullable")
     end
 
@@ -1659,7 +1671,7 @@ local function copy_super_funcs()
         super.funcs:foreach(function (arr)
             ---@cast arr array
             arr:foreach(function (func)
-                ---@cast func idl.model.func_model
+                ---@cast func idl.model.func_desc
                 if func.is_contructor
                     or func.cppfunc == "__gc"
                     or cls.conf.excludes:has(func.display_name)
@@ -1742,7 +1754,7 @@ local function find_as()
             local ascls_arr = ascls_map:values()
             if #ascls_arr > 0 then
                 ascls_arr:sort()
-                ---@type idl.model.func_model
+                ---@type idl.model.func_desc
                 local as_func = {
                     cppfunc = "as",
                     luafunc = "as",
@@ -1789,7 +1801,7 @@ local function merge_cls_extends(module, cls)
             ---@cast extfuncs array
             for _, func in ipairs(extfuncs) do
                 olua.use(extcls)
-                ---@cast func idl.model.func_model
+                ---@cast func idl.model.func_desc
                 if not func.is_static then
                     olua.error([[
                         extend only support static function:
@@ -1808,7 +1820,7 @@ end
 ---@param cls idl.model.class_desc
 local function gen_cls_func_pack(cls)
     ---@param arr array
-    ---@param func idl.model.func_model
+    ---@param func idl.model.func_desc
     local function gen_pack_overload(arr, func)
         if func.body then
             return
@@ -1854,7 +1866,7 @@ end
 
 ---@param cls idl.model.class_desc
 local function parse_cls_props(cls)
-    ---@param func idl.model.func_model
+    ---@param func idl.model.func_desc
     ---@return string | nil
     local function parse_prop_name(func)
         if (func.cppfunc:find("^[gG]et") or func.cppfunc:find("^[iI]s"))
@@ -1897,13 +1909,13 @@ local function parse_cls_props(cls)
         local name = parse_prop_name(arr[1])
         if name then
             local setfunc
-            ---@type idl.model.func_model
+            ---@type idl.model.func_desc
             local getfunc = arr[1]
             local setname = "^set_*" .. name:lower() .. "$"
             local lessone, moreone
             for set_k, set_arr in pairs(cls.funcs) do
                 if #set_arr == 1 and set_k:lower():find(setname) then
-                    ---@type idl.model.func_model
+                    ---@type idl.model.func_desc
                     setfunc = set_arr[1]
                     --[[
                         void setName(n)
@@ -1960,7 +1972,7 @@ local function write_new_module(module)
         cls.funcs:foreach(function (arr, key)
             ---@cast arr array
             arr:foreach(function (func)
-                ---@cast func idl.model.func_model
+                ---@cast func idl.model.func_desc
                 local desc = cls.conf.members:get(key) or cls.conf.members:get(func.prototype)
                 if desc then
                     func.macro = desc.macro

@@ -9,7 +9,7 @@ headers [[
 #include "olua-custom.h"
 ]]
 
-excludetype "example::ExcludeType"
+exclude_type "example::ExcludeType"
 
 import "../common/lua-object.lua"
 
@@ -23,8 +23,7 @@ typeconf "example::Type"
 typeconf "example::Point"
     .packable "true"
 typeconf "example::Hello"
-    .func "convertPoint"
-        .annotate "arg1" .attr "@pack"
+    .func "convertPoint" .arg1 "@pack"
 typeconf "example::Const"
 typeconf "example::SharedHello"
 typeconf "example::NoGC"

@@ -778,7 +778,7 @@ function olua.export(path)
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
-                ---@cast func idl.model.func_model
+                ---@cast func idl.model.func_desc
                 if func.body then
                     func.funcdesc = ""
                     return
