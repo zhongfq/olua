@@ -599,6 +599,7 @@ function Autoconf:visit_method(cls, cur)
     local result_type = cur.resultType
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
     local attrs = parse_attr_from_annotate(cls, cur)
+    local has_init_callback = false
 
     ---@type idl.model.member_desc
     local member = cls.conf.members:get(display_name) or cls.conf.members:get(fn)
@@ -616,11 +617,6 @@ function Autoconf:visit_method(cls, cur)
         ret = { type = "void", attr = attrs:get("ret") },
         args = olua.array(),
         comment = get_comment(cur),
-        tag_maker = member.tag_maker,
-        tag_mode = member.tag_mode,
-        tag_store = member.tag_store,
-        tag_scope = member.tag_scope,
-        tag_usepool = member.tag_usepool
     }
 
     if cur.isCXXMethodStatic or
@@ -648,6 +644,7 @@ function Autoconf:visit_method(cls, cur)
         func.tag_mode = member.tag_mode or (is_arg and "replace" or "equal")
         func.tag_store = member.tag_store or (func.is_contructor and -1 or 0)
         func.tag_scope = member.tag_scope or "object"
+        has_init_callback = true
     end
 
     if func.is_contructor then
@@ -693,6 +690,10 @@ function Autoconf:visit_method(cls, cur)
             min_args = min_args + 1
             assert(not has_optional, cls.cppcls .. "::" .. display_name)
         end
+    end
+
+    if not has_init_callback and (member.tag_maker or member.tag_mode or member.tag_store or member.tag_scope) then
+        init_callback(false)
     end
 
     olua.gen_func_prototype(cls, func)
