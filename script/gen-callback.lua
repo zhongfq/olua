@@ -79,13 +79,16 @@ local function gen_ret_callback(cls, fi)
     ]]), nil
 end
 
-function olua.gen_ret_callback(cls, fi, codeset)
-    codeset.callback = gen_ret_callback(cls, fi)
-end
-
-function olua.gen_arg_callback(cls, fi, arg, argn, codeset)
-    if fi.tag_mode == "equal" or fi.tag_mode == "startwith" then
+function olua.gen_callback(cls, fi, arg, argn, codeset)
+    if olua.is_func_type(fi.ret.type) then
+        codeset.callback = gen_ret_callback(cls, fi)
+        return
+    elseif fi.tag_mode == "equal"
+        or fi.tag_mode == "startwith"
+    then
         codeset.callback = gen_remove_callback(cls, fi)
+        return
+    elseif not arg then
         return
     end
 

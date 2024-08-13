@@ -344,9 +344,6 @@ local function gen_func_args(cls, fi, codeset)
         skip_first_arg = true
     end
 
-    local callback_arg
-    local callback_arg_i
-
     for i, arg in ipairs(fi.args) do
         if skip_first_arg then
             skip_first_arg = false
@@ -355,8 +352,6 @@ local function gen_func_args(cls, fi, codeset)
 
         if olua.is_func_type(arg.type) then
             olua.assert(not callback_arg, "only support one callback arg")
-            callback_arg = arg
-            callback_arg_i = i
         end
 
         local argname = "arg" .. i
@@ -377,19 +372,12 @@ local function gen_func_args(cls, fi, codeset)
         ::continue::
     end
 
-    if callback_arg then
-        olua.gen_arg_callback(cls, fi, callback_arg, callback_arg_i, codeset)
-    end
-
     if fi.ret.attr.variadic then
         codeset.caller_args:push("nullptr")
     end
 end
 
 local function gen_func_ret(cls, fi, codeset)
-    if olua.is_func_type(fi.ret.type) then
-        olua.gen_ret_callback(cls, fi, codeset)
-    end
     if fi.ret.type.cppcls ~= "void" then
         local decltype = olua.decltype(fi.ret.type, nil, true)
         if olua.has_cast_flag(fi.ret.type) then
@@ -427,6 +415,7 @@ local function gen_one_func(cls, fi, write, funcidx)
     local cppfunc = fi.cppfunc
     local args_begin = not fi.is_variable and "(" or (fi.ret.type.cppcls ~= "void" and "" or " = ")
     local args_end = not fi.is_variable and ")" or ""
+    local cb_arg, cb_argn
     funcidx = funcidx or ""
 
     ---@class GenFuncCodeSet
@@ -472,6 +461,18 @@ local function gen_one_func(cls, fi, write, funcidx)
 
     gen_func_args(cls, fi, codeset)
     gen_func_ret(cls, fi, codeset)
+
+    for i, arg in ipairs(fi.args) do
+        if olua.is_func_type(arg.type, cls) then
+            olua.assert(not cb_arg, "not support multi callback")
+            cb_arg = arg
+            cb_argn = i
+        end
+    end
+
+    if fi.tag_mode then
+        olua.gen_callback(cls, fi, cb_arg, cb_argn, codeset)
+    end
 
     if #codeset.insert_before > 0 then
         table.insert(codeset.insert_before, 1, "// insert code before call")
