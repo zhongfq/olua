@@ -1166,6 +1166,14 @@ function olua.lua_stringify(data, options)
     local lua_array_stringify
     local lua_object_stringify
 
+    local keywords = {
+        ["end"] = true,
+        ["do"] = true,
+        ["repeat"] = true,
+        ["local"] = true,
+        ["function"] = true,
+    }
+
     local stacks = olua.array("->")
     local indent = (options and options.indent) or 4
     local marshal = (options and options.marshal) and (options.marshal .. " ") or ""
@@ -1264,7 +1272,7 @@ function olua.lua_stringify(data, options)
             stacks:push(k)
             if type(k) ~= "string" then
                 k_str = olua.format("[${k}]")
-            elseif string.find(k, "[^%w_]") then
+            elseif string.find(k, "[^%w_]") or string.find(k, "^%d") or keywords[k] then
                 k_str = olua.format('["${k}"]')
             else
                 k_str = olua.format("${k}")

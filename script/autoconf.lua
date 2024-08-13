@@ -485,8 +485,8 @@ local function parse_attr_from_annotate(cls, cur, isvar)
 
     parse_and_merge_attr(cur, isvar and "field" or "ret")
     if isvar then
-        attrs:set("ret", olua.clone(attrs:get("field")))
-        attrs:set("arg1", olua.clone(attrs:get("field")))
+        attrs:set("ret", olua.clone(attrs:get("field") or olua.array()))
+        attrs:set("arg1", olua.clone(attrs:get("field") or olua.array()))
     else
         for i, arg in ipairs(cur.arguments) do
             parse_and_merge_attr(arg, "arg" .. i)
@@ -1898,7 +1898,7 @@ local function parse_cls_props(cls)
     end
 
     cls.conf.props:foreach(function (value, key)
-        cls.props[key] = value
+        cls.props:set(key, value)
     end)
 
     for _, arr in pairs(cls.funcs) do
@@ -1930,6 +1930,9 @@ local function parse_cls_props(cls)
                 end
             end
             if lessone or not moreone then
+                if cls.props:get(name) then
+                    print("###", getfunc.prototype, setfunc and setfunc.prototype or nil)
+                end
                 cls.props[name] = {
                     name = name,
                     get = getfunc.prototype,

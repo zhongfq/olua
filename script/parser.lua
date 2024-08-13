@@ -755,6 +755,12 @@ function olua.export(path)
                     end
                 end
             end
+            if prop.get and type(prop.get) ~= "table" then
+                olua.error("get function not found: ${cls.cppcls} => ${prop.get}")
+            end
+            if prop.set and type(prop.set) ~= "table" then
+                olua.error("set function not found: ${cls.cppcls} => ${prop.set}")
+            end
         end)
 
         olua.make_ordered_map(cls.vars):foreach(function (var)
