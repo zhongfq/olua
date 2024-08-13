@@ -616,6 +616,11 @@ function Autoconf:visit_method(cls, cur)
         ret = { type = "void", attr = attrs:get("ret") },
         args = olua.array(),
         comment = get_comment(cur),
+        tag_maker = member.tag_maker,
+        tag_mode = member.tag_mode,
+        tag_store = member.tag_store,
+        tag_scope = member.tag_scope,
+        tag_usepool = member.tag_usepool
     }
 
     if cur.isCXXMethodStatic or
@@ -1930,9 +1935,6 @@ local function parse_cls_props(cls)
                 end
             end
             if lessone or not moreone then
-                if cls.props:get(name) then
-                    print("###", getfunc.prototype, setfunc and setfunc.prototype or nil)
-                end
                 cls.props[name] = {
                     name = name,
                     get = getfunc.prototype,
