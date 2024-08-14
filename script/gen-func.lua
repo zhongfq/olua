@@ -350,10 +350,6 @@ local function gen_func_args(cls, fi, codeset)
             goto continue
         end
 
-        if olua.is_func_type(arg.type) then
-            olua.assert(not callback_arg, "only support one callback arg")
-        end
-
         local argname = "arg" .. i
         local argn = codeset.idx + 1
         codeset.idx = argn
@@ -372,7 +368,7 @@ local function gen_func_args(cls, fi, codeset)
         ::continue::
     end
 
-    if fi.ret.attr.variadic then
+    if fi.is_variadic then
         codeset.caller_args:push("nullptr")
     end
 end

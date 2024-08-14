@@ -260,7 +260,6 @@ end
 ---@field prototype string
 ---@field comment? string
 ---@field macro? string
----@field display_name? string
 ---@field is_exposed? boolean
 ---@field is_static? boolean
 ---@field is_extended? boolean

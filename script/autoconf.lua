@@ -112,6 +112,9 @@ local function has_type_flag(cls, kind)
     return has_flag(cls.conf.kind or 0, kind)
 end
 
+---@param cppcls string
+---@param flag? integer
+---@return string
 local function raw_typename(cppcls, flag)
     if cppcls == "" then
         return ""
@@ -170,6 +173,11 @@ end
 local typename
 
 ---@param type clang.Type
+---@param template_types? ordered_map
+---@param try_underlying? boolean
+---@param level? integer
+---@param willcheck? string
+---@return string
 local function parse_from_type(type, template_types, try_underlying, level, willcheck)
     local kind = type.kind
     local tn = trim_prefix_colon(type.name)
@@ -251,6 +259,10 @@ local function parse_from_type(type, template_types, try_underlying, level, will
     end
 end
 
+---@param tn string
+---@param underlying string
+---@return string
+---@return boolean
 local function check_alias_typename(tn, underlying)
     -- try pointer version
     local rawptn = raw_typename(tn, KEEP_POINTER)
@@ -298,6 +310,8 @@ local function check_alias_typename(tn, underlying)
     end
 end
 
+---@param type clang.Type
+---@return clang.Type
 local function get_pointee_type(type)
     local kind = type.kind
     if kind == TypeKind.LValueReference
@@ -310,6 +324,11 @@ local function get_pointee_type(type)
     end
 end
 
+---@param type clang.Type
+---@param template_types? ordered_map
+---@param level? integer
+---@param willcheck? string
+---@return string
 function typename(type, template_types, level, willcheck)
     --[[
             tn: const uint32_t *
@@ -362,9 +381,11 @@ function typename(type, template_types, level, willcheck)
     return tn
 end
 
+---@param name string
+---@return boolean
 local function is_excluded_typename(name)
     local rawptn = raw_typename(name, KEEP_POINTER):match("[^ ]+ *%**$")
-    return exclude_types:has(rawptn) or name:find("%*%*$")
+    return exclude_types:has(rawptn) or name:find("%*%*$") ~= nil
 end
 
 ---@param type clang.Type
@@ -398,6 +419,8 @@ local DEFAULT_ARG_TYPES = {
     [CursorKind.CallExpr] = true,
 }
 
+---@param cur clang.Cursor
+---@return boolean
 local function has_default_value(cur)
     for _, c in ipairs(cur.children) do
         if DEFAULT_ARG_TYPES[c.kind] then
@@ -406,8 +429,11 @@ local function has_default_value(cur)
             return true
         end
     end
+    return false
 end
 
+---@param cur clang.Cursor
+---@return boolean
 local function has_deprecated_attr(cur)
     if OLUA_ENABLE_DEPRECATED then
         return false
@@ -449,24 +475,35 @@ local function is_func_type(tn)
     end
 end
 
+---@param cur clang.Cursor
+local function is_static_func(cur)
+    return cur.isCXXMethodStatic
+        or cur.kind == CursorKind.FunctionDecl
+        or cur.kind == CursorKind.Constructor
+end
+
 ---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
+---@param prototype string
 ---@param isvar? boolean
-local function parse_attr_from_annotate(cls, cur, isvar)
+local function parse_attr_from_annotate(cls, cur, prototype, isvar)
     local fn = cur.name
-    local display_name = cur.displayName
-    local func = cls.conf.members:get(fn) or cls.conf.members:get(display_name)
+    local member = cls.conf.members:get(fn) or cls.conf.members:get(prototype)
 
-    if not func then
+    if not member then
         if isvar then
-            cls.CMD.var(display_name)
+            cls.CMD.var(prototype)
         else
-            cls.CMD.func(display_name)
+            cls.CMD.func(prototype)
         end
-        func = cls.conf.members:get(display_name)
+        member = cls.conf.members:get(prototype)
     end
 
-    local attrs = func.attrs:clone()
+    if not cls.conf.members:has(prototype) then
+        cls.conf.members:set(prototype, member)
+    end
+
+    local attrs = member.attrs:clone()
 
     ---@param node clang.Cursor
     ---@param key string
@@ -591,59 +628,49 @@ end
 
 ---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
-function Autoconf:visit_method(cls, cur)
-    local fn = cur.name
-    local luafunc = fn
-    local display_name = cur.displayName
-    local arguments = cur.arguments
-    local result_type = cur.resultType
+local function parse_func(cls, cur)
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
-    local attrs = parse_attr_from_annotate(cls, cur)
-    local has_init_callback = false
-
-    ---@type idl.model.member_desc
-    local member = cls.conf.members:get(display_name) or cls.conf.members:get(fn)
-    if not member then
-        cls.CMD.func(display_name)
-        member = cls.conf.members:get(display_name)
-    end
-
-    ---@type idl.model.func_desc
     local func = {
-        cppfunc = fn,
+        cppfunc = cur.name,
+        luafunc = cur.name,
         prototype = "",
-        display_name = display_name,
-        ret = { type = "void", attr = attrs:get("ret") },
-        args = olua.array(),
         comment = get_comment(cur),
+        is_static = is_static_func(cur) and true or nil,
+        is_contructor = cur.kind == CursorKind.Constructor and true or nil,
+        ret = {
+            type = typename(cur.resultType, cls.conf.template_types, nil, typefrom),
+            attr = olua.array()
+        },
+        args = olua.array(),
     }
 
-    if cur.isCXXMethodStatic or
-        cur.kind == CursorKind.FunctionDecl or
-        cur.kind == CursorKind.Constructor
-    then
-        func.is_static = true
+    for _, arg in ipairs(cur.arguments) do
+        func.args:push({
+            type = typename(arg.type, cls.conf.template_types, nil, typefrom),
+            name = arg.name,
+            attr = olua.array()
+        })
     end
 
-    if cur.kind == CursorKind.Constructor then
-        func.is_contructor = true
-    end
+    func.prototype = olua.gen_func_prototype(cls, func)
+
+    return func
+end
+
+---@param cls idl.model.class_desc
+---@param cur clang.Cursor
+function Autoconf:visit_method(cls, cur)
+    local func = parse_func(cls, cur)
+    local attrs = parse_attr_from_annotate(cls, cur, func.prototype)
+    ---@type idl.model.member_desc
+    local member = cls.conf.members:get(func.prototype)
+    local callback_type = nil
+
+    func.ret.attr = attrs:get("ret")
 
     if cur.isVariadic then
         func.is_variadic = true
         func.ret.attr:push("@variadic")
-    end
-
-    ---@param is_arg boolean
-    local function init_callback(is_arg)
-        if is_arg then
-            func.tag_usepool = member.tag_usepool ~= false
-        end
-        func.tag_maker = member.tag_maker or fn:gsub("^[sS]et", ""):gsub("^[gG]et", "")
-        func.tag_mode = member.tag_mode or (is_arg and "replace" or "equal")
-        func.tag_store = member.tag_store or (func.is_contructor and -1 or 0)
-        func.tag_scope = member.tag_scope or "object"
-        has_init_callback = true
     end
 
     if func.is_contructor then
@@ -651,57 +678,50 @@ function Autoconf:visit_method(cls, cur)
         func.luafunc = "new"
         func.cppfunc = "new"
     else
-        local tn = typename(result_type, cls.conf.template_types, nil, typefrom)
-        luafunc = cls.conf.luaname(fn, "func")
-        if luafunc ~= fn then
-            func.luafunc = luafunc
-        end
-        func.ret.type = tn
-        if is_func_type(result_type) then
-            init_callback(false)
+        func.luafunc = cls.conf.luaname(func.cppfunc, "func")
+        if is_func_type(cur.resultType) then
+            callback_type = "ret"
         end
     end
 
     local name_from_attr = olua.join(func.ret.attr, " "):match("@name%(([^)]+)%)")
     if name_from_attr then
-        luafunc = name_from_attr
-        if luafunc ~= fn then
-            func.luafunc = luafunc
-        end
+        func.luafunc = name_from_attr
     end
 
     local has_optional = false
     local min_args = 0
-    local num_args = #arguments
-    for i, arg in ipairs(arguments) do
-        local tn = typename(arg.type, cls.conf.template_types, nil, typefrom)
-        local argn = "arg" .. i
+    local num_args = 0
+    for i, arg in ipairs(cur.arguments) do
         ---@type idl.model.type_model
-        local arg_type = {
-            type = tn,
-            name = arg.name,
-            attr = attrs:get(argn) or olua.array()
-        }
-        func.args:push(arg_type)
+        local arg_type = func.args[i]
+        local argn = "arg" .. i
+        arg_type.attr = attrs:get(argn) or olua.array()
+        num_args = i
         if is_func_type(arg.type) then
-            init_callback(true)
+            callback_type = "arg"
         end
         if has_default_value(arg) then
             has_optional = true
             arg_type.attr:push("@optional")
         else
             min_args = min_args + 1
-            assert(not has_optional, cls.cppcls .. "::" .. display_name)
+            assert(not has_optional, cls.cppcls .. "::" .. func.prototype)
         end
     end
 
-    if not has_init_callback and (member.tag_maker or member.tag_mode or member.tag_store or member.tag_scope) then
-        init_callback(false)
+    if callback_type or (member.tag_maker or member.tag_mode or member.tag_store or member.tag_scope) then
+        if callback_type == "arg" then
+            func.tag_usepool = member.tag_usepool ~= false
+        end
+        func.tag_maker = member.tag_maker or cur.name:gsub("^[sS]et", ""):gsub("^[gG]et", "")
+        func.tag_mode = member.tag_mode or (callback_type == "arg" and "replace" or "equal")
+        func.tag_store = member.tag_store or (func.is_contructor and -1 or 0)
+        func.tag_scope = member.tag_scope or "object"
     end
 
-    olua.gen_func_prototype(cls, func)
-    cls.conf.excludes:replace(display_name, true)
     cls.conf.excludes:replace(func.prototype, true)
+    cls.conf.excludes:replace(cur.displayName, true)
 
     local funcs = cls.funcs:get(func.cppfunc)
     if not funcs then
@@ -720,10 +740,10 @@ function Autoconf:visit_method(cls, cur)
             ${what}ter function has wrong argument:
                 prototype: ${decl}
         ]])
-        local prop = cls.props:get(luafunc)
+        local prop = cls.props:get(func.luafunc)
         if not prop then
-            prop = { name = luafunc }
-            cls.props:set(luafunc, prop)
+            prop = { name = func.luafunc }
+            cls.props:set(func.luafunc, prop)
         end
         prop[what] = func.prototype
         func.is_exposed = false
@@ -765,7 +785,7 @@ function Autoconf:visit_var(cls, cur)
     local arg_tn = olua.decltype(tn, nil, false)
 
     local fn = cur.name
-    local attrs = parse_attr_from_annotate(cls, cur, true)
+    local attrs = parse_attr_from_annotate(cls, cur, cur.name, true)
 
     local luafunc = cls.conf.luaname(fn, "var")
 
@@ -774,7 +794,6 @@ function Autoconf:visit_var(cls, cur)
         cppfunc = fn,
         luafunc = fn ~= luafunc and luafunc or nil,
         prototype = olua.format("${ret_tn}${fn}()"),
-        display_name = olua.format("${fn}()"),
         ret = { type = tn, attr = attrs:get("ret") },
         args = olua.array(),
         is_variable = true,
@@ -786,7 +805,6 @@ function Autoconf:visit_var(cls, cur)
         cppfunc = fn,
         luafunc = fn ~= luafunc and luafunc or nil,
         prototype = olua.format("void ${fn}(${arg_tn})"),
-        display_name = olua.format("${fn}(${arg_tn})"),
         ret = { type = "void", attr = olua.array() },
         args = olua.array(),
         is_variable = true,
@@ -1416,11 +1434,11 @@ local function copy_super_funcs()
                 ---@cast func idl.model.func_desc
                 if func.is_contructor
                     or func.cppfunc == "__gc"
-                    or cls.conf.excludes:has(func.display_name)
+                    or cls.conf.excludes:has(func.prototype)
                 then
                     return
                 end
-                cls.conf.excludes:set(func.display_name, true)
+                cls.conf.excludes:set(func.prototype, true)
                 local funcs = cls.funcs:get(func.cppfunc)
                 if not funcs then
                     funcs = olua.array()
@@ -1500,7 +1518,6 @@ local function find_as()
                 local as_func = {
                     cppfunc = "as",
                     prototype = "void *as(const char *cls)",
-                    display_name = "as(const char *cls)",
                     ret = {
                         type = "void *",
                         attr = olua.array(),
@@ -1763,7 +1780,6 @@ local function write_module(module)
                     func.insert_cbefore = desc.insert_cbefore
                     func.insert_cafter = desc.insert_cafter
                 end
-                func.display_name = nil
             end)
         end)
 
@@ -1884,6 +1900,7 @@ local function write_typedefs()
     end
 
     alias_types:foreach(function (cppcls, alias)
+        ---@cast alias string
         if visited_types:get(raw_typename(alias)) then
             return
         end
