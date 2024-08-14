@@ -921,31 +921,6 @@ function olua.format(expr, indent)
     return expr
 end
 
--- TODO: rm
-function olua.command_proxy(cmd, parent)
-    local proxy = {}
-    assert(cmd.__proxy == nil, "already add command proxy")
-    cmd.__proxy = proxy
-    function proxy.__index(_, key)
-        local f = cmd[key]
-        if f then
-            return function (...)
-                return f(...) or proxy
-            end
-        elseif parent and parent.__proxy then
-            return parent.__proxy[key]
-        else
-            error(string.format("command '%s' not found", key))
-        end
-    end
-
-    function proxy.__newindex(_, key, value)
-        error(string.format("create command '%s' is not allowed", key))
-    end
-
-    return setmetatable(proxy, proxy)
-end
-
 ---@param t any
 ---@param name string
 ---@return boolean

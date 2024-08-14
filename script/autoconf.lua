@@ -593,8 +593,8 @@ end
 ---@param cur clang.Cursor
 function Autoconf:visit_method(cls, cur)
     local fn = cur.name
+    local luafunc = fn
     local display_name = cur.displayName
-    local luaname = fn
     local arguments = cur.arguments
     local result_type = cur.resultType
     local typefrom = olua.format("${cls.cppcls} -> ${cur.prettyPrinted}")
@@ -611,7 +611,6 @@ function Autoconf:visit_method(cls, cur)
     ---@type idl.model.func_desc
     local func = {
         cppfunc = fn,
-        luafunc = fn,
         prototype = "",
         display_name = display_name,
         ret = { type = "void", attr = attrs:get("ret") },
@@ -653,8 +652,10 @@ function Autoconf:visit_method(cls, cur)
         func.cppfunc = "new"
     else
         local tn = typename(result_type, cls.conf.template_types, nil, typefrom)
-        luaname = cls.conf.luaname(fn, "func")
-        func.luafunc = luaname
+        luafunc = cls.conf.luaname(fn, "func")
+        if luafunc ~= fn then
+            func.luafunc = luafunc
+        end
         func.ret.type = tn
         if is_func_type(result_type) then
             init_callback(false)
@@ -663,8 +664,10 @@ function Autoconf:visit_method(cls, cur)
 
     local name_from_attr = olua.join(func.ret.attr, " "):match("@name%(([^)]+)%)")
     if name_from_attr then
-        luaname = name_from_attr
-        func.luafunc = luaname
+        luafunc = name_from_attr
+        if luafunc ~= fn then
+            func.luafunc = luafunc
+        end
     end
 
     local has_optional = false
@@ -708,8 +711,6 @@ function Autoconf:visit_method(cls, cur)
 
     funcs:push(func)
 
-    func.max_args = num_args
-
     local ret_attr = func.ret.attr:find(function (value)
         return value:find("@getter") or value:find("@setter")
     end)
@@ -719,10 +720,10 @@ function Autoconf:visit_method(cls, cur)
             ${what}ter function has wrong argument:
                 prototype: ${decl}
         ]])
-        local prop = cls.props:get(luaname)
+        local prop = cls.props:get(luafunc)
         if not prop then
-            prop = { name = luaname }
-            cls.props:set(luaname, prop)
+            prop = { name = luafunc }
+            cls.props:set(luafunc, prop)
         end
         prop[what] = func.prototype
         func.is_exposed = false
@@ -735,13 +736,11 @@ function Autoconf:visit_method(cls, cur)
                 variadic_func.args:push(arg)
             end
             variadic_func.prototype = olua.gen_func_prototype(cls, variadic_func)
-            variadic_func.max_args = #variadic_func.args
             funcs:push(variadic_func)
         end
     elseif has_optional then
         for n = min_args, #func.args - 1 do
             local overload_func = olua.clone(func)
-            overload_func.max_args = n
             overload_func.args = overload_func.args:slice(1, n)
             overload_func.prototype = olua.gen_func_prototype(cls, overload_func)
             funcs:push(overload_func)
@@ -768,30 +767,30 @@ function Autoconf:visit_var(cls, cur)
     local fn = cur.name
     local attrs = parse_attr_from_annotate(cls, cur, true)
 
+    local luafunc = cls.conf.luaname(fn, "var")
+
     ---@type idl.model.func_desc
     local getter = {
         cppfunc = fn,
-        luafunc = cls.conf.luaname(fn, "var"),
+        luafunc = fn ~= luafunc and luafunc or nil,
         prototype = olua.format("${ret_tn}${fn}()"),
         display_name = olua.format("${fn}()"),
         ret = { type = tn, attr = attrs:get("ret") },
         args = olua.array(),
         is_variable = true,
         is_exposed = false,
-        max_args = 0,
     }
 
     ---@type idl.model.func_desc
     local setter = {
         cppfunc = fn,
-        luafunc = cls.conf.luaname(fn, "var"),
+        luafunc = fn ~= luafunc and luafunc or nil,
         prototype = olua.format("void ${fn}(${arg_tn})"),
         display_name = olua.format("${fn}(${arg_tn})"),
         ret = { type = "void", attr = olua.array() },
         args = olua.array(),
         is_variable = true,
         is_exposed = false,
-        max_args = 1,
     }
 
     ---@type idl.model.type_model
@@ -830,14 +829,14 @@ function Autoconf:visit_var(cls, cur)
         getter.ret.attr:push("@readonly")
         funcs:push(getter)
         cls.vars:set(fn, {
-            name = getter.luafunc,
+            name = getter.luafunc or fn,
             get = getter.prototype,
         })
     else
         funcs:push(getter)
         funcs:push(setter)
         cls.vars:set(fn, {
-            name = getter.luafunc,
+            name = getter.luafunc or fn,
             get = getter.prototype,
             set = setter.prototype,
         })
@@ -1500,7 +1499,6 @@ local function find_as()
                 ---@type idl.model.func_desc
                 local as_func = {
                     cppfunc = "as",
-                    luafunc = "as",
                     prototype = "void *as(const char *cls)",
                     display_name = "as(const char *cls)",
                     ret = {
@@ -1508,7 +1506,6 @@ local function find_as()
                         attr = olua.array(),
                     },
                     args = olua.array(),
-                    max_args = 1,
                 }
                 local ascls_str = ascls_arr:join(" ")
                 as_func.ret.attr:pushf("@as(${ascls_str})")
@@ -1561,6 +1558,48 @@ local function merge_cls_extends(module, cls)
 end
 
 ---@param cls idl.model.class_desc
+local function has_method(cls, fn)
+    if cls.funcs:get(fn) or cls.conf.members:get(fn) then
+        return true
+    end
+    if cls.supercls then
+        return has_method(visited_types:get(cls.supercls), fn)
+    end
+end
+
+---@param cls idl.model.class_desc
+local function gen_cls_meta_func(cls)
+    if has_type_flag(cls, kFLAG_FUNC) then
+        cls.CMD.func "__call"
+            .body(olua.format([[
+            {
+                luaL_checktype(L, -1, LUA_TFUNCTION);
+                olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.conf.luacls}");
+                return 1;
+            }]]))
+    elseif not has_type_flag(cls, kFLAG_ENUM) and cls.options.reg_luatype then
+        if not cls.options.disallow_gc and not has_method(cls, "__gc") then
+            cls.CMD.func "__gc"
+                .body(olua.format([[
+                {
+                    auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.conf.luacls}");
+                    olua_postgc(L, self);
+                    return 0;
+                }]]))
+        end
+        if not has_method(cls, "__olua_move") then
+            cls.CMD.func "__olua_move"
+                .body(olua.format([[
+                {
+                    auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.conf.luacls}");
+                    olua_push_object(L, self, "${cls.conf.luacls}");
+                    return 1;
+                }]]))
+        end
+    end
+end
+
+---@param cls idl.model.class_desc
 local function gen_cls_func_pack(cls)
     ---@param arr array
     ---@param func idl.model.func_desc
@@ -1589,7 +1628,6 @@ local function gen_cls_func_pack(cls)
         end
 
         local func_pack = olua.clone(func)
-        func_pack.max_args = func_pack.max_args + packvars - 1
         if raw_typename(func_pack.ret.type) == arg_tn then
             if not func_pack.ret.attr:contain("@unpack") then
                 func_pack.ret.attr:push("@unpack")
@@ -1686,7 +1724,7 @@ local function parse_cls_props(cls)
 end
 
 ---@param module idl.model.module_desc
-local function write_new_module(module)
+local function write_module(module)
     local m = {
         name = module.name,
         api_dir = module.api_dir,
@@ -1709,6 +1747,7 @@ local function write_new_module(module)
         m.class_types:push(cls)
 
         merge_cls_extends(module, cls)
+        gen_cls_meta_func(cls)
         gen_cls_func_pack(cls)
         parse_cls_props(cls)
 
@@ -1733,7 +1772,6 @@ local function write_new_module(module)
                 cls.funcs[key] = {
                     {
                         cppfunc = key,
-                        luafunc = key,
                         body = value.body,
                     }
                 }
@@ -1907,8 +1945,7 @@ end
 
 local function write_modules()
     for _, m in ipairs(modules) do
-        -- write_module(m)
-        write_new_module(m)
+        write_module(m)
     end
 end
 

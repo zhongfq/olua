@@ -256,7 +256,7 @@ end
 
 ---@class idl.model.func_desc
 ---@field cppfunc string
----@field luafunc string
+---@field luafunc? string
 ---@field prototype string
 ---@field comment? string
 ---@field macro? string
@@ -268,7 +268,6 @@ end
 ---@field is_variadic? boolean
 ---@field ret idl.model.type_model
 ---@field args array # idl.model.type_model[]
----@field max_args? integer
 ---@field body? string
 ---@field insert_before? string
 ---@field insert_after? string

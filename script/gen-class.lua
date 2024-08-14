@@ -2,46 +2,6 @@ local format = olua.format
 local prototypes = {}
 local symbols = {}
 
-local function has_method(cls, fn, check_super)
-    for _, v in ipairs(cls.funcs) do
-        if v[1].luafunc == fn then
-            return true
-        end
-    end
-
-    if cls.supercls and check_super then
-        return has_method(olua.get_class(cls.supercls), fn, check_super)
-    end
-end
-
-local function check_meta_method(cls)
-    if olua.is_func_type(cls) then
-        cls.funcs:set("__call", olua.parse_func(cls, "__call", format([[
-        {
-            luaL_checktype(L, -1, LUA_TFUNCTION);
-            olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.luacls}");
-            return 1;
-        }]])))
-    elseif not olua.is_enum_type(cls) and cls.options.reg_luatype then
-        if not cls.options.disallow_gc and not has_method(cls, "__gc", true) then
-            cls.funcs:set("__gc", olua.parse_func(cls, "__gc", format([[
-            {
-                auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
-                olua_postgc(L, self);
-                return 0;
-            }]])))
-        end
-        if not has_method(cls, "__olua_move", true) then
-            cls.funcs:set("__olua_move", olua.parse_func(cls, "__olua_move", format([[
-            {
-                auto self = (${cls.cppcls} *)olua_toobj(L, 1, "${cls.luacls}");
-                olua_push_object(L, self, "${cls.luacls}");
-                return 1;
-            }]])))
-        end
-    end
-end
-
 local function check_gen_class_func(cls, fis, write)
     if #fis == 0 then
         return
@@ -121,7 +81,7 @@ local function gen_class_open(cls, write)
 
     for _, fis in ipairs(cls.funcs) do
         local cppfunc = fis[1].cppfunc
-        local luafunc = fis[1].luafunc
+        local luafunc = fis[1].luafunc or cppfunc
         if fis[1].is_exposed ~= false then
             local macro = fis[1].macro
             funcs:push(macro)
@@ -273,7 +233,6 @@ local function gen_classes(module, write)
         cls.luacls = olua.luacls(cls.cppcls)
         local macro = cls.macro
         write(macro)
-        check_meta_method(cls)
         gen_class_codeblock(cls, write)
         gen_class_funcs(cls, write)
         gen_class_open(cls, write)

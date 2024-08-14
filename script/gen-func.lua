@@ -566,11 +566,23 @@ local function gen_one_func(cls, fi, write, funcidx)
     end
 end
 
-local function get_func_with_num_args(cls, funcs, num_args)
+local function get_num_args(fi)
+    local count = 0
+    for _, arg in ipairs(fi.args) do
+        if arg.attr.pack then
+            count = count + arg.type.packvars
+        else
+            count = count + 1
+        end
+    end
+    return count
+end
+
+local function get_func_with_num_args(funcs, num_args)
     local arr = {}
     for _, fi in ipairs(funcs) do
         local n = olua.is_oluaret(fi) and (num_args + 1) or num_args
-        if fi.max_args == n then
+        if get_num_args(fi) == n then
             arr[#arr + 1] = fi
         end
     end
@@ -675,13 +687,13 @@ local function gen_multi_func(cls, funcs, write)
     local max_args = 0
 
     for i, fi in ipairs(funcs) do
-        max_args = math.max(max_args, fi.max_args)
+        max_args = math.max(max_args, get_num_args(fi))
         gen_one_func(cls, fi, write, "$" .. fi.index)
         write("")
     end
 
     for i = 0, max_args do
-        local arr = get_func_with_num_args(cls, funcs, i)
+        local arr = get_func_with_num_args(funcs, i)
         if #arr > 0 then
             local test_and_call = gen_test_and_call(cls, arr)
             ifblock:pushf([[
