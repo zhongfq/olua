@@ -740,7 +740,7 @@ function Autoconf:visit_method(cls, cur)
         end
     end
 
-    if callback_type or (member.tag_maker or member.tag_mode or member.tag_store or member.tag_scope) then
+    if callback_type or (member.tag_maker or member.tag_mode) then
         if callback_type == "arg" then
             func.tag_usepool = member.tag_usepool ~= false
         end
@@ -1603,7 +1603,6 @@ local function merge_cls_extends(cls)
                 end
                 func.is_extended = true
                 func.ret.attr:pushf("@extend(${extcls.cppcls})")
-                print(cls.cppcls, extcls.cppcls, func.display_name)
                 cls.CMD.func(func.display_name)
                 funcs:push(func)
             end
@@ -1615,13 +1614,43 @@ end
 local function merge_cls_snippet(cls)
     cls.conf.members:foreach(function (value, key)
         if value.body then
-            cls.funcs[key] = {
+            cls.funcs:set(key, {
                 {
                     cppfunc = key,
                     body = value.body,
                 }
-            }
+            })
         end
+    end)
+    cls.conf.props:foreach(function (value, key)
+        ---@cast value idl.model.prop_desc
+        if value.get:find("{") then
+            local cppfunc = olua.format("get_${key}")
+            local prototype = olua.format("unknown ${cppfunc}()")
+            cls.funcs:set(cppfunc, {
+                {
+                    cppfunc = cppfunc,
+                    prototype = prototype,
+                    body = value.get,
+                    is_exposed = false,
+                }
+            })
+            value.get = prototype
+        end
+        if value.set and value.set:find("{") then
+            local cppfunc = olua.format("set_${key}")
+            local prototype = olua.format("void ${cppfunc}(unknown)")
+            cls.funcs:set(cppfunc, {
+                {
+                    cppfunc = cppfunc,
+                    prototype = prototype,
+                    body = value.set,
+                    is_exposed = false,
+                }
+            })
+            value.set = prototype
+        end
+        cls.props:set(key, value)
     end)
 end
 
@@ -1791,10 +1820,6 @@ local function parse_cls_props(cls)
             end)
         end
     end
-
-    cls.conf.props:foreach(function (value, key)
-        cls.props:set(key, value)
-    end)
 
     for _, arr in pairs(cls.funcs) do
         if not (#arr == 1 and OLUA_AUTO_GEN_PROP) then

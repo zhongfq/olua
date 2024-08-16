@@ -478,8 +478,19 @@ local function typeconf_prop(parent, cls, name)
     ---@field set fun(get:string):idl.typeconf.prop
     local CMD = {}
 
-    add_value_command(CMD, prop, "get")
-    add_value_command(CMD, prop, "set")
+    ---@param get string
+    ---@return idl.typeconf.prop
+    function CMD.get(get)
+        prop.get = olua.trim(get)
+        return CMD
+    end
+
+    ---@param set string
+    ---@return idl.typeconf.prop
+    function CMD.set(set)
+        prop.set = olua.trim(set)
+        return CMD
+    end
 
     ---@type idl.typeconf.prop
     return setmetatable(CMD, { __index = parent })
