@@ -297,6 +297,14 @@ function olua.array(sep, prefix, posfix)
         return value
     end
 
+    ---Push an element at the end of the array, if `value` is not in the array.
+    ---@param value any
+    function array:push_unique(value)
+        if not self:contains(value) then
+            self:push(value)
+        end
+    end
+
     ---Push a formatting string at the end of the array.
     ---@param value string
     ---@param indent? integer
@@ -381,7 +389,7 @@ function olua.array(sep, prefix, posfix)
     ---Check if the array contains the value.
     ---@param value any
     ---@return boolean
-    function array:contain(value)
+    function array:contains(value)
         return self:index_of(value) > 0
     end
 

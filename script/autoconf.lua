@@ -788,6 +788,7 @@ function Autoconf:visit_method(cls, cur)
             variadic_func.prototype = gen_prototype(cls, variadic_func)
             variadic_func.display_name = gen_display_name(cls, variadic_func)
             funcs:push(variadic_func)
+            cls.CMD.func(variadic_func.display_name)
         end
     elseif has_optional then
         for n = min_args, #func.args - 1 do
@@ -796,6 +797,7 @@ function Autoconf:visit_method(cls, cur)
             overload_func.prototype = gen_prototype(cls, overload_func)
             overload_func.display_name = gen_display_name(cls, overload_func)
             funcs:push(overload_func)
+            cls.CMD.func(overload_func.display_name)
         end
     end
 end
@@ -1670,7 +1672,6 @@ local function search_using_func(cls)
         end
     end
     for name, where in pairs(cls.conf.usings) do
-        local arr = olua.array()
         local supercls = cls.supercls
         while supercls and supercls ~= where do
             ---@type idl.model.class_desc
@@ -1680,6 +1681,8 @@ local function search_using_func(cls)
             end
         end
         if supercls then
+            local arr = olua.array()
+            local filter = {}
             search_parent(arr, name, supercls)
             for _, func in ipairs(arr) do
                 ---@cast func idl.model.func_desc
@@ -1689,8 +1692,17 @@ local function search_using_func(cls)
                         funcs = olua.array()
                         cls.funcs:set(func.cppfunc, funcs)
                     end
-                    cls.CMD.func(func.display_name)
+                    func = olua.clone(func)
+                    func.ret.attr:push_unique('@using')
                     funcs:push(func)
+                    cls.CMD.func(func.display_name)
+                end
+                filter[func.display_name] = true
+            end
+            for _, func in ipairs(cls.funcs:get(name)) do
+                ---@cast func idl.model.func_desc
+                if filter[func.display_name] then
+                    func.ret.attr:push_unique('@using')
                 end
             end
         elseif not cls.conf.supers:has(where) then
@@ -1752,7 +1764,7 @@ local function gen_cls_func_pack(cls)
         local pack_arg
         for _, arg in ipairs(func.args) do
             ---@cast arg idl.model.type_model
-            if arg.attr:contain("@pack") then
+            if arg.attr:contains("@pack") then
                 if pack_arg then
                     olua.error("${cls.cppcls}.${func.cppfunc}: only support one pack arg")
                 end
@@ -1771,7 +1783,7 @@ local function gen_cls_func_pack(cls)
 
         local func_pack = olua.clone(func)
         if raw_typename(func_pack.ret.type) == arg_tn then
-            if not func_pack.ret.attr:contain("@unpack") then
+            if not func_pack.ret.attr:contains("@unpack") then
                 func_pack.ret.attr:push("@unpack")
             end
         end
@@ -1885,15 +1897,24 @@ local function trim_cls_func(cls)
 
     cls.funcs:foreach(function (arr, cppfunc)
         local has_new_func = false
+        local super_funcs = olua.array()
         for _, func in ipairs(arr) do
             ---@cast func idl.model.func_desc
-            if func.body or func.cppfunc == "as" or is_new_func(cls.supercls, func) then
+            if func.body or func.cppfunc == "as" then
                 has_new_func = true
-                break
+            elseif is_new_func(cls.supercls, func) then
+                has_new_func = true
+            else
+                super_funcs:push(func)
             end
         end
         if not has_new_func then
             cls.funcs:remove(cppfunc)
+        else
+            for _, func in ipairs(super_funcs) do
+                ---@cast func idl.model.func_desc
+                func.ret.attr:push_unique('@using')
+            end
         end
     end)
 end
