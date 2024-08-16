@@ -1,3 +1,4 @@
+---@type {[string]: idl.parser.typeinfo}
 local typeinfo_map   = {}
 local class_map      = {}
 
@@ -30,6 +31,9 @@ function olua.pretty_typename(tn)
     return tn
 end
 
+---@param cpptype string
+---@return idl.parser.typeinfo|nil
+---@return string
 local function lookup_typeinfo(cpptype)
     local tn = cpptype
     local ti = typeinfo_map[tn]
@@ -102,6 +106,10 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
     return subtis
 end
 
+---@class idl.parser.typeinfo : idl.model.typedef_desc
+---@field flag number
+---@field subtis? idl.parser.typeinfo[]
+
 --- Get typeinfo.
 ---
 ---```c++
@@ -125,8 +133,8 @@ end
 ---@param cls any
 ---@param throwerror any
 ---@param errors any
----@return nil
----@overload fun(cpptype: string, cls: any): any
+---@return idl.parser.typeinfo|nil
+---@overload fun(cpptype: string, cls: any): idl.parser.typeinfo
 function olua.typeinfo(cpptype, cls, throwerror, errors)
     local tn, ti, subtis -- for tn<T, ...>
     local flag = 0
@@ -628,14 +636,16 @@ function olua.conv_func(ti, fn)
     return ti.conv:gsub("[$]+", fn)
 end
 
+---@param typeinfo idl.parser.typeinfo
 function olua.typedef(typeinfo)
     for tn in typeinfo.cppcls:gmatch("[^\n\r;]+") do
         tn = olua.pretty_typename(tn)
         if #tn > 0 then
             local previous = typeinfo_map[tn]
+            ---@type idl.parser.typeinfo
             local ti = setmetatable({}, { __index = typeinfo })
             ti.cppcls = tn
-            olua.assert(ti.replace or not previous, [[
+            olua.assert(ti.override or not previous, [[
                 type info conflict: ${ti.cppcls}
                     previous: from ${previous.from}
                      current: from ${typeinfo.from}

@@ -4981,7 +4981,7 @@ static int _example_Singleton_example_Hello_create(lua_State *L)
 {
     olua_startinvoke(L);
 
-    // @copyfrom(example::Singleton) static example::Hello *create()
+    // static example::Hello *create()
     example::Hello *ret = example::Singleton<example::Hello>::create();
     int num_ret = olua_push_object(L, ret, "example.Hello");
 
@@ -4998,7 +4998,7 @@ static int _example_Singleton_example_Hello_printSingleton(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Singleton<example.Hello>");
 
-    // @copyfrom(example::Singleton) void printSingleton()
+    // void printSingleton()
     self->printSingleton();
 
     olua_endinvoke(L);

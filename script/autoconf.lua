@@ -666,7 +666,7 @@ local function parse_func(cls, cur)
         args = olua.array(),
     }
 
-    setmetatable(func, {__olua_ignore = { display_name = true }})
+    setmetatable(func, { __olua_ignore = { display_name = true } })
 
     for _, arg in ipairs(cur.arguments) do
         func.args:push({
