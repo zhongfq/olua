@@ -258,6 +258,7 @@ end
 ---@field cppfunc string
 ---@field luafunc? string
 ---@field prototype string
+---@field display_name? string
 ---@field comment? string
 ---@field macro? string
 ---@field is_exposed? boolean
@@ -299,11 +300,11 @@ local function typeconf_member(parent, cls, name)
     local CMD = {}
 
     ---@class idl.model.member_desc
-    ---@field body string|nil
+    ---@field body? string
+    ---@field macro? string
     ---@field CMD idl.typeconf.member
     local member = {
         name = name,
-        body = nil,
         attrs = olua.ordered_map(),
         CMD = CMD,
     }
@@ -541,6 +542,8 @@ function typeconf(cppcls)
         conf = conf,
         CMD = CMD,
     }
+
+    setmetatable(cls, {__olua_ignore = { CMD = true, conf = true }})
 
     ---@type 'exclude'|'include'|nil
     local mode = nil

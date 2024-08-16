@@ -158,6 +158,7 @@ function olua.clone(t)
         for k, v in pairs(t) do
             new[k] = olua.clone(v)
         end
+        setmetatable(new, getmetatable(t))
         return new
     end
 end
@@ -596,7 +597,10 @@ function olua.ordered_map(overwritable)
     function ordered_map:foreach(fn)
         local keys = self._keys:slice()
         for _, key in ipairs(keys) do
-            fn(self._map[key], key, self)
+            local value = self._map[key]
+            if value ~= nil then
+                fn(value, key, self)
+            end
         end
     end
 
@@ -1051,7 +1055,12 @@ function olua.json_stringify(data, options)
             end
         end)
         local out = olua.array(",\n")
+        local ignore = olua.get_metafield(value, "__olua_ignore") or {}
         for _, k in ipairs(keys) do
+            if ignore[k] then
+                goto skip_ignore
+            end
+
             local v = value[k]
             local v_str = json_value_stringify(v)
             local type_name = type(v)
@@ -1081,6 +1090,8 @@ function olua.json_stringify(data, options)
                 ]], indent)
             end
             stacks:pop()
+
+            ::skip_ignore::
         end
         return out
     end
@@ -1240,7 +1251,12 @@ function olua.lua_stringify(data, options)
             end
         end)
         local out = olua.array("\n")
+        local ignore = olua.get_metafield(value, "__olua_ignore") or {}
         for _, k in ipairs(keys) do
+            if ignore[k] then
+                goto skip_ignore
+            end
+
             local v = value[k]
             local type_name = type(v)
             local k_str
@@ -1289,6 +1305,8 @@ function olua.lua_stringify(data, options)
                 ]], indent)
             end
             stacks:pop()
+
+            ::skip_ignore::
         end
         return out
     end
@@ -1415,7 +1433,12 @@ function olua.ts_stringify(data, options)
             end
         end)
         local out = olua.array("\n")
+        local ignore = olua.get_metafield(value, "__olua_ignore") or {}
         for _, k in ipairs(keys) do
+            if ignore[k] then
+                goto skip_ignore
+            end
+
             local v = value[k]
             local v_str = ts_value_stringify(v)
             local k_str = k
@@ -1446,6 +1469,8 @@ function olua.ts_stringify(data, options)
                 ]], indent)
             end
             stacks:pop()
+
+            ::skip_ignore::
         end
         return out
     end

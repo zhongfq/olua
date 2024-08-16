@@ -510,22 +510,6 @@ local function gen_func_desc(cls, fi)
     return tostring(exps)
 end
 
-function olua.gen_func_prototype(cls, fi)
-    -- generate function prototype: void func(int, A *, B *)
-    local exps = olua.array("")
-    exps:push(fi.is_static and "static " or nil)
-    exps:push(olua.decltype(fi.ret.type, nil, true))
-    exps:push(fi.cppfunc)
-    exps:push("(")
-    for i, v in ipairs(fi.args) do
-        exps:push(i > 1 and ", " or nil)
-        exps:push(olua.decltype(v.type))
-    end
-    exps:push(")")
-    fi.prototype = tostring(exps)
-    return fi.prototype
-end
-
 function olua.luacls(cppcls)
     local ti = typeinfo_map[cppcls .. " *"] or typeinfo_map[cppcls]
     assert(ti, "type not found: " .. cppcls)
