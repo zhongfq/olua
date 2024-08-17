@@ -726,6 +726,16 @@ function olua.export(path)
                 end)
             end)
         end)
+
+        cls.funcs:sort(function (_, _, func1, func2)
+            local luafunc1 = func1[1].luafunc or func1[1].cppfunc
+            local luafunc2 = func2[1].luafunc or func2[1].cppfunc
+            return tostring(luafunc1) < tostring(luafunc2)
+        end)
+        cls.props:sort(function (a, b) return tostring(a) < tostring(b) end)
+        cls.vars:sort(function (a, b) return tostring(a) < tostring(b) end)
+        cls.enums:sort(function (a, b) return tostring(a) < tostring(b) end)
+        cls.consts:sort(function (a, b) return tostring(a) < tostring(b) end)
     end)
 
     olua.gen_header(m)

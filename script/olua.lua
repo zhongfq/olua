@@ -635,9 +635,15 @@ function olua.ordered_map(overwritable)
     end
 
     ---Sort the ordered map.
-    ---@param fn? fun(a:any, b:any):boolean
+    ---@param fn? fun(k1:string|integer, k2:string|integer, v1:any, v2:any):boolean
     function ordered_map:sort(fn)
-        self._keys:sort(fn)
+        if fn then
+            self._keys:sort(function (a, b)
+                return fn(a, b, self._map[a], self._map[b])
+            end)
+        else
+            self._keys:sort()
+        end
         return self
     end
 

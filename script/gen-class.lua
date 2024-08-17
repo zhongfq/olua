@@ -55,10 +55,6 @@ local function gen_class_funcs(cls, write)
     end
     prototypes[cls.cppcls] = cls_protos
 
-    cls.funcs:sort()
-    cls.props:sort()
-    cls.vars:sort()
-
     for _, fi in ipairs(cls.funcs) do
         check_gen_class_func(cls, fi, write)
     end
@@ -117,7 +113,7 @@ local function gen_class_open(cls, write)
         funcs:push(macro and "#endif" or nil)
     end
 
-    for _, ci in ipairs(cls.consts:sort()) do
+    for _, ci in ipairs(cls.consts) do
         local cast = ""
         if olua.is_pointer_type(ci.type) and not olua.has_pointer_flag(ci.type) then
             cast = "&"
@@ -125,7 +121,7 @@ local function gen_class_open(cls, write)
         funcs:pushf('oluacls_const(L, "${ci.name}", ${cast}${ci.value});')
     end
 
-    for _, ei in ipairs(cls.enums:sort()) do
+    for _, ei in ipairs(cls.enums) do
         funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
