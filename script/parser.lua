@@ -491,6 +491,9 @@ function olua.func_name(funcdecl)
     return str:match("[^ ()]+")
 end
 
+---@param cls any
+---@param fi idl.model.func_desc
+---@return string
 local function gen_func_desc(cls, fi)
     local exps = olua.array("")
     if #fi.ret.attr > 0 then
@@ -498,23 +501,32 @@ local function gen_func_desc(cls, fi)
         exps:push(" ")
     end
     exps:push(fi.is_static and not fi.is_contructor and "static " or nil)
-    if fi.is_contructor then
-        exps:push(cls.cppcls)
-    else
-        exps:push(olua.decltype(fi.ret.type, nil, true))
-        exps:push(fi.cppfunc)
-    end
-    exps:push("(")
-    for i, v in ipairs(fi.args) do
-        exps:push(i > 1 and ", " or nil)
-        if #v.attr > 0 then
-            exps:push(olua.join(v.attr, " "))
-            exps:push(" ")
+    if fi.is_variable then
+        if fi.ret.type == "void" then
+            exps:push(olua.decltype(fi.args[1].type, nil, true))
+        else
+            exps:push(olua.decltype(fi.ret.type, nil, true))
         end
-        exps:push(olua.decltype(v.type, false, true))
-        exps:push(v.name)
+        exps:push(fi.cppfunc)
+    else
+        if fi.is_contructor then
+            exps:push(cls.cppcls)
+        else
+            exps:push(olua.decltype(fi.ret.type, nil, true))
+            exps:push(fi.cppfunc)
+        end
+        exps:push("(")
+        for i, v in ipairs(fi.args) do
+            exps:push(i > 1 and ", " or nil)
+            if #v.attr > 0 then
+                exps:push(olua.join(v.attr, " "))
+                exps:push(" ")
+            end
+            exps:push(olua.decltype(v.type, false, true))
+            exps:push(v.name)
+        end
+        exps:push(")")
     end
-    exps:push(")")
     return tostring(exps)
 end
 
@@ -667,6 +679,13 @@ end
 function olua.export(path)
     local m = dofile(path)
 
+    ---@class idl.parser.class_desc : idl.model.class_desc
+    ---@field luacls string
+
+    ---@class idl.parser.func_desc : idl.model.func_desc
+    ---@field funcdesc string
+    ---@field index integer
+
     olua.make_array(m.class_types):foreach(function (cls)
         class_map[cls.cppcls] = cls
         cls.funcs = olua.make_ordered_map(cls.funcs)
@@ -712,30 +731,20 @@ function olua.export(path)
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
-                ---@cast func idl.model.func_desc
+                ---@cast func idl.parser.func_desc
+                func.index = idx
                 if func.body then
                     func.funcdesc = ""
-                    return
+                else
+                    func.funcdesc = gen_func_desc(cls, func)
+                    func.ret = olua.parse_type(func.ret, cls)
+                    olua.make_array(func.args):foreach(function (arg, idx)
+                        ---@cast arg idl.model.type_model
+                        func.args[idx] = olua.parse_type(arg, cls)
+                    end)
                 end
-                func.index = idx
-                func.funcdesc = gen_func_desc(cls, func)
-                func.ret = olua.parse_type(func.ret, cls)
-                olua.make_array(func.args):foreach(function (arg, idx)
-                    ---@cast arg idl.model.type_model
-                    func.args[idx] = olua.parse_type(arg, cls)
-                end)
             end)
         end)
-
-        cls.funcs:sort(function (_, _, func1, func2)
-            local luafunc1 = func1[1].luafunc or func1[1].cppfunc
-            local luafunc2 = func2[1].luafunc or func2[1].cppfunc
-            return tostring(luafunc1) < tostring(luafunc2)
-        end)
-        cls.props:sort(function (a, b) return tostring(a) < tostring(b) end)
-        cls.vars:sort(function (a, b) return tostring(a) < tostring(b) end)
-        cls.enums:sort(function (a, b) return tostring(a) < tostring(b) end)
-        cls.consts:sort(function (a, b) return tostring(a) < tostring(b) end)
     end)
 
     olua.gen_header(m)

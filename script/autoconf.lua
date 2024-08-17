@@ -488,7 +488,15 @@ end
 ---@param isvar? boolean
 local function parse_attr_from_annotate(cls, cur, display_name, isvar)
     local fn = cur.name
+    ---@type idl.model.member_desc
     local member = cls.conf.members:get(fn) or cls.conf.members:get(display_name)
+
+    if not member then
+        local maincls = cls.conf.maincls
+        if maincls then
+            member = maincls.conf.members:get(fn) or maincls.conf.members:get(display_name)
+        end
+    end
 
     if not member then
         if isvar then
@@ -520,10 +528,10 @@ local function parse_attr_from_annotate(cls, cur, display_name, isvar)
         end
     end
 
-    parse_and_merge_attr(cur, isvar and "field" or "ret")
+    parse_and_merge_attr(cur, isvar and "var" or "ret")
     if isvar then
-        attrs:set("ret", olua.clone(attrs:get("field") or olua.array()))
-        attrs:set("arg1", olua.clone(attrs:get("field") or olua.array()))
+        attrs:set("ret", olua.clone(attrs:get("var") or olua.array()))
+        attrs:set("arg1", olua.clone(attrs:get("var") or olua.array()))
     else
         for i, arg in ipairs(cur.arguments) do
             parse_and_merge_attr(arg, "arg" .. i)
@@ -822,12 +830,15 @@ function Autoconf:visit_var(cls, cur)
     local fn = cur.name
     local attrs = parse_attr_from_annotate(cls, cur, cur.name, true)
 
+    ---@type idl.model.member_desc
+    local member = cls.conf.members:get(cur.name)
+
     local luafunc = cls.conf.luaname(fn, "var")
 
     ---@type idl.model.func_desc
     local getter = {
         cppfunc = fn,
-        luafunc = fn ~= luafunc and luafunc or nil,
+        luafunc = luafunc,
         prototype = olua.format("${ret_tn}${fn}()"),
         display_name = olua.format("${fn}()"),
         ret = { type = tn, attr = attrs:get("ret") },
@@ -839,7 +850,7 @@ function Autoconf:visit_var(cls, cur)
     ---@type idl.model.func_desc
     local setter = {
         cppfunc = fn,
-        luafunc = fn ~= luafunc and luafunc or nil,
+        luafunc = luafunc,
         prototype = olua.format("void ${fn}(${arg_tn})"),
         display_name = olua.format("${fn}(${arg_tn})"),
         ret = { type = "void", attr = olua.array() },
@@ -880,12 +891,15 @@ function Autoconf:visit_var(cls, cur)
         cls.funcs:set(fn, funcs)
     end
 
+    local index = member.index or cls.vars:size()
+
     if cur.type.isConstQualified then
         getter.ret.attr:push("@readonly")
         funcs:push(getter)
         cls.vars:set(fn, {
             name = getter.luafunc or fn,
             get = getter.prototype,
+            index = index,
         })
     else
         funcs:push(getter)
@@ -894,6 +908,7 @@ function Autoconf:visit_var(cls, cur)
             name = getter.luafunc or fn,
             get = getter.prototype,
             set = setter.prototype,
+            index = index,
         })
     end
 
@@ -1865,11 +1880,11 @@ local function parse_cls_props(cls)
                 end
             end
             if lessone or not moreone then
-                cls.props[name] = {
+                cls.props:set(name, {
                     name = name,
                     get = getfunc.prototype,
                     set = setfunc and setfunc.prototype or nil
-                }
+                })
             end
         end
 

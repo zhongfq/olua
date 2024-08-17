@@ -2,40 +2,8 @@ local format = olua.format
 local prototypes = {}
 local symbols = {}
 
-local function check_gen_class_func(cls, fis, write)
-    if #fis == 0 then
-        return
-    end
-
-    local cppfunc = fis[1].cppfunc
-    local fn = format([[_${cls.cppcls#}_${cppfunc}]])
-    if symbols[fn] then
-        return
-    end
-    symbols[fn] = true
-
-    local cls_protos = assert(prototypes[cls.cppcls], cls.cppcls)
-    if cls_protos and getmetatable(cls_protos) then
-        local supermeta = getmetatable(cls_protos).__index
-        for _, f in ipairs(fis) do
-            if not f.is_static
-                and f.prototype
-                and f.cppfunc ~= "as"
-                and rawget(cls_protos, f.prototype)
-                and supermeta[f.prototype]
-                and not f.ret.attr.using
-            then
-                print(format("${cls.cppcls}: super class already export ${f.funcdesc}"))
-            end
-        end
-    end
-    local macro = fis[1].macro
-    write(macro)
-    olua.gen_class_func(cls, fis, write)
-    write(macro and "#endif" or nil)
-    write("")
-end
-
+---@param cls idl.parser.class_desc
+---@param write any
 local function gen_class_funcs(cls, write)
     local cls_protos = {}
 
@@ -55,9 +23,40 @@ local function gen_class_funcs(cls, write)
     end
     prototypes[cls.cppcls] = cls_protos
 
-    for _, fi in ipairs(cls.funcs) do
-        check_gen_class_func(cls, fi, write)
-    end
+    cls.funcs:foreach(function (arr)
+        if #arr == 0 then
+            return
+        end
+
+        ---@type idl.parser.func_desc
+        local func = arr[1]
+    
+        local cppfunc = func.cppfunc
+        local fn = format([[_${cls.cppcls#}_${cppfunc}]])
+        if symbols[fn] then
+            return
+        end
+        symbols[fn] = true
+    
+        if getmetatable(cls_protos) then
+            local supermeta = getmetatable(cls_protos).__index
+            for _, f in ipairs(arr) do
+                if not f.is_static
+                    and f.prototype
+                    and f.cppfunc ~= "as"
+                    and rawget(cls_protos, f.prototype)
+                    and supermeta[f.prototype]
+                    and not f.ret.attr.using
+                then
+                    print(format("${cls.cppcls}: super class already export ${f.funcdesc}"))
+                end
+            end
+        end
+        write(func.macro)
+        olua.gen_class_func(cls, arr, write)
+        write(func.macro and "#endif" or nil)
+        write("")
+    end)
 end
 
 local function gen_class_open(cls, write)
@@ -226,9 +225,23 @@ end
 
 local function gen_classes(module, write)
     for _, cls in ipairs(module.class_types) do
+        ---@cast cls idl.parser.class_desc
         cls.luacls = olua.luacls(cls.cppcls)
         local macro = cls.macro
         write(macro)
+
+        cls.funcs:sort(function (_, _, arr1, arr2)
+            local func1 = arr1[1] ---@type idl.parser.func_desc
+            local func2 = arr2[1] ---@type idl.parser.func_desc
+            local luafunc1 = func1.luafunc or func1.cppfunc
+            local luafunc2 = func2.luafunc or func2.cppfunc
+            return tostring(luafunc1) < tostring(luafunc2)
+        end)
+        cls.props:sort(function (a, b) return tostring(a) < tostring(b) end)
+        cls.vars:sort(function (a, b) return tostring(a) < tostring(b) end)
+        cls.enums:sort(function (a, b) return tostring(a) < tostring(b) end)
+        cls.consts:sort(function (a, b) return tostring(a) < tostring(b) end)
+
         gen_class_codeblock(cls, write)
         gen_class_funcs(cls, write)
         gen_class_open(cls, write)

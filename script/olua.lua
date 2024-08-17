@@ -618,7 +618,7 @@ function olua.ordered_map(overwritable)
         self._map = {}
     end
 
-    ---Return values of the ordered.
+    ---Return values of the ordered map.
     ---@return array
     function ordered_map:values()
         local arr = olua.array()
@@ -628,10 +628,17 @@ function olua.ordered_map(overwritable)
         return arr
     end
 
-    ---Return keys of the ordered.
+    ---Return keys of the ordered map.
     ---@return array
     function ordered_map:keys()
         return self._keys
+    end
+
+
+    ---Return size of the ordered map.
+    ---@return integer
+    function ordered_map:size()
+        return #self._keys
     end
 
     ---Sort the ordered map.

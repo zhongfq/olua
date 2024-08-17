@@ -853,7 +853,9 @@ function olua.gen_pack_source(module, write)
     for _, cls in ipairs(module.class_types) do
         if cls.options.packable and not cls.options.packvars then
             write(cls.macro)
-            cls.vars:sort()
+            cls.vars:sort(function (_, _, a, b)
+                return a.index < b.index
+            end)
             gen_pack_func(cls, write)
             gen_unpack_func(cls, write)
             gen_canpack_func(cls, write)

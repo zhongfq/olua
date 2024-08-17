@@ -26,6 +26,8 @@ local idl = {
 ---|>'"true"'
 ---| '"false"'
 
+---@alias integertype string
+
 local function error_value(key, value, valuetype)
     value = tostring(value)
     olua.error("can't convert '${value}' to ${valuetype} for '${key}'")
@@ -224,7 +226,7 @@ function typedef(cppcls)
     ---@field conv fun(conv:string):idl.typedef
     ---@field luatype fun(luatype:luatype):idl.typedef
     ---@field packable fun(packable:booltype):idl.typedef
-    ---@field packvars fun(packvars:string):idl.typedef
+    ---@field packvars fun(packvars:integertype):idl.typedef
     ---@field smartptr fun(smartptr:booltype):idl.typedef
     ---@field override fun(override:booltype):idl.typedef
     local CMD = {}
@@ -265,6 +267,7 @@ end
 ---@field is_static? boolean
 ---@field is_extended? boolean
 ---@field is_contructor? boolean
+---@field is_variable? boolean
 ---@field is_variadic? boolean
 ---@field ret idl.model.type_model
 ---@field args array # idl.model.type_model[]
@@ -282,9 +285,10 @@ end
 ---@param CMD idl.typeconf.member
 ---@param member idl.model.member_desc
 ---@param name string
-local function add_attr_command(CMD, member, name)
+---@param store_name? string
+local function add_attr_command(CMD, member, name, store_name)
     local attr = olua.array()
-    member.attrs:set(name, attr)
+    member.attrs:set(store_name or name, attr)
 
     CMD[name] = function (str)
         str = checkstring(name, str)
@@ -302,6 +306,7 @@ local function typeconf_member(parent, cls, name)
     ---@class idl.model.member_desc
     ---@field body? string
     ---@field macro? string
+    ---@field index? integer
     ---@field CMD idl.typeconf.member
     local member = {
         name = name,
@@ -333,7 +338,7 @@ local function typeconf_member(parent, cls, name)
     ---* `-1`: Store callback in return value.
     ---* `0`: Store callback in `.classobj` when it is a static function, otherwise store in `self` value.
     ---* `1,2,...N`: Store callback in the `N` argument value.
-    ---@param store string
+    ---@param store integertype
     ---@return idl.typeconf.member
     function CMD.tag_store(store)
         member.tag_store = checkinteger("callback_store", store)
@@ -450,13 +455,15 @@ end
 ---@param name string
 local function typeconf_var(parent, cls, name)
     ---@class idl.typeconf.var : idl.typeconf.member
-    ---@field field fun(field:string):idl.typeconf.var
+    ---@field attr fun(attr:string):idl.typeconf.var
+    ---@field index fun(index:integertype):idl.typeconf.var
     local CMD = typeconf_member(parent, cls, name)
 
     ---@type idl.model.member_desc
     local member = cls.conf.members:get(name)
 
-    add_attr_command(CMD, member, "field")
+    add_attr_command(CMD, member, "attr", "var")
+    add_value_command(CMD, member, "index", checkinteger)
 
     ---@type idl.typeconf.var
     return setmetatable(CMD, { __index = parent })
