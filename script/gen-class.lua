@@ -82,7 +82,7 @@ local function gen_class_open(cls, write)
     for _, fis in ipairs(cls.funcs) do
         local cppfunc = fis[1].cppfunc
         local luafunc = fis[1].luafunc or cppfunc
-        if fis[1].is_exposed ~= false then
+        if fis[1].is_exposed then
             local macro = fis[1].macro
             funcs:push(macro)
             funcs:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')

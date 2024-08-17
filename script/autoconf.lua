@@ -656,6 +656,7 @@ local function parse_func(cls, cur)
         cppfunc = cur.name,
         luafunc = cur.name,
         prototype = "",
+        is_exposed = true,
         comment = get_comment(cur),
         is_static = is_static_func(cur) and true or nil,
         is_contructor = cur.kind == CursorKind.Constructor and true or nil,
@@ -1555,6 +1556,7 @@ local function find_as()
                 ---@type idl.model.func_desc
                 local as_func = {
                     cppfunc = "as",
+                    is_exposed = true,
                     prototype = "void *as(const char *cls)",
                     ret = {
                         type = "void *",
@@ -1620,6 +1622,7 @@ local function merge_cls_snippet(cls)
                 {
                     cppfunc = key,
                     body = value.body,
+                    is_exposed = true,
                 }
             })
         end
@@ -1693,7 +1696,7 @@ local function search_using_func(cls)
                         cls.funcs:set(func.cppfunc, funcs)
                     end
                     func = olua.clone(func)
-                    func.ret.attr:push_unique('@using')
+                    func.ret.attr:push_unique("@using")
                     funcs:push(func)
                     cls.CMD.func(func.display_name)
                 end
@@ -1702,7 +1705,7 @@ local function search_using_func(cls)
             for _, func in ipairs(cls.funcs:get(name)) do
                 ---@cast func idl.model.func_desc
                 if filter[func.display_name] then
-                    func.ret.attr:push_unique('@using')
+                    func.ret.attr:push_unique("@using")
                 end
             end
         elseif not cls.conf.supers:has(where) then
@@ -1807,7 +1810,7 @@ local function parse_cls_props(cls)
         if (func.cppfunc:find("^[gG]et") or func.cppfunc:find("^[iI]s"))
             and func.args
             and (#func.args == 0 or (func.is_extended and #func.args == 1))
-            and func.is_exposed ~= false
+            and func.is_exposed
         then
             -- getABCd isAbc => ABCd Abc
             local name
@@ -1913,7 +1916,7 @@ local function trim_cls_func(cls)
         else
             for _, func in ipairs(super_funcs) do
                 ---@cast func idl.model.func_desc
-                func.ret.attr:push_unique('@using')
+                func.ret.attr:push_unique("@using")
             end
         end
     end)
