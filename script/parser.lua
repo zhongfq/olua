@@ -1,4 +1,4 @@
----@type {[string]: idl.parser.typeinfo}
+---@type {[string]: idl.parser.typedef_desc}
 local typeinfo_map   = {}
 local class_map      = {}
 
@@ -32,7 +32,7 @@ function olua.pretty_typename(tn)
 end
 
 ---@param cpptype string
----@return idl.parser.typeinfo|nil
+---@return idl.parser.typedef_desc|nil
 ---@return string
 local function lookup_typeinfo(cpptype)
     local tn = cpptype
@@ -48,7 +48,7 @@ local function lookup_typeinfo(cpptype)
 end
 
 ---@param cpptype string
----@param errors ordered_map
+---@param errors olua.ordered_map
 local function throw_type_error(cpptype, errors)
     print("try type:")
     print("    " .. table.concat(errors:values(), "\n    "))
@@ -106,9 +106,11 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
     return subtis
 end
 
----@class idl.parser.typeinfo : idl.model.typedef_desc
+---@class idl.parser.typedef_desc : idl.model.typedef_desc
 ---@field flag number
----@field subtis? idl.parser.typeinfo[]
+---@field funcdecl? string
+---@field callback? idl.parser.func_model
+---@field subtis? idl.parser.typedef_desc[]
 
 --- Get typeinfo.
 ---
@@ -133,8 +135,8 @@ end
 ---@param cls any
 ---@param throwerror any
 ---@param errors any
----@return idl.parser.typeinfo|nil
----@overload fun(cpptype: string, cls: any): idl.parser.typeinfo
+---@return idl.parser.typedef_desc
+---@overload fun(cpptype: string, cls: any): idl.parser.typedef_desc
 function olua.typeinfo(cpptype, cls, throwerror, errors)
     local tn, ti, subtis -- for tn<T, ...>
     local flag = 0
@@ -302,6 +304,8 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     return tostring(exps)
 end
 
+---@param t string[]
+---@return idl.parser.attr_desc
 local function parse_attr(t)
     local attr = {}
     olua.foreach(t, function (v)
@@ -386,6 +390,9 @@ end
 
 local parse_args
 
+---@param cls idl.parser.class_model
+---@param tn string
+---@return idl.parser.func_model
 local function parse_callback(cls, tn)
     if not tn:find("std::function") then
         tn = olua.typeinfo(tn, cls).funcdecl
@@ -464,26 +471,26 @@ function parse_args(cls, declstr)
 end
 
 ---@param type_model idl.model.type_model
----@param cls any
+---@param cls idl.parser.class_model
+---@return idl.parser.type_model
 function olua.parse_type(type_model, cls)
-    local attr = parse_attr(type_model.attr)
-
-    type_model.attr = attr
-
     local tn = type_model.type
 
-    if attr.type then
-        tn = olua.assert(table.concat(attr.type, " "), "no replaceable type")
+    local desc = type_model --[[@as idl.parser.type_model]]
+    desc.attr = parse_attr(type_model.attr)
+
+    if desc.attr.type then
+        tn = olua.assert(table.concat(desc.attr.type, " "), "no replaceable type")
     end
 
     if olua.is_func_type(tn, cls) then
         local cb = parse_callback(cls, tn)
-        type_model.type = type_func_info(tn, cls, cb)
+        desc.type = type_func_info(tn, cls, cb)
     else
-        type_model.type = olua.typeinfo(tn, cls)
+        desc.type = olua.typeinfo(tn, cls)
     end
 
-    return type_model
+    return desc
 end
 
 function olua.func_name(funcdecl)
@@ -593,6 +600,8 @@ function olua.has_cast_flag(ti)
     return has_flag(ti.flag, kFLAG_CAST)
 end
 
+---@param ti idl.parser.typedef_desc|string
+---@return unknown
 function olua.is_pointer_type(ti)
     if type(ti) == "string" then
         -- is 'T *'?
@@ -639,7 +648,9 @@ local valuetype = {
     ["olua_$$_enum"] = true,
 }
 
--- enum has cpp cls, but declared as lua_Unsigned
+---Enum has cpp cls, but declared as lua_Unsigned
+---@param ti idl.parser.typedef_desc
+---@return unknown
 function olua.is_value_type(ti)
     return valuetype[ti.conv]
 end
@@ -648,13 +659,13 @@ function olua.conv_func(ti, fn)
     return ti.conv:gsub("[$]+", fn)
 end
 
----@param typeinfo idl.parser.typeinfo
+---@param typeinfo idl.parser.typedef_desc
 function olua.typedef(typeinfo)
     for tn in typeinfo.cppcls:gmatch("[^\n\r;]+") do
         tn = olua.pretty_typename(tn)
         if #tn > 0 then
             local previous = typeinfo_map[tn]
-            ---@type idl.parser.typeinfo
+            ---@type idl.parser.typedef_desc
             local ti = setmetatable({}, { __index = typeinfo })
             ti.cppcls = tn
             olua.assert(ti.override or not previous, [[
@@ -669,7 +680,8 @@ function olua.typedef(typeinfo)
                 typeinfo_map[rawtn] = {
                     cppcls = rawtn,
                     luacls = ti.luacls:gsub("<.*>", ""),
-                    conv = ti.conv
+                    conv = ti.conv,
+                    flag = 0,
                 }
             end
         end
@@ -679,12 +691,30 @@ end
 function olua.export(path)
     local m = dofile(path)
 
-    ---@class idl.parser.class_desc : idl.model.class_desc
+    ---@class idl.parser.class_model : idl.model.class_desc
     ---@field luacls string
 
-    ---@class idl.parser.func_desc : idl.model.func_desc
+    ---@class idl.parser.attr_desc
+    ---@field addref? table # @addref
+    ---@field delref? table
+    ---@field pack? table
+    ---@field unpack? table
+    ---@field using? table
+    ---@field type? table
+    ---@field optional? table
+    ---@field nullable? table
+    ---@field extend? [string] # @extend
+    ---@field postnew? table
+
+    ---@class idl.parser.type_model : idl.model.type_model
+    ---@field type idl.parser.typedef_desc
+    ---@field attr idl.parser.attr_desc
+
+    ---@class idl.parser.func_model : idl.model.func_desc
     ---@field funcdesc string
     ---@field index integer
+    ---@field ret idl.parser.type_model
+    ---@field args olua.array # idl.parser.type_desc[]
 
     olua.make_array(m.class_types):foreach(function (cls)
         class_map[cls.cppcls] = cls
@@ -731,7 +761,7 @@ function olua.export(path)
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
-                ---@cast func idl.parser.func_desc
+                ---@cast func idl.parser.func_model
                 func.index = idx
                 if func.body then
                     func.funcdesc = ""

@@ -123,7 +123,7 @@ end
 ---Split the string.
 ---@param str string
 ---@param sep string
----@return array
+---@return olua.array
 function olua.split(str, sep)
     local arr = olua.array()
     for s in str:gmatch("([^" .. sep .. "]+)") do
@@ -133,7 +133,7 @@ function olua.split(str, sep)
 end
 
 ---Join the array.
----@param arr array
+---@param arr olua.array
 ---@param sep string
 ---@param prefix? string
 ---@param posfix? string
@@ -165,7 +165,7 @@ end
 
 ---Get the keys of a table.
 ---@param t table
----@return array
+---@return olua.array
 function olua.keys(t)
     local keys = olua.array()
     for k in pairs(t) do
@@ -185,7 +185,7 @@ end
 
 ---Get the values of a table.
 ---@param t table
----@return array
+---@return olua.array
 function olua.values(t)
     local values = olua.array()
     for _, v in pairs(t) do
@@ -211,7 +211,7 @@ function olua.sort(t, field)
 end
 
 ---@param t any
----@return array
+---@return olua.array
 function olua.make_array(t)
     local arr = olua.array()
     setmetatable(t, getmetatable(arr))
@@ -219,7 +219,7 @@ function olua.make_array(t)
 end
 
 ---@param t any
----@return ordered_map
+---@return olua.ordered_map
 function olua.make_ordered_map(t)
     local map = olua.ordered_map()
     for k, v in pairs(t) do
@@ -238,9 +238,9 @@ end
 ---@param sep? string
 ---@param prefix? string
 ---@param posfix? string
----@return array
+---@return olua.array
 function olua.array(sep, prefix, posfix)
-    ---@class array
+    ---@class olua.array
     ---@field private __tostring fun(self):string
     ---@field private __olua_type string
     local array = {
@@ -268,7 +268,7 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Clone the array.
-    ---@return array
+    ---@return olua.array
     function array:clone()
         local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
         for _, v in ipairs(self) do
@@ -403,7 +403,7 @@ function olua.array(sep, prefix, posfix)
     ---Get a slice of the array.
     ---@param from? integer
     ---@param to? integer
-    ---@return array
+    ---@return olua.array
     function array:slice(from, to)
         local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
         for i = from or 1, to or #self do
@@ -416,7 +416,7 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Iterate over the array.
-    ---@param fn fun(value:any, index:integer, array:array)
+    ---@param fn fun(value:any, index:integer, array:olua.array)
     function array:foreach(fn)
         for k, v in ipairs(self) do
             fn(v, k, self)
@@ -435,7 +435,7 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Return a new array with unique values.
-    ---@return array
+    ---@return olua.array
     function array:toset()
         local filter = {}
         local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
@@ -449,8 +449,8 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Return a new array with filtered values.
-    ---@param fn fun(value:any, index:integer, array:array):boolean
-    ---@return array
+    ---@param fn fun(value:any, index:integer, array:olua.array):boolean
+    ---@return olua.array
     function array:filter(fn)
         local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
         for i, v in ipairs(self) do
@@ -462,7 +462,7 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Find an element in the array.
-    ---@param fn fun(value:any, index:integer, array:array):boolean
+    ---@param fn fun(value:any, index:integer, array:olua.array):boolean
     ---@return any
     function array:find(fn)
         for i, v in ipairs(self) do
@@ -473,8 +473,8 @@ function olua.array(sep, prefix, posfix)
     end
 
     ---Calls a defined callback function on each element of an array, and returns an array that contains the results.
-    ---@param fn fun(value:any, index:integer, array:array):any
-    ---@return array
+    ---@param fn fun(value:any, index:integer, array:olua.array):any
+    ---@return olua.array
     function array:map(fn)
         local arr = olua.array(joiner.sep, joiner.prefix, joiner.posfix)
         for i, v in ipairs(self) do
@@ -488,10 +488,10 @@ end
 
 ---Create a new ordered map.
 ---@param overwritable? boolean Can overwrite the value with the same key, default is `true`.
----@return ordered_map
+---@return olua.ordered_map
 function olua.ordered_map(overwritable)
-    ---@class ordered_map
-    ---@field private _keys array
+    ---@class olua.ordered_map
+    ---@field private _keys olua.array
     ---@field private _map table
     local ordered_map = {
         __olua_type = "olua.ordered_map",
@@ -531,7 +531,7 @@ function olua.ordered_map(overwritable)
     end
 
     ---Clone the ordered map.
-    ---@return ordered_map
+    ---@return olua.ordered_map
     function ordered_map:clone()
         local new_map = olua.ordered_map(overwritable)
         self:foreach(function (value, key)
@@ -601,7 +601,7 @@ function olua.ordered_map(overwritable)
     end
 
     ---Iterate over the ordered map.
-    ---@param fn fun(value:any, key:string|integer, map:ordered_map)
+    ---@param fn fun(value:any, key:string|integer, map:olua.ordered_map)
     function ordered_map:foreach(fn)
         local keys = self._keys:slice()
         for _, key in ipairs(keys) do
@@ -619,7 +619,7 @@ function olua.ordered_map(overwritable)
     end
 
     ---Return values of the ordered map.
-    ---@return array
+    ---@return olua.array
     function ordered_map:values()
         local arr = olua.array()
         for _, key in ipairs(self._keys) do
@@ -629,11 +629,10 @@ function olua.ordered_map(overwritable)
     end
 
     ---Return keys of the ordered map.
-    ---@return array
+    ---@return olua.array
     function ordered_map:keys()
         return self._keys
     end
-
 
     ---Return size of the ordered map.
     ---@return integer
@@ -1186,7 +1185,7 @@ function olua.lua_stringify(data, options)
     local marshal = (options and options.marshal) and (options.marshal .. " ") or ""
 
     ---@param value any
-    ---@param out array
+    ---@param out olua.array
     local function lua_annotation_type(value, out)
         local v_cls_out
         local k_type_out
@@ -1215,7 +1214,7 @@ function olua.lua_stringify(data, options)
     end
 
     ---@param value any
-    ---@param out array
+    ---@param out olua.array
     local function lua_annotation_class(value, out)
         local annotation = olua.get_metafield(value, "__olua_annotation")
         if annotation then

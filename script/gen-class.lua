@@ -2,7 +2,7 @@ local format = olua.format
 local prototypes = {}
 local symbols = {}
 
----@param cls idl.parser.class_desc
+---@param cls idl.parser.class_model
 ---@param write any
 local function gen_class_funcs(cls, write)
     local cls_protos = {}
@@ -28,16 +28,16 @@ local function gen_class_funcs(cls, write)
             return
         end
 
-        ---@type idl.parser.func_desc
+        ---@type idl.parser.func_model
         local func = arr[1]
-    
+
         local cppfunc = func.cppfunc
         local fn = format([[_${cls.cppcls#}_${cppfunc}]])
         if symbols[fn] then
             return
         end
         symbols[fn] = true
-    
+
         if getmetatable(cls_protos) then
             local supermeta = getmetatable(cls_protos).__index
             for _, f in ipairs(arr) do
@@ -225,14 +225,14 @@ end
 
 local function gen_classes(module, write)
     for _, cls in ipairs(module.class_types) do
-        ---@cast cls idl.parser.class_desc
+        ---@cast cls idl.parser.class_model
         cls.luacls = olua.luacls(cls.cppcls)
         local macro = cls.macro
         write(macro)
 
         cls.funcs:sort(function (_, _, arr1, arr2)
-            local func1 = arr1[1] ---@type idl.parser.func_desc
-            local func2 = arr2[1] ---@type idl.parser.func_desc
+            local func1 = arr1[1] ---@type idl.parser.func_model
+            local func2 = arr2[1] ---@type idl.parser.func_model
             local luafunc1 = func1.luafunc or func1.cppfunc
             local luafunc2 = func2.luafunc or func2.cppfunc
             return tostring(luafunc1) < tostring(luafunc2)

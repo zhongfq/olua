@@ -147,7 +147,7 @@ static int _example_Point_x$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Point");
 
-    // int x()
+    // int x
     int ret = self->x;
     int num_ret = olua_push_integer(L, ret);
 
@@ -166,7 +166,7 @@ static int _example_Point_x$2(lua_State *L)
     olua_to_object(L, 1, &self, "example.Point");
     olua_check_integer(L, 2, &arg1);
 
-    // void x(int x)
+    // int x
     self->x = arg1;
 
     olua_endinvoke(L);
@@ -179,13 +179,13 @@ static int _example_Point_x(lua_State *L)
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 0) {
-        // int x()
+        // int x
         return _example_Point_x$1(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 2))) {
-            // void x(int x)
+            // int x
             return _example_Point_x$2(L);
         // }
     }
@@ -203,7 +203,7 @@ static int _example_Point_y$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Point");
 
-    // int y()
+    // int y
     int ret = self->y;
     int num_ret = olua_push_integer(L, ret);
 
@@ -222,7 +222,7 @@ static int _example_Point_y$2(lua_State *L)
     olua_to_object(L, 1, &self, "example.Point");
     olua_check_integer(L, 2, &arg1);
 
-    // void y(int y)
+    // int y
     self->y = arg1;
 
     olua_endinvoke(L);
@@ -235,13 +235,13 @@ static int _example_Point_y(lua_State *L)
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 0) {
-        // int y()
+        // int y
         return _example_Point_y$1(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 2))) {
-            // void y(int y)
+            // int y
             return _example_Point_y$2(L);
         // }
     }

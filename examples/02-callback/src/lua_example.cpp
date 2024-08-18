@@ -126,7 +126,7 @@ static int _example_Event_data$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Event");
 
-    // std::string data()
+    // std::string data
     std::string ret = self->data;
     int num_ret = olua_push_string(L, ret);
 
@@ -145,7 +145,7 @@ static int _example_Event_data$2(lua_State *L)
     olua_to_object(L, 1, &self, "example.Event");
     olua_check_string(L, 2, &arg1);
 
-    // void data(std::string data)
+    // std::string data
     self->data = arg1;
 
     olua_endinvoke(L);
@@ -158,13 +158,13 @@ static int _example_Event_data(lua_State *L)
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 0) {
-        // std::string data()
+        // std::string data
         return _example_Event_data$1(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_string(L, 2))) {
-            // void data(std::string data)
+            // std::string data
             return _example_Event_data$2(L);
         // }
     }
@@ -182,7 +182,7 @@ static int _example_Event_name$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Event");
 
-    // std::string name()
+    // std::string name
     std::string ret = self->name;
     int num_ret = olua_push_string(L, ret);
 
@@ -201,7 +201,7 @@ static int _example_Event_name$2(lua_State *L)
     olua_to_object(L, 1, &self, "example.Event");
     olua_check_string(L, 2, &arg1);
 
-    // void name(std::string name)
+    // std::string name
     self->name = arg1;
 
     olua_endinvoke(L);
@@ -214,13 +214,13 @@ static int _example_Event_name(lua_State *L)
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 0) {
-        // std::string name()
+        // std::string name
         return _example_Event_name$1(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_string(L, 2))) {
-            // void name(std::string name)
+            // std::string name
             return _example_Event_name$2(L);
         // }
     }

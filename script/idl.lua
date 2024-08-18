@@ -205,8 +205,8 @@ function typedef(cppcls)
 
     ---@class idl.model.typedef_desc
     ---@field cppcls string
+    ---@field conv string
     ---@field luacls? string
-    ---@field conv? string
     ---@field luatype? string
     ---@field packable? boolean
     ---@field packvars? integer
@@ -254,13 +254,13 @@ end
 ---@field type string
 ---@field name? string
 ---@field comment? string
----@field attr array
+---@field attr olua.array
 
 ---@class idl.model.func_desc
----@field cppfunc string
----@field luafunc? string
----@field prototype string
----@field display_name? string
+---@field cppfunc string # C++ function name
+---@field luafunc? string # Lua function name
+---@field prototype string # C++ prototype
+---@field display_name? string # C++ prototype without return type
 ---@field comment? string
 ---@field macro? string
 ---@field is_exposed? boolean
@@ -270,7 +270,7 @@ end
 ---@field is_variable? boolean
 ---@field is_variadic? boolean
 ---@field ret idl.model.type_model
----@field args array # idl.model.type_model[]
+---@field args olua.array # idl.model.type_model[]
 ---@field body? string
 ---@field insert_before? string
 ---@field insert_after? string
@@ -561,7 +561,7 @@ function typeconf(cppcls)
         CMD = CMD,
     }
 
-    setmetatable(cls, {__olua_ignore = { CMD = true, conf = true }})
+    setmetatable(cls, { __olua_ignore = { CMD = true, conf = true } })
 
     ---@type 'exclude'|'include'|nil
     local mode = nil

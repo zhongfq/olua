@@ -173,7 +173,7 @@ end
 local typename
 
 ---@param type clang.Type
----@param template_types? ordered_map
+---@param template_types? olua.ordered_map
 ---@param try_underlying? boolean
 ---@param level? integer
 ---@param from? string
@@ -325,7 +325,7 @@ local function get_pointee_type(type)
 end
 
 ---@param type clang.Type
----@param template_types? ordered_map
+---@param template_types? olua.ordered_map
 ---@param level? integer
 ---@param from? string
 ---@return string
@@ -516,7 +516,7 @@ local function parse_attr_from_annotate(cls, cur, display_name, isvar)
     ---@param node clang.Cursor
     ---@param key string
     local function parse_and_merge_attr(node, key)
-        ---@type array
+        ---@type olua.array
         local arr = attrs:get(key)
         for _, c in ipairs(node.children) do
             if c.kind == CursorKind.AnnotateAttr then
@@ -1481,7 +1481,7 @@ local function copy_super_funcs()
     local function copy_funcs(cls, super)
         local rawsuper = raw_typename(super.cppcls)
         super.funcs:foreach(function (arr)
-            ---@cast arr array
+            ---@cast arr olua.array
             arr:foreach(function (func)
                 ---@cast func idl.model.func_desc
                 if func.is_contructor
@@ -1609,7 +1609,7 @@ local function merge_cls_extends(cls)
                 funcs = olua.array()
                 cls.funcs:set(cppfunc, funcs)
             end
-            ---@cast extfuncs array
+            ---@cast extfuncs olua.array
             for _, func in ipairs(extfuncs) do
                 olua.use(extcls)
                 ---@cast func idl.model.func_desc
@@ -1676,7 +1676,7 @@ end
 
 ---@param cls idl.model.class_desc
 local function search_using_func(cls)
-    ---@param arr array
+    ---@param arr olua.array
     ---@param name string
     ---@param supercls string
     local function search_parent(arr, name, supercls)
@@ -1773,7 +1773,7 @@ end
 
 ---@param cls idl.model.class_desc
 local function gen_cls_func_pack(cls)
-    ---@param arr array
+    ---@param arr olua.array
     ---@param func idl.model.func_desc
     local function gen_pack_overload(arr, func)
         if func.body then
@@ -1810,7 +1810,7 @@ local function gen_cls_func_pack(cls)
         pack_arg.attr:remove("@pack")
     end
     cls.funcs:foreach(function (arr)
-        ---@cast arr array
+        ---@cast arr olua.array
         for i = 1, #arr do
             gen_pack_overload(arr, arr[i])
         end

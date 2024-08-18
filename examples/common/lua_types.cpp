@@ -91,6 +91,62 @@ static int _olua_bool_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_bool_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_bool *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.bool");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_bool_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_bool *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.bool");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_bool_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_bool_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_bool_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_bool::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_bool_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -144,62 +200,6 @@ static int _olua_bool_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_bool::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_bool_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_bool *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.bool");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_bool_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_bool *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.bool");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_bool_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_bool_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_bool_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_bool::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -577,6 +577,62 @@ static int _olua_string_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_string_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_string *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.string");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_string_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_string *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.string");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_string_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_string_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_string_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_string::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_string_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -630,62 +686,6 @@ static int _olua_string_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_string::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_string_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_string *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.string");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_string_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_string *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.string");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_string_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_string_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_string_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_string::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -1063,6 +1063,62 @@ static int _olua_int8_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_int8_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int8 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.int8");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_int8_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int8 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.int8");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_int8_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_int8_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_int8_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_int8::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_int8_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -1116,62 +1172,6 @@ static int _olua_int8_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_int8::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_int8_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int8 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.int8");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_int8_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int8 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.int8");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_int8_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_int8_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_int8_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_int8::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -1549,6 +1549,62 @@ static int _olua_int16_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_int16_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int16 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.int16");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_int16_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int16 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.int16");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_int16_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_int16_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_int16_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_int16::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_int16_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -1602,62 +1658,6 @@ static int _olua_int16_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_int16::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_int16_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int16 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.int16");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_int16_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int16 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.int16");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_int16_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_int16_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_int16_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_int16::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -2035,6 +2035,62 @@ static int _olua_int32_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_int32_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int32 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.int32");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_int32_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int32 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.int32");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_int32_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_int32_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_int32_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_int32::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_int32_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -2088,62 +2144,6 @@ static int _olua_int32_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_int32::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_int32_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int32 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.int32");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_int32_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int32 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.int32");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_int32_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_int32_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_int32_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_int32::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -2521,6 +2521,62 @@ static int _olua_int64_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_int64_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int64 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.int64");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_int64_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int64 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.int64");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_int64_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_int64_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_int64_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_int64::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_int64_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -2574,62 +2630,6 @@ static int _olua_int64_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_int64::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_int64_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int64 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.int64");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_int64_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int64 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.int64");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_int64_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_int64_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_int64_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_int64::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -3007,6 +3007,62 @@ static int _olua_uint8_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_uint8_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint8 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.uint8");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_uint8_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint8 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.uint8");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_uint8_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_uint8_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_uint8_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_uint8::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_uint8_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -3060,62 +3116,6 @@ static int _olua_uint8_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_uint8::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_uint8_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint8 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.uint8");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_uint8_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint8 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.uint8");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_uint8_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_uint8_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_uint8_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_uint8::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -3493,6 +3493,62 @@ static int _olua_uint16_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_uint16_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint16 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.uint16");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_uint16_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint16 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.uint16");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_uint16_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_uint16_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_uint16_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_uint16::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_uint16_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -3546,62 +3602,6 @@ static int _olua_uint16_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_uint16::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_uint16_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint16 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.uint16");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_uint16_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint16 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.uint16");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_uint16_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_uint16_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_uint16_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_uint16::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -3979,6 +3979,62 @@ static int _olua_uint32_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_uint32_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint32 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.uint32");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_uint32_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint32 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.uint32");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_uint32_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_uint32_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_uint32_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_uint32::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_uint32_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -4032,62 +4088,6 @@ static int _olua_uint32_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_uint32::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_uint32_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint32 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.uint32");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_uint32_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint32 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.uint32");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_uint32_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_uint32_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_uint32_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_uint32::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -4465,6 +4465,62 @@ static int _olua_uint64_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_uint64_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint64 *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.uint64");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_uint64_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint64 *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.uint64");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_uint64_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_uint64_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_uint64_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_uint64::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_uint64_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -4518,62 +4574,6 @@ static int _olua_uint64_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_uint64::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_uint64_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint64 *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.uint64");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_uint64_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint64 *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.uint64");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_uint64_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_uint64_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_uint64_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_uint64::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -4951,6 +4951,62 @@ static int _olua_char_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_char_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_char *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.char");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_char_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_char *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.char");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_char_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_char_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_char_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_char::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_char_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -5004,62 +5060,6 @@ static int _olua_char_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_char::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_char_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_char *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.char");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_char_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_char *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.char");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_char_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_char_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_char_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_char::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -5437,6 +5437,62 @@ static int _olua_short_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_short_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_short *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.short");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_short_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_short *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.short");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_short_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_short_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_short_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_short::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_short_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -5490,62 +5546,6 @@ static int _olua_short_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_short::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_short_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_short *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.short");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_short_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_short *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.short");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_short_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_short_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_short_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_short::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -5923,6 +5923,62 @@ static int _olua_int_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_int_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.int");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_int_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_int *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.int");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_int_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_int_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_int_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_int::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_int_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -5976,62 +6032,6 @@ static int _olua_int_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_int::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_int_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.int");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_int_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_int *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.int");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_int_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_int_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_int_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_int::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -6409,6 +6409,62 @@ static int _olua_long_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_long_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_long *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.long");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_long_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_long *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.long");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_long_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_long_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_long_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_long::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_long_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -6462,62 +6518,6 @@ static int _olua_long_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_long::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_long_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_long *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.long");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_long_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_long *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.long");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_long_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_long_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_long_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_long::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -6895,6 +6895,62 @@ static int _olua_llong_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_llong_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_llong *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.llong");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_llong_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_llong *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.llong");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_llong_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_llong_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_llong_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_llong::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_llong_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -6948,62 +7004,6 @@ static int _olua_llong_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_llong::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_llong_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_llong *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.llong");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_llong_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_llong *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.llong");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_llong_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_llong_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_llong_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_llong::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -7381,6 +7381,62 @@ static int _olua_uchar_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_uchar_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uchar *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.uchar");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_uchar_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uchar *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.uchar");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_uchar_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_uchar_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_uchar_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_uchar::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_uchar_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -7434,62 +7490,6 @@ static int _olua_uchar_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_uchar::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_uchar_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uchar *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.uchar");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_uchar_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uchar *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.uchar");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_uchar_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_uchar_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_uchar_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_uchar::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -7867,6 +7867,62 @@ static int _olua_ushort_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_ushort_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ushort *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.ushort");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_ushort_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ushort *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.ushort");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_ushort_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_ushort_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_ushort_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_ushort::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_ushort_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -7920,62 +7976,6 @@ static int _olua_ushort_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_ushort::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_ushort_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ushort *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.ushort");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_ushort_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ushort *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.ushort");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_ushort_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_ushort_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_ushort_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_ushort::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -8353,6 +8353,62 @@ static int _olua_uint_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_uint_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.uint");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_uint_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_uint *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.uint");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_uint_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_uint_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_uint_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_uint::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_uint_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -8406,62 +8462,6 @@ static int _olua_uint_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_uint::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_uint_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.uint");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_uint_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_uint *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.uint");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_uint_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_uint_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_uint_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_uint::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -8839,6 +8839,62 @@ static int _olua_ulong_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_ulong_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ulong *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.ulong");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_ulong_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ulong *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.ulong");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_ulong_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_ulong_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_ulong_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_ulong::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_ulong_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -8892,62 +8948,6 @@ static int _olua_ulong_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_ulong::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_ulong_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ulong *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.ulong");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_ulong_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ulong *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.ulong");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_ulong_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_ulong_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_ulong_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_ulong::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -9325,6 +9325,62 @@ static int _olua_ullong_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_ullong_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ullong *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.ullong");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_ullong_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ullong *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.ullong");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_ullong_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_ullong_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_ullong_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_ullong::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_ullong_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -9378,62 +9434,6 @@ static int _olua_ullong_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_ullong::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_ullong_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ullong *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.ullong");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_ullong_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ullong *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.ullong");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_ullong_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_ullong_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_ullong_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_ullong::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -9811,6 +9811,62 @@ static int _olua_float_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_float_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_float *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.float");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_float_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_float *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.float");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_float_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_float_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_float_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_float::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_float_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -9864,62 +9920,6 @@ static int _olua_float_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_float::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_float_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_float *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.float");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_float_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_float *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.float");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_float_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_float_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_float_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_float::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -10297,6 +10297,62 @@ static int _olua_double_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_double_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_double *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.double");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_double_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_double *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.double");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_double_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_double_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_double_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_double::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_double_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -10350,62 +10406,6 @@ static int _olua_double_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_double::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_double_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_double *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.double");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_double_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_double *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.double");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_double_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_double_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_double_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_double::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -10783,6 +10783,62 @@ static int _olua_ldouble_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_ldouble_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ldouble *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.ldouble");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_ldouble_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ldouble *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.ldouble");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_ldouble_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_ldouble_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_ldouble_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_ldouble::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_ldouble_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -10836,62 +10892,6 @@ static int _olua_ldouble_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_ldouble::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_ldouble_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ldouble *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.ldouble");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_ldouble_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ldouble *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.ldouble");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_ldouble_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_ldouble_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_ldouble_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_ldouble::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -11269,6 +11269,62 @@ static int _olua_size_t_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_size_t_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_size_t *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.size_t");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_size_t_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_size_t *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.size_t");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_size_t_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_size_t_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_size_t_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_size_t::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_size_t_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -11322,62 +11378,6 @@ static int _olua_size_t_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_size_t::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_size_t_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_size_t *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.size_t");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_size_t_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_size_t *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.size_t");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_size_t_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_size_t_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_size_t_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_size_t::length' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -11755,6 +11755,62 @@ static int _olua_ssize_t_assign(lua_State *L)
     return 0;
 }
 
+static int _olua_ssize_t_length$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ssize_t *self = nullptr;
+
+    olua_to_object(L, 1, &self, "olua.ssize_t");
+
+    // @getter @name(length) size_t length()
+    size_t ret = self->length();
+    int num_ret = olua_push_integer(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_ssize_t_length$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    olua_ssize_t *self = nullptr;
+    size_t arg1 = 0;       /** len */
+
+    olua_to_object(L, 1, &self, "olua.ssize_t");
+    olua_check_integer(L, 2, &arg1);
+
+    // @setter @name(length) void length(size_t len)
+    self->length(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _olua_ssize_t_length(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 0) {
+        // @getter @name(length) size_t length()
+        return _olua_ssize_t_length$1(L);
+    }
+
+    if (num_args == 1) {
+        // if ((olua_is_integer(L, 2))) {
+            // @setter @name(length) void length(size_t len)
+            return _olua_ssize_t_length$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'olua_ssize_t::length' not support '%d' arguments", num_args);
+
+    return 0;
+}
+
 static int _olua_ssize_t_create$1(lua_State *L)
 {
     olua_startinvoke(L);
@@ -11808,62 +11864,6 @@ static int _olua_ssize_t_create(lua_State *L)
     }
 
     luaL_error(L, "method 'olua_ssize_t::create' not support '%d' arguments", num_args);
-
-    return 0;
-}
-
-static int _olua_ssize_t_length$1(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ssize_t *self = nullptr;
-
-    olua_to_object(L, 1, &self, "olua.ssize_t");
-
-    // @getter @name(length) size_t length()
-    size_t ret = self->length();
-    int num_ret = olua_push_integer(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _olua_ssize_t_length$2(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    olua_ssize_t *self = nullptr;
-    size_t arg1 = 0;       /** len */
-
-    olua_to_object(L, 1, &self, "olua.ssize_t");
-    olua_check_integer(L, 2, &arg1);
-
-    // @setter @name(length) void length(size_t len)
-    self->length(arg1);
-
-    olua_endinvoke(L);
-
-    return 0;
-}
-
-static int _olua_ssize_t_length(lua_State *L)
-{
-    int num_args = lua_gettop(L) - 1;
-
-    if (num_args == 0) {
-        // @getter @name(length) size_t length()
-        return _olua_ssize_t_length$1(L);
-    }
-
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
-            // @setter @name(length) void length(size_t len)
-            return _olua_ssize_t_length$2(L);
-        // }
-    }
-
-    luaL_error(L, "method 'olua_ssize_t::length' not support '%d' arguments", num_args);
 
     return 0;
 }
