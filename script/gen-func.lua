@@ -1,6 +1,6 @@
 ---@param cls idl.parser.class_model
 ---@param fi idl.parser.func_model
----@param write any
+---@param write idl.parser.writer
 local function gen_func_body(cls, fi, write)
     local body = assert(fi.body)
     body = string.gsub(body, "^[\n ]*{", "{\n    olua_startinvoke(L);\n")
@@ -22,25 +22,28 @@ local function gen_func_body(cls, fi, write)
 end
 
 ---@param arg idl.parser.type_model
----@param arg_name string
+---@param name string
 ---@param codeset idl.parser.func_codeset
-function olua.gen_decl_exp(arg, arg_name, codeset)
+function olua.gen_decl_exp(arg, name, codeset)
     local decltype = olua.decltype(arg.type, true, true)
     local initial_value = olua.initial_value(arg.type)
-    local var_name = arg.name or arg_name
+    local var_name = arg.name or name
     olua.use(decltype, initial_value, var_name)
     codeset.decl_args:pushf([[
-        ${decltype}${arg_name}${initial_value};       /** ${var_name} */
+        ${decltype}${name}${initial_value};       /** ${var_name} */
     ]])
 end
 
-function olua.gen_check_exp(arg, name, i, codeset)
+---@param arg idl.parser.type_model
+---@param name string
+---@param idx integer|string
+---@param codeset idl.parser.func_codeset
+function olua.gen_check_exp(arg, name, idx, codeset)
     -- lua value to cpp value
-    local argn = i
-    local argname = name
     local func_check = olua.conv_func(arg.type, arg.attr.pack and "pack" or "check")
     local check_args = codeset.check_args
     codeset.check_args = olua.array("\n")
+    olua.use(name, idx)
     if arg.attr.pack then
         olua.assert(arg.type.packable, [[
             '${arg.type.cppcls}' is not a packable type
@@ -50,51 +53,52 @@ function olua.gen_check_exp(arg, name, i, codeset)
                       .packable 'true'
         ]])
         codeset.check_args:pushf([[
-            ${func_check}(L, ${argn}, &${argname});
+            ${func_check}(L, ${idx}, &${name});
         ]])
     elseif olua.is_pointer_type(arg.type)
         or olua.is_func_type(arg.type)
         or arg.type.smartptr
     then
         codeset.check_args:pushf([[
-            ${func_check}(L, ${argn}, &${argname}, "${arg.type.luacls}");
+            ${func_check}(L, ${idx}, &${name}, "${arg.type.luacls}");
         ]])
     elseif arg.type.subtypes then
         olua.assert(#arg.type.subtypes <= 2, "unsupport template arg types > 2 ")
         local subtype_decl_args = olua.array(", ")
         local subtype_template_args = olua.array(", ")
         local subtype_check_exp = olua.array("\n")
-        local idx = -1
-        for ii, subtype in ipairs(arg.type.subtypes) do
+        local subtype_idx = -1
+        for i, subtype in ipairs(arg.type.subtypes) do
             local subtype_func_check = olua.conv_func(subtype, "check")
-            local subtype_name = "arg" .. ii
+            local subtype_name = "arg" .. i
             local decltype = olua.decltype(subtype)
             local declarg = olua.decltype(subtype, nil, true)
+            olua.use(subtype_func_check, subtype_name, decltype, declarg)
             subtype_decl_args:pushf("${declarg}*${subtype_name}")
             subtype_template_args:pushf("${decltype}")
             if subtype.smartptr or olua.is_pointer_type(subtype) then
                 subtype_check_exp:pushf([[
-                    ${subtype_func_check}(L, ${idx}, ${subtype_name}, "${subtype.luacls}");
+                    ${subtype_func_check}(L, ${subtype_idx}, ${subtype_name}, "${subtype.luacls}");
                 ]])
             else
                 subtype_check_exp:pushf([[
-                    ${subtype_func_check}(L, ${idx}, ${subtype_name});
+                    ${subtype_func_check}(L, ${subtype_idx}, ${subtype_name});
                 ]])
             end
-            idx = idx - 1
+            subtype_idx = subtype_idx - 1
         end
         codeset.check_args:pushf([[
-            ${func_check}<${subtype_template_args}>(L, ${argn}, ${argname}, [L](${subtype_decl_args}) {
+            ${func_check}<${subtype_template_args}>(L, ${idx}, ${name}, [L](${subtype_decl_args}) {
                 ${subtype_check_exp}
             });
         ]])
     else
-        codeset.check_args:pushf("${func_check}(L, ${argn}, &${argname});")
+        codeset.check_args:pushf("${func_check}(L, ${idx}, &${name});")
     end
 
     if arg.attr.nullable then
         check_args:pushf([[
-            if (!olua_isnoneornil(L, ${argn})) {
+            if (!olua_isnoneornil(L, ${idx})) {
                 ${codeset.check_args}
             }
         ]])
@@ -109,14 +113,14 @@ function olua.gen_check_exp(arg, name, i, codeset)
     end
 end
 
----@param arg any
----@param name any
----@param codeset any
+---@param arg idl.parser.type_model
+---@param name string
+---@param codeset {push_args:olua.array}
 function olua.gen_push_exp(arg, name, codeset)
-    local argname = name
+    local arg_name = name
     local func_push = olua.conv_func(arg.type, arg.attr.unpack and "unpack" or "push")
     local func_copy = olua.conv_func(arg.type, "pushcopy")
-
+    olua.use(arg_name, func_push, func_copy)
     if arg.attr.unpack then
         olua.assert(arg.type.packable, [[
             '${arg.type.cppcls}' is not a packable type
@@ -125,17 +129,17 @@ function olua.gen_push_exp(arg, name, codeset)
                 * typeconf '${arg.type.cppcls}'
                       .packable 'true'
         ]])
-        codeset.push_args:pushf("${func_push}(L, &${argname});")
+        codeset.push_args:pushf("${func_push}(L, &${arg_name});")
     elseif olua.is_pointer_type(arg.type) or olua.is_func_type(arg.type) then
         if olua.has_cast_flag(arg.type)
             or arg.type.smartptr
             or olua.is_func_type(arg.type)
         then
-            codeset.push_args:pushf('${func_push}(L, &${argname}, "${arg.type.luacls}");')
+            codeset.push_args:pushf('${func_push}(L, &${arg_name}, "${arg.type.luacls}");')
         elseif olua.has_pointee_flag(arg.type) then
-            codeset.push_args:pushf('${func_push}(L, ${argname}, "${arg.type.luacls}");')
+            codeset.push_args:pushf('${func_push}(L, ${arg_name}, "${arg.type.luacls}");')
         else
-            codeset.push_args:pushf('${func_copy}(L, ${argname}, "${arg.type.luacls}");')
+            codeset.push_args:pushf('${func_copy}(L, ${arg_name}, "${arg.type.luacls}");')
         end
     elseif arg.type.subtypes then
         olua.assert(#arg.type.subtypes <= 2, "unsupport template arg types > 2 ")
@@ -149,6 +153,7 @@ function olua.gen_push_exp(arg, name, codeset)
             local decltype = olua.decltype(subtype)
             local declarg = olua.decltype(subtype, nil, true)
             subtype_template_args:pushf("${decltype}")
+            olua.use(subtype_func_push, subtype_func_copy, subtype_name, decltype, declarg)
             if subtype.smartptr then
                 subtype_decl_args:pushf("${declarg}&${subtype_name}")
                 subtype_push_exp:pushf('${subtype_func_push}(L, &${subtype_name}, "${subtype.luacls}");')
@@ -160,21 +165,28 @@ function olua.gen_push_exp(arg, name, codeset)
                 subtype_push_exp:pushf('${subtype_func_copy}(L, ${subtype_name}, "${subtype.luacls}");')
             else
                 local subtype_cast = olua.is_pointer_type(decltype) and "" or "&"
+                olua.use(subtype_cast)
                 subtype_decl_args:pushf("${declarg}${subtype_cast}${subtype_name}")
                 subtype_push_exp:pushf("${subtype_func_push}(L, ${subtype_name});")
             end
         end
         codeset.push_args:pushf([[
-            ${func_push}<${subtype_template_args}>(L, ${argname}, [L](${subtype_decl_args}) {
+            ${func_push}<${subtype_template_args}>(L, ${arg_name}, [L](${subtype_decl_args}) {
                 ${subtype_push_exp}
             });
         ]])
     else
-        codeset.push_args:pushf("${func_push}(L, ${argname});")
+        codeset.push_args:pushf("${func_push}(L, ${arg_name});")
     end
 end
 
-function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
+---@param cls idl.parser.class_model
+---@param func idl.parser.func_model
+---@param arg idl.parser.type_model
+---@param idx integer
+---@param name string
+---@param codeset idl.parser.func_codeset
+function olua.gen_addref_exp(cls, func, arg, idx, name, codeset)
     if not arg.attr.addref then
         return
     end
@@ -183,17 +195,15 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
 
     -- ^|*~
     if arg.attr.addref[1]:find("[%^%|%*%~]") then
-        local ref_name = fi.cppfunc:gsub("^[Ss]et", ""):gsub("^[Gg]et", "")
+        local ref_name = func.cppfunc:gsub("^[Ss]et", ""):gsub("^[Gg]et", "")
         table.insert(arg.attr.addref, 1, string.lower(ref_name))
     end
 
-    olua.assert(not fi.is_static or fi.ret.type.luacls or arg.attr.addref[3])
+    olua.assert(not func.is_static or func.ret.type.luacls or arg.attr.addref[3])
 
-    local argn = i
-    local argname = name
-    local ref_name = assert(arg.attr.addref[1], fi.cppfunc .. " no addref name")
-    local ref_mode = assert(arg.attr.addref[2], fi.cppfunc .. " no addref flag")
-    local ref_store = arg.attr.addref[3] or (fi.is_static and "-1" or "1")
+    local ref_name = assert(arg.attr.addref[1], func.cppfunc .. " no addref name")
+    local ref_mode = assert(arg.attr.addref[2], func.cppfunc .. " no addref flag")
+    local ref_store = arg.attr.addref[3] or (func.is_static and "-1" or "1")
 
     if ref_store:find("^::") then
         if not codeset.has_ref_store then
@@ -206,10 +216,10 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
     end
 
     if arg.type.cppcls == "void" then
-        olua.assert(fi.ret == arg)
-        olua.assert(not fi.is_static, "no addref object")
+        olua.assert(func.ret == arg)
+        olua.assert(not func.is_static, "no addref object")
         olua.assert(arg.attr.addref[3], "must supply where to addref object")
-        argn = 1
+        idx = 1
     elseif arg.type.subtypes then
         olua.assert(ref_mode == "|", "expect use like: @addref(ref_name |)")
         if #arg.type.subtypes == 1 then
@@ -233,22 +243,22 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
                 local ref_store2 = ref_store == "ref_store" and "ref_store2" or "ref_store"
                 codeset.insert_after:pushf([[
                     int ${ref_store2} = lua_absindex(L, ${ref_store});
-                    ${func_push}<${subtype.cppcls}>(L, &${argname}, [L](${subtype.cppcls}value) {
+                    ${func_push}<${subtype.cppcls}>(L, &${name}, [L](${subtype.cppcls}value) {
                         ${subtype_func_push}(L, value, "${subtype.luacls}");
                     });
                     olua_addref(L, ${ref_store2}, "${ref_name}", -1, OLUA_REF_MULTI | OLUA_REF_TABLE);
                     lua_pop(L, 1);
                 ]])
             else
-                if fi.is_variable then
-                    codeset.insert_after:puhs(olua.format('olua_delallrefs(L, ${ref_store}, "${ref_name}");'))
+                if func.is_variable then
+                    codeset.insert_after:pushf('olua_delallrefs(L, ${ref_store}, "${ref_name}");')
                 end
                 codeset.insert_after:pushf(
-                    'olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
+                    'olua_addref(L, ${ref_store}, "${ref_name}", ${idx}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
             end
         elseif arg.type.cppcls:find("<") then
             codeset.insert_after:pushf([[
-                for (auto obj : *${argname}) {
+                for (auto obj : *${name}) {
                     olua_pushobj(L, obj);
                     olua_addref(L, 1, "${ref_name}", -1, OLUA_REF_MULTI);
                     lua_pop(L, 1);
@@ -256,16 +266,22 @@ function olua.gen_addref_exp(cls, fi, arg, i, name, codeset)
             ]])
         else
             codeset.insert_after:pushf(
-                'olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI);')
+                'olua_addref(L, ${ref_store}, "${ref_name}", ${idx}, OLUA_REF_MULTI);')
         end
     elseif ref_mode == "^" then
-        codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_ALONE);')
+        codeset.insert_after:pushf('olua_addref(L, ${ref_store}, "${ref_name}", ${idx}, OLUA_REF_ALONE);')
     else
         error("no support addref flag: " .. ref_mode)
     end
 end
 
-function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
+---@param cls idl.parser.class_model
+---@param func idl.parser.func_model
+---@param arg idl.parser.type_model
+---@param idx integer
+---@param name string
+---@param codeset idl.parser.func_codeset
+function olua.gen_delref_exp(cls, func, arg, idx, name, codeset)
     if not arg.attr.delref then
         return
     end
@@ -274,17 +290,15 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
 
     -- ^|*~
     if arg.attr.delref[1]:find("[%^%|%*%~]") then
-        local ref_name = fi.cppfunc:gsub("^[Ss]et", ""):gsub("^[Gg]et", "")
+        local ref_name = func.cppfunc:gsub("^[Ss]et", ""):gsub("^[Gg]et", "")
         table.insert(arg.attr.delref, 1, string.lower(ref_name))
     end
 
-    olua.assert(not fi.is_static or arg.type.luacls or arg.attr.delref[3])
+    olua.assert(not func.is_static or arg.type.luacls or arg.attr.delref[3])
 
-    local argn = i
-    local argname = name
-    local ref_name = assert(arg.attr.delref[1], fi.cppfunc .. " no ref name")
-    local ref_mode = assert(arg.attr.delref[2], fi.cppfunc .. " no delref flag")
-    local ref_store = arg.attr.delref[3] or (fi.is_static and "-1" or "1")
+    local ref_name = assert(arg.attr.delref[1], func.cppfunc .. " no ref name")
+    local ref_mode = assert(arg.attr.delref[2], func.cppfunc .. " no delref flag")
+    local ref_store = arg.attr.delref[3] or (func.is_static and "-1" or "1")
 
     if ref_store:find("^::") then
         if not codeset.has_ref_store then
@@ -298,9 +312,9 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
 
     if ref_mode == "|" or ref_mode == "^" then
         if arg.type.cppcls == "void" then
-            olua.assert(not fi.is_static, "no delref object")
+            olua.assert(not func.is_static, "no delref object")
             olua.assert(arg.attr.delref[3], "must supply where to delref object")
-            argn = 1
+            idx = 1
         else
             olua.assert(olua.is_pointer_type(arg.type), "'${arg.type.cppcls}' not a pointer type")
         end
@@ -314,23 +328,23 @@ function olua.gen_delref_exp(cls, fi, arg, i, name, codeset)
     elseif ref_mode == "|" then
         if arg.type.subtypes then
             codeset.insert_after:pushf(
-                'olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
+                'olua_delref(L, ${ref_store}, "${ref_name}", ${idx}, OLUA_REF_MULTI | OLUA_REF_TABLE);')
         else
             codeset.insert_after:pushf(
-                'olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_MULTI);')
+                'olua_delref(L, ${ref_store}, "${ref_name}", ${idx}, OLUA_REF_MULTI);')
         end
     elseif ref_mode == "^" then
-        codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${argn}, OLUA_REF_ALONE);')
+        codeset.insert_after:pushf('olua_delref(L, ${ref_store}, "${ref_name}", ${idx}, OLUA_REF_ALONE);')
     else
         error("no support delref flag: " .. ref_mode)
     end
 end
 
----@param cls any
----@param fi any
+---@param cls idl.parser.class_model
+---@param func idl.parser.func_model
 ---@param codeset idl.parser.func_codeset
-local function gen_func_args(cls, fi, codeset)
-    if not fi.is_static then
+local function gen_func_args(cls, func, codeset)
+    if not func.is_static then
         -- first argument is cpp userdata object
         codeset.idx = codeset.idx + 1
         local ti = olua.typeinfo(cls.cppcls)
@@ -341,51 +355,54 @@ local function gen_func_args(cls, fi, codeset)
 
     local skip_first_arg = false
 
-    if olua.is_oluaret(fi) then
-        local arg = fi.args[1]
+    if olua.is_oluaret(func) then
+        local arg = func.args[1]
         olua.assert(arg and arg.type.cppcls == "lua_State", "first arg type must be 'lua_State *'")
         codeset.caller_args:push("L")
         skip_first_arg = true
     end
 
-    for i, arg in ipairs(fi.args) do
+    for i, arg in ipairs(func.args) do
         if skip_first_arg then
             skip_first_arg = false
             goto continue
         end
 
-        local argname = "arg" .. i
-        local argn = codeset.idx + 1
-        codeset.idx = argn
+        local name = "arg" .. i
+        local idx = codeset.idx + 1
+        codeset.idx = idx
 
         if olua.has_cast_flag(arg.type) then
-            codeset.caller_args:pushf("*${argname}")
+            codeset.caller_args:pushf("*${name}")
         else
-            codeset.caller_args:pushf("${argname}")
+            codeset.caller_args:pushf("${name}")
         end
 
-        olua.gen_decl_exp(arg, argname, codeset)
-        olua.gen_check_exp(arg, argname, argn, codeset)
-        olua.gen_addref_exp(cls, fi, arg, argn, argname, codeset)
-        olua.gen_delref_exp(cls, fi, arg, argn, argname, codeset)
+        olua.gen_decl_exp(arg, name, codeset)
+        olua.gen_check_exp(arg, name, idx, codeset)
+        olua.gen_addref_exp(cls, func, arg, idx, name, codeset)
+        olua.gen_delref_exp(cls, func, arg, idx, name, codeset)
 
         ::continue::
     end
 
-    if fi.is_variadic then
+    if func.is_variadic then
         codeset.caller_args:push("nullptr")
     end
 end
 
-local function gen_func_ret(cls, fi, codeset)
-    if fi.ret.type.cppcls ~= "void" then
-        local decltype = olua.decltype(fi.ret.type, nil, true)
-        if olua.has_cast_flag(fi.ret.type) then
+---@param cls idl.parser.class_model
+---@param func idl.parser.func_model
+---@param codeset idl.parser.func_codeset
+local function gen_func_ret(cls, func, codeset)
+    if func.ret.type.cppcls ~= "void" then
+        local decltype = olua.decltype(func.ret.type, nil, true)
+        if olua.has_cast_flag(func.ret.type) then
             decltype = decltype:gsub(" %*$", " &")
         end
-        if fi.is_variable
-            and not olua.has_pointee_flag(fi.ret.type)
-            and not olua.is_value_type(fi.ret.type)
+        if func.is_variable
+            and not olua.has_pointee_flag(func.ret.type)
+            and not olua.is_value_type(func.ret.type)
         then
             codeset.decl_ret = olua.format("${decltype}&ret = ")
         else
@@ -394,10 +411,10 @@ local function gen_func_ret(cls, fi, codeset)
 
         local retblock = { push_args = olua.array("\n") }
 
-        if olua.is_oluaret(fi) then
+        if olua.is_oluaret(func) then
             codeset.num_ret = "(int)ret"
         else
-            olua.gen_push_exp(fi.ret, "ret", retblock)
+            olua.gen_push_exp(func.ret, "ret", retblock)
             codeset.push_ret = olua.format("int num_ret = ${retblock.push_args}")
         end
 
@@ -406,17 +423,21 @@ local function gen_func_ret(cls, fi, codeset)
         end
     end
 
-    olua.gen_addref_exp(cls, fi, fi.ret, -1, "ret", codeset)
-    olua.gen_delref_exp(cls, fi, fi.ret, -1, "ret", codeset)
+    olua.gen_addref_exp(cls, func, func.ret, -1, "ret", codeset)
+    olua.gen_delref_exp(cls, func, func.ret, -1, "ret", codeset)
 end
 
-local function gen_one_func(cls, fi, write, funcidx)
-    local caller = fi.is_static and (cls.cppcls .. "::") or "self->"
-    local cppfunc = fi.cppfunc
-    local args_begin = not fi.is_variable and "(" or (fi.ret.type.cppcls ~= "void" and "" or " = ")
-    local args_end = not fi.is_variable and ")" or ""
+---@param cls idl.parser.class_model
+---@param func idl.parser.func_model
+---@param write fun(s: string)
+---@param fidx? string
+local function gen_one_func(cls, func, write, fidx)
+    local caller = func.is_static and (cls.cppcls .. "::") or "self->"
+    local cppfunc = func.cppfunc
+    local args_begin = not func.is_variable and "(" or (func.ret.type.cppcls ~= "void" and "" or " = ")
+    local args_end = not func.is_variable and ")" or ""
     local cb_arg, cb_argn
-    funcidx = funcidx or ""
+    fidx = fidx or ""
 
     ---@class idl.parser.func_codeset
     ---@field num_ret string|integer
@@ -437,33 +458,33 @@ local function gen_one_func(cls, fi, write, funcidx)
         remove_function_callback = "",
     }
 
-    codeset.insert_after:push(fi.insert_after)
-    codeset.insert_before:push(fi.insert_before)
+    codeset.insert_after:push(func.insert_after)
+    codeset.insert_before:push(func.insert_before)
 
     olua.willdo([[
         gen one func:
             class = ${cls.cppcls}
-            func = ${fi.funcdesc}
+            func = ${func.funcdesc}
     ]])
 
-    if fi.body then
-        gen_func_body(cls, fi, write)
+    if func.body then
+        gen_func_body(cls, func, write)
         return
     end
 
-    local extend = fi.ret.attr.extend
+    local extend = func.ret.attr.extend
     if extend then
         caller = extend[1] .. "::"
     end
 
-    if fi.ret.attr.postnew then
+    if func.ret.attr.postnew then
         codeset.insert_after:push("olua_postnew(L, ret);")
     end
 
-    gen_func_args(cls, fi, codeset)
-    gen_func_ret(cls, fi, codeset)
+    gen_func_args(cls, func, codeset)
+    gen_func_ret(cls, func, codeset)
 
-    for i, arg in ipairs(fi.args) do
+    for i, arg in ipairs(func.args) do
         if olua.is_func_type(arg.type, cls) then
             olua.assert(not cb_arg, "not support multi callback")
             cb_arg = arg
@@ -471,8 +492,8 @@ local function gen_one_func(cls, fi, write, funcidx)
         end
     end
 
-    if fi.tag_mode then
-        olua.gen_callback(cls, fi, cb_arg, cb_argn, codeset)
+    if func.tag_mode then
+        olua.gen_callback(cls, func, cb_arg, cb_argn, codeset)
     end
 
     if #codeset.insert_before > 0 then
@@ -483,7 +504,7 @@ local function gen_one_func(cls, fi, write, funcidx)
         table.insert(codeset.insert_after, 1, "// insert code after call")
     end
 
-    if fi.is_contructor then
+    if func.is_contructor then
         caller = "new " .. cls.cppcls
         codeset.post_new = "olua_postnew(L, ret);"
     else
@@ -495,14 +516,14 @@ local function gen_one_func(cls, fi, write, funcidx)
         codeset.push_ret = olua.format([[
             ${codeset.push_stub};
         ]])
-        if not fi.is_contructor then
+        if not func.is_contructor then
             codeset.post_new = ""
         end
     end
 
-    if fi.cppfunc == "as" then
+    if func.cppfunc == "as" then
         local asexp = olua.array("\n")
-        for _, ascls in ipairs(fi.ret.attr.as) do
+        for _, ascls in ipairs(func.ret.attr.as) do
             local asti = olua.typeinfo(ascls .. "*")
             local asluacls = asti.luacls:match("^[^< ]+")
             asexp:pushf([[
@@ -513,7 +534,7 @@ local function gen_one_func(cls, fi, write, funcidx)
             ]])
         end
         write(olua.format([[
-            static int _${cls.cppcls#}_${fi.cppfunc}${funcidx}(lua_State *L)
+            static int _${cls.cppcls#}_${func.cppfunc}${fidx}(lua_State *L)
             {
                 olua_startinvoke(L);
 
@@ -538,7 +559,7 @@ local function gen_one_func(cls, fi, write, funcidx)
         ]]))
     else
         write(olua.format([[
-            static int _${cls.cppcls#}_${fi.cppfunc}${funcidx}(lua_State *L)
+            static int _${cls.cppcls#}_${func.cppfunc}${fidx}(lua_State *L)
             {
                 olua_startinvoke(L);
 
@@ -550,7 +571,7 @@ local function gen_one_func(cls, fi, write, funcidx)
 
                 ${codeset.callback}
 
-                // ${fi.funcdesc}
+                // ${func.funcdesc}
                 ${codeset.decl_ret}${caller}${args_begin}${codeset.caller_args}${args_end};
                 ${codeset.push_ret}
                 ${codeset.post_new}
@@ -567,9 +588,11 @@ local function gen_one_func(cls, fi, write, funcidx)
     end
 end
 
-local function get_num_args(fi)
+---@param func idl.parser.func_model
+---@return integer
+local function get_num_args(func)
     local count = 0
-    for _, arg in ipairs(fi.args) do
+    for _, arg in ipairs(func.args) do
         if arg.attr.pack then
             count = count + arg.type.packvars
         else
@@ -579,18 +602,25 @@ local function get_num_args(fi)
     return count
 end
 
+---@param funcs idl.parser.func_model[]
+---@param num_args integer
+---@return idl.parser.func_model[]
 local function get_func_with_num_args(funcs, num_args)
     local arr = {}
-    for _, fi in ipairs(funcs) do
-        local n = olua.is_oluaret(fi) and (num_args + 1) or num_args
-        if get_num_args(fi) == n then
-            arr[#arr + 1] = fi
+    for _, func in ipairs(funcs) do
+        local n = olua.is_oluaret(func) and (num_args + 1) or num_args
+        if get_num_args(func) == n then
+            arr[#arr + 1] = func
         end
     end
     return arr
 end
 
+---@param cls idl.parser.class_model
+---@param fns idl.parser.func_model[]
+---@return string
 local function gen_test_and_call(cls, fns)
+    ---@type {max_vars: integer, exp1: string, exp2: string?}
     local callblock = {}
     for _, fi in ipairs(fns) do
         if #fi.args > 0 then
@@ -672,13 +702,18 @@ local function gen_test_and_call(cls, fns)
         return a.max_vars > b.max_vars
     end)
 
+    local exprs = olua.array("\n\n")
+
     for i, v in ipairs(callblock) do
-        callblock[i] = i == #callblock and v.exp1 or v.exp2
+        exprs:push(i == #callblock and v.exp1 or v.exp2)
     end
 
-    return table.concat(callblock, "\n\n")
+    return tostring(exprs)
 end
 
+---@param cls idl.parser.class_model
+---@param funcs idl.parser.func_model[]
+---@param write idl.parser.writer
 local function gen_multi_func(cls, funcs, write)
     local cppfunc = funcs[1].cppfunc
     local subone = funcs[1].is_static and "" or " - 1"
@@ -718,6 +753,9 @@ local function gen_multi_func(cls, funcs, write)
     ]]))
 end
 
+---@param cls idl.parser.class_model
+---@param funcs idl.parser.func_model[]
+---@param write idl.parser.writer
 function olua.gen_class_func(cls, funcs, write)
     if #funcs == 1 then
         gen_one_func(cls, funcs[1], write)
@@ -726,8 +764,14 @@ function olua.gen_class_func(cls, funcs, write)
     end
 end
 
+---@param cls idl.parser.class_model
+---@param idx integer
+---@param name string
+---@param codeset idl.parser.func_codeset
 function olua.gen_class_fill(cls, idx, name, codeset)
     local vars = olua.ordered_map()
+
+    ---@param c idl.parser.class_model
     local function copy_var(c)
         if c.supercls then
             copy_var(olua.get_class(c.supercls))
@@ -767,7 +811,8 @@ function olua.gen_class_fill(cls, idx, name, codeset)
     end
 end
 
--- packable object
+---@param cls idl.parser.class_model
+---@param write idl.parser.writer
 local function gen_pack_func(cls, write)
     local codeset = {
         decl_args = olua.array("\n"),
@@ -775,11 +820,11 @@ local function gen_pack_func(cls, write)
     }
     for i, var in ipairs(cls.vars) do
         local pi = var.set.args[1]
-        local argname = "arg" .. i
-        olua.gen_decl_exp(pi, argname, codeset)
-        olua.gen_check_exp(pi, argname, "idx + " .. (i - 1), codeset)
+        local name = "arg" .. i
+        olua.gen_decl_exp(pi, name, codeset)
+        olua.gen_check_exp(pi, name, "idx + " .. (i - 1), codeset)
         codeset.check_args:pushf([[
-            value->${var.set.cppfunc} = ${argname};
+            value->${var.set.cppfunc} = ${name};
         ]])
         codeset.check_args:push("")
     end
@@ -797,13 +842,15 @@ local function gen_pack_func(cls, write)
     write("")
 end
 
+---@param cls idl.parser.class_model
+---@param write idl.parser.writer
 local function gen_unpack_func(cls, write)
     local num_args = #cls.vars
     local codeset = { push_args = olua.array("\n") }
     for _, var in ipairs(cls.vars) do
         local pi = var.set.args[1]
-        local argname = olua.format("value->${var.set.cppfunc}")
-        olua.gen_push_exp(pi, argname, codeset)
+        local name = olua.format("value->${var.set.cppfunc}")
+        olua.gen_push_exp(pi, name, codeset)
     end
 
     write(olua.format([[
@@ -817,14 +864,17 @@ local function gen_unpack_func(cls, write)
     write("")
 end
 
+---@param cls idl.parser.class_model
+---@param write idl.parser.writer
 local function gen_canpack_func(cls, write)
     local exps = olua.array(" && ")
     for i, var in ipairs(cls.vars) do
-        local pi = var.set.args[1]
-        local func_is = olua.conv_func(pi.type, "is")
+        local arg = var.set.args[1]
+        local func_is = olua.conv_func(arg.type, "is")
         local N = i - 1
-        if olua.is_pointer_type(pi.type) then
-            exps:pushf('${func_is}(L, idx + ${N}, "${pi.type.luacls}")')
+        olua.use(func_is, N)
+        if olua.is_pointer_type(arg.type) then
+            exps:pushf('${func_is}(L, idx + ${N}, "${arg.type.luacls}")')
         else
             exps:pushf("${func_is}(L, idx + ${N})")
         end
@@ -837,8 +887,11 @@ local function gen_canpack_func(cls, write)
     ]]))
 end
 
+---@param module idl.parser.module
+---@param write idl.parser.writer
 function olua.gen_pack_header(module, write)
     for _, cls in ipairs(module.class_types) do
+        ---@cast cls idl.parser.class_model
         if cls.options.packable and not cls.options.packvars then
             write(cls.macro)
             write(olua.format([[
@@ -853,8 +906,11 @@ function olua.gen_pack_header(module, write)
     end
 end
 
+---@param module idl.parser.module
+---@param write idl.parser.writer
 function olua.gen_pack_source(module, write)
     for _, cls in ipairs(module.class_types) do
+        ---@cast cls idl.parser.class_model
         if cls.options.packable and not cls.options.packvars then
             write(cls.macro)
             cls.vars:sort(function (_, _, a, b)

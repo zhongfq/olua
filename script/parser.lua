@@ -88,7 +88,7 @@ local function search_type_from_class(cls, cpptype, errors)
 end
 
 local function subtype_typeinfo(cls, cpptype, throwerror)
-    local subtis = {}
+    local subtypes = {}
     for subcpptype in cpptype:match("<(.*)>"):gmatch(" *([^,]+)") do
         local subti = olua.typeinfo(subcpptype, cls, throwerror)
         if not subti.smartptr and subcpptype:find("<") then
@@ -98,19 +98,19 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
                     subtype: ${subcpptype}
             ]])
         end
-        subtis[#subtis + 1] = subti
+        subtypes[#subtypes + 1] = subti
     end
     if throwerror then
-        olua.assert(next(subtis), "not found subtype: " .. cpptype)
+        olua.assert(next(subtypes), "not found subtype: " .. cpptype)
     end
-    return subtis
+    return subtypes
 end
 
 ---@class idl.parser.typedef_desc : idl.model.typedef_desc
 ---@field flag number
 ---@field funcdecl? string
 ---@field callback? idl.parser.func_model
----@field subtis? idl.parser.typedef_desc[]
+---@field subtypes? idl.parser.typedef_desc[]
 
 --- Get typeinfo.
 ---
@@ -119,7 +119,7 @@ end
 --- child = {
 ---     cppcls = std::vector
 ---     flag = kFLAG_CONST | kFLAG_LVALUE
----     subtis = {
+---     subtypes = {
 ---         [1] = {
 ---             cppcls = 'Object *'
 ---             flag = kFLAG_CONST | kFLAG_POINTER
@@ -131,14 +131,13 @@ end
 ---     flag = kFLAG_POINTER
 --- }
 ---```
----@param cpptype any
----@param cls any
----@param throwerror any
----@param errors any
+---@param cpptype string
+---@param cls? idl.parser.class_model
+---@param throwerror? boolean
+---@param errors? olua.ordered_map
 ---@return idl.parser.typedef_desc
----@overload fun(cpptype: string, cls: any): idl.parser.typedef_desc
 function olua.typeinfo(cpptype, cls, throwerror, errors)
-    local tn, ti, subtis -- for tn<T, ...>
+    local tn, ti, subtypes -- for tn<T, ...>
     local flag = 0
 
     throwerror = throwerror ~= false
@@ -175,7 +174,7 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
 
     -- parse template args
     if cpptype:find("<") then
-        subtis = subtype_typeinfo(cls, cpptype, throwerror)
+        subtypes = subtype_typeinfo(cls, cpptype, throwerror)
         cpptype = olua.pretty_typename(cpptype:gsub("<.*>", ""))
     end
 
@@ -208,7 +207,7 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
         flag = flag & (~kFLAG_CONST)
     end
 
-    ti.subtypes = subtis
+    ti.subtypes = subtypes
     ti.flag = flag
 
     if ti.subtypes then
@@ -252,6 +251,11 @@ end
     olua_check_integer(L, 2, &arg1);
     self->call(arg1);
 ]]
+---@param ti string|idl.parser.typedef_desc
+---@param checkvalue? boolean
+---@param addspace? boolean
+---@param exps? olua.array
+---@return string
 function olua.decltype(ti, checkvalue, addspace, exps)
     if type(ti) == "string" then
         if addspace and not ti:find("[*&]$") then
@@ -395,7 +399,7 @@ local parse_args
 ---@return idl.parser.func_model
 local function parse_callback(cls, tn)
     if not tn:find("std::function") then
-        tn = olua.typeinfo(tn, cls).funcdecl
+        tn = assert(olua.typeinfo(tn, cls).funcdecl)
     end
     local rtn, rattr, str = parse_type(tn:match("<(.*)>"))
     str = str:gsub("^[^(]+", "") -- match callback args
@@ -420,6 +424,8 @@ end
         }
     }
 ]]
+---@param cls idl.parser.class_model
+---@param declstr string
 function parse_args(cls, declstr)
     local args = {}
     local count = 0
@@ -493,11 +499,6 @@ function olua.parse_type(type_model, cls)
     return desc
 end
 
-function olua.func_name(funcdecl)
-    local _, _, str = parse_type(funcdecl)
-    return str:match("[^ ()]+")
-end
-
 ---@param cls any
 ---@param fi idl.model.func_desc
 ---@return string
@@ -537,12 +538,16 @@ local function gen_func_desc(cls, fi)
     return tostring(exps)
 end
 
+---@param cppcls string
+---@return string?
 function olua.luacls(cppcls)
     local ti = typeinfo_map[cppcls .. " *"] or typeinfo_map[cppcls]
     assert(ti, "type not found: " .. cppcls)
     return ti.luacls
 end
 
+---@param ti idl.parser.typedef_desc
+---@return string
 function olua.luatype(ti)
     if ti.luacls == "void" then
         return "nil"
@@ -560,71 +565,94 @@ function olua.luatype(ti)
     end
 end
 
+---@param tn string|idl.parser.typedef_desc
+---@param cls? idl.parser.class_model
+---@return boolean
 function olua.is_func_type(tn, cls)
-    if type(tn) == "table" then
-        tn = tn.cppcls
-    end
-    if tn:find("std::function") then
+    local cpptype = type(tn) == "table" and tn.cppcls or tn --[[@as string]]
+    if cpptype:find("std::function") then
         return true
     else
-        local ti = olua.typeinfo(tn, cls)
-        return ti and ti.funcdecl
+        return olua.typeinfo(cpptype, cls).funcdecl ~= nil
     end
 end
 
+---@param ti idl.parser.typedef_desc
+---@return boolean
 function olua.has_rvalue_flag(ti)
     return has_flag(ti.flag, kFLAG_RVALUE)
 end
 
+---@param ti idl.parser.typedef_desc
+---@return boolean
 function olua.has_lvalue_flag(ti)
     return has_flag(ti.flag, kFLAG_LVALUE)
 end
 
+---@param ti idl.parser.typedef_desc
+---@return boolean
 function olua.has_const_flag(ti)
     return has_flag(ti.flag, kFLAG_CONST)
 end
 
+---@param ti idl.parser.typedef_desc
+---@return boolean
 function olua.has_pointer_flag(ti)
     return has_flag(ti.flag, kFLAG_POINTER)
 end
 
+---@param ti idl.parser.typedef_desc
+---@return boolean
 function olua.has_pointee_flag(ti)
     return has_flag(ti.flag, kFLAG_RVALUE | kFLAG_LVALUE | kFLAG_POINTER)
 end
 
+---@param ti idl.parser.typedef_desc
+---@return boolean
 function olua.has_callback_flag(ti)
     return has_flag(ti.flag, kFLAG_CALLBACK)
 end
 
+---@param ti idl.parser.typedef_desc
+---@return boolean
 function olua.has_cast_flag(ti)
     return has_flag(ti.flag, kFLAG_CAST)
 end
 
 ---@param ti idl.parser.typedef_desc|string
----@return unknown
+---@return boolean
 function olua.is_pointer_type(ti)
     if type(ti) == "string" then
         -- is 'T *'?
-        return ti:find("%*$")
+        return ti:find("%*$") ~= nil
+    elseif ti.luacls and not olua.is_value_type(ti) and not olua.is_func_type(ti) then
+        return true
     else
-        return ti.luacls and not olua.is_value_type(ti)
-            and not olua.is_func_type(ti)
+        return false
     end
 end
 
+---@param cppcls string
+---@return boolean
 function olua.is_templdate_type(cppcls)
-    return cppcls:find("<")
+    return cppcls:find("<") ~= nil
 end
 
+---@param cls idl.parser.class_model
+---@return boolean
 function olua.is_enum_type(cls)
     local ti = typeinfo_map[cls.cppcls]
     return ti.conv == "olua_$$_enum"
 end
 
-function olua.is_oluaret(fi)
-    return fi.ret.type.cppcls == "olua_Return"
+---@param func idl.parser.func_model
+---@return boolean
+function olua.is_oluaret(func)
+    return func.ret.type.cppcls == "olua_Return"
 end
 
+---@param ti idl.parser.typedef_desc
+---@return string
 function olua.initial_value(ti)
     if olua.has_pointer_flag(ti) then
         return " = nullptr"
@@ -655,6 +683,8 @@ function olua.is_value_type(ti)
     return valuetype[ti.conv]
 end
 
+---@param ti idl.parser.typedef_desc
+---@param fn string
 function olua.conv_func(ti, fn)
     return ti.conv:gsub("[$]+", fn)
 end
@@ -691,6 +721,15 @@ end
 function olua.export(path)
     local m = dofile(path)
 
+    ---@class idl.parser.module
+    ---@field name string
+    ---@field output_dir string
+    ---@field headers string
+    ---@field luaopen? string
+    ---@field entry? string
+    ---@field codeblock? string
+    ---@field class_types olua.array # idl.parser.class_desc[]
+
     ---@class idl.parser.class_model : idl.model.class_desc
     ---@field luacls string
 
@@ -705,6 +744,7 @@ function olua.export(path)
     ---@field nullable? table
     ---@field extend? [string] # @extend
     ---@field postnew? table
+    ---@field as? table
 
     ---@class idl.parser.type_model : idl.model.type_model
     ---@field type idl.parser.typedef_desc
