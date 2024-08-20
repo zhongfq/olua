@@ -539,7 +539,7 @@ local function gen_func_desc(cls, fi)
 end
 
 ---@param cppcls string
----@return string?
+---@return string
 function olua.luacls(cppcls)
     local ti = typeinfo_map[cppcls .. " *"] or typeinfo_map[cppcls]
     assert(ti, "type not found: " .. cppcls)
@@ -757,7 +757,11 @@ function olua.export(path)
     ---@field args olua.array # idl.parser.type_desc[]
 
     olua.make_array(m.class_types):foreach(function (cls)
+        ---@cast cls idl.parser.class_model
         class_map[cls.cppcls] = cls
+
+        cls.luacls = olua.luacls(cls.cppcls)
+
         cls.funcs = olua.make_ordered_map(cls.funcs)
 
         olua.make_ordered_map(cls.props):foreach(function (prop)
@@ -782,7 +786,6 @@ function olua.export(path)
 
         olua.make_ordered_map(cls.vars):foreach(function (var)
             for _, arr in ipairs(cls.funcs) do
-                -- TODO: check get set exist
                 for _, func in ipairs(arr) do
                     if var.get and var.get == func.prototype then
                         var.get = func

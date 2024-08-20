@@ -236,8 +236,6 @@ end
 ---@param write idl.parser.writer
 local function gen_classes(module, write)
     for _, cls in ipairs(module.class_types) do
-        ---@cast cls idl.parser.class_model
-        cls.luacls = olua.luacls(cls.cppcls)
         local macro = cls.macro
         write(macro)
 
