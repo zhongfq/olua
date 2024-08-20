@@ -1318,6 +1318,10 @@ function olua.lua_stringify(data, options)
                 local v_str = lua_value_stringify(v)
                 olua.use(v_str)
                 lua_annotation_type(v, out)
+                local olua_comment = olua.get_comment(value, k, " -- ")
+                if olua_comment ~= "" then
+                    out:push(olua_comment)
+                end
                 out:pushf([[
                     ${k_str} = {
                         ${v_str}
