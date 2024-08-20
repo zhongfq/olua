@@ -967,11 +967,11 @@ end
 local function is_array(t)
     local mt = getmetatable(t)
     if mt then
-        if mt.__olua_array then
-            return true
-        elseif mt.__olua_object then
+        if mt.__olua_object then
             return false
-        elseif mt.__olua_object then
+        elseif mt.__olua_type == "olua.array" then
+            return true
+        elseif mt.__olua_type == "olua.ordered_map" then
             return false
         end
     end
@@ -1046,10 +1046,6 @@ function olua.json_stringify(data, options)
             local mt = getmetatable(value)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
-            elseif mt and mt.__olua_type == "olua.array" then
-                return json_array_stringify(value)
-            elseif mt and mt.__olua_type == "olua.ordered_map" then
-                return json_object_stringify(value._map)
             elseif is_array(value) then
                 return json_array_stringify(value)
             else
@@ -1242,10 +1238,6 @@ function olua.lua_stringify(data, options)
             local mt = getmetatable(value)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
-            elseif mt and mt.__olua_type == "olua.array" then
-                return lua_array_stringify(value)
-            elseif mt and mt.__olua_type == "olua.ordered_map" then
-                return lua_object_stringify(value._map)
             elseif is_array(value) then
                 return lua_array_stringify(value)
             else
@@ -1428,10 +1420,6 @@ function olua.ts_stringify(data, options)
             local mt = getmetatable(value)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
-            elseif mt and mt.__olua_type == "olua.array" then
-                return ts_array_stringify(value)
-            elseif mt and mt.__olua_type == "olua.ordered_map" then
-                return ts_object_stringify(value._map)
             elseif is_array(value) then
                 return ts_array_stringify(value)
             else
@@ -1549,3 +1537,5 @@ function olua.ts_stringify(data, options)
     end
     return tostring(out)
 end
+
+return olua
