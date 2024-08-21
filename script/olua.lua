@@ -176,7 +176,7 @@ end
 
 ---Iterate over the table.
 ---@param t table
----@param fn fun(value:any, key:string|integer, t:table)
+---@param fn fun(value:any, key:any, t:table)
 function olua.foreach(t, fn)
     for k, v in pairs(t) do
         fn(v, k, t)
@@ -502,14 +502,14 @@ function olua.ordered_map(overwritable)
     overwritable = overwritable ~= false
 
     ---@private
-    ---@param key string|integer
+    ---@param key any
     ---@return any
     function ordered_map:__index(key)
         return self:get(key)
     end
 
     ---@private
-    ---@param key string|integer
+    ---@param key any
     ---@param value any
     function ordered_map:__newindex(key, value)
         self:set(key, value)
@@ -560,7 +560,7 @@ function olua.ordered_map(overwritable)
     end
 
     ---Replace value with the key.
-    ---@param key string|integer
+    ---@param key any
     ---@param value any
     function ordered_map:replace(key, value)
         self._map[key] = value
@@ -570,28 +570,28 @@ function olua.ordered_map(overwritable)
     end
 
     ---Get value with the key.
-    ---@param key string|integer
+    ---@param key any
     ---@return unknown
     function ordered_map:get(key)
         return self._map[key]
     end
 
     ---Check if the key exists.
-    ---@param key string|integer
+    ---@param key any
     ---@return boolean
     function ordered_map:has(key)
         return self._map[key] ~= nil
     end
 
     ---Remove value with the key.
-    ---@param key string|integer
+    ---@param key any
     function ordered_map:remove(key)
         self._keys:remove(key)
         self._map[key] = nil
     end
 
     ---Take value with the key.
-    ---@param key string|integer
+    ---@param key any
     ---@return any
     function ordered_map:take(key)
         local value = self._map[key]
@@ -601,7 +601,7 @@ function olua.ordered_map(overwritable)
     end
 
     ---Iterate over the ordered map.
-    ---@param fn fun(value:any, key:string|integer, map:olua.ordered_map)
+    ---@param fn fun(value:any, key:any, map:olua.ordered_map)
     function ordered_map:foreach(fn)
         local keys = self._keys:slice()
         for _, key in ipairs(keys) do
@@ -641,7 +641,7 @@ function olua.ordered_map(overwritable)
     end
 
     ---Sort the ordered map.
-    ---@param fn? fun(k1:string|integer, k2:string|integer, v1:any, v2:any):boolean
+    ---@param fn? fun(k1:any, k2:any, v1:any, v2:any):boolean
     function ordered_map:sort(fn)
         if fn then
             self._keys:sort(function (a, b)
