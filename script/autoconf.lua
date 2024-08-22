@@ -1360,6 +1360,9 @@ local function parse_types()
                 end
             end
         end
+        if not m.path then
+            m.path = olua.format("lua-${m.name}.lua")
+        end
         setmetatable(m, { __index = Autoconf })
         olua.print("parsing: ${m.path}")
         idl.current_module = m
