@@ -6,10 +6,6 @@
 ---@field debug boolean
 local clang = {}
 
-function clang:__gc() end
-
-function clang:__olua_move() end
-
 ---Provides a shared context for creating translation units.
 ---
 ---It provides two options:

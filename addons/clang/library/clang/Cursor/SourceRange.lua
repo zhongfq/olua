@@ -9,10 +9,4 @@
 ---@field startLine integer
 local SourceRange = {}
 
-function SourceRange:__call() end
-
-function SourceRange:__gc() end
-
-function SourceRange:__olua_move() end
-
 return SourceRange

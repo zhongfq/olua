@@ -1577,6 +1577,7 @@ local function find_as()
                 ---@type idl.model.func_desc
                 local as_func = {
                     cppfunc = "as",
+                    luafunc = "as",
                     is_exposed = true,
                     prototype = "void *as(const char *cls)",
                     ret = {

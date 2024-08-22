@@ -7,10 +7,4 @@
 ---@field path string
 local SourceLocation = {}
 
-function SourceLocation:__call() end
-
-function SourceLocation:__gc() end
-
-function SourceLocation:__olua_move() end
-
 return SourceLocation

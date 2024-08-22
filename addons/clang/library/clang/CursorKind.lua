@@ -266,6 +266,8 @@ local CursorKind = {
     NullStmt = 230,
     ---OpenMP 5.0 [2.1.4, Array Shaping].
     OMPArrayShapingExpr = 150,
+    ---OpenMP assume directive.
+    OMPAssumeDirective = 309,
     ---OpenMP atomic directive.
     OMPAtomicDirective = 249,
     ---OpenMP barrier directive.
@@ -300,6 +302,8 @@ local CursorKind = {
     OMPForSimdDirective = 250,
     ---OpenMP loop directive.
     OMPGenericLoopDirective = 295,
+    ---OpenMP interchange directive.
+    OMPInterchangeDirective = 308,
     ---OpenMP interop directive.
     OMPInteropDirective = 290,
     ---OpenMP 5.0 [2.1.6 Iterators]
@@ -342,6 +346,8 @@ local CursorKind = {
     OMPParallelMasterTaskLoopSimdDirective = 284,
     ---OpenMP parallel sections directive.
     OMPParallelSectionsDirective = 239,
+    ---OpenMP reverse directive.
+    OMPReverseDirective = 307,
     ---OpenMP scan directive.
     OMPScanDirective = 287,
     ---OpenMP scope directive.

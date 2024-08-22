@@ -807,7 +807,7 @@ function olua.export(path)
 
     olua.gen_header(m)
     olua.gen_source(m)
-    olua.gen_metafile(m)
+    olua.gen_annotation(m)
 end
 
 return olua
