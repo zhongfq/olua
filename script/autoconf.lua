@@ -589,7 +589,7 @@ local function get_comment(cur)
             end
         end
 
-        return olua.base64_encode(comment)
+        return comment
     end
 end
 

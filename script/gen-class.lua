@@ -63,56 +63,60 @@ end
 ---@param cls idl.gen.class_desc
 ---@param write idl.gen.writer
 local function gen_class_open(cls, write)
-    local funcs = olua.array("\n")
     local reg_luatype = ""
     local luaopen = cls.luaopen or ""
     local oluacls_class
+    local oluacls_func = olua.array("\n")
 
     if cls.options.indexerror then
         if cls.options.indexerror:find("r") then
-            funcs:pushf('oluacls_func(L, "__index", olua_indexerror);')
+            oluacls_func:pushf('oluacls_func(L, "__index", olua_indexerror);')
         end
         if cls.options.indexerror:find("w") then
-            funcs:pushf('oluacls_func(L, "__newindex", olua_newindexerror);')
+            oluacls_func:pushf('oluacls_func(L, "__newindex", olua_newindexerror);')
         end
     end
 
-    for _, fis in ipairs(cls.funcs) do
-        local cppfunc = fis[1].cppfunc
-        local luafunc = fis[1].luafunc or cppfunc
-        if fis[1].is_exposed then
-            local macro = fis[1].macro
-            funcs:push(macro)
-            funcs:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
-            funcs:push(macro and "#endif" or nil)
+    for _, arr in ipairs(cls.funcs) do
+        ---@type idl.gen.func_desc
+        local func = arr[1]
+        local cppfunc = func.cppfunc
+        local luafunc = func.luafunc or cppfunc
+        if func.is_exposed then
+            olua.use(luafunc)
+            oluacls_func:push(func.macro)
+            oluacls_func:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
+            oluacls_func:push(func.macro and "#endif" or nil)
         end
     end
 
     for _, pi in ipairs(cls.props) do
         local func_get = "nullptr"
         local func_set = "nullptr"
+        ---@cast pi idl.gen.prop_desc
         local macro = pi.get.macro
-        funcs:push(macro)
+        oluacls_func:push(macro)
         if pi.get then
             func_get = olua.format("_${cls.cppcls#}_${pi.get.cppfunc}")
         end
         if pi.set then
             func_set = olua.format("_${cls.cppcls#}_${pi.set.cppfunc}")
         end
-        funcs:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
-        funcs:push(macro and "#endif" or nil)
+        oluacls_func:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
+        oluacls_func:push(macro and "#endif" or nil)
     end
 
     for _, vi in ipairs(cls.vars) do
         local func_get = olua.format("_${cls.cppcls#}_${vi.get.cppfunc}")
         local func_set = "nullptr"
+        ---@cast vi idl.gen.var_desc
         local macro = vi.get.macro
-        funcs:push(macro)
+        oluacls_func:push(macro)
         if vi.set and vi.set.cppfunc then
             func_set = olua.format("_${cls.cppcls#}_${vi.set.cppfunc}")
         end
-        funcs:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
-        funcs:push(macro and "#endif" or nil)
+        oluacls_func:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
+        oluacls_func:push(macro and "#endif" or nil)
     end
 
     for _, ci in ipairs(cls.consts) do
@@ -120,11 +124,11 @@ local function gen_class_open(cls, write)
         if olua.is_pointer_type(ci.type) and not olua.has_pointer_flag(ci.type) then
             cast = "&"
         end
-        funcs:pushf('oluacls_const(L, "${ci.name}", ${cast}${ci.value});')
+        oluacls_func:pushf('oluacls_const(L, "${ci.name}", ${cast}${ci.value});')
     end
 
     for _, ei in ipairs(cls.enums) do
-        funcs:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
+        oluacls_func:pushf('oluacls_enum(L, "${ei.name}", (lua_Integer)${ei.value});')
     end
 
     if not cls.options.reg_luatype then
@@ -140,7 +144,7 @@ local function gen_class_open(cls, write)
         OLUA_LIB int luaopen_${cls.cppcls#}(lua_State *L)
         {
             ${oluacls_class}
-            ${funcs}
+            ${oluacls_func}
 
             ${luaopen}
 

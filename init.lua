@@ -118,11 +118,6 @@ if not isdir(OLUA_HOME) or not isdir(OLUA_HOME .. "/" .. lua) or not isdir(OLUA_
 end
 
 require "script.olua"
-
-local base64 = require "script.base64"
-olua.base64_encode = base64.encode
-olua.base64_decode = base64.decode
-
 require "script.parser"
 require "script.basictype"
 require "script.gen-class"
