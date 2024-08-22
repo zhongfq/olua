@@ -226,11 +226,7 @@ function olua.make_ordered_map(t)
         map:set(k, v)
         t[k] = nil
     end
-    setmetatable(map, nil)
-    for k, v in pairs(map) do
-        t[k] = v
-    end
-    setmetatable(t, t)
+    setmetatable(t, getmetatable(map))
     return t
 end
 
@@ -491,38 +487,34 @@ end
 ---@return olua.ordered_map
 function olua.ordered_map(overwritable)
     ---@class olua.ordered_map
-    ---@field private _keys olua.array
-    ---@field private _map table
-    local ordered_map = {
-        __olua_type = "olua.ordered_map",
-        _keys = olua.array(),
-        _map = {}
-    }
+    ---@field private __index any
+    local ordered_map = { __olua_type = "olua.ordered_map" }
 
     overwritable = overwritable ~= false
 
-    ---@private
-    ---@param key any
-    ---@return any
-    function ordered_map:__index(key)
-        return self:get(key)
+    local keys = olua.array()
+    local map = {}
+
+    ordered_map.__index = ordered_map
+
+    ---@package
+    function ordered_map:raw_map()
+        return map
     end
 
     ---@private
-    ---@param key any
-    ---@param value any
-    function ordered_map:__newindex(key, value)
-        self:set(key, value)
+    function ordered_map:__newindex()
+        error("__newindex is not allowed")
     end
 
     ---@private
     function ordered_map:__len()
-        return #self._keys
+        error("__len is not allowed")
     end
 
     ---@private
     function ordered_map:__pairs()
-        return pairs(self._map)
+        return pairs(map)
     end
 
     ---@private
@@ -544,15 +536,15 @@ function olua.ordered_map(overwritable)
     ---@param key any
     ---@param value any
     function ordered_map:set(key, value)
-        if self._keys:index_of(key) == 0 then
+        if keys:index_of(key) == 0 then
             if value ~= nil then
-                self._map[key] = value
-                self._keys:push(key)
+                map[key] = value
+                keys:push(key)
             end
         elseif overwritable then
-            self._map[key] = value
+            map[key] = value
             if value == nil then
-                self._keys:remove(key)
+                keys:remove(key)
             end
         else
             error(string.format("key '%s' already exists", key))
@@ -563,9 +555,9 @@ function olua.ordered_map(overwritable)
     ---@param key any
     ---@param value any
     function ordered_map:replace(key, value)
-        self._map[key] = value
-        if self._keys:index_of(key) == 0 then
-            self._keys:push(key)
+        map[key] = value
+        if keys:index_of(key) == 0 then
+            keys:push(key)
         end
     end
 
@@ -573,39 +565,38 @@ function olua.ordered_map(overwritable)
     ---@param key any
     ---@return unknown
     function ordered_map:get(key)
-        return self._map[key]
+        return map[key]
     end
 
     ---Check if the key exists.
     ---@param key any
     ---@return boolean
     function ordered_map:has(key)
-        return self._map[key] ~= nil
+        return map[key] ~= nil
     end
 
     ---Remove value with the key.
     ---@param key any
     function ordered_map:remove(key)
-        self._keys:remove(key)
-        self._map[key] = nil
+        keys:remove(key)
+        map[key] = nil
     end
 
     ---Take value with the key.
     ---@param key any
     ---@return any
     function ordered_map:take(key)
-        local value = self._map[key]
-        self._keys:remove(key)
-        self._map[key] = nil
+        local value = map[key]
+        keys:remove(key)
+        map[key] = nil
         return value
     end
 
     ---Iterate over the ordered map.
     ---@param fn fun(value:any, key:any, map:olua.ordered_map)
     function ordered_map:foreach(fn)
-        local keys = self._keys:slice()
-        for _, key in ipairs(keys) do
-            local value = self._map[key]
+        for _, key in ipairs(keys:slice()) do
+            local value = map[key]
             if value ~= nil then
                 fn(value, key, self)
             end
@@ -614,16 +605,16 @@ function olua.ordered_map(overwritable)
 
     ---Clear the ordered map.
     function ordered_map:clear()
-        self._keys:clear()
-        self._map = {}
+        keys:clear()
+        map = {}
     end
 
     ---Return values of the ordered map.
     ---@return olua.array
     function ordered_map:values()
         local arr = olua.array()
-        for _, key in ipairs(self._keys) do
-            arr:push(self._map[key])
+        for _, key in ipairs(keys) do
+            arr:push(map[key])
         end
         return arr
     end
@@ -631,24 +622,24 @@ function olua.ordered_map(overwritable)
     ---Return keys of the ordered map.
     ---@return olua.array
     function ordered_map:keys()
-        return self._keys
+        return keys
     end
 
     ---Return size of the ordered map.
     ---@return integer
     function ordered_map:size()
-        return #self._keys
+        return #keys
     end
 
     ---Sort the ordered map.
     ---@param fn? fun(k1:any, k2:any, v1:any, v2:any):boolean
     function ordered_map:sort(fn)
         if fn then
-            self._keys:sort(function (a, b)
-                return fn(a, b, self._map[a], self._map[b])
+            keys:sort(function (a, b)
+                return fn(a, b, map[a], map[b])
             end)
         else
-            self._keys:sort()
+            keys:sort()
         end
         return self
     end
@@ -669,27 +660,27 @@ function olua.ordered_map(overwritable)
         if mode == "front" then
             idx = 1
         elseif mode == "after" then
-            idx = self._keys:index_of(at_key)
+            idx = keys:index_of(at_key)
             if idx == 0 then
-                idx = #self._keys + 1
+                idx = #keys + 1
             else
                 idx = idx + 1
             end
         elseif mode == "before" then
-            idx = self._keys:index_of(at_key)
+            idx = keys:index_of(at_key)
             if idx == 0 then
                 idx = 1
             end
         elseif mode == "back" then
-            idx = #self._keys + 1
+            idx = #keys + 1
         else
             olua.error("invalid insert mode: ${insertmode}")
         end
-        self._keys:insert(idx, key)
-        self._map[key] = value
+        keys:insert(idx, key)
+        map[key] = value
     end
 
-    return setmetatable(ordered_map, ordered_map)
+    return setmetatable({}, ordered_map)
 end
 
 -------------------------------------------------------------------------------
@@ -998,6 +989,7 @@ function olua.as_object(t)
         setmetatable(t, mt)
     end
     mt.__olua_object = true
+    return t
 end
 
 ---Get the comment of a field. If not found, return empty string.
@@ -1047,7 +1039,8 @@ function olua.json_stringify(data, options)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
             elseif mt and mt.__olua_type == "olua.ordered_map" then
-                return json_object_stringify(value._map)
+                ---@cast value olua.ordered_map
+                return json_object_stringify(value:raw_map())
             elseif is_array(value) then
                 return json_array_stringify(value)
             else
@@ -1241,7 +1234,8 @@ function olua.lua_stringify(data, options)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
             elseif mt and mt.__olua_type == "olua.ordered_map" then
-                return lua_object_stringify(value._map)
+                ---@cast value olua.ordered_map
+                return lua_object_stringify(value:raw_map())
             elseif is_array(value) then
                 return lua_array_stringify(value)
             else
@@ -1425,7 +1419,8 @@ function olua.ts_stringify(data, options)
             if mt and mt.__tostring then
                 return mt.__tostring(value)
             elseif mt and mt.__olua_type == "olua.ordered_map" then
-                return ts_object_stringify(value._map)
+                ---@cast value olua.ordered_map
+                return ts_object_stringify(value:raw_map())
             elseif is_array(value) then
                 return ts_array_stringify(value)
             else

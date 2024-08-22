@@ -845,7 +845,7 @@ end
 ---@param cls idl.gen.class_desc
 ---@param write idl.gen.writer
 local function gen_unpack_func(cls, write)
-    local num_args = #cls.vars
+    local num_args = cls.vars:size()
     local codeset = { push_args = olua.array("\n") }
     for _, var in ipairs(cls.vars) do
         local pi = var.set.args[1]

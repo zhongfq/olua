@@ -545,7 +545,7 @@ end
 ---@param cur clang.Cursor
 ---@return boolean
 local function is_excluded_memeber(cls, cur)
-    local mode = #cls.conf.includes > 0 and "include" or "exclude"
+    local mode = cls.conf.includes:size() > 0 and "include" or "exclude"
     local name = cur.name
 
     if not OLUA_ENABLE_WITH_UNDERSCORE
@@ -1531,7 +1531,7 @@ local function copy_super_funcs()
                 ---@type idl.model.class_desc
                 local super = visited_types:get(supercls)
                 copy_super(cls, super)
-                if #cls.conf.supers == 1 and olua.is_templdate_type(super.cppcls) then
+                if cls.conf.supers:size() == 1 and olua.is_templdate_type(super.cppcls) then
                     -- see find 'find_as_cls'
                     -- no 'as' func, no need to export
                     super.conf.kind = super.conf.kind | kFLAG_SKIP
@@ -1549,7 +1549,7 @@ local function find_as()
             -- find as
             local ascls_map = olua.ordered_map()
             ---@cast cls idl.model.class_desc
-            if #cls.conf.supers > 1 then
+            if cls.conf.supers:size() > 1 then
                 ---@param c idl.model.class_desc
                 local function find_as_cls(c)
                     for supercls in pairs(c.conf.supers) do
@@ -2057,7 +2057,7 @@ local function write_typedefs()
             local packvars
             if has_type_flag(cls, kFLAG_POINTER) and cls.options.packable then
                 packvars = cls.options.packvars or #cls.vars:keys()
-                type_packvars[cls.cppcls] = packvars
+                type_packvars:set(cls.cppcls, packvars)
             end
             olua.use(m)
             typdefs:push({
