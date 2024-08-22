@@ -1,10 +1,10 @@
 local prototypes = {}
 local symbols = {}
 
----@alias idl.parser.writer fun(str:string|nil)
+---@alias idl.gen.writer fun(str:string|nil)
 
----@param cls idl.parser.class_model
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param write idl.gen.writer
 local function gen_class_funcs(cls, write)
     local cls_protos = {}
 
@@ -29,7 +29,7 @@ local function gen_class_funcs(cls, write)
             return
         end
 
-        ---@type idl.parser.func_model
+        ---@type idl.gen.func_desc
         local func = arr[1]
 
         local cppfunc = func.cppfunc
@@ -60,8 +60,8 @@ local function gen_class_funcs(cls, write)
     end)
 end
 
----@param cls idl.parser.class_model
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param write idl.gen.writer
 local function gen_class_open(cls, write)
     local funcs = olua.array("\n")
     local reg_luatype = ""
@@ -150,8 +150,8 @@ local function gen_class_open(cls, write)
     ]]))
 end
 
----@param cls idl.parser.class_model
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param write idl.gen.writer
 local function gen_class_codeblock(cls, write)
     if cls.codeblock and #cls.codeblock > 0 then
         write(olua.format(cls.codeblock))
@@ -159,7 +159,7 @@ local function gen_class_codeblock(cls, write)
     end
 end
 
----@param module idl.parser.module
+---@param module idl.gen.module_desc
 local function has_packable_class(module)
     for _, cls in ipairs(module.class_types) do
         if cls.options.packable then
@@ -169,7 +169,7 @@ local function has_packable_class(module)
     return false
 end
 
----@param module idl.parser.module
+---@param module idl.gen.module_desc
 function olua.gen_header(module)
     local arr = olua.array("\n")
     local function write(value)
@@ -208,8 +208,8 @@ function olua.gen_header(module)
     olua.write(path, tostring(arr))
 end
 
----@param module idl.parser.module
----@param write idl.parser.writer
+---@param module idl.gen.module_desc
+---@param write idl.gen.writer
 local function gen_include(module, write)
     local headers = ""
     if not has_packable_class(module) then
@@ -232,16 +232,16 @@ local function gen_include(module, write)
     olua.gen_pack_source(module, write)
 end
 
----@param module idl.parser.module
----@param write idl.parser.writer
+---@param module idl.gen.module_desc
+---@param write idl.gen.writer
 local function gen_classes(module, write)
     for _, cls in ipairs(module.class_types) do
         local macro = cls.macro
         write(macro)
 
         cls.funcs:sort(function (_, _, arr1, arr2)
-            local func1 = arr1[1] ---@type idl.parser.func_model
-            local func2 = arr2[1] ---@type idl.parser.func_model
+            local func1 = arr1[1] ---@type idl.gen.func_desc
+            local func2 = arr2[1] ---@type idl.gen.func_desc
             local luafunc1 = func1.luafunc or func1.cppfunc
             local luafunc2 = func2.luafunc or func2.cppfunc
             return tostring(luafunc1) < tostring(luafunc2)
@@ -259,8 +259,8 @@ local function gen_classes(module, write)
     end
 end
 
----@param module idl.parser.module
----@param write idl.parser.writer
+---@param module idl.gen.module_desc
+---@param write idl.gen.writer
 local function gen_luaopen(module, write)
     local requires = olua.array("\n")
 
@@ -308,7 +308,7 @@ local function gen_luaopen(module, write)
     write("")
 end
 
----@param module idl.parser.module
+---@param module idl.gen.module_desc
 function olua.gen_source(module)
     local arr = olua.array("\n")
 

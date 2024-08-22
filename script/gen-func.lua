@@ -1,6 +1,6 @@
----@param cls idl.parser.class_model
----@param fi idl.parser.func_model
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param fi idl.gen.func_desc
+---@param write idl.gen.writer
 local function gen_func_body(cls, fi, write)
     local body = assert(fi.body)
     body = string.gsub(body, "^[\n ]*{", "{\n    olua_startinvoke(L);\n")
@@ -21,9 +21,9 @@ local function gen_func_body(cls, fi, write)
     ]]))
 end
 
----@param arg idl.parser.type_model
+---@param arg idl.gen.type_desc
 ---@param name string
----@param codeset idl.parser.func_codeset
+---@param codeset idl.gen.func_codeset
 function olua.gen_decl_exp(arg, name, codeset)
     local decltype = olua.decltype(arg.type, true, true)
     local initial_value = olua.initial_value(arg.type)
@@ -34,10 +34,10 @@ function olua.gen_decl_exp(arg, name, codeset)
     ]])
 end
 
----@param arg idl.parser.type_model
+---@param arg idl.gen.type_desc
 ---@param name string
 ---@param idx integer|string
----@param codeset idl.parser.func_codeset
+---@param codeset idl.gen.func_codeset
 function olua.gen_check_exp(arg, name, idx, codeset)
     -- lua value to cpp value
     local func_check = olua.conv_func(arg.type, arg.attr.pack and "pack" or "check")
@@ -113,7 +113,7 @@ function olua.gen_check_exp(arg, name, idx, codeset)
     end
 end
 
----@param arg idl.parser.type_model
+---@param arg idl.gen.type_desc
 ---@param name string
 ---@param codeset {push_args:olua.array}
 function olua.gen_push_exp(arg, name, codeset)
@@ -180,12 +180,12 @@ function olua.gen_push_exp(arg, name, codeset)
     end
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
----@param arg idl.parser.type_model
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
+---@param arg idl.gen.type_desc
 ---@param idx integer
 ---@param name string
----@param codeset idl.parser.func_codeset
+---@param codeset idl.gen.func_codeset
 function olua.gen_addref_exp(cls, func, arg, idx, name, codeset)
     if not arg.attr.addref then
         return
@@ -275,12 +275,12 @@ function olua.gen_addref_exp(cls, func, arg, idx, name, codeset)
     end
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
----@param arg idl.parser.type_model
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
+---@param arg idl.gen.type_desc
 ---@param idx integer
 ---@param name string
----@param codeset idl.parser.func_codeset
+---@param codeset idl.gen.func_codeset
 function olua.gen_delref_exp(cls, func, arg, idx, name, codeset)
     if not arg.attr.delref then
         return
@@ -340,9 +340,9 @@ function olua.gen_delref_exp(cls, func, arg, idx, name, codeset)
     end
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
----@param codeset idl.parser.func_codeset
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
+---@param codeset idl.gen.func_codeset
 local function gen_func_args(cls, func, codeset)
     if not func.is_static then
         -- first argument is cpp userdata object
@@ -391,9 +391,9 @@ local function gen_func_args(cls, func, codeset)
     end
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
----@param codeset idl.parser.func_codeset
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
+---@param codeset idl.gen.func_codeset
 local function gen_func_ret(cls, func, codeset)
     if func.ret.type.cppcls ~= "void" then
         local decltype = olua.decltype(func.ret.type, nil, true)
@@ -427,8 +427,8 @@ local function gen_func_ret(cls, func, codeset)
     olua.gen_delref_exp(cls, func, func.ret, -1, "ret", codeset)
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
 ---@param write fun(s: string)
 ---@param fidx? string
 local function gen_one_func(cls, func, write, fidx)
@@ -439,7 +439,7 @@ local function gen_one_func(cls, func, write, fidx)
     local cb_arg, cb_argn
     fidx = fidx or ""
 
-    ---@class idl.parser.func_codeset
+    ---@class idl.gen.func_codeset
     ---@field num_ret string|integer
     local codeset = {
         idx = 0,
@@ -588,7 +588,7 @@ local function gen_one_func(cls, func, write, fidx)
     end
 end
 
----@param func idl.parser.func_model
+---@param func idl.gen.func_desc
 ---@return integer
 local function get_num_args(func)
     local count = 0
@@ -602,9 +602,9 @@ local function get_num_args(func)
     return count
 end
 
----@param funcs idl.parser.func_model[]
+---@param funcs idl.gen.func_desc[]
 ---@param num_args integer
----@return idl.parser.func_model[]
+---@return idl.gen.func_desc[]
 local function get_func_with_num_args(funcs, num_args)
     local arr = {}
     for _, func in ipairs(funcs) do
@@ -616,8 +616,8 @@ local function get_func_with_num_args(funcs, num_args)
     return arr
 end
 
----@param cls idl.parser.class_model
----@param fns idl.parser.func_model[]
+---@param cls idl.gen.class_desc
+---@param fns idl.gen.func_desc[]
 ---@return string
 local function gen_test_and_call(cls, fns)
     ---@type {max_vars: integer, exp1: string, exp2: string?}
@@ -711,9 +711,9 @@ local function gen_test_and_call(cls, fns)
     return tostring(exprs)
 end
 
----@param cls idl.parser.class_model
----@param funcs idl.parser.func_model[]
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param funcs idl.gen.func_desc[]
+---@param write idl.gen.writer
 local function gen_multi_func(cls, funcs, write)
     local cppfunc = funcs[1].cppfunc
     local subone = funcs[1].is_static and "" or " - 1"
@@ -753,9 +753,9 @@ local function gen_multi_func(cls, funcs, write)
     ]]))
 end
 
----@param cls idl.parser.class_model
----@param funcs idl.parser.func_model[]
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param funcs idl.gen.func_desc[]
+---@param write idl.gen.writer
 function olua.gen_class_func(cls, funcs, write)
     if #funcs == 1 then
         gen_one_func(cls, funcs[1], write)
@@ -764,14 +764,14 @@ function olua.gen_class_func(cls, funcs, write)
     end
 end
 
----@param cls idl.parser.class_model
+---@param cls idl.gen.class_desc
 ---@param idx integer
 ---@param name string
----@param codeset idl.parser.func_codeset
+---@param codeset idl.gen.func_codeset
 function olua.gen_class_fill(cls, idx, name, codeset)
     local vars = olua.ordered_map()
 
-    ---@param c idl.parser.class_model
+    ---@param c idl.gen.class_desc
     local function copy_var(c)
         if c.supercls then
             copy_var(olua.get_class(c.supercls))
@@ -811,8 +811,8 @@ function olua.gen_class_fill(cls, idx, name, codeset)
     end
 end
 
----@param cls idl.parser.class_model
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param write idl.gen.writer
 local function gen_pack_func(cls, write)
     local codeset = {
         decl_args = olua.array("\n"),
@@ -842,8 +842,8 @@ local function gen_pack_func(cls, write)
     write("")
 end
 
----@param cls idl.parser.class_model
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param write idl.gen.writer
 local function gen_unpack_func(cls, write)
     local num_args = #cls.vars
     local codeset = { push_args = olua.array("\n") }
@@ -864,8 +864,8 @@ local function gen_unpack_func(cls, write)
     write("")
 end
 
----@param cls idl.parser.class_model
----@param write idl.parser.writer
+---@param cls idl.gen.class_desc
+---@param write idl.gen.writer
 local function gen_canpack_func(cls, write)
     local exps = olua.array(" && ")
     for i, var in ipairs(cls.vars) do
@@ -887,11 +887,11 @@ local function gen_canpack_func(cls, write)
     ]]))
 end
 
----@param module idl.parser.module
----@param write idl.parser.writer
+---@param module idl.gen.module_desc
+---@param write idl.gen.writer
 function olua.gen_pack_header(module, write)
     for _, cls in ipairs(module.class_types) do
-        ---@cast cls idl.parser.class_model
+        ---@cast cls idl.gen.class_desc
         if cls.options.packable and not cls.options.packvars then
             write(cls.macro)
             write(olua.format([[
@@ -906,11 +906,11 @@ function olua.gen_pack_header(module, write)
     end
 end
 
----@param module idl.parser.module
----@param write idl.parser.writer
+---@param module idl.gen.module_desc
+---@param write idl.gen.writer
 function olua.gen_pack_source(module, write)
     for _, cls in ipairs(module.class_types) do
-        ---@cast cls idl.parser.class_model
+        ---@cast cls idl.gen.class_desc
         if cls.options.packable and not cls.options.packvars then
             write(cls.macro)
             cls.vars:sort(function (_, _, a, b)

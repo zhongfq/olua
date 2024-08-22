@@ -488,13 +488,13 @@ end
 ---@param isvar? boolean
 local function parse_attr_from_annotate(cls, cur, display_name, isvar)
     local fn = cur.name
-    ---@type idl.model.member_desc
-    local member = cls.conf.members:get(fn) or cls.conf.members:get(display_name)
+    ---@type idl.conf.member_desc
+    local member = cls.conf.members:get(display_name) or cls.conf.members:get(fn)
 
     if not member then
         local maincls = cls.conf.maincls
         if maincls then
-            member = maincls.conf.members:get(fn) or maincls.conf.members:get(display_name)
+            member = maincls.conf.members:get(display_name) or maincls.conf.members:get(fn)
         end
     end
 
@@ -663,7 +663,6 @@ local function parse_func(cls, cur)
     local func = {
         cppfunc = cur.name,
         luafunc = cur.name,
-        prototype = "",
         is_exposed = true,
         comment = get_comment(cur),
         is_static = is_static_func(cur) and true or nil,
@@ -688,6 +687,10 @@ local function parse_func(cls, cur)
     func.prototype = gen_prototype(cls, func)
     func.display_name = gen_display_name(cls, func)
 
+    -- if func.cppfunc == "addEventListener" then
+    --     print(func.cppfunc, func.display_name)
+    -- end
+
     return func
 end
 
@@ -696,7 +699,7 @@ end
 function Autoconf:visit_method(cls, cur)
     local func = parse_func(cls, cur)
     local attrs = parse_attr_from_annotate(cls, cur, func.display_name)
-    ---@type idl.model.member_desc
+    ---@type idl.conf.member_desc
     local member = cls.conf.members:get(func.display_name)
     local callback_type = nil
 
@@ -732,7 +735,7 @@ function Autoconf:visit_method(cls, cur)
     local min_args = 0
     local num_args = 0
     for i, arg in ipairs(cur.arguments) do
-        ---@type idl.model.type_model
+        ---@type idl.model.type_desc
         local arg_type = func.args[i]
         local argn = "arg" .. i
         arg_type.attr = attrs:get(argn) or olua.array()
@@ -830,7 +833,7 @@ function Autoconf:visit_var(cls, cur)
     local fn = cur.name
     local attrs = parse_attr_from_annotate(cls, cur, cur.name, true)
 
-    ---@type idl.model.member_desc
+    ---@type idl.conf.member_desc
     local member = cls.conf.members:get(cur.name)
 
     local luafunc = cls.conf.luaname(fn, "var")
@@ -859,7 +862,7 @@ function Autoconf:visit_var(cls, cur)
         is_exposed = false,
     }
 
-    ---@type idl.model.type_model
+    ---@type idl.model.type_desc
     local arg1 = setter.args:push({
         type = tn,
         name = fn,
@@ -1098,7 +1101,7 @@ function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
                 if not is_excluded_type(vartype) then
                     cls.consts:set(varname, {
                         name = varname,
-                        type = vartype.name,
+                        type = typename(vartype),
                         value = olua.format("${cls.cppcls}::${varname}")
                     })
                 end
@@ -1643,7 +1646,7 @@ local function merge_cls_snippet(cls)
         end
     end)
     cls.conf.props:foreach(function (value, key)
-        ---@cast value idl.model.prop_desc
+        ---@cast value idl.conf.prop_desc
         if value.get:find("{") then
             local cppfunc = olua.format("get_${key}")
             local prototype = olua.format("unknown ${cppfunc}()")
@@ -1781,7 +1784,7 @@ local function gen_cls_func_pack(cls)
         end
         local pack_arg
         for _, arg in ipairs(func.args) do
-            ---@cast arg idl.model.type_model
+            ---@cast arg idl.model.type_desc
             if arg.attr:contains("@pack") then
                 if pack_arg then
                     olua.error("${cls.cppcls}.${func.cppfunc}: only support one pack arg")

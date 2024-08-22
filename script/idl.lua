@@ -109,7 +109,6 @@ function module(name)
     ---@field path string # Module config file path.
     ---@field name string
     ---@field headers? string
-    ---@field filepath? string
     ---@field codeblock? string
     ---@field output_dir? string
     ---@field api_dir? string
@@ -250,7 +249,7 @@ end
 ---@field reg_luatype? boolean
 ---@field indexerror? "r" | "w" | "rw"
 
----@class idl.model.type_model
+---@class idl.model.type_desc
 ---@field type string
 ---@field name? string
 ---@field comment? string
@@ -259,7 +258,7 @@ end
 ---@class idl.model.func_desc
 ---@field cppfunc string # C++ function name
 ---@field luafunc? string # Lua function name
----@field prototype string # C++ prototype
+---@field prototype? string # C++ prototype
 ---@field display_name? string # C++ prototype without return type
 ---@field comment? string
 ---@field macro? string
@@ -269,8 +268,8 @@ end
 ---@field is_contructor? boolean
 ---@field is_variable? boolean
 ---@field is_variadic? boolean
----@field ret idl.model.type_model
----@field args olua.array # idl.model.type_model[]
+---@field ret idl.model.type_desc
+---@field args olua.array # idl.model.type_desc[]
 ---@field body? string
 ---@field insert_before? string
 ---@field insert_after? string
@@ -282,8 +281,23 @@ end
 ---@field tag_maker? string
 ---@field tag_usepool? boolean
 
----@param CMD idl.typeconf.member
----@param member idl.model.member_desc
+---@class idl.model.prop_desc
+---@field name string
+---@field get string
+---@field set? string
+
+---@class idl.model.var_desc
+---@field name string
+---@field get string
+---@field set? string
+
+---@class idl.model.const_desc
+---@field name string
+---@field type string
+---@field value string
+
+---@param CMD idl.cmd.member
+---@param member idl.conf.member_desc
 ---@param name string
 ---@param store_name? string
 local function add_attr_command(CMD, member, name, store_name)
@@ -300,14 +314,14 @@ local function add_attr_command(CMD, member, name, store_name)
 end
 
 local function typeconf_member(parent, cls, name)
-    ---@class idl.typeconf.member : idl.typeconf
+    ---@class idl.cmd.member : idl.cmd.typeconf
     local CMD = {}
 
-    ---@class idl.model.member_desc
+    ---@class idl.conf.member_desc
     ---@field body? string
     ---@field macro? string
     ---@field index? integer
-    ---@field CMD idl.typeconf.member
+    ---@field CMD idl.cmd.member
     local member = {
         name = name,
         attrs = olua.ordered_map(),
@@ -327,7 +341,7 @@ local function typeconf_member(parent, cls, name)
     ---| '"object"'     # Callback will exist until the c++ object die.
 
     ---@param scope idl.callback_tag_scope
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.tag_scope(scope)
         ---@type idl.callback_tag_scope
         member.tag_scope = checkstring("tag_scope", scope)
@@ -339,7 +353,7 @@ local function typeconf_member(parent, cls, name)
     ---* `0`: Store callback in `.classobj` when it is a static function, otherwise store in `self` value.
     ---* `1,2,...N`: Store callback in the `N` argument value.
     ---@param store integertype
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.tag_store(store)
         member.tag_store = checkinteger("callback_store", store)
         return CMD
@@ -353,7 +367,7 @@ local function typeconf_member(parent, cls, name)
 
     ---How to store or remove the callback.
     ---@param mode idl.callback_tag_mode
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.tag_mode(mode)
         ---@type idl.callback_tag_mode
         member.tag_mode = checkstring("tag_mode", mode)
@@ -362,7 +376,7 @@ local function typeconf_member(parent, cls, name)
 
     ---Make callback key.
     ---@param maker string
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.tag_maker(maker)
         member.tag_maker = checkstring("tag_maker", maker)
         return CMD
@@ -370,7 +384,7 @@ local function typeconf_member(parent, cls, name)
 
     ---Use object pool in callback, default is `true`.
     ---@param usepool booltype
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.tag_usepool(usepool)
         member.tag_usepool = checkboolean("tag_usepool", usepool)
         return CMD
@@ -378,7 +392,7 @@ local function typeconf_member(parent, cls, name)
 
     ---Insert codes before the c++ function invoked.
     ---@param code string
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.insert_before(code)
         member.insert_before = olua.trim(code)
         return CMD
@@ -386,7 +400,7 @@ local function typeconf_member(parent, cls, name)
 
     ---Insert codes after the c++ function invoked.
     ---@param code string
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.insert_after(code)
         member.insert_after = olua.trim(code)
         return CMD
@@ -394,7 +408,7 @@ local function typeconf_member(parent, cls, name)
 
     ---Insert codes before the c++ callback function invoked.
     ---@param code string
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.insert_cbefore(code)
         member.insert_cbefore = olua.trim(code)
         return CMD
@@ -402,36 +416,36 @@ local function typeconf_member(parent, cls, name)
 
     ---Insert codes after the c++ callback function invoked.
     ---@param code string
-    ---@return idl.typeconf.member
+    ---@return idl.cmd.member
     function CMD.insert_cafter(code)
         member.insert_cafter = olua.trim(code)
         return CMD
     end
 
-    ---@type idl.typeconf.member
+    ---@type idl.cmd.member
     return setmetatable(CMD, { __index = parent })
 end
 
----@param parent idl.typeconf
+---@param parent idl.cmd.typeconf
 ---@param cls idl.model.class_desc
 ---@param name string
----@return idl.typeconf.func
+---@return idl.cmd.func
 local function typeconf_func(parent, cls, name)
-    ---@class idl.typeconf.func : idl.typeconf.member
-    ---@field ret fun(attr:string):idl.typeconf.func
-    ---@field arg1 fun(attr:string):idl.typeconf.func
-    ---@field arg2 fun(attr:string):idl.typeconf.func
-    ---@field arg3 fun(attr:string):idl.typeconf.func
-    ---@field arg4 fun(attr:string):idl.typeconf.func
-    ---@field arg5 fun(attr:string):idl.typeconf.func
-    ---@field arg6 fun(attr:string):idl.typeconf.func
-    ---@field arg7 fun(attr:string):idl.typeconf.func
-    ---@field arg8 fun(attr:string):idl.typeconf.func
-    ---@field arg9 fun(attr:string):idl.typeconf.func
-    ---@field arg10 fun(attr:string):idl.typeconf.func
+    ---@class idl.cmd.func : idl.cmd.member
+    ---@field ret fun(attr:string):idl.cmd.func
+    ---@field arg1 fun(attr:string):idl.cmd.func
+    ---@field arg2 fun(attr:string):idl.cmd.func
+    ---@field arg3 fun(attr:string):idl.cmd.func
+    ---@field arg4 fun(attr:string):idl.cmd.func
+    ---@field arg5 fun(attr:string):idl.cmd.func
+    ---@field arg6 fun(attr:string):idl.cmd.func
+    ---@field arg7 fun(attr:string):idl.cmd.func
+    ---@field arg8 fun(attr:string):idl.cmd.func
+    ---@field arg9 fun(attr:string):idl.cmd.func
+    ---@field arg10 fun(attr:string):idl.cmd.func
     local CMD = typeconf_member(parent, cls, name)
 
-    ---@type idl.model.member_desc
+    ---@type idl.conf.member_desc
     local member = cls.conf.members:get(name)
 
     add_attr_command(CMD, member, "ret")
@@ -446,60 +460,60 @@ local function typeconf_func(parent, cls, name)
     add_attr_command(CMD, member, "arg9")
     add_attr_command(CMD, member, "arg10")
 
-    ---@type idl.typeconf.func
+    ---@type idl.cmd.func
     return setmetatable(CMD, { __index = parent })
 end
 
----@param parent idl.typeconf
+---@param parent idl.cmd.typeconf
 ---@param cls idl.model.class_desc
 ---@param name string
 local function typeconf_var(parent, cls, name)
-    ---@class idl.typeconf.var : idl.typeconf.member
-    ---@field attr fun(attr:string):idl.typeconf.var
-    ---@field index fun(index:integertype):idl.typeconf.var
+    ---@class idl.cmd.var : idl.cmd.member
+    ---@field attr fun(attr:string):idl.cmd.var
+    ---@field index fun(index:integertype):idl.cmd.var
     local CMD = typeconf_member(parent, cls, name)
 
-    ---@type idl.model.member_desc
+    ---@type idl.conf.member_desc
     local member = cls.conf.members:get(name)
 
     add_attr_command(CMD, member, "attr", "var")
     add_value_command(CMD, member, "index", checkinteger)
 
-    ---@type idl.typeconf.var
+    ---@type idl.cmd.var
     return setmetatable(CMD, { __index = parent })
 end
 
----@param parent idl.typeconf
+---@param parent idl.cmd.typeconf
 ---@param cls idl.model.class_desc
 ---@param name string
 local function typeconf_prop(parent, cls, name)
-    ---@class idl.model.prop_desc
+    ---@class idl.conf.prop_desc
     ---@field get string
     ---@field set string
     local prop = { name = name }
 
     cls.conf.props:set(name, prop)
 
-    ---@class idl.typeconf.prop : idl.typeconf
-    ---@field get fun(get:string):idl.typeconf.prop
-    ---@field set fun(get:string):idl.typeconf.prop
+    ---@class idl.cmd.prop : idl.cmd.typeconf
+    ---@field get fun(get:string):idl.cmd.prop
+    ---@field set fun(get:string):idl.cmd.prop
     local CMD = {}
 
     ---@param get string
-    ---@return idl.typeconf.prop
+    ---@return idl.cmd.prop
     function CMD.get(get)
         prop.get = olua.trim(get)
         return CMD
     end
 
     ---@param set string
-    ---@return idl.typeconf.prop
+    ---@return idl.cmd.prop
     function CMD.set(set)
         prop.set = olua.trim(set)
         return CMD
     end
 
-    ---@type idl.typeconf.prop
+    ---@type idl.cmd.prop
     return setmetatable(CMD, { __index = parent })
 end
 
@@ -507,19 +521,19 @@ end
 ---Config a c++ class
 ---
 ---@param cppcls string the c++ class name
----@return idl.typeconf
+---@return idl.cmd.typeconf
 function typeconf(cppcls)
     check_module()
 
-    ---@class idl.typeconf
-    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.typeconf
-    ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.typeconf
-    ---@field packable fun(packable:booltype):idl.typeconf
-    ---@field packvars fun(packvars:string):idl.typeconf
-    ---@field private maincls fun(cls:idl.model.class_desc):idl.typeconf
+    ---@class idl.cmd.typeconf
+    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.cmd.typeconf
+    ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.cmd.typeconf
+    ---@field packable fun(packable:booltype):idl.cmd.typeconf
+    ---@field packvars fun(packvars:string):idl.cmd.typeconf
+    ---@field private maincls fun(cls:idl.model.class_desc):idl.cmd.typeconf
     local CMD = {}
 
-    ---@class idl.model.typeconf
+    ---@class idl.conf.typeconf_desc
     ---@field kind integer
     ---@field luacls string
     ---@field maincls? idl.model.class_desc
@@ -546,8 +560,8 @@ function typeconf(cppcls)
     ---@field comment? string
     ---@field luaopen? string
     ---@field codeblock? string
-    ---@field conf idl.model.typeconf
-    ---@field CMD idl.typeconf
+    ---@field conf idl.conf.typeconf_desc
+    ---@field CMD idl.cmd.typeconf
     local cls = {
         ---@type string c++ full class name
         cppcls = cppcls,
@@ -588,14 +602,14 @@ function typeconf(cppcls)
     end
 
     ---@param luaopen string
-    ---@return idl.typeconf
+    ---@return idl.cmd.typeconf
     function CMD.luaopen(luaopen)
         cls.luaopen = olua.trim(luaopen)
         return CMD
     end
 
     ---@param codeblock string
-    ---@return idl.typeconf
+    ---@return idl.cmd.typeconf
     function CMD.codeblock(codeblock)
         cls.codeblock = olua.trim(codeblock)
         return CMD
@@ -610,7 +624,7 @@ function typeconf(cppcls)
     ---Extend a c++ class with another class, all static members of `extcls`
     ---will be copied into the current class.
     ---@param extcls string
-    ---@return idl.typeconf
+    ---@return idl.cmd.typeconf
     function CMD.extend(extcls)
         cls.conf.extends:set(extcls, true)
         typeconf(extcls)
@@ -620,7 +634,7 @@ function typeconf(cppcls)
 
     ---Exclude members from a c++ class, support lua regex.
     ---@param name string
-    ---@return idl.typeconf
+    ---@return idl.cmd.typeconf
     function CMD.exclude(name)
         if mode and mode ~= "exclude" then
             olua.use(cls) -- get cls as upvalue
@@ -637,7 +651,7 @@ function typeconf(cppcls)
 
     ---Include members from a c++ class. If use `include`, all members of `class` don't included will be ignored.
     ---@param name string
-    ---@return idl.typeconf
+    ---@return idl.cmd.typeconf
     function CMD.include(name)
         if mode and mode ~= "include" then
             olua.use(cls) -- get cls as upvalue
@@ -649,7 +663,7 @@ function typeconf(cppcls)
     end
 
     ---@param cond string
-    ---@return idl.typeconf
+    ---@return idl.cmd.typeconf
     function CMD.macro(cond)
         if #cond > 0 then
             macros:push(cond)
@@ -660,7 +674,7 @@ function typeconf(cppcls)
     end
 
     ---@param name string
-    ---@return idl.typeconf.func
+    ---@return idl.cmd.func
     function CMD.func(name)
         local func = typeconf_func(CMD, cls, name)
         if #macros > 0 then
@@ -670,13 +684,13 @@ function typeconf(cppcls)
     end
 
     ---@param name string
-    ---@return idl.typeconf.prop
+    ---@return idl.cmd.prop
     function CMD.prop(name)
         return typeconf_prop(CMD, cls, name)
     end
 
     ---@param name string
-    ---@return idl.typeconf.var
+    ---@return idl.cmd.var
     function CMD.var(name)
         return typeconf_var(CMD, cls, name)
     end
@@ -694,7 +708,7 @@ end
 
 ---@param cppcls string
 ---@param fromcls idl.model.class_desc
----@return idl.typeconf
+---@return idl.cmd.typeconf
 function idl.typecopy(cppcls, fromcls)
     local CMD = typeconf(cppcls)
 

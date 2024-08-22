@@ -1,4 +1,4 @@
----@type {[string]: idl.parser.typedef_desc}
+---@type {[string]: idl.gen.typeinfo}
 local typeinfo_map   = {}
 local class_map      = {}
 
@@ -32,8 +32,7 @@ function olua.pretty_typename(tn)
 end
 
 ---@param cpptype string
----@return idl.parser.typedef_desc|nil
----@return string
+---@return idl.gen.typeinfo
 local function lookup_typeinfo(cpptype)
     local tn = cpptype
     local ti = typeinfo_map[tn]
@@ -42,9 +41,10 @@ local function lookup_typeinfo(cpptype)
         ti = typeinfo_map[tn]
     end
     if not ti and cpptype:find("[*]$") then
-        ti, tn = lookup_typeinfo(cpptype:gsub("[ *]+$", ""))
+        ti = lookup_typeinfo(cpptype:gsub("[ *]+$", ""))
     end
-    return ti, tn
+
+    return ti
 end
 
 ---@param cpptype string
@@ -53,6 +53,7 @@ local function throw_type_error(cpptype, errors)
     print("try type:")
     print("    " .. table.concat(errors:values(), "\n    "))
     local rawtn = cpptype:gsub(" [*&]+$", "")
+    olua.use(rawtn)
     olua.error([[
         type info not found: ${cpptype}
         you should do one of:
@@ -62,31 +63,10 @@ local function throw_type_error(cpptype, errors)
     ]])
 end
 
-local function search_type_from_class(cls, cpptype, errors)
-    if cls and cls.cppcls then
-        local nsarr = {}
-        for ns in cls.cppcls:gmatch("[^:]+") do
-            nsarr[#nsarr + 1] = ns:match("[^ *&]+") -- remove * &
-        end
-        while #nsarr > 0 do
-            -- const Object * => const ns::Object *
-            local ns = table.concat(nsarr, "::")
-            local tn = olua.pretty_typename(cpptype:gsub("[%w:_]+ *[*&]*$", ns .. "::%1"))
-            local ti = olua.typeinfo(tn, nil, false, errors)
-            nsarr[#nsarr] = nil
-            if ti then
-                return ti, tn
-            end
-        end
-    end
-
-    if cls and cls.supercls then
-        local super = typeinfo_map[cls.supercls]
-        olua.assert(super, "super class '${cls.supercls}' of '${cls.cppcls}' is not found")
-        return olua.typeinfo(cpptype, super, false, errors)
-    end
-end
-
+---@param cls any
+---@param cpptype any
+---@param throwerror any
+---@return idl.gen.typeinfo[]
 local function subtype_typeinfo(cls, cpptype, throwerror)
     local subtypes = {}
     for subcpptype in cpptype:match("<(.*)>"):gmatch(" *([^,]+)") do
@@ -106,11 +86,11 @@ local function subtype_typeinfo(cls, cpptype, throwerror)
     return subtypes
 end
 
----@class idl.parser.typedef_desc : idl.model.typedef_desc
+---@class idl.gen.typeinfo : idl.model.typedef_desc
 ---@field flag number
 ---@field funcdecl? string
----@field callback? idl.parser.func_model
----@field subtypes? idl.parser.typedef_desc[]
+---@field callback? idl.gen.func_desc
+---@field subtypes? idl.gen.typeinfo[]
 
 --- Get typeinfo.
 ---
@@ -132,13 +112,16 @@ end
 --- }
 ---```
 ---@param cpptype string
----@param cls? idl.parser.class_model
+---@param cls? idl.gen.class_desc
 ---@param throwerror? boolean
 ---@param errors? olua.ordered_map
----@return idl.parser.typedef_desc
+---@return idl.gen.typeinfo
 function olua.typeinfo(cpptype, cls, throwerror, errors)
-    local tn, ti, subtypes -- for tn<T, ...>
+    local ti, subtypes -- for tn<T, ...>
     local flag = 0
+
+    ---@type idl.gen.typeinfo
+    local not_found = nil
 
     throwerror = throwerror ~= false
     errors = errors or olua.ordered_map()
@@ -147,11 +130,12 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
     if cpptype:find("^const") then
         flag = flag | kFLAG_CONST
     end
+
     if cpptype:find("%*%*+$") then
         if throwerror then
             olua.error("type not support: ${cpptype}")
         else
-            return nil
+            return not_found
         end
     elseif cpptype:find("%*$") then
         flag = flag | kFLAG_POINTER
@@ -162,9 +146,9 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
     end
 
     if not has_flag(flag, kFLAG_CONST) and has_flag(flag, kFLAG_LVALUE) then
-        local pti = olua.typeinfo(cpptype:gsub("&+$", "*"), cls, false)
-        if pti and pti.luacls then
-            ti = pti
+        -- try: T & -> T *
+        ti = olua.typeinfo(cpptype:gsub("&+$", "*"), cls, false)
+        if ti and ti.luacls then
             ti.flag = ti.flag | kFLAG_CAST
             return ti
         end
@@ -178,62 +162,47 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
         cpptype = olua.pretty_typename(cpptype:gsub("<.*>", ""))
     end
 
-    ti, tn = lookup_typeinfo(cpptype)
+    ti = lookup_typeinfo(cpptype)
     errors:replace(cpptype, cpptype)
 
     if ti then
         ti = setmetatable({}, { __index = ti })
-    else
-        repeat
-            -- search in class namespace
-            ti, tn = search_type_from_class(cls, cpptype, errors)
-            if ti then
-                cpptype = tn
-                goto found
+        ti.subtypes = subtypes
+        ti.flag = ti.cppcls:find("^const ") and flag & (~kFLAG_CONST) or flag
+
+        if ti.subtypes then
+            -- is template array/map or smart pointer?
+            local tti = lookup_typeinfo(olua.decltype(ti, true))
+            if tti then
+                ti = setmetatable({}, { __index = tti })
+                ti.flag = flag
             end
-
-            -- type not found
-            if throwerror then
-                throw_type_error(cpptype, errors)
-            else
-                return
+            if ti.smartptr then
+                ti.cppcls = olua.decltype(ti, true)
+                ti.luacls = ti.subtypes[1].luacls
+                ti.subtypes = nil
             end
-
-            ::found::
-        until true
-    end
-
-    if tn:find("^const ") then
-        flag = flag & (~kFLAG_CONST)
-    end
-
-    ti.subtypes = subtypes
-    ti.flag = flag
-
-    if ti.subtypes then
-        local tti = lookup_typeinfo(olua.decltype(ti, true))
-        if tti then
-            ti = setmetatable({}, { __index = tti })
-            ti.flag = flag
-        end
-        if ti.smartptr then
-            ti.cppcls = olua.decltype(ti, true)
-            ti.luacls = ti.subtypes[1].luacls
-            ti.subtypes = nil
         end
     end
 
-    if not olua.is_pointer_type(ti.cppcls)
+    if not ti then
+        if throwerror then
+            throw_type_error(cpptype, errors)
+        else
+            return not_found
+        end
+    elseif not olua.is_pointer_type(ti.cppcls)
         and olua.has_pointer_flag(ti)
         and not ti.luacls
     then
         if throwerror then
             local decltype = olua.decltype(ti, true)
+            olua.use(decltype)
             olua.error([[
                 convertor not found: '${decltype}'
             ]])
         else
-            return nil
+            return not_found
         end
     end
 
@@ -251,7 +220,7 @@ end
     olua_check_integer(L, 2, &arg1);
     self->call(arg1);
 ]]
----@param ti string|idl.parser.typedef_desc
+---@param ti string|idl.gen.typeinfo
 ---@param checkvalue? boolean
 ---@param addspace? boolean
 ---@param exps? olua.array
@@ -309,7 +278,7 @@ function olua.decltype(ti, checkvalue, addspace, exps)
 end
 
 ---@param t string[]
----@return idl.parser.attr_desc
+---@return idl.gen.attr_desc
 local function parse_attr(t)
     local attr = {}
     olua.foreach(t, function (v)
@@ -394,9 +363,9 @@ end
 
 local parse_args
 
----@param cls idl.parser.class_model
+---@param cls idl.gen.class_desc
 ---@param tn string
----@return idl.parser.func_model
+---@return idl.gen.func_desc
 local function parse_callback(cls, tn)
     if not tn:find("std::function") then
         tn = assert(olua.typeinfo(tn, cls).funcdecl)
@@ -424,7 +393,7 @@ end
         }
     }
 ]]
----@param cls idl.parser.class_model
+---@param cls idl.gen.class_desc
 ---@param declstr string
 function parse_args(cls, declstr)
     local args = {}
@@ -476,13 +445,13 @@ function parse_args(cls, declstr)
     return args, count
 end
 
----@param type_model idl.model.type_model
----@param cls idl.parser.class_model
----@return idl.parser.type_model
+---@param type_model idl.model.type_desc
+---@param cls idl.gen.class_desc
+---@return idl.gen.type_desc
 function olua.parse_type(type_model, cls)
     local tn = type_model.type
 
-    local desc = type_model --[[@as idl.parser.type_model]]
+    local desc = type_model --[[@as idl.gen.type_desc]]
     desc.attr = parse_attr(type_model.attr)
 
     if desc.attr.type then
@@ -546,7 +515,7 @@ function olua.luacls(cppcls)
     return ti.luacls
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return string
 function olua.luatype(ti)
     if ti.luacls == "void" then
@@ -565,8 +534,8 @@ function olua.luatype(ti)
     end
 end
 
----@param tn string|idl.parser.typedef_desc
----@param cls? idl.parser.class_model
+---@param tn string|idl.gen.typeinfo
+---@param cls? idl.gen.class_desc
 ---@return boolean
 function olua.is_func_type(tn, cls)
     local cpptype = type(tn) == "table" and tn.cppcls or tn --[[@as string]]
@@ -577,49 +546,49 @@ function olua.is_func_type(tn, cls)
     end
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return boolean
 function olua.has_rvalue_flag(ti)
     return has_flag(ti.flag, kFLAG_RVALUE)
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return boolean
 function olua.has_lvalue_flag(ti)
     return has_flag(ti.flag, kFLAG_LVALUE)
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return boolean
 function olua.has_const_flag(ti)
     return has_flag(ti.flag, kFLAG_CONST)
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return boolean
 function olua.has_pointer_flag(ti)
     return has_flag(ti.flag, kFLAG_POINTER)
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return boolean
 function olua.has_pointee_flag(ti)
     return has_flag(ti.flag, kFLAG_RVALUE | kFLAG_LVALUE | kFLAG_POINTER)
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return boolean
 function olua.has_callback_flag(ti)
     return has_flag(ti.flag, kFLAG_CALLBACK)
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return boolean
 function olua.has_cast_flag(ti)
     return has_flag(ti.flag, kFLAG_CAST)
 end
 
----@param ti idl.parser.typedef_desc|string
+---@param ti idl.gen.typeinfo|string
 ---@return boolean
 function olua.is_pointer_type(ti)
     if type(ti) == "string" then
@@ -638,20 +607,20 @@ function olua.is_templdate_type(cppcls)
     return cppcls:find("<") ~= nil
 end
 
----@param cls idl.parser.class_model
+---@param cls idl.gen.class_desc
 ---@return boolean
 function olua.is_enum_type(cls)
     local ti = typeinfo_map[cls.cppcls]
     return ti.conv == "olua_$$_enum"
 end
 
----@param func idl.parser.func_model
+---@param func idl.gen.func_desc
 ---@return boolean
 function olua.is_oluaret(func)
     return func.ret.type.cppcls == "olua_Return"
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return string
 function olua.initial_value(ti)
     if olua.has_pointer_flag(ti) then
@@ -677,25 +646,25 @@ local valuetype = {
 }
 
 ---Enum has cpp cls, but declared as lua_Unsigned
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@return unknown
 function olua.is_value_type(ti)
     return valuetype[ti.conv]
 end
 
----@param ti idl.parser.typedef_desc
+---@param ti idl.gen.typeinfo
 ---@param fn string
 function olua.conv_func(ti, fn)
     return ti.conv:gsub("[$]+", fn)
 end
 
----@param typeinfo idl.parser.typedef_desc
+---@param typeinfo idl.gen.typeinfo
 function olua.typedef(typeinfo)
     for tn in typeinfo.cppcls:gmatch("[^\n\r;]+") do
         tn = olua.pretty_typename(tn)
         if #tn > 0 then
             local previous = typeinfo_map[tn]
-            ---@type idl.parser.typedef_desc
+            ---@type idl.gen.typeinfo
             local ti = setmetatable({}, { __index = typeinfo })
             ti.cppcls = tn
             olua.assert(ti.override or not previous, [[
@@ -721,19 +690,14 @@ end
 function olua.export(path)
     local m = dofile(path)
 
-    ---@class idl.parser.module
-    ---@field name string
-    ---@field output_dir string
-    ---@field headers string
-    ---@field luaopen? string
-    ---@field entry? string
-    ---@field codeblock? string
-    ---@field class_types olua.array # idl.parser.class_desc[]
+    ---@class idl.gen.module_desc : idl.model.module_desc
+    ---@field class_types olua.array # idl.gen.class_desc[]
+    ---@field private luacls unknown
 
-    ---@class idl.parser.class_model : idl.model.class_desc
+    ---@class idl.gen.class_desc : idl.model.class_desc
     ---@field luacls string
 
-    ---@class idl.parser.attr_desc
+    ---@class idl.gen.attr_desc
     ---@field addref? table # @addref
     ---@field delref? table
     ---@field pack? table
@@ -746,65 +710,86 @@ function olua.export(path)
     ---@field postnew? table
     ---@field as? table
 
-    ---@class idl.parser.type_model : idl.model.type_model
-    ---@field type idl.parser.typedef_desc
-    ---@field attr idl.parser.attr_desc
+    ---@class idl.gen.const_desc : idl.model.const_desc
+    ---@field type idl.gen.typeinfo
 
-    ---@class idl.parser.func_model : idl.model.func_desc
+    ---@class idl.gen.prop_desc : idl.model.prop_desc
+    ---@field get idl.gen.func_desc
+    ---@field set? idl.gen.func_desc
+
+    ---@class idl.gen.var_desc : idl.model.var_desc
+    ---@field get idl.gen.func_desc
+    ---@field set? idl.gen.func_desc
+
+    ---@class idl.gen.type_desc : idl.model.type_desc
+    ---@field type idl.gen.typeinfo
+    ---@field attr idl.gen.attr_desc
+
+    ---@class idl.gen.func_desc : idl.model.func_desc
     ---@field funcdesc string
     ---@field index integer
-    ---@field ret idl.parser.type_model
-    ---@field args olua.array # idl.parser.type_desc[]
+    ---@field ret idl.gen.type_desc
+    ---@field args olua.array # idl.gen.type_desc[]
 
     olua.make_array(m.class_types):foreach(function (cls)
-        ---@cast cls idl.parser.class_model
+        ---@cast cls idl.gen.class_desc
         class_map[cls.cppcls] = cls
 
         cls.luacls = olua.luacls(cls.cppcls)
 
-        cls.funcs = olua.make_ordered_map(cls.funcs)
+        local func_map = {}
 
-        olua.make_ordered_map(cls.props):foreach(function (prop)
-            for _, arr in ipairs(cls.funcs) do
-                -- TODO: check get set exist
-                for _, func in ipairs(arr) do
-                    if prop.get and prop.get == func.prototype then
-                        prop.get = func
-                    end
-                    if prop.set and prop.set == func.prototype then
-                        prop.set = func
-                    end
+        olua.make_ordered_map(cls.funcs):foreach(function (arr)
+            ---@cast arr idl.gen.func_desc[]
+            for _, func in ipairs(arr) do
+                if func.prototype then
+                    func_map[func.prototype] = func
                 end
             end
-            if prop.get and type(prop.get) ~= "table" then
-                olua.error("get function not found: ${cls.cppcls} => ${prop.get}")
+        end)
+
+        olua.make_ordered_map(cls.props):foreach(function (prop)
+            ---@cast prop idl.gen.prop_desc
+            if prop.get then
+                prop.get = func_map[prop.get]
+                if not prop.get then
+                    olua.error("get function not found: ${cls.cppcls} => ${prop.get}")
+                end
             end
-            if prop.set and type(prop.set) ~= "table" then
-                olua.error("set function not found: ${cls.cppcls} => ${prop.set}")
+            if prop.set then
+                prop.set = func_map[prop.set]
+                if not prop.set then
+                    olua.error("set function not found: ${cls.cppcls} => ${prop.set}")
+                end
             end
         end)
 
         olua.make_ordered_map(cls.vars):foreach(function (var)
-            for _, arr in ipairs(cls.funcs) do
-                for _, func in ipairs(arr) do
-                    if var.get and var.get == func.prototype then
-                        var.get = func
-                    end
-                    if var.set and var.set == func.prototype then
-                        var.set = func
-                    end
+            ---@cast var idl.gen.var_desc|idl.model.var_desc
+            if var.get then
+                var.get = func_map[var.get]
+                if not var.get then
+                    olua.error("get function not found: ${cls.cppcls} => ${var.get}")
+                end
+            end
+            if var.set then
+                var.set = func_map[var.set]
+                if not var.set then
+                    olua.error("set function not found: ${cls.cppcls} => ${var.set}")
                 end
             end
         end)
 
         olua.make_ordered_map(cls.consts):foreach(function (const)
-            const.type = olua.typeinfo(const.type, cls)
+            ---@cast const idl.gen.const_desc|idl.model.const_desc
+            local tn = const.type --[[@as string]]
+            const.type = olua.typeinfo(tn, cls)
         end)
 
         cls.enums = olua.make_ordered_map(cls.enums)
         cls.funcs:foreach(function (arr)
             olua.make_array(arr):foreach(function (func, idx)
-                ---@cast func idl.parser.func_model
+                ---@cast func idl.gen.func_desc
                 func.index = idx
                 if func.body then
                     func.funcdesc = ""
@@ -812,7 +797,7 @@ function olua.export(path)
                     func.funcdesc = gen_func_desc(cls, func)
                     func.ret = olua.parse_type(func.ret, cls)
                     olua.make_array(func.args):foreach(function (arg, idx)
-                        ---@cast arg idl.model.type_model
+                        ---@cast arg idl.model.type_desc
                         func.args[idx] = olua.parse_type(arg, cls)
                     end)
                 end

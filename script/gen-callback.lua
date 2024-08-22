@@ -5,7 +5,7 @@ local tag_mode_map = {
     equal = "OLUA_TAG_EQUAL",
 }
 
----@param func idl.parser.func_model
+---@param func idl.gen.func_desc
 ---@return string
 local function get_tag_mode(func)
     local tag_mode = tag_mode_map[func.tag_mode]
@@ -13,7 +13,7 @@ local function get_tag_mode(func)
     return tag_mode
 end
 
----@param func idl.parser.func_model
+---@param func idl.gen.func_desc
 ---@param idx integer|nil
 ---@return integer
 local function get_tag_store(func, idx)
@@ -28,16 +28,16 @@ local function get_tag_store(func, idx)
     return idx
 end
 
----@param func idl.parser.func_model
+---@param func idl.gen.func_desc
 ---@param idx integer
 local function check_tag_store(func, idx)
     if idx > 0 then
-        local ai = func.args[idx] ---@type idl.parser.type_model
+        local ai = func.args[idx] ---@type idl.gen.type_desc
         olua.assert(olua.is_pointer_type(ai.type), "arg #${idx} is not a userdata")
     end
 end
 
----@param func idl.parser.func_model
+---@param func idl.gen.func_desc
 ---@return string
 local function gen_callback_tag(func)
     if not string.find(func.tag_maker, "[()]+") then
@@ -50,8 +50,8 @@ local function gen_callback_tag(func)
     end)
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
 ---@return string
 local function gen_callback_store(cls, func)
     local tag_store = get_tag_store(func)
@@ -68,8 +68,8 @@ local function gen_callback_store(cls, func)
     return cb_store
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
 ---@return string
 local function gen_remove_callback(cls, func)
     local tag_mode = get_tag_mode(func)
@@ -83,8 +83,8 @@ local function gen_remove_callback(cls, func)
     ]]), nil
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
 ---@return string
 local function gen_ret_callback(cls, func)
     local tag_mode = get_tag_mode(func)
@@ -98,11 +98,11 @@ local function gen_ret_callback(cls, func)
     ]]), nil
 end
 
----@param cls idl.parser.class_model
----@param func idl.parser.func_model
----@param arg idl.parser.type_model|nil
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
+---@param arg idl.gen.type_desc|nil
 ---@param idx integer|nil
----@param codeset idl.parser.func_codeset
+---@param codeset idl.gen.func_codeset
 function olua.gen_callback(cls, func, arg, idx, codeset)
     if olua.is_func_type(func.ret.type) then
         codeset.callback = gen_ret_callback(cls, func)
@@ -135,7 +135,7 @@ function olua.gen_callback(cls, func, arg, idx, codeset)
         cb_tag = cb_tag .. ' + std::string(".using")'
     end
 
-    ---@class idl.parser.callback_codeset
+    ---@class idl.gen.cb_codeset
     local cb_codeset = {
         args = olua.array(", "),
         num_args = #arg.type.callback.args,
