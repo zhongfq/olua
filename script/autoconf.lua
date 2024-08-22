@@ -2163,31 +2163,44 @@ local function deferred_autoconf()
     end
 end
 
-local has_hook = false
-
 function autoconf(path)
-    if not has_hook then
-        has_hook = true
-        local build_func = debug.getinfo(2, "f").func
-        if debug.gethook() then
-            build_func()
-            deferred_autoconf()
-            autoconf = function () end
-            return
-        else
-            debug.sethook(function ()
-                if debug.getinfo(2, "f").func == build_func then
-                    debug.sethook(nil)
-                    deferred_autoconf()
-                end
-            end, "r")
-        end
-    end
-
     dofile(path)
     if idl.current_module then
         idl.current_module.path = path
     end
     idl.current_module = nil
     idl.macros:clear()
+end
+
+package.loaded["script.autoconf"] = true
+
+local has_hook = false
+
+if not has_hook then
+    has_hook = true
+
+    local build_func
+
+    for i = 1, 20 do
+        local v = debug.getinfo(i, "fS")
+        if v and v.what == "main" then
+            build_func = v.func
+        end
+    end
+
+    assert(build_func, "cannot find build function")
+
+    if debug.gethook() then
+        build_func()
+        deferred_autoconf()
+        autoconf = function () end
+        return
+    else
+        debug.sethook(function ()
+            if debug.getinfo(2, "f").func == build_func then
+                debug.sethook(nil)
+                deferred_autoconf()
+            end
+        end, "r")
+    end
 end
