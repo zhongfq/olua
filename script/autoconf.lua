@@ -962,7 +962,7 @@ function Autoconf:visit_enum(cppcls, cur)
             name = name,
             value = value,
             intvalue = intvalue,
-            comment = comment
+            comment = comment ~= "" and comment or nil
         })
     end
     type_convs:get(cppcls).conv = "olua_$$_enum"
@@ -1102,6 +1102,7 @@ function Autoconf:visit_class(cppcls, cur, template_types, specializedcls)
                     cls.consts:set(varname, {
                         name = varname,
                         type = typename(vartype),
+                        comment = get_comment(c),
                         value = olua.format("${cls.cppcls}::${varname}")
                     })
                 end

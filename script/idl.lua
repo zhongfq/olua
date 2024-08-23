@@ -295,6 +295,7 @@ end
 ---@field name string
 ---@field type string
 ---@field value string
+---@field comment? string
 
 ---@param CMD idl.cmd.member
 ---@param member idl.conf.member_desc

@@ -701,6 +701,8 @@ end
 local function lookup(level, key)
     assert(key and #key > 0, key)
 
+    local value2
+
     while true do
         local value
         local searchupvalue = true
@@ -714,6 +716,8 @@ local function lookup(level, key)
             if k == key then
                 if type(v) ~= "string" or not v:find(FORMAT_PATTERN) then
                     value = v
+                else
+                    value2 = v
                 end
             elseif not k then
                 break
@@ -736,6 +740,8 @@ local function lookup(level, key)
             level = level + 1
         end
     end
+
+    return value2
 end
 
 local function lookup_key_expr(level, key_expr)
@@ -758,7 +764,6 @@ end
 ---@param line string
 ---@param indent integer
 local function eval(line, indent)
-    local drop = false
     local function replace(str)
         local level = 1
         while true do
@@ -777,7 +782,7 @@ local function eval(line, indent)
         end
 
         local leading_space = string.match(line, " *")
-        local value, opt, fix
+        local value, fix
 
         local fn, key = string.match(str, "([%w_.]+)%(([%w_.]+)%)")
         if fn then
@@ -799,7 +804,6 @@ local function eval(line, indent)
         else
             -- search in the functin local value
             key = string.match(str, "[%w_]+")
-            opt = string.match(str, "%?+")
             fix = string.match(str, "#")
             value = lookup(level + 2, key)
             value = value == nil and _G[key] or value
@@ -812,7 +816,7 @@ local function eval(line, indent)
             end
         end
 
-        if value == nil and not opt then
+        if value == nil then
             throw_error("value not found for '" .. str .. "'")
         end
 
@@ -825,24 +829,8 @@ local function eval(line, indent)
             else
                 throw_error("no meta method '__tostring' for " .. str)
             end
-        elseif value == nil then
-            drop = opt == "??"
-            value = "nil"
         elseif type(value) == "string" then
             value = value:gsub("[\n]*$", "")
-            if opt then
-                value = olua.trim(value)
-                if value:find("[\n\r]") then
-                    value = "\n" .. value
-                    prefix = "[["
-                    posfix = "\n" .. leading_space .. "]]"
-                    leading_space = leading_space .. string.rep(" ", indent)
-                elseif value:find('[\'"]') then
-                    value = "[[" .. value .. "]]"
-                else
-                    value = "'" .. value .. "'"
-                end
-            end
         else
             value = tostring(value)
         end
@@ -854,7 +842,7 @@ local function eval(line, indent)
         return prefix .. value:gsub("\n", "\n" .. leading_space) .. posfix
     end
     line = line:gsub(FORMAT_PATTERN, replace)
-    return not drop and line or nil
+    return line
 end
 
 ---@param expr string
@@ -1006,6 +994,16 @@ function olua.get_comment(t, k, marshal)
     return str
 end
 
+local replace_char = {
+    ["\n"] = "\\n",
+    ["\r"] = "\\r",
+    ["\t"] = "\\t",
+    ["\b"] = "\\b",
+    ["\f"] = "\\f",
+    ["\""] = "\\\"",
+    ["\\"] = "\\\\",
+}
+
 ---@class olua.json_options
 ---@field indent? number
 
@@ -1030,9 +1028,7 @@ function olua.json_stringify(data, options)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            value = value:gsub("\\", "\\\\")
-            value = value:gsub("\n", "\\n")
-            value = value:gsub('"', '\\"')
+            value = value:gsub("\r\n", "\n"):gsub("[\n\"\\]", replace_char)
             return '"' .. value .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
@@ -1225,9 +1221,7 @@ function olua.lua_stringify(data, options)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            value = value:gsub("\\", "\\\\")
-            value = value:gsub("\n", "\\n")
-            value = value:gsub('"', '\\"')
+            value = value:gsub("\r\n", "\n"):gsub("[\n\"\\]", replace_char)
             return '"' .. value .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)
@@ -1410,9 +1404,7 @@ function olua.ts_stringify(data, options)
         elseif type_name == "boolean" then
             return tostring(value)
         elseif type_name == "string" then
-            value = value:gsub("\\", "\\\\")
-            value = value:gsub("\n", "\\n")
-            value = value:gsub('"', '\\"')
+            value = value:gsub("\r\n", "\n"):gsub("[\n\"\\]", replace_char)
             return '"' .. value .. '"'
         elseif type_name == "table" then
             local mt = getmetatable(value)

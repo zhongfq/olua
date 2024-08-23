@@ -400,10 +400,20 @@ local function gen_class_meta(module, cls, write)
     end
 
     for _, vi in ipairs(cls.vars) do
+        ---@cast vi idl.gen.var_desc
         local type = olua.luatype(vi.get.ret.type)
         olua.use(type)
         write(olua.format([[
             ---@field ${vi.name} ${type}
+        ]]))
+    end
+
+    for _, ci in ipairs(cls.consts) do
+        ---@cast ci idl.gen.const_desc
+        local type = olua.luatype(ci.type)
+        olua.use(type)
+        write(olua.format([[
+            ---@field ${ci.name} ${type}
         ]]))
     end
 
@@ -550,6 +560,7 @@ function olua.gen_annotation(module)
             end
         end
         local filename = module.entry == cls.cppcls and module.name or luacls
+        filename = filename:gsub("::", "/")
         local path = olua.format("${module.api_dir}/library/${filename}.lua")
         local dir = path:match("(.*)/[^/]+$")
         olua.mkdir(dir)
