@@ -515,6 +515,36 @@ function olua.luacls(cppcls)
     return ti.luacls
 end
 
+---@param func idl.gen.func_desc
+---@param cls? idl.gen.class_desc
+function olua.gen_luafn(func, cls)
+    local exps = olua.array("")
+    exps:push("fun(")
+
+    if not func.is_static and cls then
+        exps:pushf("self: ${cls.luacls}")
+    end
+
+    for idx, arg in ipairs(func.args) do
+        if idx > 1 then
+            exps:push(", ")
+        end
+        ---@cast arg idl.gen.type_desc
+        local name = arg.name or ("arg" .. idx)
+        local type = olua.luatype(arg.type)
+        olua.use(name, type)
+        exps:pushf("${name}: ${type}")
+    end
+
+    exps:push(')')
+
+    if func.ret.type.cppcls ~= "void" then
+        exps:push(": " .. olua.luatype(func.ret.type))
+    end
+
+    return tostring(exps)
+end
+
 ---@param ti idl.gen.typeinfo
 ---@return string
 function olua.luatype(ti)
@@ -529,6 +559,8 @@ function olua.luatype(ti)
         local value_luatype = olua.luatype(ti.subtypes[2])
         -- { [string]: boolean }
         return string.format("{ [%s]: %s }", key_luatype, value_luatype)
+    elseif ti.luacls == "std.function" then
+        return olua.gen_luafn(ti.callback)
     else
         return ti.luatype or ti.luacls or "any"
     end

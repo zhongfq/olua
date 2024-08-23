@@ -5,6 +5,20 @@ local CursorKind = require "clang.CursorKind"
 local CXXAccessSpecifier = require "clang.CXXAccessSpecifier"
 local DiagnosticSeverity = require "clang.DiagnosticSeverity"
 
+local keywords = {
+    ["and"] = "and_",
+    ["do"] = "do_",
+    ["end"] = "end_",
+    ["function"] = "function_",
+    ["in"] = "in_",
+    ["local"] = "local_",
+    ["not"] = "not_",
+    ["or"] = "or_",
+    ["repeat"] = "repeat_",
+    ["then"] = "then_",
+    ["until"] = "until_",
+}
+
 if not olua.isdir("autobuild") then
     olua.mkdir("autobuild")
 end
@@ -676,10 +690,12 @@ local function parse_func(cls, cur)
 
     setmetatable(func, { __olua_ignore = { display_name = true } })
 
-    for _, arg in ipairs(cur.arguments) do
+    for i, arg in ipairs(cur.arguments) do
+        local name = arg.name
+        name = keywords[name] or name
         func.args:push({
             type = typename(arg.type, cls.conf.template_types, nil, typefrom),
-            name = arg.name,
+            name = name ~= "" and name or ("arg" .. i),
             attr = olua.array()
         })
     end
@@ -730,6 +746,8 @@ function Autoconf:visit_method(cls, cur)
     if name_from_attr then
         func.luafunc = name_from_attr
     end
+
+    func.luafunc = keywords[func.luafunc] or func.luafunc
 
     local has_optional = false
     local min_args = 0

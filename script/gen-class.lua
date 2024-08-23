@@ -353,9 +353,9 @@ local function gen_class_meta(module, cls, write)
 
     local cls_comment = cls.comment
     if cls_comment then
-        cls_comment = cls_comment:gsub("^[/* \n\r]+", "")
-        cls_comment = cls_comment:gsub("[\n\r]+[/* ]+", "\n")
-        cls_comment = cls_comment:gsub("[/* \n\r]+$", "")
+        cls_comment = cls_comment:gsub("^[/* \n]+", "")
+        cls_comment = cls_comment:gsub("[\n]+[/* ]+", "\n")
+        cls_comment = cls_comment:gsub("[/* \n]+$", "")
         cls_comment = cls_comment:gsub("\n", "\n---")
     else
         cls_comment = ""
@@ -380,10 +380,9 @@ local function gen_class_meta(module, cls, write)
         ---@cast pi idl.gen.prop_desc
         local comment = pi.get.comment
         if comment and #comment > 0 then
-            comment = comment:gsub("^[/* \n\r]+", "")
-            comment = comment:gsub("[\n\r ]+[/* ]+", "\n")
-            comment = comment:gsub("[\n\r]", "\n")
-            comment = comment:gsub("[/* \n\r]+$", "")
+            comment = comment:gsub("^[/* \n]+", "")
+            comment = comment:gsub("[\n ]+[/* ]+", "\n")
+            comment = comment:gsub("[/* \n]+$", "")
             comment = comment:gsub("\n\n", " <br><br>")
             comment = comment:gsub("\n+", " ")
             comment = comment:gsub("\\code", "```")
@@ -392,7 +391,7 @@ local function gen_class_meta(module, cls, write)
         else
             comment = ""
         end
-        local type = olua.luatype(pi.get.ret.type)
+        local type = pi.get.ret and olua.luatype(pi.get.ret.type) or "any"
         olua.use(type)
         write(olua.format([[
             ---@field ${pi.name} ${type} ${comment}
@@ -422,9 +421,9 @@ local function gen_class_meta(module, cls, write)
         for _, ei in ipairs(cls.enums) do
             local comment = ei.comment
             if comment and #comment > 0 then
-                comment = comment:gsub("^[/* \n\r]+", "")
-                comment = comment:gsub("[\n\r]+[/* ]+", "\n")
-                comment = comment:gsub("[/* \n\r]+$", "")
+                comment = comment:gsub("^[/* \n]+", "")
+                comment = comment:gsub("[\n]+[/* ]+", "\n")
+                comment = comment:gsub("[/* \n]+$", "")
                 comment = comment:gsub("\n", "\n---")
                 fields:pushf("---${comment}")
             end
@@ -455,9 +454,9 @@ local function gen_class_meta(module, cls, write)
 
         local comment = func.comment
         if comment and #comment > 0 then
-            comment = comment:gsub("^[/* \n\r]+", "---")
-            comment = comment:gsub("[\n\r]+[/* ]+", "\n")
-            comment = comment:gsub("[/* \n\r]+$", "")
+            comment = comment:gsub("^[/* \n]+", "---")
+            comment = comment:gsub("[\n]+[/* ]+", "\n")
+            comment = comment:gsub("[/* \n]+$", "")
             comment = comment:gsub("\n", "\n---")
             comment = comment:gsub("@param", "\\param")
             comment = comment:gsub("@return", "\\return")
