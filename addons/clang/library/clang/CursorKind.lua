@@ -59,9 +59,9 @@ local CursorKind = {
     ---notion (C++ [expr.type.conv]).
     ---
     ---Example:
-    ---\code
+    ---```
     ---x = int(0.5);
-    ---\endcode
+    ---```
     CXXFunctionalCastExpr = 128,
     ---A C++ class method.
     CXXMethod = 21,
@@ -201,12 +201,12 @@ local CursorKind = {
     ---This cursor kind is used to describe the jump to "start_over" in the
     ---goto statement in the following example:
     ---
-    ---\code
+    ---```
     ---start_over:
     ---++counter;
     ---
     ---goto start_over;
-    ---\endcode
+    ---```
     ---
     ---A label reference cursor refers to a label statement.
     LabelRef = 48,
@@ -215,10 +215,10 @@ local CursorKind = {
     ---This cursor kind is used to describe the "start_over:" label statement in
     ---the following example:
     ---
-    ---\code
+    ---```
     ---start_over:
     ---++counter;
-    ---\endcode
+    ---```
     LabelStmt = 201,
     LambdaExpr = 144,
     LastAttr = 441,
@@ -440,9 +440,9 @@ local CursorKind = {
     ---An Objective-C "bridged" cast expression, which casts between
     ---Objective-C pointers and C pointers, transferring ownership in the process.
     ---
-    ---\code
+    ---```
     ---NSString *str = (__bridge_transfer NSString *)CFCreateString();
-    ---\endcode
+    ---```
     ObjCBridgedCastExpr = 141,
     ---An Objective-C \@interface for a category.
     ObjCCategoryDecl = 12,
@@ -507,7 +507,7 @@ local CursorKind = {
     ---An overloaded declaration reference cursor occurs in C++ templates where
     ---a dependent name refers to a function. For example:
     ---
-    ---\code
+    ---```
     ---template<typename T> void swap(T&, T&);
     ---
     ---struct X { ... };
@@ -523,7 +523,7 @@ local CursorKind = {
     ---
     ---struct Y { };
     ---void swap(Y&, Y&);
-    ---\endcode
+    ---```
     ---
     ---Here, the identifier "swap" is associated with an overloaded declaration
     ---reference. In the template definition, "swap" refers to either of the two
@@ -532,8 +532,8 @@ local CursorKind = {
     ---argument-dependent lookup (e.g., the "swap" function at the end of the
     ---example).
     ---
-    ---The functions \c clang_getNumOverloadedDecls() and
-    ---\c clang_getOverloadedDecl() can be used to retrieve the definitions
+    ---The functions `clang_getNumOverloadedDecls()` and
+    ---`clang_getOverloadedDecl()` can be used to retrieve the definitions
     ---referenced by this cursor.
     OverloadedDeclRef = 49,
     ---Represents a C++0x pack expansion that produces a sequence of
@@ -542,12 +542,12 @@ local CursorKind = {
     ---A pack expansion expression contains a pattern (which itself is an
     ---expression) followed by an ellipsis. For example:
     ---
-    ---\code
+    ---```
     ---template<typename F, typename ...Types>
     ---void forward(F f, Types &&...args) {
     ---f(static_cast<Types&&>(args)...);
     ---}
-    ---\endcode
+    ---```
     PackExpansionExpr = 142,
     ---Represents a C++26 pack indexing expression.
     PackIndexingExpr = 156,
@@ -575,12 +575,12 @@ local CursorKind = {
     ---Represents an expression that computes the length of a parameter
     ---pack.
     ---
-    ---\code
+    ---```
     ---template<typename ...Types>
     ---struct count {
     ---static const unsigned value = sizeof...(Types);
     ---};
-    ---\endcode
+    ---```
     SizeOfPackExpr = 143,
     ---A static_assert or _Static_assert node
     StaticAssert = 602,
@@ -612,10 +612,10 @@ local CursorKind = {
     ---A type reference occurs anywhere where a type is named but not
     ---declared. For example, given:
     ---
-    ---\code
+    ---```
     ---typedef unsigned size_type;
     ---size_type size;
-    ---\endcode
+    ---```
     ---
     ---The typedef is a declaration of size_type (CXCursor_TypedefDecl),
     ---while the type of the variable "size" is referenced. The cursor

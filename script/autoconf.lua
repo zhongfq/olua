@@ -981,7 +981,7 @@ function Autoconf:visit_enum(cppcls, cur)
         local intvalue
         local name = cls.conf.luaname(value --[[@as string]], "enum")
         local range = c.commentRange
-        local comment = c.rawCommentText
+        local comment = get_comment(c)
         if not filter[range.startLine] then
             filter[range.startLine] = true
         else

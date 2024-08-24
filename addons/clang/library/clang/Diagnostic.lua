@@ -7,7 +7,7 @@
 ---@field name string Retrieve the text of the given diagnostic.
 ---@field severity clang.DiagnosticSeverity Determine the severity of the given diagnostic.
 ---@field severitySeplling string Determine the severity of the given diagnostic.
----@field text string Retrieve the set of display options most similar to the default behavior of the clang compiler. <br><br>\returns A set of display options suitable for use with `clang_formatDiagnostic()`.
+---@field text string Retrieve the set of display options most similar to the default behavior of the clang compiler. <br><br>\returns A set of display options suitable for use with \c clang_formatDiagnostic().
 local Diagnostic = {}
 
 ---@param cls string
