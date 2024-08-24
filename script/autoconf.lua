@@ -603,6 +603,17 @@ local function get_comment(cur)
             end
         end
 
+        comment = comment:gsub("^[/* \n\r]+", "")       -- remove leading comment
+        comment = comment:gsub("\r\n", "\n")            -- remove carriage return
+        comment = comment:gsub("[\t]", " ")             -- remove tab
+        comment = comment:gsub("[\n]+[/* ]+", "\n")
+        comment = comment:gsub("[/* \n]+$", "")         -- remove trailing comment
+        comment = comment:gsub("\\code", "```")
+        comment = comment:gsub("\\endcode", "```")
+        comment = comment:gsub("\\c ([^ ,.]+)", "`%1`") -- convert \c NAME to `NAME`
+        comment = comment:gsub("^ *@", "\\")            -- convert @ to \\
+        comment = comment:gsub("\n *@", "\n\\")         -- convert @ to \\
+
         return comment
     end
 end
@@ -725,6 +736,7 @@ function Autoconf:visit_method(cls, cur)
     func.insert_before = member.insert_before
     func.insert_cafter = member.insert_cafter
     func.insert_cbefore = member.insert_cbefore
+    func.luacats = member.luacats
 
     if cur.isVariadic then
         func.is_variadic = true
@@ -1663,6 +1675,7 @@ local function merge_cls_snippet(cls)
                 {
                     cppfunc = key,
                     body = value.body,
+                    luacats = value.luacats,
                     is_exposed = true,
                 }
             })
@@ -1775,6 +1788,9 @@ local function gen_cls_meta_func(cls)
                 olua_push_callback(L, (${cls.cppcls} *)nullptr, "${cls.conf.luacls}");
                 return 1;
             }]]))
+            .luacats(olua.format([[
+                ---@return ${cls.conf.luacls}
+            ]]))
     elseif not has_type_flag(cls, kFLAG_ENUM) and cls.options.reg_luatype then
         if not cls.options.disallow_gc and not has_method(cls, "__gc") then
             cls.CMD.func "__gc"
@@ -1883,7 +1899,7 @@ local function parse_cls_props(cls)
         end
 
         local name = parse_prop_name(arr[1])
-        if name then
+        if name and not name:find("^%d") then
             local setfunc
             ---@type idl.model.func_desc
             local getfunc = arr[1]

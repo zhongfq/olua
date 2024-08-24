@@ -518,25 +518,27 @@ end
 ---@param func idl.gen.func_desc
 ---@param cls? idl.gen.class_desc
 function olua.gen_luafn(func, cls)
-    local exps = olua.array("")
-    exps:push("fun(")
+    local args = olua.array(", ")
 
     if not func.is_static and cls then
-        exps:pushf("self: ${cls.luacls}")
+        args:pushf("self: ${cls.luacls}")
     end
 
     for idx, arg in ipairs(func.args) do
-        if idx > 1 then
-            exps:push(", ")
-        end
         ---@cast arg idl.gen.type_desc
-        local name = arg.name or ("arg" .. idx)
-        local type = olua.luatype(arg.type)
-        olua.use(name, type)
-        exps:pushf("${name}: ${type}")
+        if arg.type.cppcls ~= "lua_State" then
+            local name = arg.name or ("arg" .. idx)
+            local type = olua.luatype(arg.type)
+            name = name:gsub("%$", "")
+            olua.use(type)
+            args:pushf("${name}: ${type}")
+        end
     end
 
-    exps:push(')')
+    local exps = olua.array("")
+    exps:push("fun(")
+    exps:push(tostring(args))
+    exps:push(")")
 
     if func.ret.type.cppcls ~= "void" then
         exps:push(": " .. olua.luatype(func.ret.type))
@@ -825,6 +827,7 @@ function olua.export(path)
                 func.index = idx
                 if func.body then
                     func.funcdesc = ""
+                    func.luafunc = func.luafunc or func.cppfunc
                 else
                     func.funcdesc = gen_func_desc(cls, func)
                     func.ret = olua.parse_type(func.ret, cls)

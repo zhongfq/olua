@@ -261,6 +261,7 @@ end
 ---@field prototype? string # C++ prototype
 ---@field display_name? string # C++ prototype without return type
 ---@field comment? string
+---@field luacats? string
 ---@field macro? string
 ---@field is_exposed? boolean
 ---@field is_static? boolean
@@ -333,6 +334,14 @@ local function typeconf_member(parent, cls, name)
     ---@param body string
     function CMD.body(body)
         member.body = olua.trim(body)
+        return CMD
+    end
+
+    ---LuaCAST
+    ---@param luacats string
+    ---@return idl.cmd.member
+    function CMD.luacats(luacats)
+        member.luacats = olua.trim(checkstring("luacats", luacats))
         return CMD
     end
 
@@ -559,6 +568,7 @@ function typeconf(cppcls)
     ---@class idl.model.class_desc
     ---@field supercls? string
     ---@field comment? string
+    ---@field luacats? string
     ---@field luaopen? string
     ---@field codeblock? string
     ---@field conf idl.conf.typeconf_desc
@@ -613,6 +623,14 @@ function typeconf(cppcls)
     ---@return idl.cmd.typeconf
     function CMD.codeblock(codeblock)
         cls.codeblock = olua.trim(codeblock)
+        return CMD
+    end
+
+    ---LuaCAST
+    ---@param luacats string
+    ---@return idl.cmd.typeconf
+    function CMD.luacats(luacats)
+        cls.luacats = olua.trim(checkstring("luacats", luacats))
         return CMD
     end
 
