@@ -603,11 +603,11 @@ local function get_comment(cur)
             end
         end
 
-        comment = comment:gsub("^[/* \n\r]+", "")       -- remove leading comment
-        comment = comment:gsub("\r\n", "\n")            -- remove carriage return
-        comment = comment:gsub("[\t]", " ")             -- remove tab
+        comment = comment:gsub("^[/* \n\r]+", "") -- remove leading comment
+        comment = comment:gsub("\r\n", "\n")      -- remove carriage return
+        comment = comment:gsub("[\t]", " ")       -- remove tab
         comment = comment:gsub("[\n]+[/* ]+", "\n")
-        comment = comment:gsub("[/* \n]+$", "")         -- remove trailing comment
+        comment = comment:gsub("[/* \n]+$", "")   -- remove trailing comment
         comment = comment:gsub("\\code", "```")
         comment = comment:gsub("\\endcode", "```")
         comment = comment:gsub("\\c ([^ ,.]+)", "`%1`") -- convert \c NAME to `NAME`
@@ -814,7 +814,8 @@ function Autoconf:visit_method(cls, cur)
         ]])
         local prop = cls.props:get(func.luafunc)
         if not prop then
-            prop = { name = func.luafunc }
+            ---@type idl.model.prop_desc
+            prop = { name = func.luafunc, get = "" }
             cls.props:set(func.luafunc, prop)
         end
         prop[what] = func.prototype
@@ -823,6 +824,7 @@ function Autoconf:visit_method(cls, cur)
         for n = 1, OLUA_MAX_VARIADIC_ARGS do
             local variadic_func = olua.clone(func)
             for i = 1, n do
+                ---@type idl.model.type_desc
                 local arg = olua.clone(variadic_func.args[num_args])
                 arg.name = olua.format("${arg.name}_$${i}")
                 variadic_func.args:push(arg)
@@ -862,11 +864,12 @@ function Autoconf:visit_var(cls, cur)
 
     local fn = cur.name
     local attrs = parse_attr_from_annotate(cls, cur, cur.name, true)
+    local luafunc = cls.conf.luaname(fn, "var")
 
     ---@type idl.conf.member_desc
     local member = cls.conf.members:get(cur.name)
 
-    local luafunc = cls.conf.luaname(fn, "var")
+    olua.use(ret_tn, arg_tn)
 
     ---@type idl.model.func_desc
     local getter = {
@@ -967,7 +970,7 @@ function Autoconf:will_visit(cppcls)
     return cls
 end
 
----@param cppcls any
+---@param cppcls string
 ---@param cur clang.Cursor
 function Autoconf:visit_enum(cppcls, cur)
     local cls = self:will_visit(cppcls)
@@ -1002,6 +1005,8 @@ function Autoconf:visit_enum(cppcls, cur)
     cls.conf.kind = cls.conf.kind or kFLAG_ENUM
 end
 
+---@param alias string
+---@param cppcls string
 function Autoconf:visit_alias_class(alias, cppcls)
     local cls = self:will_visit(alias)
     cls.conf.kind = cls.conf.kind or kFLAG_POINTER
@@ -1386,6 +1391,7 @@ local function parse_types()
         for _, cls in ipairs(m.class_types) do
             ---@cast cls idl.model.class_desc
             for fn, func in pairs(cls.conf.members) do
+                ---@cast func idl.conf.member_desc
                 if func.body then
                     cls.conf.excludes:set(fn, true)
                 end

@@ -442,6 +442,17 @@ end
 ---@return idl.cmd.func
 local function typeconf_func(parent, cls, name)
     ---@class idl.cmd.func : idl.cmd.member
+    ---@field body fun(body:string):idl.cmd.func
+    ---@field luacats fun(luacats:string):idl.cmd.func
+    ---@field tag_scope fun(store:idl.callback_tag_scope):idl.cmd.func
+    ---@field tag_store fun(store:integertype):idl.cmd.func
+    ---@field tag_mode fun(mode:idl.callback_tag_mode):idl.cmd.func
+    ---@field tag_maker fun(maker:string):idl.cmd.func
+    ---@field tag_usepool fun(usepool:booltype):idl.cmd.func
+    ---@field insert_before fun(code:string):idl.cmd.func
+    ---@field insert_after fun(code:string):idl.cmd.func
+    ---@field insert_cbefore fun(code:string):idl.cmd.func
+    ---@field insert_cafter fun(code:string):idl.cmd.func
     ---@field ret fun(attr:string):idl.cmd.func
     ---@field arg1 fun(attr:string):idl.cmd.func
     ---@field arg2 fun(attr:string):idl.cmd.func
@@ -479,6 +490,16 @@ end
 ---@param name string
 local function typeconf_var(parent, cls, name)
     ---@class idl.cmd.var : idl.cmd.member
+    ---@field luacats fun(luacats:string):idl.cmd.var
+    ---@field tag_scope fun(store:idl.callback_tag_scope):idl.cmd.var
+    ---@field tag_store fun(store:integertype):idl.cmd.var
+    ---@field tag_mode fun(mode:idl.callback_tag_mode):idl.cmd.var
+    ---@field tag_maker fun(maker:string):idl.cmd.var
+    ---@field tag_usepool fun(usepool:booltype):idl.cmd.var
+    ---@field insert_before fun(code:string):idl.cmd.var
+    ---@field insert_after fun(code:string):idl.cmd.var
+    ---@field insert_cbefore fun(code:string):idl.cmd.var
+    ---@field insert_cafter fun(code:string):idl.cmd.var
     ---@field attr fun(attr:string):idl.cmd.var
     ---@field index fun(index:integertype):idl.cmd.var
     local CMD = typeconf_member(parent, cls, name)
@@ -499,7 +520,7 @@ end
 local function typeconf_prop(parent, cls, name)
     ---@class idl.conf.prop_desc
     ---@field get string
-    ---@field set string
+    ---@field set? string
     local prop = { name = name }
 
     cls.conf.props:set(name, prop)
