@@ -714,6 +714,10 @@ local function parse_func(cls, cur)
     func.prototype = gen_prototype(cls, func)
     func.display_name = gen_display_name(cls, func)
 
+    if cls.conf.props:has(func.cppfunc) then
+        func.is_exposed = false
+    end
+
     -- if func.cppfunc == "addEventListener" then
     --     print(func.cppfunc, func.display_name)
     -- end

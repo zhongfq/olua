@@ -460,6 +460,9 @@ local function gen_class_meta(module, cls, write)
 
         if func.luacats then
             write(func.luacats)
+            for name in string.gmatch(func.luacats, "%-+@param +([^ ]+)") do
+                caller_args:push(name)
+            end
         else
             -- write function parameters
             if func.args and #func.args > 0 then
