@@ -2204,24 +2204,6 @@ static int _example_Point_new$2(lua_State *L)
 {
     olua_startinvoke(L);
 
-    example::Point arg1;       /** p */
-
-    olua_check_object(L, 1, &arg1, "example.Point");
-
-    // example::Point(const example::Point &p)
-    example::Point *ret = new example::Point(arg1);
-    int num_ret = olua_push_object(L, ret, "example.Point");
-    olua_postnew(L, ret);
-
-    olua_endinvoke(L);
-
-    return num_ret;
-}
-
-static int _example_Point_new$3(lua_State *L)
-{
-    olua_startinvoke(L);
-
     float arg1 = 0;       /** x */
     float arg2 = 0;       /** y */
 
@@ -2247,17 +2229,10 @@ static int _example_Point_new(lua_State *L)
         return _example_Point_new$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_object(L, 1, "example.Point"))) {
-            // example::Point(const example::Point &p)
-            return _example_Point_new$2(L);
-        // }
-    }
-
     if (num_args == 2) {
         // if ((olua_is_number(L, 1)) && (olua_is_number(L, 2))) {
             // example::Point(float x, float y)
-            return _example_Point_new$3(L);
+            return _example_Point_new$2(L);
         // }
     }
 
@@ -2426,12 +2401,12 @@ static int _example_Hello_checkString(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    std::vector<std::string> *arg1 = nullptr;       /**  */
+    std::vector<std::string> *arg1 = nullptr;       /** arg1 */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_pointer(L, 2, &arg1, "example.VectorString");
 
-    // void checkString(std::vector<std::string> *)
+    // void checkString(std::vector<std::string> *arg1)
     self->checkString(arg1);
 
     olua_endinvoke(L);
@@ -3728,12 +3703,12 @@ static int _example_Hello_setCGLchar(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    const GLchar *arg1 = nullptr;       /**  */
+    const GLchar *arg1 = nullptr;       /** arg1 */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_string(L, 2, &arg1);
 
-    // void setCGLchar(const GLchar *)
+    // void setCGLchar(const GLchar *arg1)
     self->setCGLchar(arg1);
 
     olua_endinvoke(L);
@@ -3981,12 +3956,12 @@ static int _example_Hello_setGLchar(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    GLchar *arg1 = nullptr;       /**  */
+    GLchar *arg1 = nullptr;       /** arg1 */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_string(L, 2, &arg1);
 
-    // void setGLchar(GLchar *)
+    // void setGLchar(GLchar *arg1)
     self->setGLchar(arg1);
 
     olua_endinvoke(L);
@@ -3999,12 +3974,12 @@ static int _example_Hello_setGLfloat(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    GLfloat *arg1 = nullptr;       /**  */
+    GLfloat *arg1 = nullptr;       /** arg1 */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_pointer(L, 2, &arg1, "olua.float");
 
-    // void setGLfloat(GLfloat *)
+    // void setGLfloat(GLfloat *arg1)
     self->setGLfloat(arg1);
 
     olua_endinvoke(L);
@@ -4017,12 +3992,12 @@ static int _example_Hello_setGLvoid(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    GLvoid *arg1 = nullptr;       /**  */
+    GLvoid *arg1 = nullptr;       /** arg1 */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_object(L, 2, &arg1, "void *");
 
-    // void setGLvoid(GLvoid *)
+    // void setGLvoid(GLvoid *arg1)
     self->setGLvoid(arg1);
 
     olua_endinvoke(L);
@@ -4295,38 +4270,38 @@ static int _example_Hello_testPointerTypes$1(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    olua_char_t *arg1 = nullptr;       /**  */
-    olua_uchar_t *arg2 = nullptr;       /**  */
-    short *arg3 = nullptr;       /**  */
-    short *arg4 = nullptr;       /**  */
-    std::vector<short> arg5;       /**  */
-    unsigned short *arg6 = nullptr;       /**  */
-    unsigned short *arg7 = nullptr;       /**  */
-    std::vector<unsigned short> arg8;       /**  */
-    int *arg9 = nullptr;       /**  */
-    int *arg10 = nullptr;       /**  */
-    std::vector<int> *arg11 = nullptr;       /**  */
-    unsigned int *arg12 = nullptr;       /**  */
-    unsigned int *arg13 = nullptr;       /**  */
-    std::vector<unsigned int> arg14;       /**  */
-    long *arg15 = nullptr;       /**  */
-    long *arg16 = nullptr;       /**  */
-    std::vector<long> arg17;       /**  */
-    unsigned long *arg18 = nullptr;       /**  */
-    unsigned long *arg19 = nullptr;       /**  */
-    std::vector<unsigned long> arg20;       /**  */
-    long long *arg21 = nullptr;       /**  */
-    long long *arg22 = nullptr;       /**  */
-    std::vector<long long> arg23;       /**  */
-    unsigned long long *arg24 = nullptr;       /**  */
-    unsigned long long *arg25 = nullptr;       /**  */
-    std::vector<unsigned long long> arg26;       /**  */
-    float *arg27 = nullptr;       /**  */
-    std::vector<float> arg28;       /**  */
-    double *arg29 = nullptr;       /**  */
-    std::vector<double> arg30;       /**  */
-    long double *arg31 = nullptr;       /**  */
-    std::vector<long double> arg32;       /**  */
+    olua_char_t *arg1 = nullptr;       /** arg1 */
+    olua_uchar_t *arg2 = nullptr;       /** arg2 */
+    short *arg3 = nullptr;       /** arg3 */
+    short *arg4 = nullptr;       /** arg4 */
+    std::vector<short> arg5;       /** arg5 */
+    unsigned short *arg6 = nullptr;       /** arg6 */
+    unsigned short *arg7 = nullptr;       /** arg7 */
+    std::vector<unsigned short> arg8;       /** arg8 */
+    int *arg9 = nullptr;       /** arg9 */
+    int *arg10 = nullptr;       /** arg10 */
+    std::vector<int> *arg11 = nullptr;       /** arg11 */
+    unsigned int *arg12 = nullptr;       /** arg12 */
+    unsigned int *arg13 = nullptr;       /** arg13 */
+    std::vector<unsigned int> arg14;       /** arg14 */
+    long *arg15 = nullptr;       /** arg15 */
+    long *arg16 = nullptr;       /** arg16 */
+    std::vector<long> arg17;       /** arg17 */
+    unsigned long *arg18 = nullptr;       /** arg18 */
+    unsigned long *arg19 = nullptr;       /** arg19 */
+    std::vector<unsigned long> arg20;       /** arg20 */
+    long long *arg21 = nullptr;       /** arg21 */
+    long long *arg22 = nullptr;       /** arg22 */
+    std::vector<long long> arg23;       /** arg23 */
+    unsigned long long *arg24 = nullptr;       /** arg24 */
+    unsigned long long *arg25 = nullptr;       /** arg25 */
+    std::vector<unsigned long long> arg26;       /** arg26 */
+    float *arg27 = nullptr;       /** arg27 */
+    std::vector<float> arg28;       /** arg28 */
+    double *arg29 = nullptr;       /** arg29 */
+    std::vector<double> arg30;       /** arg30 */
+    long double *arg31 = nullptr;       /** arg31 */
+    std::vector<long double> arg32;       /** arg32 */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_pointer(L, 2, &arg1, "olua.char");
@@ -4382,7 +4357,7 @@ static int _example_Hello_testPointerTypes$1(lua_State *L)
         olua_check_number(L, -1, arg1);
     });
 
-    // void testPointerTypes(@type(olua_char_t *) char *, @type(olua_uchar_t *) unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)
+    // void testPointerTypes(@type(olua_char_t *) char *arg1, @type(olua_uchar_t *) unsigned char *arg2, short *arg3, short *arg4, std::vector<short> &arg5, unsigned short *arg6, unsigned short *arg7, std::vector<unsigned short> &arg8, int *arg9, int *arg10, std::vector<int> &arg11, unsigned int *arg12, unsigned int *arg13, std::vector<unsigned int> &arg14, long *arg15, long *arg16, std::vector<long> &arg17, unsigned long *arg18, unsigned long *arg19, std::vector<unsigned long> &arg20, long long *arg21, long long *arg22, std::vector<long long> &arg23, unsigned long long *arg24, unsigned long long *arg25, std::vector<unsigned long long> &arg26, float *arg27, std::vector<float> &arg28, double *arg29, std::vector<double> &arg30, long double *arg31, std::vector<long double> &arg32)
     self->testPointerTypes(arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10, *arg11, arg12, arg13, arg14, arg15, arg16, arg17, arg18, arg19, arg20, arg21, arg22, arg23, arg24, arg25, arg26, arg27, arg28, arg29, arg30, arg31, arg32);
 
     olua_endinvoke(L);
@@ -4395,7 +4370,7 @@ static int _example_Hello_testPointerTypes$2(lua_State *L)
     olua_startinvoke(L);
 
     example::Hello *self = nullptr;
-    std::function<void (char *, unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)> arg1;       /**  */
+    std::function<void (char *, unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)> arg1;       /** arg1 */
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_callback(L, 2, &arg1, "std.function");
@@ -4474,7 +4449,7 @@ static int _example_Hello_testPointerTypes$2(lua_State *L)
         }
     };
 
-    // void testPointerTypes(const std::function<void (char *, unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)> &)
+    // void testPointerTypes(const std::function<void (char *, unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)> &arg1)
     self->testPointerTypes(arg1);
 
     olua_endinvoke(L);
@@ -4488,14 +4463,14 @@ static int _example_Hello_testPointerTypes(lua_State *L)
 
     if (num_args == 1) {
         // if ((olua_is_callback(L, 2, "std.function"))) {
-            // void testPointerTypes(const std::function<void (char *, unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)> &)
+            // void testPointerTypes(const std::function<void (char *, unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)> &arg1)
             return _example_Hello_testPointerTypes$2(L);
         // }
     }
 
     if (num_args == 32) {
         // if ((olua_is_pointer(L, 2, "olua.char")) && (olua_is_pointer(L, 3, "olua.uchar")) && (olua_is_pointer(L, 4, "olua.short")) && (olua_is_pointer(L, 5, "olua.short")) && (olua_is_array(L, 6)) && (olua_is_pointer(L, 7, "olua.ushort")) && (olua_is_pointer(L, 8, "olua.ushort")) && (olua_is_array(L, 9)) && (olua_is_pointer(L, 10, "olua.int")) && (olua_is_pointer(L, 11, "olua.int")) && (olua_is_pointer(L, 12, "example.VectorInt")) && (olua_is_pointer(L, 13, "olua.uint")) && (olua_is_pointer(L, 14, "olua.uint")) && (olua_is_array(L, 15)) && (olua_is_pointer(L, 16, "olua.long")) && (olua_is_pointer(L, 17, "olua.long")) && (olua_is_array(L, 18)) && (olua_is_pointer(L, 19, "olua.ulong")) && (olua_is_pointer(L, 20, "olua.ulong")) && (olua_is_array(L, 21)) && (olua_is_pointer(L, 22, "olua.llong")) && (olua_is_pointer(L, 23, "olua.llong")) && (olua_is_array(L, 24)) && (olua_is_pointer(L, 25, "olua.ullong")) && (olua_is_pointer(L, 26, "olua.ullong")) && (olua_is_array(L, 27)) && (olua_is_pointer(L, 28, "olua.float")) && (olua_is_array(L, 29)) && (olua_is_pointer(L, 30, "olua.double")) && (olua_is_array(L, 31)) && (olua_is_pointer(L, 32, "olua.ldouble")) && (olua_is_array(L, 33))) {
-            // void testPointerTypes(@type(olua_char_t *) char *, @type(olua_uchar_t *) unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)
+            // void testPointerTypes(@type(olua_char_t *) char *arg1, @type(olua_uchar_t *) unsigned char *arg2, short *arg3, short *arg4, std::vector<short> &arg5, unsigned short *arg6, unsigned short *arg7, std::vector<unsigned short> &arg8, int *arg9, int *arg10, std::vector<int> &arg11, unsigned int *arg12, unsigned int *arg13, std::vector<unsigned int> &arg14, long *arg15, long *arg16, std::vector<long> &arg17, unsigned long *arg18, unsigned long *arg19, std::vector<unsigned long> &arg20, long long *arg21, long long *arg22, std::vector<long long> &arg23, unsigned long long *arg24, unsigned long long *arg25, std::vector<unsigned long long> &arg26, float *arg27, std::vector<float> &arg28, double *arg29, std::vector<double> &arg30, long double *arg31, std::vector<long double> &arg32)
             return _example_Hello_testPointerTypes$1(L);
         // }
     }

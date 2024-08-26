@@ -114,14 +114,14 @@ function module(name)
     ---@field api_dir? string
     ---@field luaopen? string
     ---@field entry? string
-    ---@field luacls fun(cppcls:string):string
+    ---@field luacls fun(cxxcls:string):string
     idl.current_module = {
         name = name,
         class_types = olua.ordered_map(false),
         wildcard_types = olua.ordered_map(),
         typedef_types = olua.ordered_map(),
-        luacls = function (cppcls)
-            return string.gsub(cppcls, "::", ".")
+        luacls = function (cxxcls)
+            return string.gsub(cxxcls, "::", ".")
         end,
     }
     idl.macros:clear()
@@ -150,10 +150,10 @@ function luaopen(luaopen)
 end
 
 ---Specify the entry `class`, when you require a module, return this `class`.
----@param cppcls string
-function entry(cppcls)
+---@param cxxcls string
+function entry(cxxcls)
     check_module()
-    idl.current_module.entry = checkstring("entry", cppcls)
+    idl.current_module.entry = checkstring("entry", cxxcls)
 end
 
 ---@param dir string
@@ -168,16 +168,16 @@ function api_dir(dir)
     idl.current_module.api_dir = dir
 end
 
----@param maker fun(cppcls:string):string
+---@param maker fun(cxxcls:string):string
 function luacls(maker)
     check_module()
     idl.current_module.luacls = maker
 end
 
----@param cppcls string
-function exclude_type(cppcls)
-    idl.exclude_types:replace(olua.pretty_typename(cppcls), true)
-    idl.exclude_types:replace(olua.pretty_typename(cppcls .. " *"), true)
+---@param cxxcls string
+function exclude_type(cxxcls)
+    idl.exclude_types:replace(olua.pretty_typename(cxxcls), true)
+    idl.exclude_types:replace(olua.pretty_typename(cxxcls .. " *"), true)
 end
 
 ---@param path string
@@ -197,13 +197,13 @@ end
 ---
 --- Define a type convertor.
 ---
----@param cppcls string C++ class name
+---@param cxxcls string C++ class name
 ---@return idl.typedef
-function typedef(cppcls)
+function typedef(cxxcls)
     check_module()
 
     ---@class idl.model.typedef_desc
-    ---@field cppcls string
+    ---@field cxxcls string
     ---@field conv string
     ---@field luacls? string
     ---@field luatype? string
@@ -211,11 +211,11 @@ function typedef(cppcls)
     ---@field packvars? integer
     ---@field smartptr? boolean
     ---@field override? boolean
-    local cls = { cppcls = cppcls }
+    local cls = { cxxcls = cxxcls }
 
-    for c in cppcls:gmatch("[^;\n\r]+") do
+    for c in cxxcls:gmatch("[^;\n\r]+") do
         c = olua.pretty_typename(c)
-        local t = setmetatable({ cppcls = c }, { __index = cls })
+        local t = setmetatable({ cxxcls = c }, { __index = cls })
         idl.current_module.typedef_types:set(c, t)
         idl.type_convs:set(c, t)
     end
@@ -256,8 +256,8 @@ end
 ---@field attr olua.array
 
 ---@class idl.model.func_desc
----@field cppfunc string # C++ function name
----@field luafunc? string # Lua function name
+---@field cxxfn string # C++ function name
+---@field luafn? string # Lua function name
 ---@field prototype? string # C++ prototype
 ---@field display_name? string # C++ prototype without return type
 ---@field comment? string
@@ -551,13 +551,13 @@ end
 ---
 ---Config a c++ class
 ---
----@param cppcls string the c++ class name
+---@param cxxcls string the c++ class name
 ---@return idl.cmd.typeconf
-function typeconf(cppcls)
+function typeconf(cxxcls)
     check_module()
 
     ---@class idl.cmd.typeconf
-    ---@field luaname fun(maker:fun(cppcls:string, kind?:'func'|'var'|'enum'):string):idl.cmd.typeconf
+    ---@field luaname fun(maker:fun(cxxcls:string, kind?:'func'|'var'|'enum'):string):idl.cmd.typeconf
     ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.cmd.typeconf
     ---@field packable fun(packable:booltype):idl.cmd.typeconf
     ---@field packvars fun(packvars:string):idl.cmd.typeconf
@@ -571,7 +571,7 @@ function typeconf(cppcls)
     ---@field funcdecl? string # std::function declaration
     ---@field conv string
     local conf = {
-        luacls = idl.current_module.luacls(cppcls),
+        luacls = idl.current_module.luacls(cxxcls),
         conv = "olua_$$_object",
         extends = olua.ordered_map(false),
         excludes = olua.ordered_map(),
@@ -596,7 +596,7 @@ function typeconf(cppcls)
     ---@field CMD idl.cmd.typeconf
     local cls = {
         ---@type string c++ full class name
-        cppcls = cppcls,
+        cxxcls = cxxcls,
         options = { reg_luatype = true },
         funcs = olua.ordered_map(false),
         enums = olua.ordered_map(false),
@@ -614,21 +614,21 @@ function typeconf(cppcls)
 
     local macros = olua.array()
 
-    if idl.exclude_types:has(cppcls) then
+    if idl.exclude_types:has(cxxcls) then
         olua.error([[
-            typeconf '${cls.cppcls}' will not configured
+            typeconf '${cls.cxxcls}' will not configured
                 you should do one of:
-                    * remove exclude_type '${cls.cppcls}'
+                    * remove exclude_type '${cls.cxxcls}'
         ]])
     end
 
-    if cppcls:find("[%^%%%$%*%+]") then -- ^%$*+
-        idl.current_module.wildcard_types:set(cppcls, cls)
+    if cxxcls:find("[%^%%%$%*%+]") then -- ^%$*+
+        idl.current_module.wildcard_types:set(cxxcls, cls)
     else
-        idl.current_module.class_types:set(cppcls, cls)
+        idl.current_module.class_types:set(cxxcls, cls)
     end
 
-    idl.type_convs:set(cppcls, setmetatable({ cppcls = cppcls }, { __index = cls.conf }))
+    idl.type_convs:set(cxxcls, setmetatable({ cxxcls = cxxcls }, { __index = cls.conf }))
     if #idl.macros > 0 then
         cls.macro = idl.macros:at(-1)
     end
@@ -678,7 +678,7 @@ function typeconf(cppcls)
     function CMD.exclude(name)
         if mode and mode ~= "exclude" then
             olua.use(cls) -- get cls as upvalue
-            olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cppcls}'")
+            olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cxxcls}'")
         end
         mode = "exclude"
         if name == "*" or not name:find("[^_%w]") then
@@ -695,7 +695,7 @@ function typeconf(cppcls)
     function CMD.include(name)
         if mode and mode ~= "include" then
             olua.use(cls) -- get cls as upvalue
-            olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cppcls}'")
+            olua.error("can't use .include and .exclude at the same time in typeconf '${cls.cxxcls}'")
         end
         mode = "include"
         cls.conf.includes:set(name, true)
@@ -739,22 +739,22 @@ function typeconf(cppcls)
 end
 
 ---Config a c++ class without export any members.
----@param cppcls string
-function typeonly(cppcls)
-    local cls = typeconf(cppcls)
+---@param cxxcls string
+function typeonly(cxxcls)
+    local cls = typeconf(cxxcls)
     cls.exclude "*"
     return cls
 end
 
----@param cppcls string
+---@param cxxcls string
 ---@param fromcls idl.model.class_desc
 ---@return idl.cmd.typeconf
-function idl.typecopy(cppcls, fromcls)
-    local CMD = typeconf(cppcls)
+function idl.typecopy(cxxcls, fromcls)
+    local CMD = typeconf(cxxcls)
 
-    local cls = idl.current_module.class_types:get(cppcls) ---@type idl.model.class_desc
+    local cls = idl.current_module.class_types:get(cxxcls) ---@type idl.model.class_desc
     for k, v in pairs(fromcls.conf) do
-        if k == "cppcls" or k == "luacls" then
+        if k == "cxxcls" or k == "luacls" then
             goto continue
         end
         cls.conf[k] = olua.clone(v)

@@ -196,7 +196,7 @@ function olua.gen_callback(cls, func, arg, idx, codeset)
     end
 
     local callback_ret = arg.type.callback.ret
-    if callback_ret.type.cppcls ~= "void" then
+    if callback_ret.type.cxxcls ~= "void" then
         local retset = {
             decl_args = olua.array(""),
             check_args = olua.array(""),
@@ -246,7 +246,7 @@ function olua.gen_callback(cls, func, arg, idx, codeset)
         ]])
     elseif tag_store == 0 then
         cb_store = "self"
-        if not func.is_static or func.luafunc == "new" and func.ret.type.cppcls == cls.cppcls then
+        if not func.is_static or func.luafn == "new" and func.ret.type.cxxcls == cls.cxxcls then
             cb_store = "self"
         else
             cb_store = olua.format 'olua_pushclassobj(L, "${cls.luacls}")'

@@ -4,37 +4,37 @@ local function typedef(t)
 end
 
 typedef {
-    cppcls = "void",
+    cxxcls = "void",
     conv = "<NONE>",
     luatype = "nil",
 }
 
 typedef {
-    cppcls = "void *",
+    cxxcls = "void *",
     luacls = "void *",
     conv = "olua_$$_object",
     luatype = "any",
 }
 
 typedef {
-    cppcls = "olua_Return",
+    cxxcls = "olua_Return",
     conv = "<NONE>",
 }
 
 typedef {
-    cppcls = "lua_State",
+    cxxcls = "lua_State",
     luacls = "lua_State",
     conv = "<NONE>",
 }
 
 typedef {
-    cppcls = "bool",
+    cxxcls = "bool",
     conv = "olua_$$_bool",
     luatype = "boolean",
 }
 
 typedef {
-    cppcls = [[
+    cxxcls = [[
         char *
         const char *
         unsigned char *
@@ -45,25 +45,25 @@ typedef {
 }
 
 typedef {
-    cppcls = "std::string",
+    cxxcls = "std::string",
     conv = "olua_$$_string",
     luatype = "string",
 }
 
 typedef {
-    cppcls = "std::string_view",
+    cxxcls = "std::string_view",
     conv = "olua_$$_string",
     luatype = "string",
 }
 
 typedef {
-    cppcls = "std::function",
+    cxxcls = "std::function",
     luacls = "std.function",
     conv = "olua_$$_callback",
 }
 
 typedef {
-    cppcls = [[
+    cxxcls = [[
         std::unordered_map
         std::map
     ]],
@@ -72,7 +72,7 @@ typedef {
 }
 
 typedef {
-    cppcls = [[
+    cxxcls = [[
         std::set
         std::vector
     ]],
@@ -81,7 +81,7 @@ typedef {
 }
 
 typedef {
-    cppcls = [[
+    cxxcls = [[
         std::shared_ptr
         std::weak_ptr
     ]],
@@ -90,7 +90,7 @@ typedef {
 }
 
 typedef {
-    cppcls = [[
+    cxxcls = [[
         float
         double
         long double
@@ -101,7 +101,7 @@ typedef {
 }
 
 typedef {
-    cppcls = [[
+    cxxcls = [[
         intptr_t
         ssize_t
         time_t
@@ -129,7 +129,7 @@ typedef {
 }
 
 typedef {
-    cppcls = [[
+    cxxcls = [[
         uintptr_t
         size_t
         unsigned char

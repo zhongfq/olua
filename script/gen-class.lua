@@ -18,11 +18,11 @@ local function gen_class_funcs(cls, write)
 
     if cls.supercls then
         if not prototypes[cls.supercls] then
-            error(olua.format("super class '${cls.supercls}' must be exported before '${cls.cppcls}'"))
+            error(olua.format("super class '${cls.supercls}' must be exported before '${cls.cxxcls}'"))
         end
         cls_protos = setmetatable(cls_protos, { __index = prototypes[cls.supercls] })
     end
-    prototypes[cls.cppcls] = cls_protos
+    prototypes[cls.cxxcls] = cls_protos
 
     cls.funcs:foreach(function (arr)
         if #arr == 0 then
@@ -32,23 +32,23 @@ local function gen_class_funcs(cls, write)
         ---@type idl.gen.func_desc
         local func = arr[1]
 
-        local cppfunc = olua.format([[_${cls.cppcls#}_${func.cppfunc}]])
-        if symbols[cppfunc] then
+        local cxxfn = olua.format([[_${cls.cxxcls#}_${func.cxxfn}]])
+        if symbols[cxxfn] then
             return
         end
-        symbols[cppfunc] = true
+        symbols[cxxfn] = true
 
         if getmetatable(cls_protos) then
             local supermeta = getmetatable(cls_protos).__index
             for _, f in ipairs(arr) do
                 if not f.is_static
                     and f.prototype
-                    and f.cppfunc ~= "as"
+                    and f.cxxfn ~= "as"
                     and rawget(cls_protos, f.prototype)
                     and supermeta[f.prototype]
                     and not f.ret.attr.using
                 then
-                    print(olua.format("${cls.cppcls}: super class already export ${f.funcdesc}"))
+                    print(olua.format("${cls.cxxcls}: super class already export ${f.funcdesc}"))
                 end
             end
         end
@@ -79,12 +79,12 @@ local function gen_class_open(cls, write)
     for _, arr in ipairs(cls.funcs) do
         ---@type idl.gen.func_desc
         local func = arr[1]
-        local cppfunc = func.cppfunc
-        local luafunc = func.luafunc or cppfunc
+        local cxxfn = func.cxxfn
+        local luafn = func.luafn or cxxfn
         if func.is_exposed then
-            olua.use(luafunc)
+            olua.use(luafn)
             oluacls_func:push(func.macro)
-            oluacls_func:pushf('oluacls_func(L, "${luafunc}", _${cls.cppcls#}_${cppfunc});')
+            oluacls_func:pushf('oluacls_func(L, "${luafn}", _${cls.cxxcls#}_${cxxfn});')
             oluacls_func:push(func.macro and "#endif" or nil)
         end
     end
@@ -96,23 +96,23 @@ local function gen_class_open(cls, write)
         local macro = pi.get.macro
         oluacls_func:push(macro)
         if pi.get then
-            func_get = olua.format("_${cls.cppcls#}_${pi.get.cppfunc}")
+            func_get = olua.format("_${cls.cxxcls#}_${pi.get.cxxfn}")
         end
         if pi.set then
-            func_set = olua.format("_${cls.cppcls#}_${pi.set.cppfunc}")
+            func_set = olua.format("_${cls.cxxcls#}_${pi.set.cxxfn}")
         end
         oluacls_func:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
         oluacls_func:push(macro and "#endif" or nil)
     end
 
     for _, vi in ipairs(cls.vars) do
-        local func_get = olua.format("_${cls.cppcls#}_${vi.get.cppfunc}")
+        local func_get = olua.format("_${cls.cxxcls#}_${vi.get.cxxfn}")
         local func_set = "nullptr"
         ---@cast vi idl.gen.var_desc
         local macro = vi.get.macro
         oluacls_func:push(macro)
-        if vi.set and vi.set.cppfunc then
-            func_set = olua.format("_${cls.cppcls#}_${vi.set.cppfunc}")
+        if vi.set and vi.set.cxxfn then
+            func_set = olua.format("_${cls.cxxcls#}_${vi.set.cxxfn}")
         end
         oluacls_func:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
         oluacls_func:push(macro and "#endif" or nil)
@@ -133,14 +133,14 @@ local function gen_class_open(cls, write)
     if not cls.options.reg_luatype then
         oluacls_class = olua.format('oluacls_class(L, "${cls.luacls}", nullptr);')
     elseif cls.supercls then
-        oluacls_class = olua.format('oluacls_class<${cls.cppcls}, ${cls.supercls}>(L, "${cls.luacls}");')
+        oluacls_class = olua.format('oluacls_class<${cls.cxxcls}, ${cls.supercls}>(L, "${cls.luacls}");')
     else
-        oluacls_class = olua.format('oluacls_class<${cls.cppcls}>(L, "${cls.luacls}");')
+        oluacls_class = olua.format('oluacls_class<${cls.cxxcls}>(L, "${cls.luacls}");')
     end
 
     write(olua.format([[
         OLUA_BEGIN_DECLS
-        OLUA_LIB int luaopen_${cls.cppcls#}(lua_State *L)
+        OLUA_LIB int luaopen_${cls.cxxcls#}(lua_State *L)
         {
             ${oluacls_class}
             ${oluacls_func}
@@ -245,8 +245,8 @@ local function gen_classes(module, write)
         cls.funcs:sort(function (_, _, arr1, arr2)
             local func1 = arr1[1] ---@type idl.gen.func_desc
             local func2 = arr2[1] ---@type idl.gen.func_desc
-            local luafunc1 = func1.luafunc or func1.cppfunc
-            local luafunc2 = func2.luafunc or func2.cppfunc
+            local luafunc1 = func1.luafn or func1.cxxfn
+            local luafunc2 = func2.luafn or func2.cxxfn
             return tostring(luafunc1) < tostring(luafunc2)
         end)
         cls.props:sort(function (a, b) return tostring(a) < tostring(b) end)
@@ -279,7 +279,7 @@ local function gen_luaopen(module, write)
             end
             last_macro = macro
         end
-        requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${cls.cppcls#});')
+        requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${cls.cxxcls#});')
     end
     requires:push(last_macro and "#endif" or nil)
 
@@ -342,9 +342,9 @@ local function gen_class_meta(module, cls, write)
     local supercls = cls.supercls and olua.luacls(cls.supercls) or nil
     supercls = supercls and olua.format(": ${supercls}") or ""
 
-    olua.willdo("generate lua annotation: ${cls.cppcls}")
+    olua.willdo("generate lua annotation: ${cls.cxxcls}")
 
-    if module.entry == cls.cppcls then
+    if module.entry == cls.cxxcls then
         write(olua.format("---@meta ${module.name}"))
     else
         write(olua.format("---@meta ${cls.luacls}"))
@@ -371,8 +371,8 @@ local function gen_class_meta(module, cls, write)
         end
     else
         write(olua.format("---${cls_comment}"))
-        if olua.is_func_type(cls.cppcls) then
-            local ti = olua.typeinfo(cls.cppcls)
+        if olua.is_func_type(cls.cxxcls) then
+            local ti = olua.typeinfo(cls.cxxcls)
             write("---")
             olua.use(ti)
             write(olua.format("---${ti.funcdecl}"))
@@ -489,7 +489,7 @@ local function gen_class_meta(module, cls, write)
             -- write return type
             if not func.ret then
                 write(olua.format([[---@return any]]))
-            elseif func.ret.type.cppcls ~= "void" then
+            elseif func.ret.type.cxxcls ~= "void" then
                 local ret_luacls = olua.luatype(func.ret.type)
                 write(olua.format([[
                     ---@return ${ret_luacls}
@@ -510,7 +510,7 @@ local function gen_class_meta(module, cls, write)
         local static = func.is_static and "." or ":"
         olua.use(static)
         write(olua.format [[
-            function ${luacls}${static}${func.luafunc}(${caller_args}) end
+            function ${luacls}${static}${func.luafn}(${caller_args}) end
         ]])
         write("")
     end)
@@ -534,7 +534,7 @@ function olua.gen_annotation(module)
                 arr:push(value)
             end
         end
-        local filename = module.entry == cls.cppcls and module.name or luacls
+        local filename = module.entry == cls.cxxcls and module.name or luacls
         filename = filename:gsub("::", "/")
         local path = olua.format("${module.api_dir}/library/${filename}.lua")
         local dir = path:match("(.*)/[^/]+$")
