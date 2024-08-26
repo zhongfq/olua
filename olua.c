@@ -1228,7 +1228,7 @@ OLUA_API void oluacls_class(lua_State *L, const char *cls, const char *supercls)
             olua_require(L, "olua.c", luaopen_olua);
             olua_getmetatable(L, OLUA_VOIDCLS);
             lua_replace(L, -2);
-            olua_debug_assert(lua_istable(L, -1), "class 'void *' not found");
+            olua_assert(lua_istable(L, -1), "class 'void *' not found");
         } else {
             luaL_error(L, "super class not found: %s => %s", cls, supercls);
         }

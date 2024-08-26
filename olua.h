@@ -62,14 +62,6 @@ OLUA_BEGIN_DECLS
 #endif
 #endif // olua_assert
 
-#ifndef olua_debug_assert
-#ifdef OLUA_DEBUG
-#define olua_debug_assert(e, msg) assert((e) && (msg))
-#else
-#define olua_debug_assert(e, msg) ((void)0)
-#endif
-#endif // olua_debug_assert
-
 #define olua_noapi(api) static_assert(false, #api" is not defined")
 
 #if !defined(olua_likely)

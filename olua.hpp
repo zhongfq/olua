@@ -568,42 +568,36 @@ int olua_push_enum(lua_State *L, T value)
 static inline
 bool olua_is_object(lua_State *L, int idx, const char *cls)
 {
-    olua_debug_assert(cls, "cls is null");
     return olua_isa(L, idx, cls);
 }
 
 template <class T> inline
 void olua_check_object(lua_State *L, int idx, T **value, const char *cls)
 {
-    olua_debug_assert(cls, "cls is null");
     *value = (T *)olua_checkobj(L, idx, cls);
 }
 
 template <class T> inline
 void olua_to_object(lua_State *L, int idx, T **value, const char *cls)
 {
-    olua_debug_assert(cls, "cls is null");
     *value = (T *)olua_toobj(L, idx, cls);
 }
 
 template <class T> inline
 void olua_check_object(lua_State *L, int idx, T *value, const char *cls)
 {
-    olua_debug_assert(cls, "cls is null");
     *value = *(T *)olua_checkobj(L, idx, cls);
 }
 
 template <class T> inline
 int olua_push_object(lua_State *L, const T *value, const char *cls)
 {
-    olua_debug_assert(cls, "cls is null");
     return olua_pushobj<T>(L, value, cls);
 }
 
 template <class T, std::enable_if_t<!olua::is_pointer<T>::value, bool> = true> inline
 int olua_push_object(lua_State *L, const T &value, const char *cls)
 {
-    olua_debug_assert(cls, "cls is null");
     return olua_pushobj<T>(L, &value, cls);
 }
 
@@ -611,7 +605,7 @@ template <class T, std::enable_if_t<!olua::is_pointer<T>::value, bool> = true> i
 int olua_pushcopy_object(lua_State *L, T &value, const char *cls)
 {
     using Type = typename std::remove_const<T>::type;
-    olua_debug_assert(cls, "cls is null");
+    olua_assert(cls, "cls is null");
     void *ptr = olua_newrawobj(L, nullptr, sizeof(T));
     Type *obj = new (ptr) Type(value);
     olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);

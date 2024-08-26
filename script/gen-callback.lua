@@ -170,7 +170,7 @@ function olua.gen_callback(cls, func, arg, idx, codeset)
     end
 
     for i, v in ipairs(arg.type.callback.args) do
-        local cb_argname = "arg" .. i
+        local cb_argname = "cb_arg" .. i
         local decltype = olua.decltype(v.type, false, true)
         olua.gen_push_exp(v, cb_argname, cb_codeset)
         olua.use(decltype)

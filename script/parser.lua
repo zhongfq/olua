@@ -266,8 +266,7 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     end
     if not checkvalue and olua.has_cast_flag(ti) then
         exps:push(" &")
-    elseif olua.has_pointer_flag(ti)
-        and not olua.is_pointer_type(ti.cxxcls)
+    elseif olua.has_pointer_flag(ti) and not olua.is_pointer_type(ti.cxxcls)
     then
         exps:push(" *")
     end

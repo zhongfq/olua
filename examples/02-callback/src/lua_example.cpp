@@ -299,13 +299,13 @@ static int _example_Callback_foreach(lua_State *L)
     std::string cb_tag = makeForeachTag(arg1);
     std::string cb_name = olua_setcallback(L, cb_store, 4, cb_tag.c_str(), OLUA_TAG_NEW);
     olua_Context cb_ctx = olua_context(L);
-    arg3 = [cb_store, cb_name, cb_ctx](int arg1) {
+    arg3 = [cb_store, cb_name, cb_ctx](int cb_arg1) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
 
         if (olua_contextequal(L, cb_ctx)) {
             int top = lua_gettop(L);
-            olua_push_integer(L, arg1);
+            olua_push_integer(L, cb_arg1);
 
             olua_callback(L, cb_store, cb_name.c_str(), 1);
 
@@ -351,7 +351,7 @@ static int _example_Callback_setEvent(lua_State *L)
     std::string cb_tag = "Event";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](const example::Event *arg1) {
+    arg1 = [cb_store, cb_name, cb_ctx](const example::Event *cb_arg1) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
 
@@ -359,7 +359,7 @@ static int _example_Callback_setEvent(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Event");
+            olua_push_object(L, cb_arg1, "example.Event");
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 1);
@@ -392,7 +392,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
     std::string cb_tag = "OnceEvent";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](const example::Event *arg1) {
+    arg1 = [cb_store, cb_name, cb_ctx](const example::Event *cb_arg1) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
 
@@ -400,7 +400,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Event");
+            olua_push_object(L, cb_arg1, "example.Event");
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 1);

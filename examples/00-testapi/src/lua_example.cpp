@@ -2908,7 +2908,7 @@ static int _example_Hello_load(lua_State *L)
     std::string cb_tag = "load";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg2 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, int arg2) {
+    arg2 = [cb_store, cb_name, cb_ctx](example::Hello *cb_arg1, int cb_arg2) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
         std::string ret;       /** ret */
@@ -2916,8 +2916,8 @@ static int _example_Hello_load(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Hello");
-            olua_push_integer(L, arg2);
+            olua_push_object(L, cb_arg1, "example.Hello");
+            olua_push_integer(L, cb_arg2);
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 2);
@@ -3768,7 +3768,7 @@ static int _example_Hello_setCallback(lua_State *L)
     std::string cb_tag = "Callback";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, example::Point *arg2) {
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *cb_arg1, example::Point *cb_arg2) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
         int ret = 0;       /** ret */
@@ -3776,8 +3776,8 @@ static int _example_Hello_setCallback(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Hello");
-            olua_push_object(L, arg2, "example.Point");
+            olua_push_object(L, cb_arg1, "example.Hello");
+            olua_push_object(L, cb_arg2, "example.Point");
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 2);
@@ -3815,7 +3815,7 @@ static int _example_Hello_setClickCallback$1(lua_State *L)
     std::string cb_tag = "ClickCallback";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *cb_arg1) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
 
@@ -3823,7 +3823,7 @@ static int _example_Hello_setClickCallback$1(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Hello");
+            olua_push_object(L, cb_arg1, "example.Hello");
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 1);
@@ -3856,7 +3856,7 @@ static int _example_Hello_setClickCallback$2(lua_State *L)
     std::string cb_tag = "ClickCallback";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, int arg2) {
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *cb_arg1, int cb_arg2) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
         std::string ret;       /** ret */
@@ -3864,8 +3864,8 @@ static int _example_Hello_setClickCallback$2(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Hello");
-            olua_push_integer(L, arg2);
+            olua_push_object(L, cb_arg1, "example.Hello");
+            olua_push_integer(L, cb_arg2);
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 2);
@@ -3924,7 +3924,7 @@ static int _example_Hello_setDragCallback(lua_State *L)
     std::string cb_tag = "DragCallback";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *cb_arg1) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
 
@@ -3932,7 +3932,7 @@ static int _example_Hello_setDragCallback(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Hello");
+            olua_push_object(L, cb_arg1, "example.Hello");
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 1);
@@ -4095,7 +4095,7 @@ static int _example_Hello_setNotifyCallback(lua_State *L)
     std::string cb_tag = "NotifyCallback";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1, int arg2) {
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *cb_arg1, int cb_arg2) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
         std::string ret;       /** ret */
@@ -4103,8 +4103,8 @@ static int _example_Hello_setNotifyCallback(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Hello");
-            olua_push_integer(L, arg2);
+            olua_push_object(L, cb_arg1, "example.Hello");
+            olua_push_integer(L, cb_arg2);
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 2);
@@ -4200,7 +4200,7 @@ static int _example_Hello_setTouchCallback(lua_State *L)
     std::string cb_tag = "TouchCallback";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *arg1) {
+    arg1 = [cb_store, cb_name, cb_ctx](example::Hello *cb_arg1) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
 
@@ -4208,7 +4208,7 @@ static int _example_Hello_setTouchCallback(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.Hello");
+            olua_push_object(L, cb_arg1, "example.Hello");
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 1);
@@ -4379,7 +4379,7 @@ static int _example_Hello_testPointerTypes$2(lua_State *L)
     std::string cb_tag = "testPointerTypes";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg1 = [cb_store, cb_name, cb_ctx](char *arg1, unsigned char *arg2, short *arg3, short *arg4, std::vector<short> &arg5, unsigned short *arg6, unsigned short *arg7, std::vector<unsigned short> &arg8, int *arg9, int *arg10, std::vector<int> &arg11, unsigned int *arg12, unsigned int *arg13, std::vector<unsigned int> &arg14, long *arg15, long *arg16, std::vector<long> &arg17, unsigned long *arg18, unsigned long *arg19, std::vector<unsigned long> &arg20, long long *arg21, long long *arg22, std::vector<long long> &arg23, unsigned long long *arg24, unsigned long long *arg25, std::vector<unsigned long long> &arg26, float *arg27, std::vector<float> &arg28, double *arg29, std::vector<double> &arg30, long double *arg31, std::vector<long double> &arg32) {
+    arg1 = [cb_store, cb_name, cb_ctx](char *cb_arg1, unsigned char *cb_arg2, short *cb_arg3, short *cb_arg4, std::vector<short> &cb_arg5, unsigned short *cb_arg6, unsigned short *cb_arg7, std::vector<unsigned short> &cb_arg8, int *cb_arg9, int *cb_arg10, std::vector<int> &cb_arg11, unsigned int *cb_arg12, unsigned int *cb_arg13, std::vector<unsigned int> &cb_arg14, long *cb_arg15, long *cb_arg16, std::vector<long> &cb_arg17, unsigned long *cb_arg18, unsigned long *cb_arg19, std::vector<unsigned long> &cb_arg20, long long *cb_arg21, long long *cb_arg22, std::vector<long long> &cb_arg23, unsigned long long *cb_arg24, unsigned long long *cb_arg25, std::vector<unsigned long long> &cb_arg26, float *cb_arg27, std::vector<float> &cb_arg28, double *cb_arg29, std::vector<double> &cb_arg30, long double *cb_arg31, std::vector<long double> &cb_arg32) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
 
@@ -4387,56 +4387,56 @@ static int _example_Hello_testPointerTypes$2(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_string(L, arg1);
-            olua_push_string(L, arg2);
-            olua_push_pointer(L, arg3, "olua.short");
-            olua_push_pointer(L, arg4, "olua.short");
-            olua_push_array<short>(L, arg5, [L](short &arg1) {
+            olua_push_string(L, cb_arg1);
+            olua_push_string(L, cb_arg2);
+            olua_push_pointer(L, cb_arg3, "olua.short");
+            olua_push_pointer(L, cb_arg4, "olua.short");
+            olua_push_array<short>(L, cb_arg5, [L](short &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_pointer(L, arg6, "olua.ushort");
-            olua_push_pointer(L, arg7, "olua.ushort");
-            olua_push_array<unsigned short>(L, arg8, [L](unsigned short &arg1) {
+            olua_push_pointer(L, cb_arg6, "olua.ushort");
+            olua_push_pointer(L, cb_arg7, "olua.ushort");
+            olua_push_array<unsigned short>(L, cb_arg8, [L](unsigned short &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_pointer(L, arg9, "olua.int");
-            olua_push_pointer(L, arg10, "olua.int");
-            olua_push_pointer(L, &arg11, "example.VectorInt");
-            olua_push_pointer(L, arg12, "olua.uint");
-            olua_push_pointer(L, arg13, "olua.uint");
-            olua_push_array<unsigned int>(L, arg14, [L](unsigned int &arg1) {
+            olua_push_pointer(L, cb_arg9, "olua.int");
+            olua_push_pointer(L, cb_arg10, "olua.int");
+            olua_push_pointer(L, &cb_arg11, "example.VectorInt");
+            olua_push_pointer(L, cb_arg12, "olua.uint");
+            olua_push_pointer(L, cb_arg13, "olua.uint");
+            olua_push_array<unsigned int>(L, cb_arg14, [L](unsigned int &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_pointer(L, arg15, "olua.long");
-            olua_push_pointer(L, arg16, "olua.long");
-            olua_push_array<long>(L, arg17, [L](long &arg1) {
+            olua_push_pointer(L, cb_arg15, "olua.long");
+            olua_push_pointer(L, cb_arg16, "olua.long");
+            olua_push_array<long>(L, cb_arg17, [L](long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_pointer(L, arg18, "olua.ulong");
-            olua_push_pointer(L, arg19, "olua.ulong");
-            olua_push_array<unsigned long>(L, arg20, [L](unsigned long &arg1) {
+            olua_push_pointer(L, cb_arg18, "olua.ulong");
+            olua_push_pointer(L, cb_arg19, "olua.ulong");
+            olua_push_array<unsigned long>(L, cb_arg20, [L](unsigned long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_pointer(L, arg21, "olua.llong");
-            olua_push_pointer(L, arg22, "olua.llong");
-            olua_push_array<long long>(L, arg23, [L](long long &arg1) {
+            olua_push_pointer(L, cb_arg21, "olua.llong");
+            olua_push_pointer(L, cb_arg22, "olua.llong");
+            olua_push_array<long long>(L, cb_arg23, [L](long long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_pointer(L, arg24, "olua.ullong");
-            olua_push_pointer(L, arg25, "olua.ullong");
-            olua_push_array<unsigned long long>(L, arg26, [L](unsigned long long &arg1) {
+            olua_push_pointer(L, cb_arg24, "olua.ullong");
+            olua_push_pointer(L, cb_arg25, "olua.ullong");
+            olua_push_array<unsigned long long>(L, cb_arg26, [L](unsigned long long &arg1) {
                 olua_push_integer(L, arg1);
             });
-            olua_push_pointer(L, arg27, "olua.float");
-            olua_push_array<float>(L, arg28, [L](float &arg1) {
+            olua_push_pointer(L, cb_arg27, "olua.float");
+            olua_push_array<float>(L, cb_arg28, [L](float &arg1) {
                 olua_push_number(L, arg1);
             });
-            olua_push_pointer(L, arg29, "olua.double");
-            olua_push_array<double>(L, arg30, [L](double &arg1) {
+            olua_push_pointer(L, cb_arg29, "olua.double");
+            olua_push_array<double>(L, cb_arg30, [L](double &arg1) {
                 olua_push_number(L, arg1);
             });
-            olua_push_pointer(L, arg31, "olua.ldouble");
-            olua_push_array<long double>(L, arg32, [L](long double &arg1) {
+            olua_push_pointer(L, cb_arg31, "olua.ldouble");
+            olua_push_array<long double>(L, cb_arg32, [L](long double &arg1) {
                 olua_push_number(L, arg1);
             });
             olua_disable_objpool(L);
@@ -4874,7 +4874,7 @@ static int _example_NoGC_new(lua_State *L)
     std::string cb_tag = "NoGC";
     std::string cb_name = olua_setcallback(L, cb_store, 2, cb_tag.c_str(), OLUA_TAG_REPLACE);
     olua_Context cb_ctx = olua_context(L);
-    arg2 = [cb_store, cb_name, cb_ctx](example::NoGC *arg1) {
+    arg2 = [cb_store, cb_name, cb_ctx](example::NoGC *cb_arg1) {
         lua_State *L = olua_mainthread(NULL);
         olua_checkhostthread();
         int ret = 0;       /** ret */
@@ -4882,7 +4882,7 @@ static int _example_NoGC_new(lua_State *L)
             int top = lua_gettop(L);
             size_t last = olua_push_objpool(L);
             olua_enable_objpool(L);
-            olua_push_object(L, arg1, "example.NoGC");
+            olua_push_object(L, cb_arg1, "example.NoGC");
             olua_disable_objpool(L);
 
             olua_callback(L, cb_store, cb_name.c_str(), 1);
