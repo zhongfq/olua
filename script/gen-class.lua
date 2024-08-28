@@ -59,9 +59,10 @@ local function gen_class_funcs(cls, write)
     end)
 end
 
+---@param module idl.gen.module_desc
 ---@param cls idl.gen.class_desc
 ---@param write idl.gen.writer
-local function gen_class_open(cls, write)
+local function gen_class_open(module, cls, write)
     local reg_luatype = ""
     local luaopen = cls.luaopen or ""
     local oluacls_class
@@ -139,14 +140,27 @@ local function gen_class_open(cls, write)
     end
 
     write(olua.format([[
-        OLUA_BEGIN_DECLS
-        OLUA_LIB int luaopen_${cls.cxxcls#}(lua_State *L)
+        static int _${cls.luacls#}(lua_State *L)
         {
             ${oluacls_class}
             ${oluacls_func}
 
             ${luaopen}
 
+            return 1;
+        }
+    ]]))
+
+    write("")
+
+    write(olua.format([[
+        OLUA_BEGIN_DECLS
+        OLUA_LIB int luaopen_${cls.luacls#}(lua_State *L)
+        {
+            olua_require(L, "${module.name}",  luaopen_${module.name});
+            if (!olua_getclass(L, olua_getluatype<${cls.cxxcls}>(L))) {
+                luaL_error(L, "class not found: ${cls.cxxcls}");
+            }
             return 1;
         }
         OLUA_END_DECLS
@@ -239,9 +253,6 @@ end
 ---@param write idl.gen.writer
 local function gen_classes(module, write)
     for _, cls in ipairs(module.class_types) do
-        local macro = cls.macro
-        write(macro)
-
         cls.funcs:sort(function (_, _, arr1, arr2)
             local func1 = arr1[1] ---@type idl.gen.func_desc
             local func2 = arr2[1] ---@type idl.gen.func_desc
@@ -254,9 +265,11 @@ local function gen_classes(module, write)
         cls.enums:sort(function (a, b) return tostring(a) < tostring(b) end)
         cls.consts:sort(function (a, b) return tostring(a) < tostring(b) end)
 
+        local macro = cls.macro
+        write(macro)
         gen_class_codeblock(cls, write)
         gen_class_funcs(cls, write)
-        gen_class_open(cls, write)
+        gen_class_open(module, cls, write)
         write(macro and "#endif" or nil)
         write("")
     end
@@ -279,7 +292,7 @@ local function gen_luaopen(module, write)
             end
             last_macro = macro
         end
-        requires:pushf('olua_require(L, "${cls.luacls}", luaopen_${cls.cxxcls#});')
+        requires:pushf('olua_require(L, "${cls.luacls}", _${cls.luacls#});')
     end
     requires:push(last_macro and "#endif" or nil)
 
@@ -344,11 +357,7 @@ local function gen_class_meta(module, cls, write)
 
     olua.willdo("generate lua annotation: ${cls.cxxcls}")
 
-    if module.entry == cls.cxxcls then
-        write(olua.format("---@meta ${module.name}"))
-    else
-        write(olua.format("---@meta ${cls.luacls}"))
-    end
+    write(olua.format("---@meta ${cls.luacls}"))
     write("")
 
     local cls_comment = cls.comment
@@ -524,6 +533,7 @@ function olua.gen_annotation(module)
         return
     end
     for _, cls in ipairs(module.class_types) do
+        ---@cast cls idl.gen.class_desc
         local luacls = cls.luacls:gsub("%.", "/")
         if luacls:find("<") then
             goto continue
@@ -534,13 +544,22 @@ function olua.gen_annotation(module)
                 arr:push(value)
             end
         end
-        local filename = module.entry == cls.cxxcls and module.name or luacls
-        filename = filename:gsub("::", "/")
+        local filename = cls.luacls:gsub("%.", "/")
+        olua.use(filename)
         local path = olua.format("${module.api_dir}/library/${filename}.lua")
         local dir = path:match("(.*)/[^/]+$")
         olua.mkdir(dir)
         gen_class_meta(module, cls, append)
         olua.write(path, tostring(arr))
+
+        if module.entry == cls.cxxcls then
+            path = olua.format("${module.api_dir}/library/${module.name}.lua")
+            olua.write(path, olua.format([[
+                ---@meta ${module.name}
+
+                return require("${cls.luacls}")
+            ]]))
+        end
 
         ::continue::
     end

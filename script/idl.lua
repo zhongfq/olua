@@ -319,6 +319,10 @@ local function typeconf_member(parent, cls, name)
     ---@class idl.cmd.member : idl.cmd.typeconf
     local CMD = {}
 
+    ---@class idl.conf.inst_desc
+    ---@field cxxfn string
+    ---@field type string
+
     ---@class idl.conf.member_desc
     ---@field body? string
     ---@field macro? string
@@ -327,6 +331,7 @@ local function typeconf_member(parent, cls, name)
     local member = {
         name = name,
         attrs = olua.ordered_map(),
+        insts = olua.array(), --@type idl.conf.inst_desc[]
         CMD = CMD,
     }
     cls.conf.members:set(name, member)
@@ -480,6 +485,19 @@ local function typeconf_func(parent, cls, name)
     add_attr_command(CMD, member, "arg8")
     add_attr_command(CMD, member, "arg9")
     add_attr_command(CMD, member, "arg10")
+
+    ---Instantiate the template function, `fn` contains the new function name and argument type.
+    ---
+    ---eg: `get<T> => getString<std::string>`
+    ---@param fn string
+    ---@return idl.cmd.func
+    function CMD.inst(fn)
+        local cxxfn, type = fn:match("([^<]+)<(.+)>")
+        olua.assert(cxxfn and not type:find(","), "invalid template function: ${fn}")
+        member.insts:push({ cxxfn = cxxfn, type = type })
+        cls.conf.excludes:set(cxxfn, true)
+        return CMD
+    end
 
     ---@type idl.cmd.func
     return setmetatable(CMD, { __index = parent })

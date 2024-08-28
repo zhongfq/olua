@@ -2,8 +2,8 @@ package.path = "../../?.lua;" .. package.path
 
 require "init"
 
-OLUA_AUTO_EXPORT_PARENT = true
-OLUA_VERBOSE = true
+olua.AUTO_EXPORT_PARENT = true
+olua.VERBOSE = true
 
 autoconf "../common/lua-types.lua"
 autoconf "conf/clang-args.lua"

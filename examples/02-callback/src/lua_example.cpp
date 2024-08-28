@@ -79,8 +79,7 @@ static int _example_Object_new(lua_State *L)
     return num_ret;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Object(lua_State *L)
+static int _example_Object(lua_State *L)
 {
     oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
@@ -90,6 +89,16 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
 
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Object(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Object>(L))) {
+        luaL_error(L, "class not found: example::Object");
+    }
     return 1;
 }
 OLUA_END_DECLS
@@ -230,8 +239,7 @@ static int _example_Event_name(lua_State *L)
     return 0;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Event(lua_State *L)
+static int _example_Event(lua_State *L)
 {
     oluacls_class<example::Event>(L, "example.Event");
     oluacls_func(L, "__gc", _example_Event___gc);
@@ -239,6 +247,16 @@ OLUA_LIB int luaopen_example_Event(lua_State *L)
     oluacls_prop(L, "data", _example_Event_data, _example_Event_data);
     oluacls_prop(L, "name", _example_Event_name, _example_Event_name);
 
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Event(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Event>(L))) {
+        luaL_error(L, "class not found: example::Event");
+    }
     return 1;
 }
 OLUA_END_DECLS
@@ -255,12 +273,21 @@ static int _example_Callback_Listener___call(lua_State *L)
     return 1;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Callback_Listener(lua_State *L)
+static int _example_Callback_Listener(lua_State *L)
 {
     oluacls_class<example::Callback::Listener>(L, "example.Callback.Listener");
     oluacls_func(L, "__call", _example_Callback_Listener___call);
 
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Callback_Listener(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Callback::Listener>(L))) {
+        luaL_error(L, "class not found: example::Callback::Listener");
+    }
     return 1;
 }
 OLUA_END_DECLS
@@ -421,8 +448,7 @@ static int _example_Callback_setOnceEvent(lua_State *L)
     return 0;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Callback(lua_State *L)
+static int _example_Callback(lua_State *L)
 {
     oluacls_class<example::Callback, example::Object>(L, "example.Callback");
     oluacls_func(L, "dispatch", _example_Callback_dispatch);
@@ -433,15 +459,25 @@ OLUA_LIB int luaopen_example_Callback(lua_State *L)
 
     return 1;
 }
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Callback(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Callback>(L))) {
+        luaL_error(L, "class not found: example::Callback");
+    }
+    return 1;
+}
 OLUA_END_DECLS
 
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example(lua_State *L)
 {
-    olua_require(L, "example.Object", luaopen_example_Object);
-    olua_require(L, "example.Event", luaopen_example_Event);
-    olua_require(L, "example.Callback.Listener", luaopen_example_Callback_Listener);
-    olua_require(L, "example.Callback", luaopen_example_Callback);
+    olua_require(L, "example.Object", _example_Object);
+    olua_require(L, "example.Event", _example_Event);
+    olua_require(L, "example.Callback.Listener", _example_Callback_Listener);
+    olua_require(L, "example.Callback", _example_Callback);
 
     printf("insert code in luaopen\n");
 

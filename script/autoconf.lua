@@ -25,40 +25,30 @@ end
 
 olua.print("lua clang: v${clang.version}")
 
--- auto export after config
-if OLUA_AUTO_BUILD == nil then
-    OLUA_AUTO_BUILD = true
-end
+-- Auto export after config
+olua.AUTO_BUILD = true
 
--- print more debug info
-if OLUA_VERBOSE == nil then
-    OLUA_VERBOSE = false
-end
+-- Print more debug info
+olua.VERBOSE = false
 
--- auto generate property
-if OLUA_AUTO_GEN_PROP == nil then
-    OLUA_AUTO_GEN_PROP = true
-end
+-- Auto generate property
+olua.AUTO_GEN_PROP = true
 
--- enable auto export parent
-if OLUA_AUTO_EXPORT_PARENT == nil then
-    OLUA_AUTO_EXPORT_PARENT = false
-end
+-- Enable auto export parent
+olua.AUTO_EXPORT_PARENT = false
 
--- enable export deprecated function
-if OLUA_ENABLE_DEPRECATED == nil then
-    OLUA_ENABLE_DEPRECATED = false
-end
+-- Enable export deprecated function
+olua.ENABLE_DEPRECATED = false
 
--- enable var or method name with underscore
-if OLUA_ENABLE_WITH_UNDERSCORE == nil then
-    OLUA_ENABLE_WITH_UNDERSCORE = false
-end
+-- Enable var or method name with underscore
+olua.ENABLE_WITH_UNDERSCORE = false
 
--- max args for variadic method, this will generate overload method
-if OLUA_MAX_VARIADIC_ARGS == nil then
-    OLUA_MAX_VARIADIC_ARGS = 16
-end
+-- Max args for variadic method, this will generate overload method
+olua.MAX_VARIADIC_ARGS = 16
+
+-- Enable cxx exception
+olua.ENABLE_EXCEPTION = false
+
 
 local clang_tu
 
@@ -449,7 +439,7 @@ end
 ---@param cur clang.Cursor
 ---@return boolean
 local function has_deprecated_attr(cur)
-    if OLUA_ENABLE_DEPRECATED then
+    if olua.ENABLE_DEPRECATED then
         return false
     end
     return cur.isDeprecated
@@ -562,7 +552,7 @@ local function is_excluded_memeber(cls, cur)
     local mode = cls.conf.includes:size() > 0 and "include" or "exclude"
     local name = cur.name
 
-    if not OLUA_ENABLE_WITH_UNDERSCORE
+    if not olua.ENABLE_WITH_UNDERSCORE
         and name:find("^_")
         and not metamethod[name]
     then
@@ -682,8 +672,9 @@ end
 
 ---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
-local function parse_func(cls, cur)
-    local typefrom = olua.format("${cls.cxxcls} -> ${cur.prettyPrinted}")
+---@param template_types olua.ordered_map
+local function parse_func(cls, cur, template_types)
+    local typefrom = olua.format("class: ${cls.cxxcls} -> ${cur.prettyPrinted}")
     ---@type idl.model.func_desc
     local func = {
         cxxfn = cur.name,
@@ -693,7 +684,7 @@ local function parse_func(cls, cur)
         is_static = is_static_func(cur) and true or nil,
         is_contructor = cur.kind == CursorKind.Constructor and true or nil,
         ret = {
-            type = typename(cur.resultType, cls.conf.template_types, nil, typefrom),
+            type = typename(cur.resultType, template_types, nil, typefrom),
             attr = olua.array()
         },
         args = olua.array(),
@@ -701,14 +692,26 @@ local function parse_func(cls, cur)
 
     setmetatable(func, { __olua_ignore = { display_name = true } })
 
-    for i, arg in ipairs(cur.arguments) do
-        local name = arg.name
-        name = keywords[name] or name
-        func.args:push({
-            type = typename(arg.type, cls.conf.template_types, nil, typefrom),
-            name = name ~= "" and name or ("arg" .. i),
-            attr = olua.array()
-        })
+    -- is llvm bug?
+    if cur.kind == CursorKind.FunctionTemplate then
+        for i, arg in ipairs(cur.type.argTypes) do
+            local name = nil
+            func.args:push({
+                type = typename(arg, template_types, nil, typefrom),
+                name = name ~= "" and name or ("arg" .. i),
+                attr = olua.array()
+            })
+        end
+    else
+        for i, arg in ipairs(cur.arguments) do
+            local name = arg.name
+            name = keywords[name] or name
+            func.args:push({
+                type = typename(arg.type, template_types, nil, typefrom),
+                name = name ~= "" and name or ("arg" .. i),
+                attr = olua.array()
+            })
+        end
     end
 
     func.prototype = gen_prototype(cls, func)
@@ -725,10 +728,16 @@ local function parse_func(cls, cur)
     return func
 end
 
+---@class idl.conf.template_desc
+---@field cxxfn string
+---@field template_types olua.ordered_map
+
 ---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
-function Autoconf:visit_method(cls, cur)
-    local func = parse_func(cls, cur)
+---@param template_desc? idl.conf.template_desc
+function Autoconf:visit_method(cls, cur, template_desc)
+    template_desc = template_desc or {}
+    local func = parse_func(cls, cur, template_desc.template_types or cls.conf.template_types)
     local attrs = parse_attr_from_annotate(cls, cur, func.display_name)
     ---@type idl.conf.member_desc
     local member = cls.conf.members:get(func.display_name)
@@ -745,6 +754,14 @@ function Autoconf:visit_method(cls, cur)
     if cur.isVariadic then
         func.is_variadic = true
         func.ret.attr:push("@variadic")
+    end
+
+    if template_desc.cxxfn then
+        local T = template_desc.template_types:values()[1]
+        olua.use(T)
+        func.ret.attr:pushf("@template(${func.cxxfn}<${T}>)")
+        func.cxxfn = template_desc.cxxfn
+        func.luafn = template_desc.cxxfn
     end
 
     if func.is_contructor then
@@ -825,7 +842,7 @@ function Autoconf:visit_method(cls, cur)
         prop[what] = func.prototype
         func.is_exposed = false
     elseif cur.isVariadic then
-        for n = 1, OLUA_MAX_VARIADIC_ARGS do
+        for n = 1, olua.MAX_VARIADIC_ARGS do
             local variadic_func = olua.clone(func)
             for i = 1, n do
                 ---@type idl.model.type_desc
@@ -965,7 +982,7 @@ function Autoconf:will_visit(cxxcls)
         olua.error([[
             ${cxxcls} already visited
             you should do one of:
-                * if you set OLUA_AUTO_EXPORT_PARENT = true, remove "typeconf '${cxxcls}'"
+                * if you set olua.AUTO_EXPORT_PARENT = true, remove "typeconf '${cxxcls}'"
                     or move "typeconf '${cxxcls}'" before subclass
                 * check whether "typeconf '${cxxcls}'" in multi config file
         ]])
@@ -1028,8 +1045,8 @@ end
 
 ---@param cxxcls string
 ---@param cur clang.Cursor
----@param template_types any
----@param specializedcls any
+---@param template_types? string[]
+---@param specializedcls? string
 function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
     local cls = self:will_visit(cxxcls)
     local skipsuper = false
@@ -1074,8 +1091,8 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
             end
             goto continue
         elseif kind == CursorKind.TemplateTypeParameter then
-            local tn = table.remove(template_types, 1)
-            if not tn then
+            local tn = table.remove(assert(template_types), 1)
+            if not tn and c.type.kind ~= TypeKind.Unexposed then
                 olua.error([[
                     template type not found:
                           cxxcls: ${cls.cxxcls}
@@ -1101,7 +1118,7 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
                 end
                 typeconf(supercls)
                 self:visit_class(supercls, supercursor, arg_types)
-            elseif OLUA_AUTO_EXPORT_PARENT then
+            elseif olua.AUTO_EXPORT_PARENT then
                 local super = visited_types:get(rawsupercls)
                 if not super then
                     assert(supercursor, "no cursor for " .. rawsupercls)
@@ -1169,6 +1186,21 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
                 goto continue
             end
             self:visit_method(cls, c)
+        elseif kind == CursorKind.FunctionTemplate then
+            ---@type idl.conf.member_desc
+            local member = cls.conf.members:get(c.name)
+            if member then
+                local T = c.children[1].name
+                for _, v in ipairs(member.insts) do
+                    local func_template_types = olua.ordered_map()
+                    ---@cast v idl.conf.inst_desc
+                    func_template_types:set(T, v.type)
+                    self:visit_method(cls, c, {
+                        cxxfn = v.cxxfn,
+                        template_types = func_template_types
+                    })
+                end
+            end
         end
 
         ::continue::
@@ -1179,7 +1211,6 @@ end
 ---@param cxxcls string
 function Autoconf:visit(cur, cxxcls)
     local kind = cur.kind
-    local children = cur.children
     local astcls = parse_from_ast({ declaration = cur, name = cur.name })
     cxxcls = cxxcls or astcls
     if kind == CursorKind.Namespace then
@@ -1467,15 +1498,16 @@ local function check_errors()
             end
         end
 
-        if OLUA_VERBOSE then
+        if olua.VERBOSE then
             type_not_found:pushf([[
                 => ${entry.type} (${entry.kind})
-                        from: ${entry.from}
+                      from: ${entry.from}
             ]])
         elseif not filter[entry.type] then
             filter[entry.type] = true
             type_not_found:pushf([[
                 => ${entry.type} (${entry.kind})
+                      from: ${entry.from}
             ]])
         end
     end)
@@ -1497,7 +1529,7 @@ local function check_errors()
                 ${supercls_not_found}
             you should do one of:
                 * add in config file: typeconf 'MissedSuperClass'
-                * set in build file: OLUA_AUTO_EXPORT_PARENT = true
+                * set in build file: olua.AUTO_EXPORT_PARENT = true
         ]]))
     end
 
@@ -1510,7 +1542,7 @@ local function check_errors()
                 * if has the type convertor, use typedef 'NotFoundType'
                 * if type is pointer or enum, use typeconf 'NotFoundType'
                 * if type not wanted, use exclude_type 'NotFoundType' or .exclude 'MethodName'
-            more debug info set 'OLUA_VERBOSE = true'
+            more debug info set 'olua.VERBOSE = true'
         ]]))
     end
 
@@ -1534,6 +1566,7 @@ local function copy_super_funcs()
                 ---@cast func idl.model.func_desc
                 if func.is_contructor
                     or func.cxxfn == "__gc"
+                    or cls.conf.excludes:has(func.cxxfn)
                     or cls.conf.excludes:has(func.display_name)
                 then
                     return
@@ -1905,12 +1938,12 @@ local function parse_cls_props(cls)
     end
 
     for _, arr in pairs(cls.funcs) do
-        if not (#arr == 1 and OLUA_AUTO_GEN_PROP) then
+        if not (#arr == 1 and olua.AUTO_GEN_PROP) then
             goto no_prop
         end
 
         local name = parse_prop_name(arr[1])
-        if name and not name:find("^%d") then
+        if name and #name > 0 and not name:find("^%d") then
             local setfunc
             ---@type idl.model.func_desc
             local getfunc = arr[1]
@@ -1932,7 +1965,7 @@ local function parse_cls_props(cls)
                     end
                 end
             end
-            if lessone or not moreone then
+            if (lessone or not moreone) and not cls.funcs:has(name) then
                 cls.props:set(name, {
                     name = name,
                     get = getfunc.prototype,
@@ -2209,7 +2242,7 @@ local function deferred_autoconf()
     write_modules()
     write_makefile()
 
-    if OLUA_AUTO_BUILD ~= false then
+    if olua.AUTO_BUILD ~= false then
         dofile("autobuild/make.lua")
     end
 end
@@ -2245,6 +2278,10 @@ if not has_hook then
         build_func()
         deferred_autoconf()
         autoconf = function () end
+        idl.modules:clear()
+        idl.macros:clear()
+        idl.type_convs:clear()
+        idl.current_module = nil
         return
     else
         debug.sethook(function ()

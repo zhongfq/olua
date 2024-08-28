@@ -100,8 +100,7 @@ static int _example_Object_new(lua_State *L)
     return num_ret;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Object(lua_State *L)
+static int _example_Object(lua_State *L)
 {
     oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
@@ -111,6 +110,16 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
 
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Object(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Object>(L))) {
+        luaL_error(L, "class not found: example::Object");
+    }
     return 1;
 }
 OLUA_END_DECLS
@@ -251,8 +260,7 @@ static int _example_Point_y(lua_State *L)
     return 0;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Point(lua_State *L)
+static int _example_Point(lua_State *L)
 {
     oluacls_class<example::Point>(L, "example.Point");
     oluacls_func(L, "__gc", _example_Point___gc);
@@ -260,6 +268,16 @@ OLUA_LIB int luaopen_example_Point(lua_State *L)
     oluacls_prop(L, "x", _example_Point_x, _example_Point_x);
     oluacls_prop(L, "y", _example_Point_y, _example_Point_y);
 
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Point(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Point>(L))) {
+        luaL_error(L, "class not found: example::Point");
+    }
     return 1;
 }
 OLUA_END_DECLS
@@ -421,21 +439,20 @@ static int _example_Node_setPosition(lua_State *L)
     olua_startinvoke(L);
 
     example::Node *self = nullptr;
-    example::Point arg1;       /** value */
+    example::Point *arg1;       /** value */
 
     olua_to_object(L, 1, &self, "example.Node");
     olua_check_object(L, 2, &arg1, "example.Point");
 
     // void setPosition(const example::Point &value)
-    self->setPosition(arg1);
+    self->setPosition(*arg1);
 
     olua_endinvoke(L);
 
     return 0;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Node(lua_State *L)
+static int _example_Node(lua_State *L)
 {
     oluacls_class<example::Node, example::Object>(L, "example.Node");
     oluacls_func(L, "__index", _example_Node___index);
@@ -455,14 +472,24 @@ OLUA_LIB int luaopen_example_Node(lua_State *L)
 
     return 1;
 }
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Node(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Node>(L))) {
+        luaL_error(L, "class not found: example::Node");
+    }
+    return 1;
+}
 OLUA_END_DECLS
 
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example(lua_State *L)
 {
-    olua_require(L, "example.Object", luaopen_example_Object);
-    olua_require(L, "example.Point", luaopen_example_Point);
-    olua_require(L, "example.Node", luaopen_example_Node);
+    olua_require(L, "example.Object", _example_Object);
+    olua_require(L, "example.Point", _example_Point);
+    olua_require(L, "example.Node", _example_Node);
 
     return 0;
 }

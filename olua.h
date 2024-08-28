@@ -78,11 +78,13 @@ OLUA_BEGIN_DECLS
 #define OLUA_API extern
 #endif
 
+#ifndef OLUA_LIB
 #ifdef _WIN32
 #define OLUA_LIB __declspec(dllexport)
 #else
 #define OLUA_LIB extern
 #endif
+#endif // OLUA_LIB
 
 // olua config file: https://codetypes.com/posts/c505b168/
 #ifdef OLUA_AUTOCONF

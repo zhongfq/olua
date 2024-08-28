@@ -1,8 +1,8 @@
 package.path = "../../?.lua;" .. package.path
 
-OLUA_AUTO_EXPORT_PARENT = true
+olua.AUTO_EXPORT_PARENT = true
 
-OLUA_VERBOSE = true
+olua.VERBOSE = true
 
 require "init"
 

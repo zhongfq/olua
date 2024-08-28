@@ -613,7 +613,7 @@ int olua_pushcopy_object(lua_State *L, T &value, const char *cls)
     return 1;
 }
 
-// std::shared_prt & std::weak_ptr
+// std::shared_ptr & std::weak_ptr
 #define OLUA_SMART_PRT "smart_ptr"
 
 template <template<class> class SmartPtr, class T>

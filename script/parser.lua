@@ -171,7 +171,6 @@ function olua.typeinfo(cpptype, cls, throwerror, errors)
         ti.flag = ti.cxxcls:find("^const ") and flag & (~kFLAG_CONST) or flag
 
         if ti.subtypes then
-            -- is template array/map or smart pointer?
             local tti = lookup_typeinfo(olua.decltype(ti, true))
             if tti then
                 ti = setmetatable({}, { __index = tti })
@@ -266,8 +265,7 @@ function olua.decltype(ti, checkvalue, addspace, exps)
     end
     if not checkvalue and olua.has_cast_flag(ti) then
         exps:push(" &")
-    elseif olua.has_pointer_flag(ti) and not olua.is_pointer_type(ti.cxxcls)
-    then
+    elseif olua.has_pointer_flag(ti) and not olua.is_pointer_type(ti.cxxcls) then
         exps:push(" *")
     end
     if addspace and not exps[#exps]:find("[*&]$") then
@@ -741,6 +739,7 @@ function olua.export(path)
     ---@field nullable? table
     ---@field extend? [string] # @extend
     ---@field postnew? table
+    ---@field template? [string]
     ---@field as? table
 
     ---@class idl.gen.const_desc : idl.model.const_desc

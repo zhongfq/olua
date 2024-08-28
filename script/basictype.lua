@@ -123,6 +123,10 @@ typedef {
         signed long long
         signed long long int
         lua_Integer
+        int8_t
+        int16_t
+        int32_t
+        int64_t
     ]],
     conv = "olua_$$_integer",
     luatype = "integer",
@@ -142,6 +146,10 @@ typedef {
         unsigned long long
         unsigned long long int
         lua_Unsigned
+        uint8_t
+        uint16_t
+        uint32_t
+        uint64_t
     ]],
     conv = "olua_$$_integer",
     luatype = "integer",
