@@ -1,5 +1,5 @@
 //
-// AUTO BUILD, DON'T MODIFY!
+// AUTO GENERATED, DO NOT MODIFY!
 //
 #include "lua_example.h"
 

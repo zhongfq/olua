@@ -226,7 +226,17 @@ OLUA_END_DECLS
 template <class T> inline
 void olua_registerluatype(lua_State *L, const char *cls)
 {
-    olua_registerluatype(L, typeid(T).name(), cls);
+    const char *cpptype = typeid(T).name();
+    const char *last = olua_getluatype(L, cpptype);
+    if (last) {
+        if (last[0] != '*') {
+            lua_pushfstring(L, "*%s", last);
+            olua_registerluatype(L, cpptype, lua_tostring(L, -1));
+            lua_pop(L, 1);
+        }
+    } else {
+        olua_registerluatype(L, cpptype, cls);
+    }
 }
 
 template <class T>
@@ -237,18 +247,21 @@ const char *olua_getluatype(lua_State *L, const T *obj, const char *cls)
     // try obj RTTI
     if (olua_likely(obj)) {
         preferred = olua_getluatype(L, typeid(*obj).name());
-        if (olua_likely(preferred)) {
-            return preferred;
-        }
     }
-    
+
     // try class RTTI
-    preferred = olua_getluatype(L, typeid(T).name());
-    if (olua_likely(preferred)) {
-        return preferred;
+    if (olua_unlikely(!preferred)) {
+        preferred = olua_getluatype(L, typeid(T).name());
     }
     
-    return cls;
+    if (olua_likely(preferred)) {
+        if (preferred[0] == '*') {
+            preferred = cls == NULL ? (preferred + 1) : cls;
+        }
+        return preferred;
+    } else {
+        return cls;
+    }
 }
 
 template <> inline
@@ -614,7 +627,7 @@ int olua_pushcopy_object(lua_State *L, T &value, const char *cls)
 }
 
 // std::shared_ptr & std::weak_ptr
-#define OLUA_SMART_PRT "smart_ptr *"
+#define OLUA_SMART_PRT ".olua.ref.smartptr<>"
 
 template <template<class> class SmartPtr, class T>
 int olua_smartptr_gc(lua_State *L)
@@ -1026,26 +1039,6 @@ typedef olua::pointer<olua_ldouble_t> olua_ldouble;
 typedef olua::pointer<size_t> olua_size_t;
 typedef olua::pointer<ssize_t> olua_ssize_t;
 typedef olua::pointer<std::string> olua_string;
-
-template <class T> inline
-int olua_pushobj(lua_State *L, const olua::pointer<T> *value, const char *cls)
-{
-    olua_postpush(L, (olua::pointer<T> *)value, olua_pushobj(L, (void *)value, cls));
-    return 1;
-}
-
-template <class T> inline
-int olua_pushobj(lua_State *L, const olua::pointer<T> *value)
-{
-    static_assert(sizeof(T) == 0, "push olua::pointer object must specify the lua class");
-    return 0;
-}
-
-template <class T> inline
-int olua_push_object(lua_State *L, const olua::pointer<T> *value, const char *cls)
-{
-    return olua_pushobj<T>(L, value, cls);
-}
 
 // pointer
 static inline

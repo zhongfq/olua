@@ -204,7 +204,7 @@ function olua.gen_header(module)
 
     write(olua.format([[
         //
-        // AUTO BUILD, DON'T MODIFY!
+        // AUTO GENERATED, DO NOT MODIFY!
         //
         #ifndef __AUTO_GEN_LUA_${HEADER}_H__
         #define __AUTO_GEN_LUA_${HEADER}_H__
@@ -234,7 +234,7 @@ local function gen_include(module, write)
     end
     write(olua.format([[
         //
-        // AUTO BUILD, DON'T MODIFY!
+        // AUTO GENERATED, DO NOT MODIFY!
         //
         #include "lua_${module.name}.h"
         ${headers}
@@ -555,6 +555,7 @@ function olua.gen_annotation(module)
         if module.entry == cls.cxxcls then
             path = olua.format("${module.api_dir}/library/${module.name}.lua")
             olua.write(path, olua.format([[
+                -- AUTO GENERATED, DO NOT MODIFY!
                 ---@meta ${module.name}
 
                 return require("${cls.luacls}")
