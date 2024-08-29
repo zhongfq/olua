@@ -614,7 +614,7 @@ int olua_pushcopy_object(lua_State *L, T &value, const char *cls)
 }
 
 // std::shared_ptr & std::weak_ptr
-#define OLUA_SMART_PRT "smart_ptr"
+#define OLUA_SMART_PRT "smart_ptr *"
 
 template <template<class> class SmartPtr, class T>
 int olua_smartptr_gc(lua_State *L)
@@ -658,8 +658,19 @@ void oluacls_class_smartptr(lua_State *L)
     }
 }
 
+static inline
+bool olua_is_smartptr(lua_State *L, int idx, const char *cls)
+{
+    if (olua_isa(L, idx, cls)) {
+        int type = olua_loadref(L, idx, OLUA_SMART_PRT);
+        lua_pop(L, 1);
+        return type == LUA_TUSERDATA;
+    }
+    return false;
+}
+
 template <class T>
-void olua_check_object(lua_State *L, int idx, std::shared_ptr<T> *value, const char *)
+void olua_check_smartptr(lua_State *L, int idx, std::shared_ptr<T> *value, const char *)
 {
     idx = lua_absindex(L, idx);
     olua_checkobj<T>(L, idx);
@@ -669,7 +680,7 @@ void olua_check_object(lua_State *L, int idx, std::shared_ptr<T> *value, const c
 }
 
 template <class T>
-int olua_push_object(lua_State *L, const std::shared_ptr<T> *value, const char *cls)
+int olua_push_smartptr(lua_State *L, const std::shared_ptr<T> *value, const char *cls)
 {
     oluacls_class_smartptr<std::shared_ptr, T>(L);
 
@@ -697,7 +708,7 @@ int olua_push_object(lua_State *L, const std::shared_ptr<T> *value, const char *
 }
 
 template <class T>
-void olua_check_object(lua_State *L, int idx, std::weak_ptr<T> *value, const char *)
+void olua_check_smartptr(lua_State *L, int idx, std::weak_ptr<T> *value, const char *)
 {
     idx = lua_absindex(L, idx);
     olua_loadref(L, idx, OLUA_SMART_PRT);
@@ -706,7 +717,7 @@ void olua_check_object(lua_State *L, int idx, std::weak_ptr<T> *value, const cha
 }
 
 template <class T>
-int olua_push_object(lua_State *L, const std::weak_ptr<T> *value, const char *cls)
+int olua_push_smartptr(lua_State *L, const std::weak_ptr<T> *value, const char *cls)
 {
     std::shared_ptr<T> sp = value->lock();
     return olua_push_object(L, &sp, cls);

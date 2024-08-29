@@ -149,7 +149,7 @@ static int _example_Hello_getThis(lua_State *L)
 
     // std::shared_ptr<example::Hello> getThis()
     std::shared_ptr<example::Hello> ret = self->getThis();
-    int num_ret = olua_push_object(L, &ret, "example.Hello");
+    int num_ret = olua_push_smartptr(L, &ret, "example.Hello");
 
     olua_endinvoke(L);
 
@@ -204,7 +204,7 @@ static int _example_Hello_setName(lua_State *L)
     return 0;
 }
 
-static int _example_Hello_setThis(lua_State *L)
+static int _example_Hello_setThis$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -212,12 +212,51 @@ static int _example_Hello_setThis(lua_State *L)
     std::shared_ptr<example::Hello> arg1;       /** sp */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_object(L, 2, &arg1, "example.Hello");
+    olua_check_smartptr(L, 2, &arg1, "example.Hello");
 
     // void setThis(const std::shared_ptr<example::Hello> &sp)
     self->setThis(arg1);
 
     olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_setThis$2(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    int arg1 = 0;       /** v */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_integer(L, 2, &arg1);
+
+    // void setThis(int v)
+    self->setThis(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
+static int _example_Hello_setThis(lua_State *L)
+{
+    int num_args = lua_gettop(L) - 1;
+
+    if (num_args == 1) {
+        if ((olua_is_smartptr(L, 2, "example.Hello"))) {
+            // void setThis(const std::shared_ptr<example::Hello> &sp)
+            return _example_Hello_setThis$1(L);
+        }
+
+        // if ((olua_is_integer(L, 2))) {
+            // void setThis(int v)
+            return _example_Hello_setThis$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Hello::setThis' not support '%d' arguments", num_args);
 
     return 0;
 }
@@ -232,7 +271,7 @@ static int _example_Hello_shared_from_this(lua_State *L)
 
     // @copyfrom(std::enable_shared_from_this) std::shared_ptr<example::Hello> shared_from_this()
     std::shared_ptr<example::Hello> ret = self->shared_from_this();
-    int num_ret = olua_push_object(L, &ret, "example.Hello");
+    int num_ret = olua_push_smartptr(L, &ret, "example.Hello");
 
     olua_endinvoke(L);
 
@@ -252,7 +291,7 @@ static int _example_Hello(lua_State *L)
     oluacls_func(L, "setThis", _example_Hello_setThis);
     oluacls_func(L, "shared_from_this", _example_Hello_shared_from_this);
     oluacls_prop(L, "name", _example_Hello_getName, _example_Hello_setName);
-    oluacls_prop(L, "this", _example_Hello_getThis, _example_Hello_setThis);
+    oluacls_prop(L, "this", _example_Hello_getThis, nullptr);
 
     return 1;
 }

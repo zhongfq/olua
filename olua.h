@@ -81,9 +81,11 @@ OLUA_BEGIN_DECLS
 #ifndef OLUA_LIB
 #ifdef _WIN32
 #define OLUA_LIB __declspec(dllexport)
+#elif defined(__cplusplus)
+#define OLUA_LIB __attribute__((visibility ("default")))
 #else
 #define OLUA_LIB extern
-#endif
+#endif // _WIN32
 #endif // OLUA_LIB
 
 // olua config file: https://codetypes.com/posts/c505b168/

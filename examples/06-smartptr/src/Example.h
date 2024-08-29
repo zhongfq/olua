@@ -33,6 +33,11 @@ public:
     {
         printf("set this: %p %p\n", this, sp.get());
     }
+
+    void setThis(int v)
+    {
+        printf("set this: %p %d\n", this, v);
+    }
 private:
     std::string _name;
 };

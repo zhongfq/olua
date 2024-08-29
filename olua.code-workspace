@@ -11,8 +11,11 @@
       "addons": true
     },
     "files.associations": {
+      "*.jsfl": "javascript",
       "*.manifest": "json",
-      "*.jsfl": "javascript"
+      "lauxlib.h": "c",
+      "lualib.h": "c",
+      "lua.h": "c"
     },
     "cmake.buildDirectory": "${workspaceFolder}/build"
   }

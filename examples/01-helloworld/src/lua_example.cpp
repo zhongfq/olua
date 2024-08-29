@@ -74,8 +74,7 @@ static int _example_Object_new(lua_State *L)
     return num_ret;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Object(lua_State *L)
+static int _example_Object(lua_State *L)
 {
     oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _example_Object___gc);
@@ -85,6 +84,16 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
     oluacls_func(L, "new", _example_Object_new);
     oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
 
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Object(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Object>(L))) {
+        luaL_error(L, "class not found: example::Object");
+    }
     return 1;
 }
 OLUA_END_DECLS
@@ -105,12 +114,21 @@ static int _example_ExportParent_printExportParent(lua_State *L)
     return 0;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
+static int _example_ExportParent(lua_State *L)
 {
     oluacls_class<example::ExportParent, example::Object>(L, "example.ExportParent");
     oluacls_func(L, "printExportParent", _example_ExportParent_printExportParent);
 
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::ExportParent>(L))) {
+        luaL_error(L, "class not found: example::ExportParent");
+    }
     return 1;
 }
 OLUA_END_DECLS
@@ -180,8 +198,7 @@ static int _example_Hello_setName(lua_State *L)
     return 0;
 }
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example_Hello(lua_State *L)
+static int _example_Hello(lua_State *L)
 {
     oluacls_class<example::Hello, example::ExportParent>(L, "example.Hello");
     oluacls_func(L, "getName", _example_Hello_getName);
@@ -192,14 +209,24 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
 
     return 1;
 }
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_Hello(lua_State *L)
+{
+    olua_require(L, "example",  luaopen_example);
+    if (!olua_getclass(L, olua_getluatype<example::Hello>(L))) {
+        luaL_error(L, "class not found: example::Hello");
+    }
+    return 1;
+}
 OLUA_END_DECLS
 
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example(lua_State *L)
 {
-    olua_require(L, "example.Object", luaopen_example_Object);
-    olua_require(L, "example.ExportParent", luaopen_example_ExportParent);
-    olua_require(L, "example.Hello", luaopen_example_Hello);
+    olua_require(L, "example.Object", _example_Object);
+    olua_require(L, "example.ExportParent", _example_ExportParent);
+    olua_require(L, "example.Hello", _example_Hello);
 
     return 0;
 }

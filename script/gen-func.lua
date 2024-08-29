@@ -595,7 +595,7 @@ local function gen_one_func(cls, func, write, fidx)
         func_body = olua.format([[
             try {
                 ${func_body}
-            } catch (std::exception& e) {
+            } catch (std::exception &e) {
                 lua_pushfstring(L, "${cls.cxxcls}::${func.cxxfn}(): %s", e.what());
                 luaL_error(L, olua_tostring(L, -1));
                 return 0;

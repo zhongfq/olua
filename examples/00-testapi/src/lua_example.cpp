@@ -4813,7 +4813,7 @@ static int _example_SharedHello_getThis(lua_State *L)
 
     // std::shared_ptr<example::SharedHello> getThis()
     std::shared_ptr<example::SharedHello> ret = self->getThis();
-    int num_ret = olua_push_object(L, &ret, "example.SharedHello");
+    int num_ret = olua_push_smartptr(L, &ret, "example.SharedHello");
 
     olua_endinvoke(L);
 
@@ -4830,7 +4830,7 @@ static int _example_SharedHello_getWeakPtr(lua_State *L)
 
     // std::weak_ptr<example::SharedHello> getWeakPtr()
     std::weak_ptr<example::SharedHello> ret = self->getWeakPtr();
-    int num_ret = olua_push_object(L, &ret, "example.SharedHello");
+    int num_ret = olua_push_smartptr(L, &ret, "example.SharedHello");
 
     olua_endinvoke(L);
 
@@ -4843,7 +4843,7 @@ static int _example_SharedHello_create(lua_State *L)
 
     // @name(new) static std::shared_ptr<example::SharedHello> create()
     std::shared_ptr<example::SharedHello> ret = example::SharedHello::create();
-    int num_ret = olua_push_object(L, &ret, "example.SharedHello");
+    int num_ret = olua_push_smartptr(L, &ret, "example.SharedHello");
 
     olua_endinvoke(L);
 
@@ -4874,7 +4874,7 @@ static int _example_SharedHello_setThis(lua_State *L)
     std::shared_ptr<example::SharedHello> arg1;       /** sp */
 
     olua_to_object(L, 1, &self, "example.SharedHello");
-    olua_check_object(L, 2, &arg1, "example.SharedHello");
+    olua_check_smartptr(L, 2, &arg1, "example.SharedHello");
 
     // void setThis(const std::shared_ptr<example::SharedHello> &sp)
     self->setThis(arg1);
@@ -4894,7 +4894,7 @@ static int _example_SharedHello_shared_from_this(lua_State *L)
 
     // @copyfrom(std::enable_shared_from_this) std::shared_ptr<example::SharedHello> shared_from_this()
     std::shared_ptr<example::SharedHello> ret = self->shared_from_this();
-    int num_ret = olua_push_object(L, &ret, "example.SharedHello");
+    int num_ret = olua_push_smartptr(L, &ret, "example.SharedHello");
 
     olua_endinvoke(L);
 
