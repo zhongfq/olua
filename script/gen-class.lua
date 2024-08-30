@@ -357,7 +357,10 @@ local function gen_class_meta(module, cls, write)
 
     olua.willdo("generate lua annotation: ${cls.cxxcls}")
 
-    write(olua.format("---@meta ${cls.luacls}"))
+    write(olua.format([[
+        ---AUTO GENERATED, DO NOT MODIFY!
+        ---@meta ${cls.luacls}
+    ]]))
     write("")
 
     local cls_comment = cls.comment
@@ -509,8 +512,15 @@ local function gen_class_meta(module, cls, write)
         -- write overload
         for i, olfi in ipairs(arr) do
             if i > 1 then
+                ---@cast olfi idl.gen.func_desc
                 local fn = olua.gen_luafn(olfi, cls)
                 olua.use(fn)
+                local olfi_comment = olfi.comment
+                if olfi_comment and #olfi_comment > 0 then
+                    olfi_comment = olfi_comment:gsub("\n", "\n---")
+                    write("---")
+                    write(olua.format("---${olfi_comment}"))
+                end
                 write(olua.format("---@overload ${fn}"))
             end
         end
@@ -555,7 +565,7 @@ function olua.gen_annotation(module)
         if module.entry == cls.cxxcls then
             path = olua.format("${module.api_dir}/library/${module.name}.lua")
             olua.write(path, olua.format([[
-                -- AUTO GENERATED, DO NOT MODIFY!
+                ---AUTO GENERATED, DO NOT MODIFY!
                 ---@meta ${module.name}
 
                 return require("${cls.luacls}")

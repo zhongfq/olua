@@ -2205,7 +2205,7 @@ local function write_typedefs()
     end)
 
     local out = olua.array("\n")
-    out:push("-- AUTO BUILD, DON'T MODIFY!\n")
+    out:push("---AUTO BUILD, DON'T MODIFY!\n")
     out:push("local typedef = olua.typedef")
     out:push("")
     for _, v in ipairs(typdefs:sort("cxxcls")) do

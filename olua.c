@@ -46,6 +46,8 @@
 #define OLUA_VMENV          ".olua.vmenv"
 #define OLUA_REF_FMT        ".olua.ref.%s"
 
+#define OLUA_GET_NAME       ".olua.getname"
+
 #define registry_rawgeti(L, f)  olua_rawgeti(L, LUA_REGISTRYINDEX, (f))
 #define registry_rawgetf(L, f)  olua_rawgetf(L, LUA_REGISTRYINDEX, (f))
 #define registry_rawsetf(L, f)  olua_rawsetf(L, LUA_REGISTRYINDEX, (f))
@@ -541,7 +543,7 @@ OLUA_API void olua_printobj(lua_State *L, const char *tag, int idx)
         env->objcount,
         olua_objstring(L, idx),
         luaobj,
-        luaobj->self ? olua_optfieldstring(L, idx, "name", "") : "",
+        luaobj->self ? olua_optfieldstring(L, idx, OLUA_GET_NAME, "") : "",
         tobitstr(luaobj->flags, bitstr));
     olua_print(L, buf);
 }
@@ -1069,7 +1071,7 @@ static int cls_metamethod(lua_State *L)
             );
             if (luaobj->self && len < max_len) {
                 snprintf(buf + len, max_len - len, ",%s",
-                    olua_optfieldstring(L, 2, "name", ""));
+                    olua_optfieldstring(L, 2, OLUA_GET_NAME, ""));
                 len = strlen(buf);
             }
         }
@@ -1720,17 +1722,15 @@ static int l_voidp_tostring(lua_State *L)
 
 static int l_voidp_getname(lua_State *L)
 {
-    lua_pushstring(L, "name");
-    olua_getvariable(L, 1);
+    lua_getmetatable(L, 1);
+    lua_getfield(L, -1, OLUA_CKEY_GET);
+    if (lua_getfield(L, -1, "name") == LUA_TFUNCTION) {
+        lua_getfield(L, 1, "name");
+        return 1;
+    } else {
+        return 0;
+    }
     return 1;
-}
-
-static int l_voidp_setname(lua_State *L)
-{
-    lua_pushstring(L, "name");
-    lua_insert(L, 2);
-    olua_setvariable(L, 1);
-    return 0;
 }
 
 int luaopen_voidp(lua_State *L)
@@ -1739,7 +1739,7 @@ int luaopen_voidp(lua_State *L)
     oluacls_func(L, "__gc", l_voidp_stub);
     oluacls_func(L, "__eq", l_voidp_stub);
     oluacls_func(L, "__tostring", l_voidp_tostring);
-    oluacls_prop(L, "name", l_voidp_getname, l_voidp_setname);
+    oluacls_prop(L, OLUA_GET_NAME, l_voidp_getname, NULL);
     return 1;
 }
 

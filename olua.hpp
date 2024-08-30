@@ -242,7 +242,7 @@ void olua_registerluatype(lua_State *L, const char *cls)
 template <class T>
 const char *olua_getluatype(lua_State *L, const T *obj, const char *cls)
 {
-    const char *preferred;
+    const char *preferred = NULL;
     
     // try obj RTTI
     if (olua_likely(obj)) {
