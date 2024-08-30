@@ -544,6 +544,22 @@ function olua.gen_luafn(func, cls)
     return tostring(exps)
 end
 
+---@param comment string
+---@return string
+function olua.format_comment(comment)
+    comment = comment:gsub("^[/* \n\r]+", "") -- remove leading comment
+    comment = comment:gsub("\r\n", "\n")      -- remove carriage return
+    comment = comment:gsub("[\t]", " ")       -- remove tab
+    comment = comment:gsub("[\n]+[/* ]+", "\n")
+    comment = comment:gsub("[/* \n]+$", "")   -- remove trailing comment
+    comment = comment:gsub("\\code", "```")
+    comment = comment:gsub("\\endcode", "```")
+    comment = comment:gsub("\\c ([^ ,.]+)", "`%1`") -- convert \c NAME to `NAME`
+    comment = comment:gsub("^ *@", "\\")            -- convert @ to \\
+    comment = comment:gsub("\n *@", "\n\\")         -- convert @ to \\
+    return comment
+end
+
 ---@param ti idl.gen.typeinfo
 ---@return string
 function olua.luatype(ti)

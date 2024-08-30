@@ -69,7 +69,6 @@ olua.size_t = require "olua.size_t"
 
 local num = olua.int.new()
 local str = olua.string.new()
-num.name = "num *"
 obj:getIntRef(num)
 obj:getStringRef(str)
 print("sizeof(int)", num.sizeof)

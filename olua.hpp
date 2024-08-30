@@ -784,8 +784,8 @@ void olua_check_map(lua_State *L, int idx, Map<K, V, Ts...> &map, const std::fun
 }
 
 // array
-template <class T>
-void olua_insert_array(std::vector<T> &array, const T &value)
+template <class T, template<class ...> class Array, class ...Ts>
+void olua_insert_array(Array<T, Ts...> &array, const T &value)
 {
     array.push_back(value);
 }
@@ -796,8 +796,8 @@ void olua_insert_array(std::set<T> &array, const T &value)
     array.insert(value);
 }
 
-template <class T, template<class ...> class Vector, class ...Ts>
-void olua_foreach_array(const Vector<T, Ts...> &array, const std::function<void(T &)> &callback)
+template <class T, template<class ...> class Array, class ...Ts>
+void olua_foreach_array(const Array<T, Ts...> &array, const std::function<void(T &)> &callback)
 {
     for (auto &itor : array) {
         callback(const_cast<T &>(itor));
@@ -819,8 +819,8 @@ bool olua_is_array(lua_State *L, int idx)
     return olua_istable(L, idx);
 }
 
-template <class T, template<class ...> class Vector, class ...Ts>
-int olua_push_array(lua_State *L, const Vector<T, Ts...> &array, const std::function<void(T &)> &push)
+template <class T, template<class ...> class Array, class ...Ts>
+int olua_push_array(lua_State *L, const Array<T, Ts...> &array, const std::function<void(T &)> &push)
 {
     int idx = 0;
     lua_newtable(L);
@@ -831,8 +831,8 @@ int olua_push_array(lua_State *L, const Vector<T, Ts...> &array, const std::func
     return 1;
 }
 
-template <class T, template<class ...> class Vector, class ...Ts>
-void olua_check_array(lua_State *L, int idx, Vector<T, Ts...> &array, const std::function<void(T *)> &check)
+template <class T, template<class ...> class Array, class ...Ts>
+void olua_check_array(lua_State *L, int idx, Array<T, Ts...> &array, const std::function<void(T *)> &check)
 {
     idx = lua_absindex(L, idx);
     luaL_checktype(L, idx, LUA_TTABLE);
@@ -846,8 +846,8 @@ void olua_check_array(lua_State *L, int idx, Vector<T, Ts...> &array, const std:
     }
 }
 
-template <class T, template<class ...> class Vector, class ...Ts>
-void olua_pack_array(lua_State *L, int idx, Vector<T, Ts...> &array, const std::function<void(T *)> &check)
+template <class T, template<class ...> class Array, class ...Ts>
+void olua_pack_array(lua_State *L, int idx, Array<T, Ts...> &array, const std::function<void(T *)> &check)
 {
     idx = lua_absindex(L, idx);
     int total = (int)(lua_gettop(L) - (idx - 1));

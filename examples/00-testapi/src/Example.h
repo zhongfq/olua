@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <deque>
 #include <memory>
 
 typedef void GLvoid;
@@ -256,6 +257,9 @@ public:
         return v;
     }
 
+    std::deque<Hello *> getDeque() {return _deque;}
+    void setDeque(const std::deque<Hello *> &deque) {_deque = deque;}
+
 private:
     std::function<int (Hello *, Point *)> _callback;
     std::string _name;
@@ -263,6 +267,7 @@ private:
     void *_ptr = nullptr;
     Point _p;
     Type _type = Type::POINTER;
+    std::deque<Hello *> _deque;
 };
 
 class SharedHello : public std::enable_shared_from_this<SharedHello> {

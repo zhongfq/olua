@@ -58,10 +58,7 @@ local visited_types   = olua.ordered_map(false)
 local alias_types     = olua.ordered_map(false)
 local type_checker    = olua.array()
 local type_packvars   = olua.ordered_map()
-local exclude_types   = idl.exclude_types
-local type_convs      = idl.type_convs
-local clang_args      = idl.clang_args
-local modules         = idl.modules
+
 local metamethod      = {
     __index = true,
     __newindex = true,
@@ -273,7 +270,7 @@ local function check_alias_typename(tn, underlying)
     local rawp_underlying = raw_typename(underlying, KEEP_POINTER)
     if rawptn == rawp_underlying then
         return tn, false
-    elseif type_convs:has(rawp_underlying) then
+    elseif idl.type_convs:has(rawp_underlying) then
         alias_types:replace(rawptn, rawp_underlying)
         return tn, true
     end
@@ -281,7 +278,7 @@ local function check_alias_typename(tn, underlying)
     if rawptn:find("%*$") then
         local rawtn = raw_typename(tn)
         local raw_underlying = raw_typename(underlying)
-        if type_convs:has(raw_underlying) then
+        if idl.type_convs:has(raw_underlying) then
             alias_types:replace(rawtn, raw_underlying)
             return tn, true
         end
@@ -344,12 +341,12 @@ function typename(type, template_types, level, from)
     local rawtn = raw_typename(tn)
     local rawptn = raw_typename(tn, KEEP_POINTER)
 
-    if exclude_types:has(rawptn) then
+    if idl.exclude_types:has(rawptn) then
         return tn
     end
 
-    if not type_convs:has(rawtn)
-        and not type_convs:has(rawptn)
+    if not idl.type_convs:has(rawtn)
+        and not idl.type_convs:has(rawptn)
         and not olua.typeinfo(rawptn, nil, false)
     then
         --[[
@@ -389,7 +386,7 @@ end
 ---@return boolean
 local function is_excluded_typename(name)
     local rawptn = raw_typename(name, KEEP_POINTER):match("[^ ]+ *%**$")
-    return exclude_types:has(rawptn) or name:find("%*%*$") ~= nil
+    return idl.exclude_types:has(rawptn) or name:find("%*%*$") ~= nil
 end
 
 ---@param type clang.Type
@@ -592,19 +589,7 @@ local function get_comment(cur)
                 print(olua.format("[WARNING]: @oluasee ${see} not found"))
             end
         end
-
-        comment = comment:gsub("^[/* \n\r]+", "") -- remove leading comment
-        comment = comment:gsub("\r\n", "\n")      -- remove carriage return
-        comment = comment:gsub("[\t]", " ")       -- remove tab
-        comment = comment:gsub("[\n]+[/* ]+", "\n")
-        comment = comment:gsub("[/* \n]+$", "")   -- remove trailing comment
-        comment = comment:gsub("\\code", "```")
-        comment = comment:gsub("\\endcode", "```")
-        comment = comment:gsub("\\c ([^ ,.]+)", "`%1`") -- convert \c NAME to `NAME`
-        comment = comment:gsub("^ *@", "\\")            -- convert @ to \\
-        comment = comment:gsub("\n *@", "\n\\")         -- convert @ to \\
-
-        return comment
+        return olua.format_comment(comment)
     end
 end
 
@@ -1019,7 +1004,7 @@ function Autoconf:visit_enum(cxxcls, cur)
             comment = comment ~= "" and comment or nil
         })
     end
-    type_convs:get(cxxcls).conv = "olua_$$_enum"
+    idl.type_convs:get(cxxcls).conv = "olua_$$_enum"
     if not cls.options.indexerror then
         cls.options.indexerror = "rw"
     end
@@ -1035,7 +1020,7 @@ function Autoconf:visit_alias_class(alias, cxxcls)
         cls.conf.kind = cls.conf.kind | kFLAG_FUNC
         cls.conf.funcdecl = cxxcls
         cls.conf.luacls = self.luacls(alias)
-        type_convs:get(alias).conv = "olua_$$_callback"
+        idl.type_convs:get(alias).conv = "olua_$$_callback"
     else
         cls.conf.kind = cls.conf.kind | kFLAG_ALIAS
         cls.supercls = cxxcls
@@ -1060,8 +1045,8 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
 
     if cur.kind == CursorKind.ClassTemplate then
         local tn = raw_typename(cxxcls)
-        if not type_convs:has(tn) then
-            type_convs:replace(raw_typename(cxxcls), true)
+        if not idl.type_convs:has(tn) then
+            idl.type_convs:replace(raw_typename(cxxcls), true)
         end
         olua.assert(template_types, [[
             don't config template class:
@@ -1220,7 +1205,7 @@ function Autoconf:visit(cur, cxxcls)
         or kind == CursorKind.StructDecl
         or kind == CursorKind.UnionDecl
     then
-        if astcls ~= cxxcls and type_convs:has(astcls) then
+        if astcls ~= cxxcls and idl.type_convs:has(astcls) then
             self:visit_alias_class(cxxcls, astcls)
         else
             self:visit_class(cxxcls, cur)
@@ -1269,13 +1254,13 @@ local function try_add_wildcard_type(cxxcls, cur)
         -- (unnamed enum at src/protobuf.pb.h:1015:3)
         return
     end
-    for _, m in ipairs(modules) do
-        if m.class_types:has(cxxcls) or type_convs:has(cxxcls) then
+    for _, m in ipairs(idl.modules) do
+        if m.class_types:has(cxxcls) or idl.type_convs:has(cxxcls) then
             goto continue
         end
         for type, conf in pairs(m.wildcard_types) do
             if cxxcls:find(type) then
-                if exclude_types:has(cxxcls) then
+                if idl.exclude_types:has(cxxcls) then
                     print(olua.format([=[
                         [WARNING]: '${cxxcls}' matched by '${type}' will be ignored
                                        because '${cxxcls}' has been excluded
@@ -1339,7 +1324,7 @@ end
 
 local function parse_headers()
     local headers = olua.array("\n")
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         headers:push(m.headers)
     end
 
@@ -1358,7 +1343,7 @@ local function parse_headers()
     local has_stdv = false
     local flags = olua.array("")
     flags:push("-DOLUA_AUTOCONF")
-    for i, v in ipairs(clang_args) do
+    for i, v in ipairs(idl.clang_args) do
         flags[#flags + 1] = v
         if v:find("^-target") then
             has_target = true
@@ -1414,7 +1399,7 @@ local function init_conv_func(cls)
 end
 
 local function parse_types()
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         for _, cls in ipairs(m.typedef_types) do
             init_conv_func(cls)
         end
@@ -1423,7 +1408,7 @@ local function parse_types()
         end
     end
 
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         for _, cls in ipairs(m.class_types) do
             ---@cast cls idl.model.class_desc
             for fn, func in pairs(cls.conf.members) do
@@ -1450,7 +1435,7 @@ local function check_errors()
     local type_not_found = olua.array("\n")
 
     -- check class and super class
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         for _, cls in ipairs(m.class_types) do
             ---@cast cls idl.model.class_desc
             if not visited_types:has(cls.cxxcls) then
@@ -1481,8 +1466,8 @@ local function check_errors()
         then
             local rawtn = raw_typename(entry.type)
             local rawptn = raw_typename(entry.type, KEEP_POINTER)
-            if type_convs:has(rawtn)
-                or type_convs:has(rawptn)
+            if idl.type_convs:has(rawtn)
+                or idl.type_convs:has(rawptn)
                 or alias_types:has(rawtn)
                 or alias_types:has(rawptn)
                 or olua.typeinfo(rawptn, nil, false)
@@ -1493,7 +1478,7 @@ local function check_errors()
             -- template type with pointer
             local rawtn = raw_typename(entry.type, KEEP_TEMPLATE)
             local rawptn = raw_typename(entry.type, KEEP_TEMPLATE | KEEP_POINTER)
-            if type_convs:has(rawtn) or type_convs:has(rawptn) then
+            if idl.type_convs:has(rawtn) or idl.type_convs:has(rawptn) then
                 return
             end
         end
@@ -1595,7 +1580,7 @@ local function copy_super_funcs()
         end
     end
 
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         ---@cast m idl.model.module_desc
         for _, cls in ipairs(m.class_types) do
             ---@cast cls idl.model.class_desc
@@ -1618,7 +1603,7 @@ local function copy_super_funcs()
 end
 
 local function find_as()
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         ---@cast m idl.model.module_desc
         for _, cls in ipairs(m.class_types) do
             -- find as
@@ -2084,9 +2069,9 @@ local function write_ignored_types()
                 or kind == CursorKind.ClassTemplate
                 or kind == CursorKind.StructDecl)
             and not (visited_types:has(cxxcls)
-                or exclude_types:has(cxxcls)
+                or idl.exclude_types:has(cxxcls)
                 or alias_types:has(cxxcls)
-                or type_convs:has(cxxcls))
+                or idl.type_convs:has(cxxcls))
         then
             ignored_types[#ignored_types + 1] = cxxcls
         end
@@ -2100,7 +2085,7 @@ end
 local function write_typedefs()
     local typdefs = olua.array()
 
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         ---@cast m idl.model.module_desc
         m.typedef_types:foreach(function (td)
             ---@cast td idl.model.typedef_desc
@@ -2147,7 +2132,7 @@ local function write_typedefs()
                 luacls = cls.conf.luacls,
                 supercls = cls.supercls,
                 funcdecl = cls.conf.funcdecl,
-                conv = type_convs:get(cls.cxxcls).conv,
+                conv = idl.type_convs:get(cls.cxxcls).conv,
                 packable = cls.options.packable,
                 packvars = packvars,
             })
@@ -2163,7 +2148,7 @@ local function write_typedefs()
         local cls = visited_types:get(raw_typename(cxxcls))
         local from = olua.format("alias: ${alias} -> ${cxxcls}")
         if not cls then
-            local ti = assert(type_convs:get(cxxcls) or olua.typeinfo(cxxcls))
+            local ti = assert(idl.type_convs:get(cxxcls) or olua.typeinfo(cxxcls))
             typdefs:push({
                 from = from,
                 cxxcls = alias,
@@ -2216,14 +2201,14 @@ local function write_typedefs()
 end
 
 local function write_modules()
-    for _, m in ipairs(modules) do
+    for _, m in ipairs(idl.modules) do
         write_module(m)
     end
 end
 
 local function write_makefile()
     local class_files = olua.array("\n")
-    for _, v in ipairs(modules) do
+    for _, v in ipairs(idl.modules) do
         class_files:pushf('olua.export "${v.class_file}"')
     end
     olua.write("autobuild/make.lua", olua.format([[

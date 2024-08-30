@@ -75,6 +75,7 @@ typedef {
     cxxcls = [[
         std::set
         std::vector
+        std::deque
     ]],
     conv = "olua_$$_array",
     luatype = "array",

@@ -2691,6 +2691,25 @@ static int _example_Hello_getCStrs(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_getDeque(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+
+    olua_to_object(L, 1, &self, "example.Hello");
+
+    // std::deque<example::Hello *> getDeque()
+    std::deque<example::Hello *> ret = self->getDeque();
+    int num_ret = olua_push_array<example::Hello *>(L, ret, [L](example::Hello *arg1) {
+        olua_push_object(L, arg1, "example.Hello");
+    });
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
 static int _example_Hello_getGLchar(lua_State *L)
 {
     olua_startinvoke(L);
@@ -3991,6 +4010,26 @@ static int _example_Hello_setClickCallback(lua_State *L)
     return 0;
 }
 
+static int _example_Hello_setDeque(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    std::deque<example::Hello *> arg1;       /** deque */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_array<example::Hello *>(L, 2, arg1, [L](example::Hello **arg1) {
+        olua_check_object(L, -1, arg1, "example.Hello");
+    });
+
+    // void setDeque(const std::deque<example::Hello *> &deque)
+    self->setDeque(arg1);
+
+    olua_endinvoke(L);
+
+    return 0;
+}
+
 static int _example_Hello_setDragCallback(lua_State *L)
 {
     olua_startinvoke(L);
@@ -4575,6 +4614,7 @@ static int _example_Hello(lua_State *L)
     oluacls_func(L, "getCGLchar", _example_Hello_getCGLchar);
     oluacls_func(L, "getCName", _example_Hello_getCName);
     oluacls_func(L, "getCStrs", _example_Hello_getCStrs);
+    oluacls_func(L, "getDeque", _example_Hello_getDeque);
     oluacls_func(L, "getGLchar", _example_Hello_getGLchar);
     oluacls_func(L, "getGLvoid", _example_Hello_getGLvoid);
     oluacls_func(L, "getID", _example_Hello_getID);
@@ -4601,6 +4641,7 @@ static int _example_Hello(lua_State *L)
     oluacls_func(L, "setCStrs", _example_Hello_setCStrs);
     oluacls_func(L, "setCallback", _example_Hello_setCallback);
     oluacls_func(L, "setClickCallback", _example_Hello_setClickCallback);
+    oluacls_func(L, "setDeque", _example_Hello_setDeque);
     oluacls_func(L, "setDragCallback", _example_Hello_setDragCallback);
     oluacls_func(L, "setGLchar", _example_Hello_setGLchar);
     oluacls_func(L, "setGLfloat", _example_Hello_setGLfloat);
@@ -4621,6 +4662,7 @@ static int _example_Hello(lua_State *L)
     oluacls_prop(L, "cName", _example_Hello_getCName, _example_Hello_setCName);
     oluacls_prop(L, "cStrs", _example_Hello_getCStrs, _example_Hello_setCStrs);
     oluacls_prop(L, "cgLchar", _example_Hello_getCGLchar, _example_Hello_setCGLchar);
+    oluacls_prop(L, "deque", _example_Hello_getDeque, _example_Hello_setDeque);
     oluacls_prop(L, "gLchar", _example_Hello_getGLchar, _example_Hello_setGLchar);
     oluacls_prop(L, "gLvoid", _example_Hello_getGLvoid, _example_Hello_setGLvoid);
     oluacls_prop(L, "id", _example_Hello_getID, _example_Hello_setID);
