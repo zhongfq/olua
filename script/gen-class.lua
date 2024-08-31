@@ -158,7 +158,7 @@ local function gen_class_open(module, cls, write)
         OLUA_LIB int luaopen_${cls.luacls#}(lua_State *L)
         {
             olua_require(L, "${module.name}",  luaopen_${module.name});
-            if (!olua_getclass(L, olua_getluatype<${cls.cxxcls}>(L))) {
+            if (!olua_getclass(L, "${cls.luacls}")) {
                 luaL_error(L, "class not found: ${cls.cxxcls}");
             }
             return 1;
@@ -352,7 +352,7 @@ end
 ---@param write idl.gen.writer
 local function gen_class_meta(module, cls, write)
     local luacls = cls.luacls:match("[^.]+$")
-    local supercls = cls.supercls and olua.luacls(cls.supercls) or nil
+    local supercls = cls.supercls and olua.get_class(cls.supercls).luacls or nil
     supercls = supercls and olua.format(": ${supercls}") or ""
 
     olua.willdo("generate lua annotation: ${cls.cxxcls}")

@@ -245,10 +245,6 @@ end
 -- typeconf
 -------------------------------------------------------------------------------
 
----@class idl.model.class_option
----@field reg_luatype? boolean
----@field indexerror? "r" | "w" | "rw"
-
 ---@class idl.model.type_desc
 ---@field type string
 ---@field name? string
@@ -604,17 +600,27 @@ function typeconf(cxxcls)
         luaname = function (name, kind) return name end,
     }
 
+    ---@class idl.model.class_option_desc
+    ---@field reg_luatype boolean
+    ---@field disallow_assign? boolean
+    ---@field disallow_gc? boolean
+    ---@field indexerror? "r" | "w" | "rw"
+    ---@field packable? boolean
+    ---@field packvars? integer
+
     ---@class idl.model.class_desc
     ---@field supercls? string
     ---@field comment? string
     ---@field luacats? string
     ---@field luaopen? string
     ---@field codeblock? string
+    ---@field options idl.model.class_option_desc
     ---@field conf idl.conf.typeconf_desc
     ---@field CMD idl.cmd.typeconf
     local cls = {
         ---@type string c++ full class name
         cxxcls = cxxcls,
+        luacls = conf.luacls,
         options = { reg_luatype = true },
         funcs = olua.ordered_map(false),
         enums = olua.ordered_map(false),

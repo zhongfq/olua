@@ -63,7 +63,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_GC(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::GC>(L))) {
+    if (!olua_getclass(L, "example.GC")) {
         luaL_error(L, "class not found: example::GC");
     }
     return 1;
@@ -141,7 +141,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestWildcardListener(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::TestWildcardListener>(L))) {
+    if (!olua_getclass(L, "example.TestWildcardListener")) {
         luaL_error(L, "class not found: example::TestWildcardListener");
     }
     return 1;
@@ -234,7 +234,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Object>(L))) {
+    if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
     return 1;
@@ -288,7 +288,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::ExportParent>(L))) {
+    if (!olua_getclass(L, "example.ExportParent")) {
         luaL_error(L, "class not found: example::ExportParent");
     }
     return 1;
@@ -573,7 +573,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Hello>(L))) {
+    if (!olua_getclass(L, "example.Hello")) {
         luaL_error(L, "class not found: example::Hello");
     }
     return 1;
@@ -669,7 +669,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestGC(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::TestGC>(L))) {
+    if (!olua_getclass(L, "example.TestGC")) {
         luaL_error(L, "class not found: example::TestGC");
     }
     return 1;
@@ -694,7 +694,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestWildcardClickEvent(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::TestWildcardClickEvent>(L))) {
+    if (!olua_getclass(L, "example.TestWildcardClickEvent")) {
         luaL_error(L, "class not found: example::TestWildcardClickEvent");
     }
     return 1;
@@ -719,7 +719,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_TestWildcardTouchEvent(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::TestWildcardTouchEvent>(L))) {
+    if (!olua_getclass(L, "example.TestWildcardTouchEvent")) {
         luaL_error(L, "class not found: example::TestWildcardTouchEvent");
     }
     return 1;
@@ -794,7 +794,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Singleton<example::Hello>>(L))) {
+    if (!olua_getclass(L, "example.Singleton<example.Hello>")) {
         luaL_error(L, "class not found: example::Singleton<example::Hello>");
     }
     return 1;

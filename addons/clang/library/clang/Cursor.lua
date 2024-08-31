@@ -1,3 +1,4 @@
+---AUTO GENERATED, DO NOT MODIFY!
 ---@meta clang.Cursor
 
 ---A cursor representing some element in the abstract syntax tree for

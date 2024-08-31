@@ -1,3 +1,4 @@
+---AUTO GENERATED, DO NOT MODIFY!
 ---@meta clang.TranslationUnit
 
 ---A single translation unit, which resides in an index.

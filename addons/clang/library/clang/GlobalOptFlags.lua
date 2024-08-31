@@ -1,3 +1,4 @@
+---AUTO GENERATED, DO NOT MODIFY!
 ---@meta clang.GlobalOptFlags
 
 ---@type clang.GlobalOptFlags

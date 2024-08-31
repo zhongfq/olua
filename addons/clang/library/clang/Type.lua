@@ -1,3 +1,4 @@
+---AUTO GENERATED, DO NOT MODIFY!
 ---@meta clang.Type
 
 ---The type of an element in the abstract syntax tree.

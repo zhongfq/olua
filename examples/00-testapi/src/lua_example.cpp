@@ -117,7 +117,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Object>(L))) {
+    if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
     return 1;
@@ -152,7 +152,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::ExportParent>(L))) {
+    if (!olua_getclass(L, "example.ExportParent")) {
         luaL_error(L, "class not found: example::ExportParent");
     }
     return 1;
@@ -655,7 +655,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_VectorInt(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::VectorInt>(L))) {
+    if (!olua_getclass(L, "example.VectorInt")) {
         luaL_error(L, "class not found: example::VectorInt");
     }
     return 1;
@@ -691,7 +691,7 @@ static int _example_VectorPoint___index(lua_State *L)
     // std::vector<example::Point> __index(unsigned int idx)
     std::vector<example::Point> ret = self->__index(arg1);
     int num_ret = olua_push_array<example::Point>(L, ret, [L](example::Point &arg1) {
-        olua_pushcopy_object(L, arg1, "example.Point");
+        olua_copy_object(L, arg1, "example.Point");
     });
 
     olua_endinvoke(L);
@@ -1084,7 +1084,7 @@ static int _example_VectorPoint_value$1(lua_State *L)
     // @getter @name(value) const std::vector<example::Point> &value()
     const std::vector<example::Point> &ret = self->value();
     int num_ret = olua_push_array<example::Point>(L, ret, [L](example::Point &arg1) {
-        olua_pushcopy_object(L, arg1, "example.Point");
+        olua_copy_object(L, arg1, "example.Point");
     });
 
     olua_endinvoke(L);
@@ -1158,7 +1158,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_VectorPoint(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::VectorPoint>(L))) {
+    if (!olua_getclass(L, "example.VectorPoint")) {
         luaL_error(L, "class not found: example::VectorPoint");
     }
     return 1;
@@ -1661,7 +1661,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_VectorString(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::VectorString>(L))) {
+    if (!olua_getclass(L, "example.VectorString")) {
         luaL_error(L, "class not found: example::VectorString");
     }
     return 1;
@@ -1696,7 +1696,7 @@ static int _example_PointArray___index(lua_State *L)
 
     // example::Point __index(unsigned int idx)
     example::Point ret = self->__index(arg1);
-    int num_ret = olua_pushcopy_object(L, ret, "example.Point");
+    int num_ret = olua_copy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);
 
@@ -2156,7 +2156,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_PointArray(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::PointArray>(L))) {
+    if (!olua_getclass(L, "example.PointArray")) {
         luaL_error(L, "class not found: example::PointArray");
     }
     return 1;
@@ -2187,7 +2187,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ClickCallback(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::ClickCallback>(L))) {
+    if (!olua_getclass(L, "example.ClickCallback")) {
         luaL_error(L, "class not found: example::ClickCallback");
     }
     return 1;
@@ -2210,7 +2210,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Type(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Type>(L))) {
+    if (!olua_getclass(L, "example.Type")) {
         luaL_error(L, "class not found: example::Type");
     }
     return 1;
@@ -2442,7 +2442,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Point(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Point>(L))) {
+    if (!olua_getclass(L, "example.Point")) {
         luaL_error(L, "class not found: example::Point");
     }
     return 1;
@@ -2543,7 +2543,7 @@ static int _example_Hello_convertPoint$1(lua_State *L)
 
     // example::Point convertPoint(const example::Point &p)
     example::Point ret = self->convertPoint(*arg1);
-    int num_ret = olua_pushcopy_object(L, ret, "example.Point");
+    int num_ret = olua_copy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);
 
@@ -2881,7 +2881,7 @@ static int _example_Hello_getPoints(lua_State *L)
     // std::vector<example::Point> getPoints()
     std::vector<example::Point> ret = self->getPoints();
     int num_ret = olua_push_array<example::Point>(L, ret, [L](example::Point &arg1) {
-        olua_pushcopy_object(L, arg1, "example.Point");
+        olua_copy_object(L, arg1, "example.Point");
     });
 
     olua_endinvoke(L);
@@ -4685,7 +4685,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Hello>(L))) {
+    if (!olua_getclass(L, "example.Hello")) {
         luaL_error(L, "class not found: example::Hello");
     }
     return 1;
@@ -4797,7 +4797,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Const(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Const>(L))) {
+    if (!olua_getclass(L, "example.Const")) {
         luaL_error(L, "class not found: example::Const");
     }
     return 1;
@@ -4966,7 +4966,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_SharedHello(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::SharedHello>(L))) {
+    if (!olua_getclass(L, "example.SharedHello")) {
         luaL_error(L, "class not found: example::SharedHello");
     }
     return 1;
@@ -5080,7 +5080,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_NoGC(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::NoGC>(L))) {
+    if (!olua_getclass(L, "example.NoGC")) {
         luaL_error(L, "class not found: example::NoGC");
     }
     return 1;
@@ -5155,7 +5155,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Singleton<example::Hello>>(L))) {
+    if (!olua_getclass(L, "example.Singleton<example.Hello>")) {
         luaL_error(L, "class not found: example::Singleton<example::Hello>");
     }
     return 1;

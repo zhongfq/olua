@@ -677,22 +677,13 @@ local function parse_func(cls, cur, template_types)
 
     setmetatable(func, { __olua_ignore = { display_name = true } })
 
-    -- is llvm bug?
-    if cur.kind == CursorKind.FunctionTemplate then
-        for i, arg in ipairs(cur.type.argTypes) do
-            local name = nil
-            func.args:push({
-                type = typename(arg, template_types, nil, typefrom),
-                name = name ~= "" and name or ("arg" .. i),
-                attr = olua.array()
-            })
-        end
-    else
-        for i, arg in ipairs(cur.arguments) do
-            local name = arg.name
+    for _, c in ipairs(cur.children) do
+        if c.kind == CursorKind.ParmDecl then
+            local i = #func.args + 1
+            local name = c.name
             name = keywords[name] or name
             func.args:push({
-                type = typename(arg.type, template_types, nil, typefrom),
+                type = typename(c.type, template_types, nil, typefrom),
                 name = name ~= "" and name or ("arg" .. i),
                 attr = olua.array()
             })
@@ -2099,7 +2090,8 @@ local function write_typedefs()
                 return
             end
             olua.use(m)
-            typdefs:push({
+            ---@type idl.model.typedef_desc
+            local typedef = {
                 from = olua.format([[module: ${m.path} -> typedef "${td.cxxcls}"]]),
                 cxxcls = td.cxxcls,
                 luacls = td.luacls,
@@ -2109,7 +2101,8 @@ local function write_typedefs()
                 packvars = td.packvars,
                 smartptr = td.smartptr,
                 replace = td.override,
-            })
+            }
+            typdefs:push(typedef)
             if td.packable then
                 type_packvars[td.cxxcls] = td.packvars
             end
@@ -2126,7 +2119,9 @@ local function write_typedefs()
                 type_packvars:set(cls.cxxcls, packvars)
             end
             olua.use(m)
-            typdefs:push({
+
+            ---@type idl.model.typedef_desc
+            local typedef = {
                 from = olua.format([[module: ${m.path} -> typedef "${cls.cxxcls}"]]),
                 cxxcls = cls.cxxcls,
                 luacls = cls.conf.luacls,
@@ -2135,7 +2130,8 @@ local function write_typedefs()
                 conv = idl.type_convs:get(cls.cxxcls).conv,
                 packable = cls.options.packable,
                 packvars = packvars,
-            })
+            }
+            typdefs:push(typedef)
         end)
     end
 
@@ -2149,26 +2145,32 @@ local function write_typedefs()
         local from = olua.format("alias: ${alias} -> ${cxxcls}")
         if not cls then
             local ti = assert(idl.type_convs:get(cxxcls) or olua.typeinfo(cxxcls))
-            typdefs:push({
+            ---@type idl.model.typedef_desc
+            local typedef = {
                 from = from,
                 cxxcls = alias,
                 conv = ti.conv,
                 luacls = ti.luacls,
-            })
+            }
+            typdefs:push(typedef)
         elseif has_type_flag(cls, kFLAG_FUNC) then
-            typdefs:push({
+            ---@type idl.model.typedef_desc
+            local typedef = {
                 from = from,
                 cxxcls = alias,
                 luacls = cls.conf.luacls,
                 funcdecl = cls.conf.funcdecl,
                 conv = "olua_$$_callback",
-            })
+            }
+            typdefs:push(typedef)
         elseif has_type_flag(cls, kFLAG_ENUM) then
-            typdefs:push({
+            ---@type idl.model.typedef_desc
+            local typedef = {
                 from = from,
                 cxxcls = alias,
                 conv = "olua_$$_enum",
-            })
+            }
+            typdefs:push(typedef)
         else
             olua.assert(has_type_flag(cls, kFLAG_POINTER), [[
                 '${cls.cxxcls}' not a pointee type
@@ -2178,14 +2180,16 @@ local function write_typedefs()
             if packable then
                 packvars = cls.options.packvars or #cls.vars:keys()
             end
-            typdefs:push({
+            ---@type idl.model.typedef_desc
+            local typedef = {
                 from = from,
                 cxxcls = alias,
                 luacls = cls.conf.luacls,
                 packvars = packvars,
                 packable = packable,
                 conv = "olua_$$_object"
-            })
+            }
+            typdefs:push(typedef)
         end
     end)
 

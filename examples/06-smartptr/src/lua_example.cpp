@@ -91,7 +91,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Object>(L))) {
+    if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
     return 1;
@@ -300,7 +300,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Hello>(L))) {
+    if (!olua_getclass(L, "example.Hello")) {
         luaL_error(L, "class not found: example::Hello");
     }
     return 1;

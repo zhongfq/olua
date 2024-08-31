@@ -1,3 +1,4 @@
+---AUTO GENERATED, DO NOT MODIFY!
 ---@meta clang.LinkageKind
 
 ---@type clang.LinkageKind

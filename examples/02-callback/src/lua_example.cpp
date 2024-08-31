@@ -96,7 +96,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Object>(L))) {
+    if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
     return 1;
@@ -254,7 +254,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Event(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Event>(L))) {
+    if (!olua_getclass(L, "example.Event")) {
         luaL_error(L, "class not found: example::Event");
     }
     return 1;
@@ -285,7 +285,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Callback_Listener(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Callback::Listener>(L))) {
+    if (!olua_getclass(L, "example.Callback.Listener")) {
         luaL_error(L, "class not found: example::Callback::Listener");
     }
     return 1;
@@ -464,7 +464,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Callback(lua_State *L)
 {
     olua_require(L, "example",  luaopen_example);
-    if (!olua_getclass(L, olua_getluatype<example::Callback>(L))) {
+    if (!olua_getclass(L, "example.Callback")) {
         luaL_error(L, "class not found: example::Callback");
     }
     return 1;

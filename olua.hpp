@@ -615,10 +615,9 @@ int olua_push_object(lua_State *L, const T &value, const char *cls)
 }
 
 template <class T, std::enable_if_t<!olua::is_pointer<T>::value, bool> = true> inline
-int olua_pushcopy_object(lua_State *L, T &value, const char *cls)
+int olua_copy_object(lua_State *L, T &value, const char *cls)
 {
     using Type = typename std::remove_const<T>::type;
-    olua_assert(cls, "cls is null");
     void *ptr = olua_newrawobj(L, nullptr, sizeof(T));
     Type *obj = new (ptr) Type(value);
     olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);

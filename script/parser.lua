@@ -15,8 +15,10 @@ local function has_flag(kind, flag)
     return (kind & flag) ~= 0
 end
 
-function olua.get_class(cls)
-    return cls == "*" and class_map or class_map[cls]
+---@param cxxcls string
+---@return idl.gen.class_desc
+function olua.get_class(cxxcls)
+    return class_map[cxxcls]
 end
 
 ---@param tn string
@@ -504,14 +506,6 @@ local function gen_func_desc(cls, fi)
     return tostring(exps)
 end
 
----@param cxxcls string
----@return string
-function olua.luacls(cxxcls)
-    local ti = typeinfo_map[cxxcls .. " *"] or typeinfo_map[cxxcls]
-    assert(ti, "type not found: " .. cxxcls)
-    return ti.luacls
-end
-
 ---@param func idl.gen.func_desc
 ---@param cls? idl.gen.class_desc
 function olua.gen_luafn(func, cls)
@@ -782,8 +776,6 @@ function olua.export(path)
     olua.make_array(m.class_types):foreach(function (cls)
         ---@cast cls idl.gen.class_desc
         class_map[cls.cxxcls] = cls
-
-        cls.luacls = olua.luacls(cls.cxxcls)
 
         local func_map = {}
 

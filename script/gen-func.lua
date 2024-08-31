@@ -127,7 +127,7 @@ end
 function olua.gen_push_exp(arg, name, codeset)
     local arg_name = name
     local func_push = olua.conv_func(arg.type, arg.attr.unpack and "unpack" or "push")
-    local func_copy = olua.conv_func(arg.type, "pushcopy")
+    local func_copy = olua.conv_func(arg.type, "copy")
     olua.use(arg_name, func_push, func_copy)
     if arg.attr.unpack then
         olua.assert(arg.type.packable, [[
@@ -153,7 +153,7 @@ function olua.gen_push_exp(arg, name, codeset)
         local subtype_push_exp = olua.array("\n")
         for i, subtype in ipairs(arg.type.subtypes) do
             local subtype_func_push = olua.conv_func(subtype, "push")
-            local subtype_func_copy = olua.conv_func(subtype, "pushcopy")
+            local subtype_func_copy = olua.conv_func(subtype, "copy")
             local subtype_name = "arg" .. i
             local decltype = olua.decltype(subtype)
             local declarg = olua.decltype(subtype, nil, true)
@@ -847,9 +847,13 @@ local function gen_pack_func(cls, write)
         check_args = olua.array("\n"),
     }
     for i, var in ipairs(cls.vars) do
+        ---@type idl.gen.type_desc
         local pi = var.set.args[1]
         local name = "arg" .. i
+        local pack = pi.attr.pack
+        pi.attr.pack = {}
         olua.gen_decl_exp(pi, name, codeset)
+        pi.attr.pack = pack
         olua.gen_check_exp(pi, name, "idx + " .. (i - 1), codeset)
         codeset.check_args:pushf([[
             value->${var.set.cxxfn} = ${name};

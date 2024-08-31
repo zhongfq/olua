@@ -1,3 +1,4 @@
+---AUTO GENERATED, DO NOT MODIFY!
 ---@meta clang.StorageClass
 
 ---@type clang.StorageClass

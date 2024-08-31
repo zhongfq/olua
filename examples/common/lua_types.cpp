@@ -492,7 +492,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_bool(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_bool>(L))) {
+    if (!olua_getclass(L, "olua.bool")) {
         luaL_error(L, "class not found: olua_bool");
     }
     return 1;
@@ -987,7 +987,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_string(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_string>(L))) {
+    if (!olua_getclass(L, "olua.string")) {
         luaL_error(L, "class not found: olua_string");
     }
     return 1;
@@ -1482,7 +1482,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_int8(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_int8>(L))) {
+    if (!olua_getclass(L, "olua.int8")) {
         luaL_error(L, "class not found: olua_int8");
     }
     return 1;
@@ -1977,7 +1977,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_int16(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_int16>(L))) {
+    if (!olua_getclass(L, "olua.int16")) {
         luaL_error(L, "class not found: olua_int16");
     }
     return 1;
@@ -2472,7 +2472,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_int32(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_int32>(L))) {
+    if (!olua_getclass(L, "olua.int32")) {
         luaL_error(L, "class not found: olua_int32");
     }
     return 1;
@@ -2967,7 +2967,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_int64(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_int64>(L))) {
+    if (!olua_getclass(L, "olua.int64")) {
         luaL_error(L, "class not found: olua_int64");
     }
     return 1;
@@ -3462,7 +3462,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_uint8(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_uint8>(L))) {
+    if (!olua_getclass(L, "olua.uint8")) {
         luaL_error(L, "class not found: olua_uint8");
     }
     return 1;
@@ -3957,7 +3957,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_uint16(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_uint16>(L))) {
+    if (!olua_getclass(L, "olua.uint16")) {
         luaL_error(L, "class not found: olua_uint16");
     }
     return 1;
@@ -4452,7 +4452,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_uint32(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_uint32>(L))) {
+    if (!olua_getclass(L, "olua.uint32")) {
         luaL_error(L, "class not found: olua_uint32");
     }
     return 1;
@@ -4947,7 +4947,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_uint64(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_uint64>(L))) {
+    if (!olua_getclass(L, "olua.uint64")) {
         luaL_error(L, "class not found: olua_uint64");
     }
     return 1;
@@ -5442,7 +5442,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_char(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_char>(L))) {
+    if (!olua_getclass(L, "olua.char")) {
         luaL_error(L, "class not found: olua_char");
     }
     return 1;
@@ -5937,7 +5937,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_short(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_short>(L))) {
+    if (!olua_getclass(L, "olua.short")) {
         luaL_error(L, "class not found: olua_short");
     }
     return 1;
@@ -6432,7 +6432,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_int(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_int>(L))) {
+    if (!olua_getclass(L, "olua.int")) {
         luaL_error(L, "class not found: olua_int");
     }
     return 1;
@@ -6927,7 +6927,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_long(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_long>(L))) {
+    if (!olua_getclass(L, "olua.long")) {
         luaL_error(L, "class not found: olua_long");
     }
     return 1;
@@ -7422,7 +7422,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_llong(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_llong>(L))) {
+    if (!olua_getclass(L, "olua.llong")) {
         luaL_error(L, "class not found: olua_llong");
     }
     return 1;
@@ -7917,7 +7917,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_uchar(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_uchar>(L))) {
+    if (!olua_getclass(L, "olua.uchar")) {
         luaL_error(L, "class not found: olua_uchar");
     }
     return 1;
@@ -8412,7 +8412,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_ushort(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_ushort>(L))) {
+    if (!olua_getclass(L, "olua.ushort")) {
         luaL_error(L, "class not found: olua_ushort");
     }
     return 1;
@@ -8907,7 +8907,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_uint(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_uint>(L))) {
+    if (!olua_getclass(L, "olua.uint")) {
         luaL_error(L, "class not found: olua_uint");
     }
     return 1;
@@ -9402,7 +9402,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_ulong(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_ulong>(L))) {
+    if (!olua_getclass(L, "olua.ulong")) {
         luaL_error(L, "class not found: olua_ulong");
     }
     return 1;
@@ -9897,7 +9897,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_ullong(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_ullong>(L))) {
+    if (!olua_getclass(L, "olua.ullong")) {
         luaL_error(L, "class not found: olua_ullong");
     }
     return 1;
@@ -10392,7 +10392,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_float(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_float>(L))) {
+    if (!olua_getclass(L, "olua.float")) {
         luaL_error(L, "class not found: olua_float");
     }
     return 1;
@@ -10887,7 +10887,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_double(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_double>(L))) {
+    if (!olua_getclass(L, "olua.double")) {
         luaL_error(L, "class not found: olua_double");
     }
     return 1;
@@ -11382,7 +11382,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_ldouble(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_ldouble>(L))) {
+    if (!olua_getclass(L, "olua.ldouble")) {
         luaL_error(L, "class not found: olua_ldouble");
     }
     return 1;
@@ -11877,7 +11877,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_size_t(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_size_t>(L))) {
+    if (!olua_getclass(L, "olua.size_t")) {
         luaL_error(L, "class not found: olua_size_t");
     }
     return 1;
@@ -12372,7 +12372,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_olua_ssize_t(lua_State *L)
 {
     olua_require(L, "types",  luaopen_types);
-    if (!olua_getclass(L, olua_getluatype<olua_ssize_t>(L))) {
+    if (!olua_getclass(L, "olua.ssize_t")) {
         luaL_error(L, "class not found: olua_ssize_t");
     }
     return 1;
