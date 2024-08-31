@@ -257,6 +257,8 @@ public:
         return v;
     }
 
+    std::function<int (Hello *, Point *)> getCallback(int arg) {return _callback;}
+
     std::deque<Hello *> getDeque() {return _deque;}
     void setDeque(const std::deque<Hello *> &deque) {_deque = deque;}
 

@@ -2691,6 +2691,29 @@ static int _example_Hello_getCStrs(lua_State *L)
     return num_ret;
 }
 
+static int _example_Hello_getCallback(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Hello *self = nullptr;
+    int arg1 = 0;       /** arg */
+
+    olua_to_object(L, 1, &self, "example.Hello");
+    olua_check_integer(L, 2, &arg1);
+
+    void *cb_store = (void *)self;
+    std::string cb_tag = "Callback";
+    olua_getcallback(L, cb_store, cb_tag.c_str(), OLUA_TAG_EQUAL);
+
+    // std::function<int (example::Hello *, example::Point *)> getCallback(int arg)
+    std::function<int (example::Hello *, example::Point *)> ret = self->getCallback(arg1);
+    int num_ret = olua_push_callback(L, &ret, "std.function");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
 static int _example_Hello_getDeque(lua_State *L)
 {
     olua_startinvoke(L);
@@ -4614,6 +4637,7 @@ static int _example_Hello(lua_State *L)
     oluacls_func(L, "getCGLchar", _example_Hello_getCGLchar);
     oluacls_func(L, "getCName", _example_Hello_getCName);
     oluacls_func(L, "getCStrs", _example_Hello_getCStrs);
+    oluacls_func(L, "getCallback", _example_Hello_getCallback);
     oluacls_func(L, "getDeque", _example_Hello_getDeque);
     oluacls_func(L, "getGLchar", _example_Hello_getGLchar);
     oluacls_func(L, "getGLvoid", _example_Hello_getGLvoid);

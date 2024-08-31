@@ -678,7 +678,7 @@ local function parse_func(cls, cur, template_types)
     setmetatable(func, { __olua_ignore = { display_name = true } })
 
     for _, c in ipairs(cur.children) do
-        if c.kind == CursorKind.ParmDecl then
+        if c.kind == CursorKind.ParmDecl and c.parent == cur then
             local i = #func.args + 1
             local name = c.name
             name = keywords[name] or name
