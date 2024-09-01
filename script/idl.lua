@@ -311,6 +311,10 @@ local function add_attr_command(CMD, member, name, store_name)
     end
 end
 
+---@param parent idl.cmd.typeconf
+---@param cls idl.model.class_desc
+---@param name string
+---@return idl.cmd.member
 local function typeconf_member(parent, cls, name)
     ---@class idl.cmd.member : idl.cmd.typeconf
     local CMD = {}
@@ -326,6 +330,7 @@ local function typeconf_member(parent, cls, name)
     ---@field CMD idl.cmd.member
     local member = {
         name = name,
+        luafn = name:match("^[^( ]+"),
         attrs = olua.ordered_map(),
         insts = olua.array(), --@type idl.conf.inst_desc[]
         CMD = CMD,
@@ -444,6 +449,7 @@ end
 local function typeconf_func(parent, cls, name)
     ---@class idl.cmd.func : idl.cmd.member
     ---@field body fun(body:string):idl.cmd.func
+    ---@field luafn fun(luafn:string):idl.cmd.func
     ---@field luacats fun(luacats:string):idl.cmd.func
     ---@field tag_scope fun(store:idl.callback_tag_scope):idl.cmd.func
     ---@field tag_store fun(store:integertype):idl.cmd.func
@@ -470,6 +476,8 @@ local function typeconf_func(parent, cls, name)
     ---@type idl.conf.member_desc
     local member = cls.conf.members:get(name)
 
+    add_value_command(CMD, member, "luafn")
+    
     add_attr_command(CMD, member, "ret")
     add_attr_command(CMD, member, "arg1")
     add_attr_command(CMD, member, "arg2")

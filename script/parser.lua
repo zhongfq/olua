@@ -281,7 +281,13 @@ end
 local function parse_attr(t)
     local attr = {}
     olua.foreach(t, function (v)
-        local name, value = v:match("@(%w+)%(?([^)]*)%)?")
+        local name, value = v:match("@([^(]+)(%b())")
+        if value then
+            value = value:sub(2, -2)
+        else
+            name = v:match("@([^(]+)")
+            value = ""
+        end
         attr[name] = olua.split(value, " ")
     end)
     return attr
@@ -540,7 +546,7 @@ end
 
 ---@param comment string
 ---@return string
-function olua.format_comment(comment)
+function olua.process_comment(comment)
     comment = comment:gsub("^[/* \n\r]+", "") -- remove leading comment
     comment = comment:gsub("\r\n", "\n")      -- remove carriage return
     comment = comment:gsub("[\t]", " ")       -- remove tab
@@ -551,6 +557,7 @@ function olua.format_comment(comment)
     comment = comment:gsub("\\c ([^ ,.]+)", "`%1`") -- convert \c NAME to `NAME`
     comment = comment:gsub("^ *@", "\\")            -- convert @ to \\
     comment = comment:gsub("\n *@", "\n\\")         -- convert @ to \\
+    comment = comment:gsub("\\brief *", "")
     return comment
 end
 
@@ -749,7 +756,7 @@ function olua.export(path)
     ---@field nullable? table
     ---@field extend? [string] # @extend
     ---@field postnew? table
-    ---@field template? [string]
+    ---@field template? olua.array
     ---@field as? table
 
     ---@class idl.gen.const_desc : idl.model.const_desc

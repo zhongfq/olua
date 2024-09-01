@@ -1950,7 +1950,7 @@ OLUA_API lua_State *olua_mainthread(lua_State *L)
         mt = lua_tothread(L, -1);
         lua_pop(L, 1);
     } else {
-        olua_assert(L, "main thread not found");
+        printf("main thread not found, set 'olua.CAPTURE_MAINTHREAD = true' and export again!\n");
     }
     return mt;
 }

@@ -25,29 +25,32 @@ end
 
 olua.print("lua clang: v${clang.version}")
 
--- Auto export after config
+-- Auto export after config.
 olua.AUTO_BUILD = true
 
--- Print more debug info
+-- Print more debug info.
 olua.VERBOSE = false
 
--- Auto generate property
+-- Auto generate property.
 olua.AUTO_GEN_PROP = true
 
--- Enable auto export parent
+-- Enable auto export parent.
 olua.AUTO_EXPORT_PARENT = false
 
--- Enable export deprecated function
+-- Enable export deprecated function.
 olua.ENABLE_DEPRECATED = false
 
--- Enable var or method name with underscore
+-- Enable var or method name with underscore.
 olua.ENABLE_WITH_UNDERSCORE = false
 
--- Max args for variadic method, this will generate overload method
+-- Max args for variadic method, this will generate overload method.
 olua.MAX_VARIADIC_ARGS = 16
 
 -- Enable cxx exception
 olua.ENABLE_EXCEPTION = false
+
+--Capture main thread 'L' in callback.
+olua.CAPTURE_MAINTHREAD = false
 
 
 local clang_tu
@@ -589,7 +592,7 @@ local function get_comment(cur)
                 print(olua.format("[WARNING]: @oluasee ${see} not found"))
             end
         end
-        return olua.format_comment(comment)
+        return olua.process_comment(comment)
     end
 end
 
@@ -658,6 +661,8 @@ end
 ---@param cls idl.model.class_desc
 ---@param cur clang.Cursor
 ---@param template_types olua.ordered_map
+---@return idl.model.func_desc
+---@return {ret: clang.Type, args: clang.Cursor[]}
 local function parse_func(cls, cur, template_types)
     local typefrom = olua.format("class: ${cls.cxxcls} -> ${cur.prettyPrinted}")
     ---@type idl.model.func_desc
@@ -675,6 +680,11 @@ local function parse_func(cls, cur, template_types)
         args = olua.array(),
     }
 
+    local func_def = {
+        ret = cur.resultType,
+        args = {},
+    }
+
     setmetatable(func, { __olua_ignore = { display_name = true } })
 
     for _, c in ipairs(cur.children) do
@@ -687,6 +697,7 @@ local function parse_func(cls, cur, template_types)
                 name = name ~= "" and name or ("arg" .. i),
                 attr = olua.array()
             })
+            func_def.args[i] = c
         end
     end
 
@@ -701,7 +712,7 @@ local function parse_func(cls, cur, template_types)
     --     print(func.cxxfn, func.display_name)
     -- end
 
-    return func
+    return func, func_def
 end
 
 ---@class idl.conf.template_desc
@@ -713,7 +724,7 @@ end
 ---@param template_desc? idl.conf.template_desc
 function Autoconf:visit_method(cls, cur, template_desc)
     template_desc = template_desc or {}
-    local func = parse_func(cls, cur, template_desc.template_types or cls.conf.template_types)
+    local func, func_def = parse_func(cls, cur, template_desc.template_types or cls.conf.template_types)
     local attrs = parse_attr_from_annotate(cls, cur, func.display_name)
     ---@type idl.conf.member_desc
     local member = cls.conf.members:get(func.display_name)
@@ -726,6 +737,7 @@ function Autoconf:visit_method(cls, cur, template_desc)
     func.insert_cafter = member.insert_cafter
     func.insert_cbefore = member.insert_cbefore
     func.luacats = member.luacats
+    func.luafn = member.luafn
 
     if cur.isVariadic then
         func.is_variadic = true
@@ -745,10 +757,13 @@ function Autoconf:visit_method(cls, cur, template_desc)
         func.luafn = "new"
         func.cxxfn = "new"
     else
-        func.luafn = cls.conf.luaname(func.cxxfn, "func")
-        if is_func_type(cur.resultType) then
+        if is_func_type(func.ret.type) or is_func_type(func_def.ret) then
             callback_type = "ret"
         end
+    end
+
+    if func.luafn == func.cxxfn then
+        func.luafn = cls.conf.luaname(func.cxxfn, "func")
     end
 
     local name_from_attr = olua.join(func.ret.attr, " "):match("@name%(([^)]+)%)")
@@ -761,13 +776,13 @@ function Autoconf:visit_method(cls, cur, template_desc)
     local has_optional = false
     local min_args = 0
     local num_args = 0
-    for i, arg in ipairs(cur.arguments) do
+    for i, arg in ipairs(func_def.args) do
         ---@type idl.model.type_desc
         local arg_type = func.args[i]
         local argn = "arg" .. i
         arg_type.attr = attrs:get(argn) or olua.array()
         num_args = i
-        if is_func_type(arg.type) then
+        if is_func_type(arg.type) or is_func_type(arg_type.type) then
             callback_type = "arg"
         end
         if has_default_value(arg) then
@@ -1694,6 +1709,7 @@ local function merge_cls_snippet(cls)
             cls.funcs:set(key, {
                 {
                     cxxfn = key,
+                    luafn = value.luafn,
                     body = value.body,
                     luacats = value.luacats,
                     is_exposed = true,
@@ -1709,6 +1725,7 @@ local function merge_cls_snippet(cls)
             cls.funcs:set(cxxfn, {
                 {
                     cxxfn = cxxfn,
+                    luafn = cxxfn,
                     prototype = prototype,
                     body = value.get,
                     is_exposed = false,
@@ -1722,6 +1739,7 @@ local function merge_cls_snippet(cls)
             cls.funcs:set(cxxfn, {
                 {
                     cxxfn = cxxfn,
+                    luafn = cxxfn,
                     prototype = prototype,
                     body = value.set,
                     is_exposed = false,
@@ -2031,6 +2049,26 @@ local function write_module(module)
         parse_cls_props(cls)
 
         ::skip_alias_or_template::
+    end
+
+    for _, cls in ipairs(module.class_types) do
+        local funcs = olua.ordered_map()
+        ---@cast cls idl.model.class_desc
+        cls.funcs:foreach(function (arr)
+            olua.use(cls)
+            olua.willdo("${cls.cxxcls} regroup function by lua function name")
+            for _, func in ipairs(arr) do
+                ---@cast func idl.model.func_desc
+                olua.assert(func.luafn, "function ${func.cxxfn} has no lua function name")
+                local luafn_arr = funcs:get(func.luafn)
+                if not luafn_arr then
+                    luafn_arr = olua.array()
+                    funcs:set(func.luafn, luafn_arr)
+                end
+                luafn_arr:push(func)
+            end
+        end)
+        cls.funcs = funcs
     end
 
     olua.write("${module.class_file}", olua.lua_stringify(m, {

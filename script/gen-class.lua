@@ -32,18 +32,18 @@ local function gen_class_funcs(cls, write)
         ---@type idl.gen.func_desc
         local func = arr[1]
 
-        local cxxfn = olua.format([[_${cls.cxxcls#}_${func.cxxfn}]])
-        if symbols[cxxfn] then
+        local luafn = olua.format([[_olua_fun_${cls.cxxcls#}_${func.luafn}]])
+        if symbols[luafn] then
             return
         end
-        symbols[cxxfn] = true
+        symbols[luafn] = true
 
         if getmetatable(cls_protos) then
             local supermeta = getmetatable(cls_protos).__index
             for _, f in ipairs(arr) do
                 if not f.is_static
                     and f.prototype
-                    and f.cxxfn ~= "as"
+                    and f.luafn ~= "as"
                     and rawget(cls_protos, f.prototype)
                     and supermeta[f.prototype]
                     and not f.ret.attr.using
@@ -80,12 +80,11 @@ local function gen_class_open(module, cls, write)
     for _, arr in ipairs(cls.funcs) do
         ---@type idl.gen.func_desc
         local func = arr[1]
-        local cxxfn = func.cxxfn
-        local luafn = func.luafn or cxxfn
+        local luafn = func.luafn
         if func.is_exposed then
             olua.use(luafn)
             oluacls_func:push(func.macro)
-            oluacls_func:pushf('oluacls_func(L, "${luafn}", _${cls.cxxcls#}_${cxxfn});')
+            oluacls_func:pushf('oluacls_func(L, "${luafn}", _olua_fun_${cls.cxxcls#}_${luafn});')
             oluacls_func:push(func.macro and "#endif" or nil)
         end
     end
@@ -97,23 +96,23 @@ local function gen_class_open(module, cls, write)
         local macro = pi.get.macro
         oluacls_func:push(macro)
         if pi.get then
-            func_get = olua.format("_${cls.cxxcls#}_${pi.get.cxxfn}")
+            func_get = olua.format("_olua_fun_${cls.cxxcls#}_${pi.get.luafn}")
         end
         if pi.set then
-            func_set = olua.format("_${cls.cxxcls#}_${pi.set.cxxfn}")
+            func_set = olua.format("_olua_fun_${cls.cxxcls#}_${pi.set.luafn}")
         end
         oluacls_func:pushf('oluacls_prop(L, "${pi.name}", ${func_get}, ${func_set});')
         oluacls_func:push(macro and "#endif" or nil)
     end
 
     for _, vi in ipairs(cls.vars) do
-        local func_get = olua.format("_${cls.cxxcls#}_${vi.get.cxxfn}")
+        local func_get = olua.format("_olua_fun_${cls.cxxcls#}_${vi.get.luafn}")
         local func_set = "nullptr"
         ---@cast vi idl.gen.var_desc
         local macro = vi.get.macro
         oluacls_func:push(macro)
-        if vi.set and vi.set.cxxfn then
-            func_set = olua.format("_${cls.cxxcls#}_${vi.set.cxxfn}")
+        if vi.set and vi.set.luafn then
+            func_set = olua.format("_olua_fun_${cls.cxxcls#}_${vi.set.luafn}")
         end
         oluacls_func:pushf('oluacls_prop(L, "${vi.name}", ${func_get}, ${func_set});')
         oluacls_func:push(macro and "#endif" or nil)
@@ -140,7 +139,7 @@ local function gen_class_open(module, cls, write)
     end
 
     write(olua.format([[
-        static int _${cls.luacls#}(lua_State *L)
+        static int _olua_cls_${cls.luacls#}(lua_State *L)
         {
             ${oluacls_class}
             ${oluacls_func}
@@ -256,9 +255,7 @@ local function gen_classes(module, write)
         cls.funcs:sort(function (_, _, arr1, arr2)
             local func1 = arr1[1] ---@type idl.gen.func_desc
             local func2 = arr2[1] ---@type idl.gen.func_desc
-            local luafunc1 = func1.luafn or func1.cxxfn
-            local luafunc2 = func2.luafn or func2.cxxfn
-            return tostring(luafunc1) < tostring(luafunc2)
+            return tostring(func1.luafn) < tostring(func2.luafn)
         end)
         cls.props:sort(function (a, b) return tostring(a) < tostring(b) end)
         cls.vars:sort(function (a, b) return tostring(a) < tostring(b) end)
@@ -292,7 +289,7 @@ local function gen_luaopen(module, write)
             end
             last_macro = macro
         end
-        requires:pushf('olua_require(L, "${cls.luacls}", _${cls.luacls#});')
+        requires:pushf('olua_require(L, "${cls.luacls}", _olua_cls_${cls.luacls#});')
     end
     requires:push(last_macro and "#endif" or nil)
 
@@ -350,7 +347,7 @@ end
 ---@param module idl.gen.module_desc
 ---@param cls idl.gen.class_desc
 ---@param write idl.gen.writer
-local function gen_class_meta(module, cls, write)
+local function gen_class_annotation(module, cls, write)
     local luacls = cls.luacls:match("[^.]+$")
     local supercls = cls.supercls and olua.get_class(cls.supercls).luacls or nil
     supercls = supercls and olua.format(": ${supercls}") or ""
@@ -462,10 +459,12 @@ local function gen_class_meta(module, cls, write)
             return
         end
 
-        local comment = func.comment
-        if comment and #comment > 0 then
-            comment = comment:gsub("\n", "\n---")
-            write(olua.format("---${comment}"))
+        local func_comment = func.comment
+        if func_comment and #func_comment > 0 then
+            func_comment = func_comment:gsub("\n", "\n---")
+            func_comment = olua.format("---${func_comment}")
+        else
+            func_comment = ""
         end
 
         local caller_args = olua.array(", ")
@@ -475,12 +474,13 @@ local function gen_class_meta(module, cls, write)
             for name in string.gmatch(func.luacats, "%-+@param +([^ ]+)") do
                 caller_args:push(name)
             end
+            write(func_comment)
         else
             -- write function parameters
+            local args_comment = olua.array("\n")
             if func.args and #func.args > 0 then
-                local params = olua.array("\n")
                 local skip_first_arg = olua.is_oluaret(func)
-                for i, arg in ipairs(func.args) do
+                for _, arg in ipairs(func.args) do
                     if skip_first_arg then
                         skip_first_arg = false
                         goto continue
@@ -490,22 +490,39 @@ local function gen_class_meta(module, cls, write)
                     local type = olua.luatype(arg.type)
                     olua.use(type)
                     caller_args:push(name)
-                    params:pushf([[
-                        ---@param ${name} ${type}
-                    ]])
+
+                    local arg_key = olua.format("---\\param +${name} *")
+                    if func_comment:find(arg_key) then
+                        func_comment = func_comment:gsub(arg_key, olua.format("---@param ${name} ${type} # "), 1)
+                    else
+                        args_comment:pushf("---@param ${name} ${type}")
+                    end
                     ::continue::
                 end
-                write(olua.format([[${params}]]))
             end
 
             -- write return type
+            local ret_key = olua.format("%-%-%-\\return *")
             if not func.ret then
-                write(olua.format([[---@return any]]))
+                if func_comment:find(ret_key) then
+                    func_comment = func_comment:gsub(ret_key, olua.format("---@return any # "), 1)
+                else
+                    args_comment:pushf("---@return any")
+                end
             elseif func.ret.type.cxxcls ~= "void" then
                 local ret_luacls = olua.luatype(func.ret.type)
-                write(olua.format([[
-                    ---@return ${ret_luacls}
-                ]]))
+                olua.use(ret_luacls)
+                if func_comment:find(ret_key) then
+                    func_comment = func_comment:gsub(ret_key, olua.format("---@return ${ret_luacls} # "), 1)
+                else
+                    args_comment:pushf("---@return ${ret_luacls}")
+                end
+            end
+            if #func_comment > 0 then
+                write(func_comment)
+            end
+            if #args_comment > 0 then
+                write(tostring(args_comment))
             end
         end
 
@@ -559,7 +576,7 @@ function olua.gen_annotation(module)
         local path = olua.format("${module.api_dir}/library/${filename}.lua")
         local dir = path:match("(.*)/[^/]+$")
         olua.mkdir(dir)
-        gen_class_meta(module, cls, append)
+        gen_class_annotation(module, cls, append)
         olua.write(path, tostring(arr))
 
         if module.entry == cls.cxxcls then

@@ -16,7 +16,7 @@ local function gen_func_body(cls, fi, write)
     end)
     olua.use(cls)
     write(olua.format([[
-        static int _${cls.cxxcls#}_${fi.cxxfn}(lua_State *L)
+        static int _olua_fun_${cls.cxxcls#}_${fi.luafn}(lua_State *L)
         ${body}
     ]]))
 end
@@ -482,7 +482,7 @@ local function gen_one_func(cls, func, write, fidx)
     end
 
     if func.ret.attr.template then
-        cxxfn = func.ret.attr.template[1]
+        cxxfn = func.ret.attr.template:join(" ")
     end
 
     if func.ret.attr.postnew then
@@ -605,7 +605,7 @@ local function gen_one_func(cls, func, write, fidx)
 
     olua.use(func_body)
     write(olua.format([[
-        static int _${cls.cxxcls#}_${func.cxxfn}${fidx}(lua_State *L)
+        static int _olua_fun_${cls.cxxcls#}_${func.luafn}${fidx}(lua_State *L)
         {
             ${func_body}
         }
@@ -699,13 +699,13 @@ local function gen_test_and_call(cls, fns)
                 exp1 = olua.format([[
                     // if (${test_exps}) {
                         // ${fi.funcdesc}
-                        return _${cls.cxxcls#}_${fi.cxxfn}$${fi.index}(L);
+                        return _olua_fun_${cls.cxxcls#}_${fi.luafn}$${fi.index}(L);
                     // }
                 ]]),
                 exp2 = olua.format([[
                     if (${test_exps}) {
                         // ${fi.funcdesc}
-                        return _${cls.cxxcls#}_${fi.cxxfn}$${fi.index}(L);
+                        return _olua_fun_${cls.cxxcls#}_${fi.luafn}$${fi.index}(L);
                     }
                 ]]),
             }
@@ -720,7 +720,7 @@ local function gen_test_and_call(cls, fns)
                 max_vars = 1,
                 exp1 = olua.format([[
                     // ${fi.funcdesc}
-                    return _${cls.cxxcls#}_${fi.cxxfn}$${fi.index}(L);
+                    return _olua_fun_${cls.cxxcls#}_${fi.luafn}$${fi.index}(L);
                 ]])
             }
         end
@@ -743,7 +743,7 @@ end
 ---@param funcs idl.gen.func_desc[]
 ---@param write idl.gen.writer
 local function gen_multi_func(cls, funcs, write)
-    local cxxfn = funcs[1].cxxfn
+    local luafn = funcs[1].luafn
     local subone = funcs[1].is_static and "" or " - 1"
     local ifblock = olua.array("\n\n")
 
@@ -768,13 +768,13 @@ local function gen_multi_func(cls, funcs, write)
     end
 
     write(olua.format([[
-        static int _${cls.cxxcls#}_${cxxfn}(lua_State *L)
+        static int _olua_fun_${cls.cxxcls#}_${luafn}(lua_State *L)
         {
             int num_args = lua_gettop(L)${subone};
 
             ${ifblock}
 
-            luaL_error(L, "method '${cls.cxxcls}::${cxxfn}' not support '%d' arguments", num_args);
+            luaL_error(L, "method '${cls.cxxcls}::${luafn}' not support '%d' arguments", num_args);
 
             return 0;
         }

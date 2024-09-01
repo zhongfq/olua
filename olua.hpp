@@ -929,8 +929,14 @@ public:
     {
         pointer<T> *self = (pointer<T> *)olua_toobj(L, 1, OLUA_VOIDCLS);
         if (self) {
-            olua_setrawobj(L, 1, nullptr);
-            delete self;
+            if (olua_hasobjflag(L, -1, OLUA_FLAG_IN_HEAP)) {
+                olua_setrawobj(L, 1, nullptr);
+                delete self;
+            } else if (olua_hasobjflag(L, -1, OLUA_FLAG_IN_USERDATA)) {
+                olua_setrawobj(L, 1, nullptr);
+                self->~pointer<T>();
+            }
+            
         }
         return 0;
     }
@@ -940,13 +946,6 @@ public:
         olua_assert(_len > 0 && len <= _len, "invalid length");
         lua_pushlstring(L, (const char*)_data, len * sizeof(T));
         return 1;
-    }
-    
-    void assign(const char *data, size_t len)
-    {
-        olua_assert(sizeof(T) == sizeof(char), "expect char type");
-        olua_assert(len <= _len, "data too long");
-        strncpy((char *)_data, data, len);
     }
     
     pointer<T> *take()
@@ -975,23 +974,18 @@ public:
         if (to == -1) {
             to = _len;
         }
+        olua_assert(from <= _len && from <= to, "invalid 'from' position");
+        olua_assert(to <= _len, "invalid 'to' position");
         pointer<T> *ret = new pointer<T>(&_data[from - 1]);
         ret->_len = to - from + 1;
         ret->_owner = false;
         return ret;
     }
     
-    OLUA_EXCLUDE T *data() {return _data;}
-    OLUA_GETTER OLUA_NAME(rawdata) void *rawdata() {return _data;}
-    OLUA_GETTER OLUA_NAME(sizeof) size_t size() {return sizeof(T);}
+    OLUA_GETTER OLUA_NAME(buffer) OLUA_TYPE(void *) T *buffer() {return _data;}
     OLUA_GETTER OLUA_NAME(value) const T &value() {return *_data;}
     OLUA_SETTER OLUA_NAME(value) void value(const T &v) {*_data = v;}
     OLUA_GETTER OLUA_NAME(length) size_t length() {return _len;}
-    OLUA_SETTER OLUA_NAME(length) void length(size_t len)
-    {
-        olua_assert(!_owner, "not allow set length when own the data");
-        _len = len;
-    }
 private:
     T *_data = nullptr;
     size_t _len = 0;
@@ -1050,16 +1044,17 @@ template <class T> inline
 void olua_check_pointer(lua_State *L, int idx, T **value, const char *cls)
 {
     olua::pointer<T> *obj = (olua::pointer<T> *)olua_checkobj(L, idx, cls);
-    *value = obj->data();
+    *value = obj->buffer();
 }
 
 template <class T>
 int olua_push_pointer(lua_State *L, T *value, const char *cls)
 {
     if (value) {
-        olua::pointer<T> *obj = new olua::pointer<T>(value);
-        olua_pushobj<olua::pointer<T>>(L, obj, cls);
-        olua_postnew(L, obj);
+        void *ptr = olua_newrawobj(L, nullptr, sizeof(olua::pointer<T>));
+        olua::pointer<T> *obj = new (ptr) olua::pointer<T>(value);
+        olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);
+        olua_pushobj(L, (void *)obj, olua_getluatype<olua::pointer<T>>(L, nullptr, cls));
     } else {
         lua_pushnil(L);
     }
