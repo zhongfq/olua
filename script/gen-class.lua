@@ -439,6 +439,7 @@ local function gen_class_annotation(module, cls, write)
             fields:pushf("${ei.name} = ${value},")
         end
         write(olua.format([[
+            ---@operator call(integer): ${cls.luacls}
             local ${luacls} = {
                 ${fields}
             }
@@ -470,11 +471,13 @@ local function gen_class_annotation(module, cls, write)
         local caller_args = olua.array(", ")
 
         if func.luacats then
+            if #func_comment > 0 then
+                write(func_comment)
+            end
             write(func.luacats)
             for name in string.gmatch(func.luacats, "%-+@param +([^ ]+)") do
                 caller_args:push(name)
             end
-            write(func_comment)
         else
             -- write function parameters
             local args_comment = olua.array("\n")
@@ -533,7 +536,7 @@ local function gen_class_annotation(module, cls, write)
                 local fn = olua.gen_luafn(olfi, cls)
                 olua.use(fn)
                 local olfi_comment = olfi.comment
-                if olfi_comment and #olfi_comment > 0 then
+                if func.comment ~= olfi_comment and olfi_comment and #olfi_comment > 0 then
                     olfi_comment = olfi_comment:gsub("\n", "\n---")
                     write("---")
                     write(olua.format("---${olfi_comment}"))

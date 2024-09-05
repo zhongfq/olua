@@ -31,7 +31,7 @@ OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const example::Point *)
     return olua_is_integer(L, idx + 0) && olua_is_integer(L, idx + 1);
 }
 
-static int _example_Object___gc(lua_State *L)
+static int _olua_fun_example_Object___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -40,7 +40,7 @@ static int _example_Object___gc(lua_State *L)
     return olua_objgc(L);
 }
 
-static int _example_Object___olua_move(lua_State *L)
+static int _olua_fun_example_Object___olua_move(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -52,7 +52,7 @@ static int _example_Object___olua_move(lua_State *L)
     return 1;
 }
 
-static int _example_Object_autorelease(lua_State *L)
+static int _olua_fun_example_Object_autorelease(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -69,7 +69,7 @@ static int _example_Object_autorelease(lua_State *L)
     return num_ret;
 }
 
-static int _example_Object_getReferenceCount(lua_State *L)
+static int _olua_fun_example_Object_getReferenceCount(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -86,7 +86,7 @@ static int _example_Object_getReferenceCount(lua_State *L)
     return num_ret;
 }
 
-static int _example_Object_new(lua_State *L)
+static int _olua_fun_example_Object_new(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -100,15 +100,15 @@ static int _example_Object_new(lua_State *L)
     return num_ret;
 }
 
-static int _example_Object(lua_State *L)
+static int _olua_cls_example_Object(lua_State *L)
 {
     oluacls_class<example::Object>(L, "example.Object");
-    oluacls_func(L, "__gc", _example_Object___gc);
-    oluacls_func(L, "__olua_move", _example_Object___olua_move);
-    oluacls_func(L, "autorelease", _example_Object_autorelease);
-    oluacls_func(L, "getReferenceCount", _example_Object_getReferenceCount);
-    oluacls_func(L, "new", _example_Object_new);
-    oluacls_prop(L, "referenceCount", _example_Object_getReferenceCount, nullptr);
+    oluacls_func(L, "__gc", _olua_fun_example_Object___gc);
+    oluacls_func(L, "__olua_move", _olua_fun_example_Object___olua_move);
+    oluacls_func(L, "autorelease", _olua_fun_example_Object_autorelease);
+    oluacls_func(L, "getReferenceCount", _olua_fun_example_Object_getReferenceCount);
+    oluacls_func(L, "new", _olua_fun_example_Object_new);
+    oluacls_prop(L, "referenceCount", _olua_fun_example_Object_getReferenceCount, nullptr);
 
     return 1;
 }
@@ -124,7 +124,7 @@ OLUA_LIB int luaopen_example_Object(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _example_Point___gc(lua_State *L)
+static int _olua_fun_example_Point___gc(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -136,7 +136,7 @@ static int _example_Point___gc(lua_State *L)
     return 0;
 }
 
-static int _example_Point___olua_move(lua_State *L)
+static int _olua_fun_example_Point___olua_move(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -148,7 +148,7 @@ static int _example_Point___olua_move(lua_State *L)
     return 1;
 }
 
-static int _example_Point_x$1(lua_State *L)
+static int _olua_fun_example_Point_x$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -165,7 +165,7 @@ static int _example_Point_x$1(lua_State *L)
     return num_ret;
 }
 
-static int _example_Point_x$2(lua_State *L)
+static int _olua_fun_example_Point_x$2(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -183,19 +183,19 @@ static int _example_Point_x$2(lua_State *L)
     return 0;
 }
 
-static int _example_Point_x(lua_State *L)
+static int _olua_fun_example_Point_x(lua_State *L)
 {
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 0) {
         // int x
-        return _example_Point_x$1(L);
+        return _olua_fun_example_Point_x$1(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 2))) {
             // int x
-            return _example_Point_x$2(L);
+            return _olua_fun_example_Point_x$2(L);
         // }
     }
 
@@ -204,7 +204,7 @@ static int _example_Point_x(lua_State *L)
     return 0;
 }
 
-static int _example_Point_y$1(lua_State *L)
+static int _olua_fun_example_Point_y$1(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -221,7 +221,7 @@ static int _example_Point_y$1(lua_State *L)
     return num_ret;
 }
 
-static int _example_Point_y$2(lua_State *L)
+static int _olua_fun_example_Point_y$2(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -239,19 +239,19 @@ static int _example_Point_y$2(lua_State *L)
     return 0;
 }
 
-static int _example_Point_y(lua_State *L)
+static int _olua_fun_example_Point_y(lua_State *L)
 {
     int num_args = lua_gettop(L) - 1;
 
     if (num_args == 0) {
         // int y
-        return _example_Point_y$1(L);
+        return _olua_fun_example_Point_y$1(L);
     }
 
     if (num_args == 1) {
         // if ((olua_is_integer(L, 2))) {
             // int y
-            return _example_Point_y$2(L);
+            return _olua_fun_example_Point_y$2(L);
         // }
     }
 
@@ -260,13 +260,13 @@ static int _example_Point_y(lua_State *L)
     return 0;
 }
 
-static int _example_Point(lua_State *L)
+static int _olua_cls_example_Point(lua_State *L)
 {
     oluacls_class<example::Point>(L, "example.Point");
-    oluacls_func(L, "__gc", _example_Point___gc);
-    oluacls_func(L, "__olua_move", _example_Point___olua_move);
-    oluacls_prop(L, "x", _example_Point_x, _example_Point_x);
-    oluacls_prop(L, "y", _example_Point_y, _example_Point_y);
+    oluacls_func(L, "__gc", _olua_fun_example_Point___gc);
+    oluacls_func(L, "__olua_move", _olua_fun_example_Point___olua_move);
+    oluacls_prop(L, "x", _olua_fun_example_Point_x, _olua_fun_example_Point_x);
+    oluacls_prop(L, "y", _olua_fun_example_Point_y, _olua_fun_example_Point_y);
 
     return 1;
 }
@@ -282,7 +282,7 @@ OLUA_LIB int luaopen_example_Point(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _example_Node___index(lua_State *L)
+static int _olua_fun_example_Node___index(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -294,7 +294,7 @@ static int _example_Node___index(lua_State *L)
     return (int)ret;
 }
 
-static int _example_Node_getChildren(lua_State *L)
+static int _olua_fun_example_Node_getChildren(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -313,7 +313,7 @@ static int _example_Node_getChildren(lua_State *L)
     return num_ret;
 }
 
-static int _example_Node_getColor(lua_State *L)
+static int _olua_fun_example_Node_getColor(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -330,7 +330,7 @@ static int _example_Node_getColor(lua_State *L)
     return num_ret;
 }
 
-static int _example_Node_getIdentifier(lua_State *L)
+static int _olua_fun_example_Node_getIdentifier(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -347,7 +347,7 @@ static int _example_Node_getIdentifier(lua_State *L)
     return num_ret;
 }
 
-static int _example_Node_getPosition(lua_State *L)
+static int _olua_fun_example_Node_getPosition(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -364,7 +364,7 @@ static int _example_Node_getPosition(lua_State *L)
     return num_ret;
 }
 
-static int _example_Node_new(lua_State *L)
+static int _olua_fun_example_Node_new(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -378,7 +378,7 @@ static int _example_Node_new(lua_State *L)
     return num_ret;
 }
 
-static int _example_Node_setChildren(lua_State *L)
+static int _olua_fun_example_Node_setChildren(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -398,7 +398,7 @@ static int _example_Node_setChildren(lua_State *L)
     return 0;
 }
 
-static int _example_Node_setColor(lua_State *L)
+static int _olua_fun_example_Node_setColor(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -416,7 +416,7 @@ static int _example_Node_setColor(lua_State *L)
     return 0;
 }
 
-static int _example_Node_setIdentifier(lua_State *L)
+static int _olua_fun_example_Node_setIdentifier(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -434,7 +434,7 @@ static int _example_Node_setIdentifier(lua_State *L)
     return 0;
 }
 
-static int _example_Node_setPosition(lua_State *L)
+static int _olua_fun_example_Node_setPosition(lua_State *L)
 {
     olua_startinvoke(L);
 
@@ -452,23 +452,23 @@ static int _example_Node_setPosition(lua_State *L)
     return 0;
 }
 
-static int _example_Node(lua_State *L)
+static int _olua_cls_example_Node(lua_State *L)
 {
     oluacls_class<example::Node, example::Object>(L, "example.Node");
-    oluacls_func(L, "__index", _example_Node___index);
-    oluacls_func(L, "getChildren", _example_Node_getChildren);
-    oluacls_func(L, "getColor", _example_Node_getColor);
-    oluacls_func(L, "getIdentifier", _example_Node_getIdentifier);
-    oluacls_func(L, "getPosition", _example_Node_getPosition);
-    oluacls_func(L, "new", _example_Node_new);
-    oluacls_func(L, "setChildren", _example_Node_setChildren);
-    oluacls_func(L, "setColor", _example_Node_setColor);
-    oluacls_func(L, "setIdentifier", _example_Node_setIdentifier);
-    oluacls_func(L, "setPosition", _example_Node_setPosition);
-    oluacls_prop(L, "children", _example_Node_getChildren, _example_Node_setChildren);
-    oluacls_prop(L, "color", _example_Node_getColor, _example_Node_setColor);
-    oluacls_prop(L, "identifier", _example_Node_getIdentifier, _example_Node_setIdentifier);
-    oluacls_prop(L, "position", _example_Node_getPosition, _example_Node_setPosition);
+    oluacls_func(L, "__index", _olua_fun_example_Node___index);
+    oluacls_func(L, "getChildren", _olua_fun_example_Node_getChildren);
+    oluacls_func(L, "getColor", _olua_fun_example_Node_getColor);
+    oluacls_func(L, "getIdentifier", _olua_fun_example_Node_getIdentifier);
+    oluacls_func(L, "getPosition", _olua_fun_example_Node_getPosition);
+    oluacls_func(L, "new", _olua_fun_example_Node_new);
+    oluacls_func(L, "setChildren", _olua_fun_example_Node_setChildren);
+    oluacls_func(L, "setColor", _olua_fun_example_Node_setColor);
+    oluacls_func(L, "setIdentifier", _olua_fun_example_Node_setIdentifier);
+    oluacls_func(L, "setPosition", _olua_fun_example_Node_setPosition);
+    oluacls_prop(L, "children", _olua_fun_example_Node_getChildren, _olua_fun_example_Node_setChildren);
+    oluacls_prop(L, "color", _olua_fun_example_Node_getColor, _olua_fun_example_Node_setColor);
+    oluacls_prop(L, "identifier", _olua_fun_example_Node_getIdentifier, _olua_fun_example_Node_setIdentifier);
+    oluacls_prop(L, "position", _olua_fun_example_Node_getPosition, _olua_fun_example_Node_setPosition);
 
     return 1;
 }
@@ -487,9 +487,9 @@ OLUA_END_DECLS
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example(lua_State *L)
 {
-    olua_require(L, "example.Object", _example_Object);
-    olua_require(L, "example.Point", _example_Point);
-    olua_require(L, "example.Node", _example_Node);
+    olua_require(L, "example.Object", _olua_cls_example_Object);
+    olua_require(L, "example.Point", _olua_cls_example_Point);
+    olua_require(L, "example.Node", _olua_cls_example_Node);
 
     return 0;
 }

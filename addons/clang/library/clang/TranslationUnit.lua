@@ -4,29 +4,44 @@
 ---A single translation unit, which resides in an index.
 ---@class clang.TranslationUnit : clang.IndexError
 ---@field cursor clang.Cursor 
+---@field defaultReparseOptions integer 
+---@field defaultSaveOptions integer 
 ---@field diagnosticSetFromTU clang.Diagnostic[] 
 ---@field diagnostics clang.Diagnostic[] 
 ---@field name string 
+---@field suspendTranslationUnit integer 
 local TranslationUnit = {}
 
 ---@param cls string
 ---@return any
 function TranslationUnit:as(cls) end
 
----@return integer
-function TranslationUnit:defaultReparseOptions() end
-
----@return integer
-function TranslationUnit:defaultSaveOptions() end
-
+---Retrieve a file handle within the given translation unit.
+---
+---\param tu the translation unit
+---
+---\param file_name the name of the file.
+---
+---@return clang.File # s the file handle for the named file in the translation unit \p tu,
+---or a NULL file handle if the file was not a part of this translation unit.
 ---@param path string
----@return clang.File
 function TranslationUnit:getFile(path) end
 
----@param f clang.File
----@return string
+---Retrieve the buffer associated with the given file.
+---
+---\param tu the translation unit
+---
+---@param f clang.File # ile the file for which to retrieve the buffer.
+---
+---\param size [out] if non-NULL, will be set to the size of the buffer.
+---
+---@return string # s a pointer to the buffer in memory that holds the contents of
+---\p file, or a NULL pointer when the file is not loaded.
 function TranslationUnit:getFileContents(f) end
 
+---Determine whether the given header is guarded against
+---multiple inclusions, either with the conventional
+---\#ifndef/\#define/\#endif macro guards or with \#pragma once.
 ---@param f clang.File
 ---@return boolean
 function TranslationUnit:isFileMultipleIncludeGuarded(f) end
@@ -46,9 +61,6 @@ function TranslationUnit:saveTranslationUnit(path, options) end
 
 ---@return clang.TranslationUnit
 function TranslationUnit:shared_from_this() end
-
----@return integer
-function TranslationUnit:suspendTranslationUnit() end
 
 ---@param m clang.Module
 ---@param index integer

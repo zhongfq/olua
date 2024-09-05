@@ -15,5 +15,6 @@ int main(int argc, const char * argv[])
     status = olua_dofile(L, LUA_TEST);
     example::AutoreleasePool::clear();
     lua_close(L);
+
     return status;
 }

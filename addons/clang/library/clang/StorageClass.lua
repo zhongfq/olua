@@ -6,6 +6,7 @@ local VALUE
 
 ---
 ---@enum clang.StorageClass
+---@operator call(integer): clang.StorageClass
 local StorageClass = {
     Auto = 6,
     Extern = 2,
@@ -16,5 +17,9 @@ local StorageClass = {
     Register = 7,
     Static = 3,
 }
+
+---@param v integer
+---@return clang.StorageClass
+function StorageClass:__call(v) end
 
 return StorageClass

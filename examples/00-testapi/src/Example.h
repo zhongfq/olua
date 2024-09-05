@@ -262,6 +262,12 @@ public:
     std::deque<Hello *> getDeque() {return _deque;}
     void setDeque(const std::deque<Hello *> &deque) {_deque = deque;}
 
+    OLUA_READONLY int readonlyInt;
+
+#ifdef TEST_OLUA_MACRO
+    void testMacro() {}
+#endif
+
 private:
     std::function<int (Hello *, Point *)> _callback;
     std::string _name;

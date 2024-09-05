@@ -1,7 +1,8 @@
 clang {
-    '-DOLUA_DEBUG',
-    '-Isrc',
-    '-I../common',
-    '-I../lua',
-    '-I../..',
+    "-DOLUA_DEBUG",
+    "-DTEST_OLUA_MACRO",
+    "-Isrc",
+    "-I../common",
+    "-I../lua",
+    "-I../..",
 }

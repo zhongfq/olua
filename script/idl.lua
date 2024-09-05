@@ -187,10 +187,11 @@ end
 
 ---@param cond string
 function macro(cond)
-    if #cond > 0 then
-        idl.macros:push(cond)
-    else
+    assert(#cond > 0, "no macro condition")
+    if cond == "#endif" then
         idl.macros:pop()
+    else
+        idl.macros:push(cond)
     end
 end
 
@@ -477,7 +478,7 @@ local function typeconf_func(parent, cls, name)
     local member = cls.conf.members:get(name)
 
     add_value_command(CMD, member, "luafn")
-    
+
     add_attr_command(CMD, member, "ret")
     add_attr_command(CMD, member, "arg1")
     add_attr_command(CMD, member, "arg2")
@@ -737,10 +738,11 @@ function typeconf(cxxcls)
     ---@param cond string
     ---@return idl.cmd.typeconf
     function CMD.macro(cond)
-        if #cond > 0 then
-            macros:push(cond)
-        else
+        assert(#cond > 0, "no macro condition")
+        if cond == "#endif" then
             macros:pop()
+        else
+            macros:push(cond)
         end
         return CMD
     end

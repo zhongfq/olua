@@ -1,7 +1,7 @@
 /**
  * The MIT License (MIT)
  *
- * Copyright (c) 2019-2022 codetypes@gmail.com
+ * Copyright (c) 2019-2024 codetypes@gmail.com
  *
  * https://github.com/zhongfq/olua
  *
@@ -131,6 +131,8 @@ OLUA_BEGIN_DECLS
 
 // default super class of object
 #define OLUA_VOIDCLS "void *"
+#define OLUA_ENUMCLS "enum *"
+#define OLUA_OLUALIB "olua.c"
 
 // any type
 #define LUA_TANY (LUA_TNONE - 1000)
@@ -165,6 +167,7 @@ OLUA_API bool olua_isinteger(lua_State *L, int idx);
 #define olua_pushnumber(L, v)       (lua_pushnumber(L, (v)))
 #define olua_pushstring(L, v)       (lua_pushstring(L, (v)))
 #define olua_pushlstring(L, v, l)   (lua_pushlstring(L, (v), (l)))
+#define olua_pushenum(L, v)         (lua_pushlightuserdata(L, (void *)(intptr_t)(v)))
 #define olua_tonumber(L, i)         (lua_tonumber(L, (i)))
 #define olua_tointeger(L, i)        (lua_tointeger(L, (i)))
 #define olua_tostring(L, i)         (lua_tostring(L, (i)))

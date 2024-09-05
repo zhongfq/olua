@@ -12,8 +12,7 @@ local Index = {}
 function Index:as(cls) end
 
 ---Create a translation unit from a source file 
----\param path The path to the source file
----@param path string
+---@param path string # The path to the source file
 ---@return clang.TranslationUnit
 function Index:create(path) end
 
@@ -28,11 +27,6 @@ function Index:getGlobalOptions() end
 ---@param args string[]
 ---@param options integer
 ---@return clang.TranslationUnit
----
----Same as `clang_parseTranslationUnit2`, but returns
----the `CXTranslationUnit` instead of an error code.  In case of an error this
----routine returns a `NULL` `CXTranslationUnit`, without further detailed
----error codes.
 ---@overload fun(self: clang.Index, path: string, args: string[]): clang.TranslationUnit
 function Index:parse(path, args, options) end
 

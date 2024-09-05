@@ -27,9 +27,8 @@ function Diagnostic:as(cls) end
 ---\param Options A set of options that control the diagnostic display,
 ---created by combining `CXDiagnosticDisplayOptions` values.
 ---
----\returns A new string containing for formatted diagnostic.
+---@return string # s A new string containing for formatted diagnostic.
 ---@param options integer
----@return string
 function Diagnostic:formatDiagnostic(options) end
 
 ---@return clang.Diagnostic

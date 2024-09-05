@@ -715,7 +715,9 @@ local function gen_test_and_call(cls, fns)
                     olua.print("same func ${cls.cxxcls}::${v.cxxfn}")
                 end
             end
-            assert(#fns == 1, fi.cxxfn)
+            if #fns ~= 1 then
+                olua.error("${cls.cxxcls} has multi functions with same prototype: ${fi.prototype}")
+            end
             callblock[#callblock + 1] = {
                 max_vars = 1,
                 exp1 = olua.format([[

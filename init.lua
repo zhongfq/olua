@@ -51,7 +51,7 @@ else
 end
 
 -- version
-OLUA_VERSION = "v1.3"
+OLUA_VERSION = "v1.4"
 OLUA_HOME = OLUA_HOME .. "/" .. OLUA_VERSION
 
 -- lua search path

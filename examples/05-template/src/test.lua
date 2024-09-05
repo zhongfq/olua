@@ -51,11 +51,3 @@ print(v[1])
 
 local arr = int32.new(10)
 arr[9] = 90
-
-local int8 = require "olua.int8"
-local str = int8.new(10)
-str:assign("hello", 4)
-print(str:tostring(4))
-print(str:sub(2):tostring(4))
-print(str:sub(2, 3):tostring(2))
-print(str:sub(2, 4):tostring(3))

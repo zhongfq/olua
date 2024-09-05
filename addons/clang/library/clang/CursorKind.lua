@@ -6,6 +6,7 @@ local VALUE
 
 ---
 ---@enum clang.CursorKind
+---@operator call(integer): clang.CursorKind
 local CursorKind = {
     ---The GNU address of label extension, representing &&label.
     AddrLabelExpr = 120,
@@ -673,5 +674,9 @@ local CursorKind = {
     ---A while statement.
     WhileStmt = 207,
 }
+
+---@param v integer
+---@return clang.CursorKind
+function CursorKind:__call(v) end
 
 return CursorKind

@@ -6,6 +6,7 @@ local VALUE
 
 ---
 ---@enum clang.GlobalOptFlags
+---@operator call(integer): clang.GlobalOptFlags
 local GlobalOptFlags = {
     ---Used to indicate that no special CXIndex options are needed.
     None = 0,
@@ -25,5 +26,9 @@ local GlobalOptFlags = {
     ---#clang_parseTranslationUnit, #clang_saveTranslationUnit.
     ThreadBackgroundPriorityForIndexing = 1,
 }
+
+---@param v integer
+---@return clang.GlobalOptFlags
+function GlobalOptFlags:__call(v) end
 
 return GlobalOptFlags

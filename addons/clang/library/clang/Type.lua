@@ -31,7 +31,9 @@
 ---@field nonReferenceType clang.Type For reference types (e.g., "const int&"), returns the type that the reference refers to (e.g "const int"). <br><br>Otherwise, returns the type itself. <br><br>A type that has kind `CXType_LValueReference` or `CXType_RValueReference` is a reference type.
 ---@field nullability clang.TypeNullabilityKind Retrieve the nullability kind of a pointer type.
 ---@field nullabilitySpelling string Retrieve the nullability kind of a pointer type.
+---@field numArgTypes integer Retrieve the number of non-variadic parameters associated with a function type. <br><br>If a non-function type is passed in, -1 is returned.
 ---@field numElements integer Return the number of elements of an array or vector type. <br><br>If a type is passed in that is not an array or vector type, -1 is returned.
+---@field numTemplateArguments integer Returns the number of template arguments for given template specialization, or -1 if type `T` is not a template specialization.
 ---@field pointeeType clang.Type For pointer types, returns the type of the pointee.
 ---@field resultType clang.Type Retrieve the return type associated with a function type. <br><br>If a non-function type is passed in, an invalid type is returned.
 ---@field sizeOf integer Return the size of a type in bytes as per C++[expr.sizeof] standard. <br><br>If the type declaration is invalid, CXTypeLayoutError_Invalid is returned. If the type declaration is an incomplete type, CXTypeLayoutError_Incomplete is returned. If the type declaration is a dependent type, CXTypeLayoutError_Dependent is returned.
@@ -57,10 +59,6 @@ function Type:as(cls) end
 ---@return clang.Type
 function Type:getArgType(i) end
 
----@param i integer
----@return clang.Type
-function Type:getTemplateArgument(i) end
-
 ---Return the offset of a field named S in a record of type T in bits
 ---as it would be returned by __offsetof__ as per C++11[18.2p4]
 ---
@@ -74,7 +72,16 @@ function Type:getTemplateArgument(i) end
 ---CXTypeLayoutError_InvalidFieldName is returned.
 ---@param field string
 ---@return integer
-function Type:offsetOf(field) end
+function Type:getOffsetOf(field) end
+
+---Returns the type template argument of a template class specialization
+---at given index.
+---
+---This function only returns template type arguments and does not handle
+---template template arguments or variadic packs.
+---@param i integer
+---@return clang.Type
+function Type:getTemplateArgument(i) end
 
 ---@return clang.Type
 function Type:shared_from_this() end

@@ -52,6 +52,9 @@ olua.ENABLE_EXCEPTION = false
 --Capture main thread 'L' in callback.
 olua.CAPTURE_MAINTHREAD = false
 
+--Parse all comments, include '//' and '/*'.
+olua.PARSE_ALL_COMMENTS = false
+
 
 local clang_tu
 
@@ -186,7 +189,7 @@ local function parse_from_type(type, template_types, try_underlying, level, from
     local kind = type.kind
     local tn = trim_prefix_colon(type.name)
     local template_arg_types = type.templateArgumentTypes
-    local underlying = type.declaration.underlyingType
+    local underlying = type.declaration.typedefDeclUnderlyingType
     local pointee = type.pointeeType
     if level and level > 4 then
         return tn
@@ -472,16 +475,16 @@ local function is_func_type(tn)
         elseif cur.kind == CursorKind.TypedefDecl
             or cur.kind == CursorKind.TypeAliasDecl
         then
-            return is_func_type(cur.underlyingType)
+            return is_func_type(cur.typedefDeclUnderlyingType)
         else
-            return is_func_type(typename(cur.underlyingType or tn))
+            return is_func_type(typename(cur.typedefDeclUnderlyingType or tn))
         end
     end
 end
 
 ---@param cur clang.Cursor
 local function is_static_func(cur)
-    return cur.isCXXMethodStatic
+    return cur.isCXXStaticMethod
         or cur.kind == CursorKind.FunctionDecl
         or cur.kind == CursorKind.Constructor
 end
@@ -941,8 +944,14 @@ function Autoconf:visit_var(cls, cur)
 
     local index = member.index or cls.vars:size()
 
-    if cur.type.isConstQualified then
-        getter.ret.attr:push("@readonly")
+    local has_readonly = getter.ret.attr:find(function (value)
+        return value:find("@readonly")
+    end)
+
+    if cur.type.isConstQualified or has_readonly then
+        if not has_readonly then
+            getter.ret.attr:push("@readonly")
+        end
         funcs:push(getter)
         cls.vars:set(fn, {
             name = getter.luafn or fn,
@@ -1162,11 +1171,11 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
         then
             local isConstructor = kind == CursorKind.Constructor
             if is_excluded_memeber(cls, c)
-                or c.isCXXMethodDeleted
+                or c.isCXXDeletedMethod
                 or c.isCXXCopyConstructor
                 or c.isCXXMoveConstructor
                 or (isConstructor and (cls.conf.excludes:has("new")))
-                or (isConstructor and cur.kind == CursorKind.ClassTemplate)
+                -- or (isConstructor and cur.kind == CursorKind.ClassTemplate)
                 or (isConstructor and cur.isCXXAbstract)
                 or has_deprecated_attr(c)
                 or has_exclude_attr(c)
@@ -1219,13 +1228,13 @@ function Autoconf:visit(cur, cxxcls)
     elseif kind == CursorKind.EnumDecl then
         self:visit_enum(cxxcls, cur)
     elseif kind == CursorKind.TypeAliasDecl then
-        self:visit(cur.underlyingType.declaration, cxxcls)
+        self:visit(cur.typedefDeclUnderlyingType.declaration, cxxcls)
     elseif kind == CursorKind.TypedefDecl then
-        local underlying = typename(cur.underlyingType)
+        local underlying = typename(cur.typedefDeclUnderlyingType)
         if is_func_type(underlying) then
             self:visit_alias_class(cxxcls, underlying)
         else
-            local decl = cur.underlyingType.declaration
+            local decl = cur.typedefDeclUnderlyingType.declaration
             local specialized = decl.specializedTemplate
             if specialized then
                 --[[
@@ -1239,14 +1248,14 @@ function Autoconf:visit(cur, cxxcls)
                 for i, v in ipairs(cur.type.templateArgumentTypes) do
                     arg_types[i] = parse_from_type(v)
                 end
-                local specializedcls = parse_from_type(cur.underlyingType)
+                local specializedcls = parse_from_type(cur.typedefDeclUnderlyingType)
                 self:visit_class(cxxcls, specialized, arg_types, specializedcls)
 
                 if specializedcls:find("^olua::pointer") then
                     local packedcls = specializedcls:match("<(.*)>") .. " *"
                     typedef(packedcls)
                         .luacls(self.luacls(cxxcls))
-                        .conv(specializedcls:match("^olua::[^<]+"):gsub("::", "_$$_"))
+                        .conv("olua_$$_pointer")
                 end
             else
                 self:visit(decl, cxxcls)
@@ -1373,8 +1382,12 @@ local function parse_headers()
             "-idirafter", "${OLUA_HOME}/include/android-sysroot",
         })
     end
+    if olua.PARSE_ALL_COMMENTS then
+        flags:push("-fparse-all-comments")
+    end
     for i, v in ipairs(flags) do
         local OLUA_HOME = olua.OLUA_HOME
+        olua.use(OLUA_HOME)
         flags[i] = olua.format(v)
     end
     olua.print("clang: start parse translation unit")
@@ -1829,7 +1842,18 @@ local function gen_cls_meta_func(cls)
             .luacats(olua.format([[
                 ---@return ${cls.conf.luacls}
             ]]))
-    elseif not has_type_flag(cls, kFLAG_ENUM) and cls.options.reg_luatype then
+    elseif has_type_flag(cls, kFLAG_ENUM) then
+        cls.CMD.func "__call"
+            .body(olua.format([[
+            {
+                olua_pushenum(L, olua_checkinteger(L, -1));
+                return 1;
+            }]]))
+            .luacats(olua.format([[
+                ---@param v integer
+                ---@return ${cls.conf.luacls}
+            ]]))
+    elseif cls.options.reg_luatype then
         if not cls.options.disallow_gc and not has_method(cls, "__gc") then
             cls.CMD.func "__gc"
                 .body(olua.format([[
@@ -2189,6 +2213,7 @@ local function write_typedefs()
                 cxxcls = alias,
                 conv = ti.conv,
                 luacls = ti.luacls,
+                luatype = ti.luatype,
             }
             typdefs:push(typedef)
         elseif has_type_flag(cls, kFLAG_FUNC) then
