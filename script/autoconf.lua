@@ -1227,7 +1227,7 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
                 or (isConstructor and cur.isCXXAbstract)
                 or has_deprecated_attr(c)
                 or has_exclude_attr(c)
-                or (c.name:find("operator[~|&%^%-=+/*><!()]+") and not operator[c.name])
+                or (c.name:find("operator[%[%]~|&%^%-=+/*><!()]+") and not operator[c.name])
                 or c.name == "as" -- 'as used to cast object'
                 or not check_included_method(cls, c)
             then
