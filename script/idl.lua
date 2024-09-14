@@ -584,6 +584,7 @@ function typeconf(cxxcls)
     ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.cmd.typeconf
     ---@field packable fun(packable:booltype):idl.cmd.typeconf
     ---@field packvars fun(packvars:string):idl.cmd.typeconf
+    ---@field fromstring fun(fromstring:booltype):idl.cmd.typeconf
     ---@field private maincls fun(cls:idl.model.class_desc):idl.cmd.typeconf
     local CMD = {}
 
@@ -591,6 +592,7 @@ function typeconf(cxxcls)
     ---@field kind integer
     ---@field luacls string
     ---@field maincls? idl.model.class_desc
+    ---@field fromstring? boolean
     ---@field funcdecl? string # std::function declaration
     ---@field conv string
     local conf = {
@@ -611,11 +613,11 @@ function typeconf(cxxcls)
 
     ---@class idl.model.class_option_desc
     ---@field reg_luatype boolean
-    ---@field disallow_assign? boolean
     ---@field disallow_gc? boolean
     ---@field indexerror? "r" | "w" | "rw"
     ---@field packable? boolean
     ---@field packvars? integer
+    ---@field fromstring? boolean
 
     ---@class idl.model.class_desc
     ---@field supercls? string
@@ -693,6 +695,7 @@ function typeconf(cxxcls)
     add_value_command(CMD, cls.options, "indexerror")
     add_value_command(CMD, cls.options, "packable", checkboolean)
     add_value_command(CMD, cls.options, "packvars", checkinteger)
+    add_value_command(CMD, cls.options, "fromstring", checkboolean)
 
     ---Extend a c++ class with another class, all static members of `extcls`
     ---will be copied into the current class.
@@ -732,6 +735,9 @@ function typeconf(cxxcls)
         end
         mode = "include"
         cls.conf.includes:set(name, true)
+        if name == "new" then
+            cls.conf.includes:set(cxxcls:match("[^:]+$"), true)
+        end
         return CMD
     end
 

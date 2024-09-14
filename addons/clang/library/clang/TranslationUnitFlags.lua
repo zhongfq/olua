@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.TranslationUnitFlags
----@operator call(integer): clang.TranslationUnitFlags
 local TranslationUnitFlags = {
     ---DEPRECATED: Enabled chained precompiled preambles in C++.
     ---
@@ -105,9 +104,5 @@ local TranslationUnitFlags = {
     ---Used to indicate that implicit attributes should be visited.
     VisitImplicitAttributes = 8192,
 }
-
----@param v integer
----@return clang.TranslationUnitFlags
-function TranslationUnitFlags:__call(v) end
 
 return TranslationUnitFlags

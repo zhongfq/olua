@@ -5,6 +5,8 @@
 #include "Example.h"
 #include "olua-custom.h"
 
+static int _olua_module_example(lua_State *L);
+
 static std::string makeForeachTag(int value)
 {
     return "foreach" + std::to_string(value);
@@ -95,7 +97,7 @@ static int _olua_cls_example_Object(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
@@ -253,7 +255,7 @@ static int _olua_cls_example_Event(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Event(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Event")) {
         luaL_error(L, "class not found: example::Event");
     }
@@ -284,7 +286,7 @@ static int _olua_cls_example_Callback_Listener(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Callback_Listener(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Callback.Listener")) {
         luaL_error(L, "class not found: example::Callback::Listener");
     }
@@ -466,7 +468,7 @@ static int _olua_cls_example_Callback(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Callback(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Callback")) {
         luaL_error(L, "class not found: example::Callback");
     }
@@ -474,8 +476,7 @@ OLUA_LIB int luaopen_example_Callback(lua_State *L)
 }
 OLUA_END_DECLS
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example(lua_State *L)
+int _olua_module_example(lua_State *L)
 {
     olua_require(L, "example.Object", _olua_cls_example_Object);
     olua_require(L, "example.Event", _olua_cls_example_Event);
@@ -483,6 +484,14 @@ OLUA_LIB int luaopen_example(lua_State *L)
     olua_require(L, "example.Callback", _olua_cls_example_Callback);
 
     printf("insert code in luaopen\n");
+
+    return 0;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example(lua_State *L)
+{
+    olua_require(L, "example",  _olua_module_example);
 
     return 0;
 }

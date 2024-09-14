@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.TypeKind
----@operator call(integer): clang.TypeKind
 local TypeKind = {
     Accum = 34,
     Atomic = 177,
@@ -142,9 +141,5 @@ local TypeKind = {
     Void = 2,
     WChar = 15,
 }
-
----@param v integer
----@return clang.TypeKind
-function TypeKind:__call(v) end
 
 return TypeKind

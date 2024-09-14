@@ -3,6 +3,7 @@
 //
 #include "lua_example.h"
 
+static int _olua_module_example(lua_State *L);
 
 OLUA_LIB void olua_pack_object(lua_State *L, int idx, example::Point *value)
 {
@@ -116,7 +117,7 @@ static int _olua_cls_example_Object(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
@@ -274,7 +275,7 @@ static int _olua_cls_example_Point(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Point(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Point")) {
         luaL_error(L, "class not found: example::Point");
     }
@@ -476,7 +477,7 @@ static int _olua_cls_example_Node(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Node(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Node")) {
         luaL_error(L, "class not found: example::Node");
     }
@@ -484,12 +485,19 @@ OLUA_LIB int luaopen_example_Node(lua_State *L)
 }
 OLUA_END_DECLS
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example(lua_State *L)
+int _olua_module_example(lua_State *L)
 {
     olua_require(L, "example.Object", _olua_cls_example_Object);
     olua_require(L, "example.Point", _olua_cls_example_Point);
     olua_require(L, "example.Node", _olua_cls_example_Node);
+
+    return 0;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example(lua_State *L)
+{
+    olua_require(L, "example",  _olua_module_example);
 
     return 0;
 }

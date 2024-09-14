@@ -358,21 +358,16 @@ local function gen_func_args(cls, func, codeset)
         codeset.check_args:pushf('${func_to}(L, 1, &self, "${ti.luacls}");')
     end
 
-    local skip_first_arg = false
+    local args = func.args:slice()
 
     if olua.is_oluaret(func) then
-        local arg = func.args[1]
+        local arg = args[1]
         olua.assert(arg and arg.type.cxxcls == "lua_State", "first arg type must be 'lua_State *'")
         codeset.caller_args:push("L")
-        skip_first_arg = true
+        args:shift()
     end
 
-    for i, arg in ipairs(func.args) do
-        if skip_first_arg then
-            skip_first_arg = false
-            goto continue
-        end
-
+    for i, arg in ipairs(args) do
         local name = "arg" .. i
         local idx = codeset.idx + 1
         codeset.idx = idx
@@ -387,8 +382,6 @@ local function gen_func_args(cls, func, codeset)
         olua.gen_check_exp(arg, name, idx, codeset)
         olua.gen_addref_exp(cls, func, arg, idx, name, codeset)
         olua.gen_delref_exp(cls, func, arg, idx, name, codeset)
-
-        ::continue::
     end
 
     if func.is_variadic then
@@ -481,7 +474,9 @@ local function gen_one_func(cls, func, write, fidx)
         caller = func.ret.attr.extend[1] .. "::"
     end
 
-    if func.ret.attr.template then
+    if func.ret.attr.operator then
+        cxxfn = func.ret.attr.operator:join(" ")
+    elseif func.ret.attr.template then
         cxxfn = func.ret.attr.template:join(" ")
     end
 

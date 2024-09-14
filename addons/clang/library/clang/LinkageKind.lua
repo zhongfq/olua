@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.LinkageKind
----@operator call(integer): clang.LinkageKind
 local LinkageKind = {
     ---This is the linkage for entities with true, external linkage.
     External = 4,
@@ -22,9 +21,5 @@ local LinkageKind = {
     ---in C++ anonymous namespaces.
     UniqueExternal = 3,
 }
-
----@param v integer
----@return clang.LinkageKind
-function LinkageKind:__call(v) end
 
 return LinkageKind

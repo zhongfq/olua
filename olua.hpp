@@ -29,6 +29,8 @@
 #include "olua.h"
 
 #include <string>
+#include <locale>
+#include <codecvt>
 #include <functional>
 #include <set>
 #include <vector>
@@ -399,8 +401,7 @@ void oluacls_const(lua_State *L, const char *name, const T value)
 template <class T, std::enable_if_t<std::is_enum<T>::value, bool> = true> inline
 void oluacls_const(lua_State *L, const char *name, const T value)
 {
-    olua_pushenum(L, value);
-    oluacls_const(L, name);
+    oluacls_enum(L, name, (lua_Integer)value);
 }
 
 static inline
@@ -546,24 +547,19 @@ int olua_push_string<std::string_view>(lua_State *L, const std::string_view &val
 static inline
 bool olua_is_enum(lua_State *L, int idx)
 {
-    return olua_islightuserdata(L, idx);
+    return olua_isinteger(L, idx);
 }
 
 template <class T, std::enable_if_t<std::is_enum<T>::value, bool> = true> inline
 void olua_check_enum(lua_State *L, int idx, T *value)
 {
-    if (!olua_islightuserdata(L, idx)) {
-        luaL_error(L, "expect enum '%s', got '%s'", 
-            olua_getluatype<olua::remove_cvrp_t<T>>(L),
-            lua_typename(L, lua_type(L, idx)));
-    }
-    *value = (T)(intptr_t)lua_touserdata(L, idx);
+    *value = (T)olua_checkinteger(L, idx);
 }
 
 template <class T, std::enable_if_t<std::is_enum<T>::value, bool> = true> inline
 int olua_push_enum(lua_State *L, T value)
 {
-    olua_pushenum(L, value);
+    olua_pushinteger(L, (lua_Integer)value);
     return 1;
 }
 
@@ -612,8 +608,8 @@ int olua_copy_object(lua_State *L, T &value, const char *cls)
     using Type = typename std::remove_const<T>::type;
     void *ptr = olua_newrawobj(L, nullptr, sizeof(T));
     Type *obj = new (ptr) Type(value);
+    olua_emplaceobj(L, -1, obj, olua_getluatype<T>(L, nullptr, cls));
     olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);
-    olua_pushobj(L, (void *)obj, olua_getluatype<T>(L, nullptr, cls));
     return 1;
 }
 
@@ -627,8 +623,8 @@ int olua_copy_object(lua_State *L, T &value, const char *cls)
     void *ptr = olua_newrawobj(L, nullptr, sizeof(T));
     Type *obj = new (ptr) Type();
     *obj = value;
+    olua_emplaceobj(L, -1, obj, olua_getluatype<T>(L, nullptr, cls));
     olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);
-    olua_pushobj(L, (void *)obj, olua_getluatype<T>(L, nullptr, cls));
     return 1;
 }
 
@@ -719,7 +715,7 @@ int olua_push_smartptr(lua_State *L, const std::shared_ptr<T> *value, const char
     
     void *ptr = olua_newrawobj(L, nullptr, sizeof(*value));
     std::shared_ptr<T> *obj = new (ptr) std::shared_ptr<T>(*value);
-    olua_pushobj<std::shared_ptr<T>>(L, obj);
+    olua_emplaceobj(L, -1, obj, olua_getluatype<std::shared_ptr<T>>(L));
     olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);
     olua_addref(L, -3, OLUA_SMART_PRT, -1, OLUA_REF_ALONE);
     lua_pop(L, 2); // pop nil and smartptr
@@ -1057,8 +1053,8 @@ int olua_push_pointer(lua_State *L, T *value, const char *cls)
     if (value) {
         void *ptr = olua_newrawobj(L, nullptr, sizeof(olua::pointer<T>));
         olua::pointer<T> *obj = new (ptr) olua::pointer<T>(value);
+        olua_emplaceobj(L, -1, obj, olua_getluatype<olua::pointer<T>>(L, nullptr, cls));
         olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);
-        olua_pushobj(L, (void *)obj, olua_getluatype<olua::pointer<T>>(L, nullptr, cls));
     } else {
         lua_pushnil(L);
     }

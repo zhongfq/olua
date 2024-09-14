@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.TemplateArgumentKind
----@operator call(integer): clang.TemplateArgumentKind
 local TemplateArgumentKind = {
     Declaration = 2,
     Expression = 7,
@@ -19,9 +18,5 @@ local TemplateArgumentKind = {
     TemplateExpansion = 6,
     Type = 1,
 }
-
----@param v integer
----@return clang.TemplateArgumentKind
-function TemplateArgumentKind:__call(v) end
 
 return TemplateArgumentKind

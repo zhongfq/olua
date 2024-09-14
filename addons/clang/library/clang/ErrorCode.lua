@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.ErrorCode
----@operator call(integer): clang.ErrorCode
 local ErrorCode = {
     ---An AST deserialization error has occurred.
     ASTReadError = 4,
@@ -23,9 +22,5 @@ local ErrorCode = {
     ---No error.
     Success = 0,
 }
-
----@param v integer
----@return clang.ErrorCode
-function ErrorCode:__call(v) end
 
 return ErrorCode

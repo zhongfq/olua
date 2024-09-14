@@ -131,7 +131,6 @@ OLUA_BEGIN_DECLS
 
 // default super class of object
 #define OLUA_VOIDCLS "void *"
-#define OLUA_ENUMCLS "enum *"
 #define OLUA_OLUALIB "olua.c"
 
 // any type
@@ -167,7 +166,6 @@ OLUA_API bool olua_isinteger(lua_State *L, int idx);
 #define olua_pushnumber(L, v)       (lua_pushnumber(L, (v)))
 #define olua_pushstring(L, v)       (lua_pushstring(L, (v)))
 #define olua_pushlstring(L, v, l)   (lua_pushlstring(L, (v), (l)))
-#define olua_pushenum(L, v)         (lua_pushlightuserdata(L, (void *)(intptr_t)(v)))
 #define olua_tonumber(L, i)         (lua_tonumber(L, (i)))
 #define olua_tointeger(L, i)        (lua_tointeger(L, (i)))
 #define olua_tostring(L, i)         (lua_tostring(L, (i)))
@@ -211,14 +209,15 @@ OLUA_API bool olua_getrawobj(lua_State *L, void *obj);
 #define OLUA_FLAG_IN_POOL       1 << 10 // object in pool
 #define OLUA_FLAG_IN_SMARTPRT   1 << 11 // object in smartptr
 
-OLUA_API void olua_setobjflag(lua_State *L, int idx, int flag);
-OLUA_API bool olua_hasobjflag(lua_State *L, int idx, int flag);
+OLUA_API void olua_setobjflag(lua_State *L, int idx, unsigned flag);
+OLUA_API bool olua_hasobjflag(lua_State *L, int idx, unsigned flag);
 
 // manipulate userdata api
 OLUA_API const char *olua_typename(lua_State *L, int idx);
 OLUA_API bool olua_isa(lua_State *L, int idx, const char *cls);
 OLUA_API void *olua_newobjstub(lua_State *L, const char *cls);
 OLUA_API int olua_pushobjstub(lua_State *L, void *obj, void *stub, const char *cls);
+OLUA_API void olua_emplaceobj(lua_State *L, int idx, void *obj, const char *cls);
 OLUA_API int olua_pushobj(lua_State *L, void *obj, const char *cls);
 OLUA_API void *olua_checkobj(lua_State *L, int idx, const char *cls);
 OLUA_API void *olua_toobj(lua_State *L, int idx, const char *cls);

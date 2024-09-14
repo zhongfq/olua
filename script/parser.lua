@@ -747,17 +747,18 @@ function olua.export(path)
 
     ---@class idl.gen.attr_desc
     ---@field addref? table # @addref
+    ---@field as? table
     ---@field delref? table
-    ---@field pack? table
-    ---@field unpack? table
-    ---@field using? table
-    ---@field type? table
-    ---@field optional? table
-    ---@field nullable? table
     ---@field extend? [string] # @extend
+    ---@field nullable? table
+    ---@field optional? table
+    ---@field operator? table
+    ---@field pack? table
     ---@field postnew? table
     ---@field template? olua.array
-    ---@field as? table
+    ---@field type? table
+    ---@field unpack? table
+    ---@field using? table
 
     ---@class idl.gen.const_desc : idl.model.const_desc
     ---@field type idl.gen.typeinfo

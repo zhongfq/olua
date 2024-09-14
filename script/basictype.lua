@@ -45,13 +45,10 @@ typedef {
 }
 
 typedef {
-    cxxcls = "std::string",
-    conv = "olua_$$_string",
-    luatype = "string",
-}
-
-typedef {
-    cxxcls = "std::string_view",
+    cxxcls = [[
+        std::string
+        std::string_view
+    ]],
     conv = "olua_$$_string",
     luatype = "string",
 }

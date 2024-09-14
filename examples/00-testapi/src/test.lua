@@ -98,13 +98,10 @@ assert(result_len.value == 11)
 
 -- test enum
 local Type = require "example.Type"
-assert(olua.enum(0) == Type.LVALUE)
-assert(olua.enum(Type.RVALUE) == 1)
 obj.type = Type.POINTER
 assert(obj.type == Type.POINTER)
 print("test enum op")
 -- assert(Type.POINTER == 2)
-assert(olua.enum(obj.type) == 2)
 assert(Type.LVALUE < Type.RVALUE)
 assert(Type.LVALUE <= Type.RVALUE)
 assert(Type.POINTER > Type.RVALUE)
@@ -122,7 +119,6 @@ print("/ ", Type.POINTER / 2, Type.POINTER)
 print("//", Type.POINTER // 3, Type.POINTER)
 print("% ", Type.POINTER % 3, Type.POINTER)
 print("~ ", ~Type.POINTER)
-print(Type(100))
 
 -- test vector int
 local VectorInt = require "example.VectorInt"

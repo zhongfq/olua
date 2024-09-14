@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.RefQualifierKind
----@operator call(integer): clang.RefQualifierKind
 local RefQualifierKind = {
     ---An lvalue ref-qualifier was provided (`&)`.
     LValue = 1,
@@ -15,9 +14,5 @@ local RefQualifierKind = {
     ---An rvalue ref-qualifier was provided (`&&)`.
     RValue = 2,
 }
-
----@param v integer
----@return clang.RefQualifierKind
-function RefQualifierKind:__call(v) end
 
 return RefQualifierKind

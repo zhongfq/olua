@@ -5,6 +5,8 @@
 #include "Example.h"
 #include "olua-custom.h"
 
+static int _olua_module_example(lua_State *L);
+
 static int _olua_fun_example_Object___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -90,7 +92,7 @@ static int _olua_cls_example_Object(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
@@ -125,7 +127,7 @@ static int _olua_cls_example_ExportParent(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_ExportParent(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.ExportParent")) {
         luaL_error(L, "class not found: example::ExportParent");
     }
@@ -213,7 +215,7 @@ static int _olua_cls_example_Hello(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
-    olua_require(L, "example",  luaopen_example);
+    olua_require(L, "example",  _olua_module_example);
     if (!olua_getclass(L, "example.Hello")) {
         luaL_error(L, "class not found: example::Hello");
     }
@@ -221,12 +223,19 @@ OLUA_LIB int luaopen_example_Hello(lua_State *L)
 }
 OLUA_END_DECLS
 
-OLUA_BEGIN_DECLS
-OLUA_LIB int luaopen_example(lua_State *L)
+int _olua_module_example(lua_State *L)
 {
     olua_require(L, "example.Object", _olua_cls_example_Object);
     olua_require(L, "example.ExportParent", _olua_cls_example_ExportParent);
     olua_require(L, "example.Hello", _olua_cls_example_Hello);
+
+    return 0;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example(lua_State *L)
+{
+    olua_require(L, "example",  _olua_module_example);
 
     return 0;
 }

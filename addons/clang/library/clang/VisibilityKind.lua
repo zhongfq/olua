@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.VisibilityKind
----@operator call(integer): clang.VisibilityKind
 local VisibilityKind = {
     ---Symbol seen by the linker and acts like a normal symbol.
     Default = 3,
@@ -18,9 +17,5 @@ local VisibilityKind = {
     ---Symbol seen by the linker but resolves to a symbol inside this object.
     Protected = 2,
 }
-
----@param v integer
----@return clang.VisibilityKind
-function VisibilityKind:__call(v) end
 
 return VisibilityKind

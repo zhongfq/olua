@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.CallingConv
----@operator call(integer): clang.CallingConv
 local CallingConv = {
     AAPCS = 6,
     AAPCS_VFP = 7,
@@ -34,9 +33,5 @@ local CallingConv = {
     X86_64SysV = 11,
     X86_64Win64 = 10,
 }
-
----@param v integer
----@return clang.CallingConv
-function CallingConv:__call(v) end
 
 return CallingConv

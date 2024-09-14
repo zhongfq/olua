@@ -267,7 +267,6 @@ public:
 #ifdef TEST_OLUA_MACRO
     void testMacro() {}
 #endif
-
 private:
     std::function<int (Hello *, Point *)> _callback;
     std::string _name;

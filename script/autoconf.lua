@@ -65,7 +65,8 @@ local alias_types     = olua.ordered_map(false)
 local type_checker    = olua.array()
 local type_packvars   = olua.ordered_map()
 
-local metamethod      = {
+
+local metamethod     = {
     __index = true,
     __newindex = true,
     __gc = true,
@@ -94,16 +95,24 @@ local metamethod      = {
     __close = true
 }
 
-local kFLAG_POINTER   = 1 << 1 -- pointer type
-local kFLAG_ENUM      = 1 << 2 -- enum type
-local kFLAG_ALIAS     = 1 << 3 -- alias type
-local kFLAG_FUNC      = 1 << 4 -- function type
-local kFLAG_TEMPLATE  = 1 << 5 -- template type
-local kFLAG_SKIP      = 1 << 6 -- don't export
+local operator = {
+    ["operator+"] = "__add",
+    ["operator-"] = "__sub",
+    ["operator*"] = "__mul",
+    ["operator/"] = "__div",
+}
 
-local KEEP_CONST      = 1 << 1
-local KEEP_TEMPLATE   = 1 << 2
-local KEEP_POINTER    = 1 << 3
+
+local kFLAG_POINTER  = 1 << 1  -- pointer type
+local kFLAG_ENUM     = 1 << 2  -- enum type
+local kFLAG_ALIAS    = 1 << 3  -- alias type
+local kFLAG_FUNC     = 1 << 4  -- function type
+local kFLAG_TEMPLATE = 1 << 5  -- template type
+local kFLAG_SKIP     = 1 << 6  -- don't export
+
+local KEEP_CONST     = 1 << 1
+local KEEP_TEMPLATE  = 1 << 2
+local KEEP_POINTER   = 1 << 3
 
 ---@param flag integer
 ---@param k integer
@@ -163,18 +172,27 @@ local function parse_from_ast(type)
     end
 
     local exps = olua.array("::")
+    local fullexps = olua.array("::")
     while cur and cur.kind ~= CursorKind.TranslationUnit do
         local value = raw_typename(cur.name)
         if cur.isInlineNamespace then
             cur = cur.parent
+            fullexps:unshift(value)
         elseif value then
             exps:unshift(value)
+            fullexps:unshift(value)
             cur = cur.parent
         else
             break
         end
     end
-    return trim_prefix_colon(tostring(exps))
+    return trim_prefix_colon(tostring(exps)), trim_prefix_colon(tostring(fullexps))
+end
+
+---@param cur clang.Cursor
+local function is_private_member(cur)
+    local access = cur.cxxAccessSpecifier
+    return access == CXXAccessSpecifier.Private or access == CXXAccessSpecifier.Protected
 end
 
 local typename
@@ -235,33 +253,58 @@ local function parse_from_type(type, template_types, try_underlying, level, from
         return parse_from_type(underlying, template_types, false, level)
     elseif template_types and template_types:has(tn) then
         return template_types:get(tn)
+    elseif underlying and is_private_member(type.declaration) then
+        return typename(underlying, template_types, nil, from)
     elseif kind >= TypeKind.FirstBuiltin and kind <= TypeKind.LastBuiltin then
         return tn
     elseif kind == TypeKind.Typedef or kind == TypeKind.Unexposed then
         return tn
     else
         --[[
-               tn: size_t
-            rawrn: size_t
-              ast: size_t
+            #1
+                   tn: size_t
+                rawrn: size_t
+                  ast: size_t
 
-               tn: std::string::size_type
-            rawrn: std::string::size_type
-              ast: std::basic_string::size_type
+            #2
+                   tn: std::string::size_type
+                rawrn: std::string::size_type
+                  ast: std::basic_string::size_type
 
-               tn: enum EventType
-            rawrn: EventType
-              ast: olua::test::EventType
+            #3
+                   tn: enum EventType
+                rawrn: EventType
+                  ast: olua::test::EventType
+
+            #4
+                   tn: std::__ndk1::__fs::filesystem::path
+                  ast: std::filesystem::path
+              fullast: std::__ndk1::__fs::filesystem::path
+
+            #5
+                   tn: underlying_type<launch>::type
+                rawtn: underlying_type<launch>::type
+                  ast: std::__underlying_type_impl::type
         ]]
-        local rawtn = tn:match("[^ ]+$")
-        local astname = parse_from_ast(type)
-        if tn == astname or not olua.is_end_with(astname, rawtn) then
-            return tn
+
+        local astname, fullastname = parse_from_ast(type)
+        local type_modifier = tn:match("^struct ") or tn:match("^enum ") or tn:match("^union ")
+        local rawtn
+        if type_modifier then
+            rawtn = tn:sub(#type_modifier + 1)
         else
-            if astname:find("::operator") then
-                return tn
-            end
-            return tn:gsub(rawtn, astname)
+            rawtn = tn
+            type_modifier = ""
+        end
+
+        if tn == fullastname or              -- #4
+            tn == astname or                 -- #1
+            olua.is_end_with(astname, rawtn) -- #3
+        then
+            return type_modifier .. astname
+        else
+            -- #2 #5
+            return tn
         end
     end
 end
@@ -523,8 +566,7 @@ local function parse_attr_from_annotate(cls, cur, display_name, isvar)
     ---@param node clang.Cursor
     ---@param key string
     local function parse_and_merge_attr(node, key)
-        ---@type olua.array
-        local arr = attrs:get(key)
+        local arr = attrs:get(key) ---@type olua.array
         for _, c in ipairs(node.children) do
             if c.kind == CursorKind.AnnotateAttr then
                 local name = c.name
@@ -623,11 +665,14 @@ local function check_included_method(cls, cur)
     return true
 end
 
-local function gen_display_name(cls, fi)
+---@param cls idl.model.class_desc
+---@param func idl.model.func_desc
+---@return string
+local function gen_display_name(cls, func)
     local exps = olua.array("")
-    exps:push(fi.cxxfn)
+    exps:push(func.cxxfn)
     exps:push("(")
-    for i, v in ipairs(fi.args) do
+    for i, v in ipairs(func.args) do
         exps:push(i > 1 and ", " or nil)
         exps:push(olua.decltype(v.type))
     end
@@ -635,12 +680,15 @@ local function gen_display_name(cls, fi)
     return tostring(exps)
 end
 
-local function gen_prototype(cls, fi)
+---@param cls idl.model.class_desc
+---@param func idl.model.func_desc
+---@return string
+local function gen_prototype(cls, func)
     -- generate function prototype: void func(int, A *, B *)
     local exps = olua.array("")
-    exps:push(fi.is_static and "static " or nil)
-    exps:push(olua.decltype(fi.ret.type, nil, true))
-    exps:push(gen_display_name(cls, fi))
+    exps:push(func.is_static and "static " or nil)
+    exps:push(olua.decltype(func.ret.type, nil, true))
+    exps:push(gen_display_name(cls, func))
     return tostring(exps)
 end
 
@@ -668,10 +716,13 @@ end
 ---@return {ret: clang.Type, args: clang.Cursor[]}
 local function parse_func(cls, cur, template_types)
     local typefrom = olua.format("class: ${cls.cxxcls} -> ${cur.prettyPrinted}")
+    local fn = cur.name
+    local op = operator[fn]
+    fn = op or fn
     ---@type idl.model.func_desc
     local func = {
-        cxxfn = cur.name,
-        luafn = cur.name,
+        cxxfn = fn,
+        luafn = fn,
         is_exposed = true,
         comment = get_comment(cur),
         is_static = is_static_func(cur) and true or nil,
@@ -690,10 +741,14 @@ local function parse_func(cls, cur, template_types)
 
     setmetatable(func, { __olua_ignore = { display_name = true } })
 
+    if op then
+        func.ret.attr:pushf("@operator(${cur.name})")
+    end
+
     for _, c in ipairs(cur.children) do
         if c.kind == CursorKind.ParmDecl and c.parent == cur then
             local i = #func.args + 1
-            local name = c.name
+            local name = c.name:gsub("^__", "")
             name = keywords[name] or name
             func.args:push({
                 type = typename(c.type, template_types, nil, typefrom),
@@ -711,10 +766,6 @@ local function parse_func(cls, cur, template_types)
         func.is_exposed = false
     end
 
-    -- if func.cxxfn == "addEventListener" then
-    --     print(func.cxxfn, func.display_name)
-    -- end
-
     return func, func_def
 end
 
@@ -728,12 +779,12 @@ end
 function Autoconf:visit_method(cls, cur, template_desc)
     template_desc = template_desc or {}
     local func, func_def = parse_func(cls, cur, template_desc.template_types or cls.conf.template_types)
+    local fn = func.cxxfn
     local attrs = parse_attr_from_annotate(cls, cur, func.display_name)
-    ---@type idl.conf.member_desc
-    local member = cls.conf.members:get(func.display_name)
+    local member = cls.conf.members:get(func.display_name) ---@type idl.conf.member_desc
     local callback_type = nil
 
-    func.ret.attr = attrs:get("ret")
+    func.ret.attr:concat(attrs:get("ret"))
     func.macro = member.macro
     func.insert_after = member.insert_after
     func.insert_before = member.insert_before
@@ -780,10 +831,9 @@ function Autoconf:visit_method(cls, cur, template_desc)
     local min_args = 0
     local num_args = 0
     for i, arg in ipairs(func_def.args) do
-        ---@type idl.model.type_desc
-        local arg_type = func.args[i]
+        local arg_type = func.args[i] ---@type idl.model.type_desc
         local argn = "arg" .. i
-        arg_type.attr = attrs:get(argn) or olua.array()
+        arg_type.attr:concat(attrs:get(argn) or olua.array())
         num_args = i
         if is_func_type(arg.type) or is_func_type(arg_type.type) then
             callback_type = "arg"
@@ -801,7 +851,7 @@ function Autoconf:visit_method(cls, cur, template_desc)
         if callback_type == "arg" then
             func.tag_usepool = member.tag_usepool ~= false
         end
-        func.tag_maker = member.tag_maker or cur.name:gsub("^[sS]et", ""):gsub("^[gG]et", "")
+        func.tag_maker = member.tag_maker or fn:gsub("^[sS]et", ""):gsub("^[gG]et", "")
         func.tag_mode = member.tag_mode or (callback_type == "arg" and "replace" or "equal")
         func.tag_store = member.tag_store or (func.is_contructor and -1 or 0)
         func.tag_scope = member.tag_scope or "object"
@@ -829,8 +879,7 @@ function Autoconf:visit_method(cls, cur, template_desc)
         ]])
         local prop = cls.props:get(func.luafn)
         if not prop then
-            ---@type idl.model.prop_desc
-            prop = { name = func.luafn, get = "" }
+            prop = { name = func.luafn, get = "" } ---@type idl.model.prop_desc
             cls.props:set(func.luafn, prop)
         end
         prop[what] = func.prototype
@@ -839,8 +888,8 @@ function Autoconf:visit_method(cls, cur, template_desc)
         for n = 1, olua.MAX_VARIADIC_ARGS do
             local variadic_func = olua.clone(func)
             for i = 1, n do
-                ---@type idl.model.type_desc
-                local arg = olua.clone(variadic_func.args[num_args])
+                local arg = olua.clone(variadic_func.args[num_args]) ---@type idl.model.type_desc
+                olua.use(i)
                 arg.name = olua.format("${arg.name}_$${i}")
                 variadic_func.args:push(arg)
             end
@@ -881,8 +930,7 @@ function Autoconf:visit_var(cls, cur)
     local attrs = parse_attr_from_annotate(cls, cur, cur.name, true)
     local luafn = cls.conf.luaname(fn, "var")
 
-    ---@type idl.conf.member_desc
-    local member = cls.conf.members:get(cur.name)
+    local member = cls.conf.members:get(cur.name) ---@type idl.conf.member_desc
 
     olua.use(ret_tn, arg_tn)
 
@@ -997,8 +1045,11 @@ function Autoconf:visit_enum(cxxcls, cur)
     local cls = self:will_visit(cxxcls)
     local filter = {}
     for _, c in ipairs(cur.children) do
-        ---@type string
-        local value = c.name
+        if c.kind ~= CursorKind.EnumConstantDecl or is_excluded_memeber(cls, c) then
+            goto skip_enum
+        end
+
+        local value = c.name ---@type string
         local intvalue
         local name = cls.conf.luaname(value --[[@as string]], "enum")
         local range = c.commentRange
@@ -1018,6 +1069,8 @@ function Autoconf:visit_enum(cxxcls, cur)
             intvalue = intvalue,
             comment = comment ~= "" and comment or nil
         })
+
+        ::skip_enum::
     end
     idl.type_convs:get(cxxcls).conv = "olua_$$_enum"
     if not cls.options.indexerror then
@@ -1077,17 +1130,12 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
 
     for _, c in ipairs(cur.children) do
         local kind = c.kind
-        local access = c.cxxAccessSpecifier
-        if access == CXXAccessSpecifier.Private
-            or access == CXXAccessSpecifier.Protected
-        then
+        if is_private_member(c) then
             if kind == CursorKind.FunctionDecl or kind == CursorKind.CXXMethod then
                 cls.conf.excludes:replace(c.displayName, true)
             end
             if kind == CursorKind.Destructor then
                 cls.options.disallow_gc = true
-            elseif c.name == "operator=" then
-                cls.options.disallow_assign = true
             end
             goto continue
         elseif kind == CursorKind.TemplateTypeParameter then
@@ -1179,7 +1227,7 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
                 or (isConstructor and cur.isCXXAbstract)
                 or has_deprecated_attr(c)
                 or has_exclude_attr(c)
-                or c.name:find("operator *[%-=+/*><!()]?")
+                or (c.name:find("operator[~|&%^%-=+/*><!()]+") and not operator[c.name])
                 or c.name == "as" -- 'as used to cast object'
                 or not check_included_method(cls, c)
             then
@@ -1187,8 +1235,10 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
             end
             self:visit_method(cls, c)
         elseif kind == CursorKind.FunctionTemplate then
-            ---@type idl.conf.member_desc
-            local member = cls.conf.members:get(c.name)
+            local member = cls.conf.members:get(c.name) ---@type idl.conf.member_desc
+            if not member and cls.conf.maincls then
+                member = cls.conf.maincls.conf.members:get(c.name)
+            end
             if member then
                 local T = c.children[1].name
                 for _, v in ipairs(member.insts) do
@@ -1607,8 +1657,7 @@ local function copy_super_funcs()
                 if cls.supercls == supercls then
                     goto continue
                 end
-                ---@type idl.model.class_desc
-                local super = visited_types:get(supercls)
+                local super = visited_types:get(supercls) ---@type idl.model.class_desc
                 copy_super(cls, super)
                 if cls.conf.supers:size() == 1 and olua.is_templdate_type(super.cxxcls) then
                     -- see find 'find_as_cls'
@@ -1622,6 +1671,27 @@ local function copy_super_funcs()
 end
 
 local function find_as()
+    ---@param c idl.model.class_desc
+    ---@param ascls_map olua.ordered_map
+    local function find_ascls(c, ascls_map)
+        for supercls in pairs(c.conf.supers) do
+            ascls_map:replace(supercls, supercls)
+            find_ascls(visited_types:get(supercls), ascls_map)
+        end
+    end
+
+    ---remove first super class
+    ---@param c idl.model.class_desc
+    ---@param ascls_map olua.ordered_map
+    local function remove_first_ascls(c, ascls_map)
+        local supercls = c.supercls
+        if supercls then
+            local rawsuper = raw_typename(supercls, KEEP_POINTER)
+            ascls_map:take(rawsuper)
+            remove_first_ascls(visited_types:get(supercls), ascls_map)
+        end
+    end
+
     for _, m in ipairs(idl.modules) do
         ---@cast m idl.model.module_desc
         for _, cls in ipairs(m.class_types) do
@@ -1629,26 +1699,8 @@ local function find_as()
             local ascls_map = olua.ordered_map()
             ---@cast cls idl.model.class_desc
             if cls.conf.supers:size() > 1 then
-                ---@param c idl.model.class_desc
-                local function find_as_cls(c)
-                    for supercls in pairs(c.conf.supers) do
-                        ascls_map:replace(supercls, supercls)
-                        find_as_cls(visited_types:get(supercls))
-                    end
-                end
-                find_as_cls(cls)
-
-                ---remove first super class
-                ---@param c idl.model.class_desc
-                local function remove_first_as_cls(c)
-                    local supercls = c.supercls
-                    if supercls then
-                        local rawsuper = raw_typename(supercls, KEEP_POINTER)
-                        ascls_map:take(rawsuper)
-                        remove_first_as_cls(visited_types:get(supercls))
-                    end
-                end
-                remove_first_as_cls(cls)
+                find_ascls(cls, ascls_map)
+                remove_first_ascls(cls, ascls_map)
             end
             local ascls_arr = ascls_map:values()
             if #ascls_arr > 0 then
@@ -1680,12 +1732,8 @@ local function find_as()
     end
 end
 
--------------------------------------------------------------------------------
--- New config
--------------------------------------------------------------------------------
-
 ---@param cls idl.model.class_desc
-local function merge_cls_extends(cls)
+local function cls_merge_extends(cls)
     cls.conf.extends:foreach(function (_, cxxcls)
         ---@type idl.model.class_desc
         local extcls = visited_types:get(cxxcls)
@@ -1716,7 +1764,7 @@ local function merge_cls_extends(cls)
 end
 
 ---@param cls idl.model.class_desc
-local function merge_cls_snippet(cls)
+local function cls_merge_snippet(cls)
     cls.conf.members:foreach(function (value, key)
         if value.body then
             cls.funcs:set(key, {
@@ -1765,7 +1813,7 @@ local function merge_cls_snippet(cls)
 end
 
 ---@param cls idl.model.class_desc
-local function search_using_func(cls)
+local function cls_search_using(cls)
     ---@param arr olua.array
     ---@param name string
     ---@param supercls string
@@ -1830,7 +1878,7 @@ local function has_method(cls, fn)
 end
 
 ---@param cls idl.model.class_desc
-local function gen_cls_meta_func(cls)
+local function cls_gen_metamethod(cls)
     if has_type_flag(cls, kFLAG_FUNC) then
         cls.CMD.func "__call"
             .body(olua.format([[
@@ -1842,18 +1890,7 @@ local function gen_cls_meta_func(cls)
             .luacats(olua.format([[
                 ---@return ${cls.conf.luacls}
             ]]))
-    elseif has_type_flag(cls, kFLAG_ENUM) then
-        cls.CMD.func "__call"
-            .body(olua.format([[
-            {
-                olua_pushenum(L, olua_checkinteger(L, -1));
-                return 1;
-            }]]))
-            .luacats(olua.format([[
-                ---@param v integer
-                ---@return ${cls.conf.luacls}
-            ]]))
-    elseif cls.options.reg_luatype then
+    elseif cls.options.reg_luatype and not has_type_flag(cls, kFLAG_ENUM) then
         if not cls.options.disallow_gc and not has_method(cls, "__gc") then
             cls.CMD.func "__gc"
                 .body(olua.format([[
@@ -1876,7 +1913,7 @@ local function gen_cls_meta_func(cls)
 end
 
 ---@param cls idl.model.class_desc
-local function gen_cls_func_pack(cls)
+local function cls_gen_pack_overload(cls)
     ---@param arr olua.array
     ---@param func idl.model.func_desc
     local function gen_pack_overload(arr, func)
@@ -1922,7 +1959,7 @@ local function gen_cls_func_pack(cls)
 end
 
 ---@param cls idl.model.class_desc
-local function parse_cls_props(cls)
+local function cls_gen_props(cls)
     ---@param func idl.model.func_desc
     ---@return string | nil
     local function parse_prop_name(func)
@@ -1997,15 +2034,14 @@ local function parse_cls_props(cls)
 end
 
 ---@param cls idl.model.class_desc
-local function trim_cls_func(cls)
+local function cls_trim_func(cls)
     ---@param supercls string
     ---@param func idl.model.func_desc
     local function is_new_func(supercls, func)
         if not supercls or func.is_static then
             return true
         end
-        ---@type idl.model.class_desc
-        local super = visited_types:get(supercls)
+        local super = visited_types:get(supercls) ---@type idl.model.class_desc
         if not super then
             olua.error("not found super class '${supercls}'")
         elseif super.conf.members:has(func.display_name)
@@ -2041,6 +2077,57 @@ local function trim_cls_func(cls)
     end)
 end
 
+---@param cls idl.model.class_desc
+local function cls_gen_overload(cls)
+    cls.funcs:foreach(function (arr)
+        ---@cast arr olua.array
+        for i = 1, #arr do
+            local func = arr[i] ---@type idl.model.func_desc
+            local args = { {} }
+            if func.args then
+                local function expend(idx, ...)
+                    local len = #args
+                    local tns = { ... }
+                    for _ = 2, #tns do
+                        for m = 1, len do
+                            args[#args + 1] = olua.clone(args[m])
+                        end
+                    end
+                    for m = 1, #args do
+                        args[m][idx] = tns[(m - 1) // len + 1]
+                    end
+                end
+                for idx = 1, #func.args do
+                    local arg = func.args[idx] ---@type idl.model.type_desc
+                    local tn = arg.type:gsub("^const +", ""):gsub(" +&", "")
+                    local visit_cls = visited_types:get(tn) ---@type idl.model.class_desc
+                    if visit_cls and visit_cls.options.fromstring and arg.type:find("^const ") then
+                        expend(idx, arg.type:gsub(tn, "std::string"), arg.type)
+                    else
+                        expend(idx, arg.type)
+                    end
+                end
+            end
+            if #args > 1 then
+                for _, tns in ipairs(args) do
+                    local overload = olua.clone(func)
+                    for n, arg in ipairs(overload.args) do
+                        arg.type = assert(tns[n], arg.type)
+                    end
+                    overload.prototype = gen_prototype(cls, overload)
+                    overload.display_name = gen_display_name(cls, overload)
+
+                    local members = cls.conf.members
+                    if not members:has(overload.display_name) then
+                        members:set(overload.display_name, members:get(func.display_name))
+                    end
+                    arr:push(overload)
+                end
+            end
+        end
+    end)
+end
+
 ---@param module idl.model.module_desc
 local function write_module(module)
     local m = {
@@ -2064,13 +2151,14 @@ local function write_module(module)
 
         m.class_types:push(cls)
 
-        search_using_func(cls)
-        merge_cls_extends(cls)
-        gen_cls_meta_func(cls)
-        gen_cls_func_pack(cls)
-        merge_cls_snippet(cls)
-        trim_cls_func(cls)
-        parse_cls_props(cls)
+        cls_search_using(cls)
+        cls_merge_extends(cls)
+        cls_gen_metamethod(cls)
+        cls_gen_pack_overload(cls)
+        cls_merge_snippet(cls)
+        cls_trim_func(cls)
+        cls_gen_props(cls)
+        cls_gen_overload(cls)
 
         ::skip_alias_or_template::
     end
@@ -2202,8 +2290,7 @@ local function write_typedefs()
         if visited_types:get(raw_typename(alias)) then
             return
         end
-        ---@type idl.model.class_desc
-        local cls = visited_types:get(raw_typename(cxxcls))
+        local cls = visited_types:get(raw_typename(cxxcls)) ---@type idl.model.class_desc
         local from = olua.format("alias: ${alias} -> ${cxxcls}")
         if not cls then
             local ti = assert(idl.type_convs:get(cxxcls) or olua.typeinfo(cxxcls))

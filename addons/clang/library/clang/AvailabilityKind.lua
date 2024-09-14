@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.AvailabilityKind
----@operator call(integer): clang.AvailabilityKind
 local AvailabilityKind = {
     ---The entity is available.
     Available = 0,
@@ -19,9 +18,5 @@ local AvailabilityKind = {
     ---The entity is not available; any use of it will be an error.
     NotAvailable = 2,
 }
-
----@param v integer
----@return clang.AvailabilityKind
-function AvailabilityKind:__call(v) end
 
 return AvailabilityKind

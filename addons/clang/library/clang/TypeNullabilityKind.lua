@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.TypeNullabilityKind
----@operator call(integer): clang.TypeNullabilityKind
 local TypeNullabilityKind = {
     ---Nullability is not applicable to this type.
     Invalid = 3,
@@ -25,9 +24,5 @@ local TypeNullabilityKind = {
     ---though it has been considered.
     Unspecified = 2,
 }
-
----@param v integer
----@return clang.TypeNullabilityKind
-function TypeNullabilityKind:__call(v) end
 
 return TypeNullabilityKind

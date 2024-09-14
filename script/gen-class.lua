@@ -156,7 +156,7 @@ local function gen_class_open(module, cls, write)
         OLUA_BEGIN_DECLS
         OLUA_LIB int luaopen_${cls.luacls#}(lua_State *L)
         {
-            olua_require(L, "${module.name}",  luaopen_${module.name});
+            olua_require(L, "${module.name}",  _olua_module_${module.name});
             if (!olua_getclass(L, "${cls.luacls}")) {
                 luaL_error(L, "class not found: ${cls.cxxcls}");
             }
@@ -237,6 +237,8 @@ local function gen_include(module, write)
         //
         #include "lua_${module.name}.h"
         ${headers}
+
+        static int _olua_module_${module.name}(lua_State *L);
     ]]))
     write("")
 
@@ -278,6 +280,7 @@ local function gen_luaopen(module, write)
     local requires = olua.array("\n")
 
     local last_macro
+    local has_module = false
     for _, cls in ipairs(module.class_types) do
         local macro = cls.macro
         if last_macro ~= macro then
@@ -289,6 +292,9 @@ local function gen_luaopen(module, write)
             end
             last_macro = macro
         end
+        if cls.luacls == module.name then
+            has_module = true
+        end
         requires:pushf('olua_require(L, "${cls.luacls}", _olua_cls_${cls.luacls#});')
     end
     requires:push(last_macro and "#endif" or nil)
@@ -297,28 +303,42 @@ local function gen_luaopen(module, write)
 
     local entry = ""
     if module.entry then
+        local entry_cls = olua.get_class(module.entry)
         entry = olua.format([[
-            if (olua_getclass(L, olua_getluatype<${module.entry}>(L))) {
+            if (olua_getclass(L, "${entry_cls.luacls}")) {
                 return 1;
             }
         ]])
+        olua.use(entry_cls, entry)
     end
 
     write(olua.format([[
-        OLUA_BEGIN_DECLS
-        OLUA_LIB int luaopen_${module.name}(lua_State *L)
+        int _olua_module_${module.name}(lua_State *L)
         {
             ${requires}
 
             ${luaopen}
 
-            ${entry}
-
             return 0;
         }
-        OLUA_END_DECLS
     ]]))
     write("")
+
+    if not has_module then
+        write(olua.format([[
+            OLUA_BEGIN_DECLS
+            OLUA_LIB int luaopen_${module.name}(lua_State *L)
+            {
+                olua_require(L, "${module.name}",  _olua_module_${module.name});
+
+                ${entry}
+
+                return 0;
+            }
+            OLUA_END_DECLS
+        ]]))
+        write("")
+    end
 end
 
 ---@param module idl.gen.module_desc
@@ -439,7 +459,6 @@ local function gen_class_annotation(module, cls, write)
             fields:pushf("${ei.name} = ${value},")
         end
         write(olua.format([[
-            ---@operator call(integer): ${cls.luacls}
             local ${luacls} = {
                 ${fields}
             }
@@ -456,7 +475,7 @@ local function gen_class_annotation(module, cls, write)
         ---@type idl.gen.func_desc
         local func = arr[1]
 
-        if not func.is_exposed then
+        if not func.is_exposed or olua.is_enum_type(cls) then
             return
         end
 

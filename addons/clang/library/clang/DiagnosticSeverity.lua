@@ -6,7 +6,6 @@ local VALUE
 
 ---
 ---@enum clang.DiagnosticSeverity
----@operator call(integer): clang.DiagnosticSeverity
 local DiagnosticSeverity = {
     ---This diagnostic indicates that the code is ill-formed.
     Error = 3,
@@ -24,9 +23,5 @@ local DiagnosticSeverity = {
     ---wrong.
     Warning = 2,
 }
-
----@param v integer
----@return clang.DiagnosticSeverity
-function DiagnosticSeverity:__call(v) end
 
 return DiagnosticSeverity
