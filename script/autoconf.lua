@@ -66,7 +66,7 @@ local type_checker    = olua.array()
 local type_packvars   = olua.ordered_map()
 
 
-local metamethod     = {
+local metamethod = {
     __index = true,
     __newindex = true,
     __gc = true,
@@ -95,7 +95,7 @@ local metamethod     = {
     __close = true
 }
 
-local operator = {
+local operator   = {
     ["operator+"] = "__add",
     ["operator-"] = "__sub",
     ["operator*"] = "__mul",
@@ -103,12 +103,12 @@ local operator = {
 }
 
 
-local kFLAG_POINTER  = 1 << 1  -- pointer type
-local kFLAG_ENUM     = 1 << 2  -- enum type
-local kFLAG_ALIAS    = 1 << 3  -- alias type
-local kFLAG_FUNC     = 1 << 4  -- function type
-local kFLAG_TEMPLATE = 1 << 5  -- template type
-local kFLAG_SKIP     = 1 << 6  -- don't export
+local kFLAG_POINTER  = 1 << 1 -- pointer type
+local kFLAG_ENUM     = 1 << 2 -- enum type
+local kFLAG_ALIAS    = 1 << 3 -- alias type
+local kFLAG_FUNC     = 1 << 4 -- function type
+local kFLAG_TEMPLATE = 1 << 5 -- template type
+local kFLAG_SKIP     = 1 << 6 -- don't export
 
 local KEEP_CONST     = 1 << 1
 local KEEP_TEMPLATE  = 1 << 2
@@ -1898,15 +1898,6 @@ local function cls_gen_metamethod(cls)
                     auto self = (${cls.cxxcls} *)olua_toobj(L, 1, "${cls.conf.luacls}");
                     olua_postgc(L, self);
                     return 0;
-                }]]))
-        end
-        if not has_method(cls, "__olua_move") then
-            cls.CMD.func "__olua_move"
-                .body(olua.format([[
-                {
-                    auto self = (${cls.cxxcls} *)olua_toobj(L, 1, "${cls.conf.luacls}");
-                    olua_push_object(L, self, "${cls.conf.luacls}");
-                    return 1;
                 }]]))
         end
     end

@@ -3,6 +3,8 @@ package.path = path .. package.path
 
 local olua = require "olua.c"
 
+olua.debug(true)
+
 local OLUA_REF_ALONE = 1 << 1 -- add & remove: only ref one
 local OLUA_REF_MULTI = 1 << 2 -- add & remove: can ref one or more
 local OLUA_REF_TABLE = 1 << 3 -- obj is table
@@ -27,7 +29,6 @@ olua.printobj("brefore take", nogc)
 olua.take(nogc)
 olua.printobj("after take  ", nogc)
 
-olua.debug(true)
 
 print(Point.new(2, 4), Point.new(4, 8), Point.new(3, 4):length())
 print("point.x == 4", (Point.new(4, 8)).x == 4)
@@ -189,3 +190,8 @@ print(chars:tostring(4))
 print(chars:sub(2):tostring(4))
 print(chars:sub(2, 3):tostring(2))
 print(chars:sub(2, 4):tostring(3))
+
+
+obj:testMoveCallback(function (tmpobj, value)
+    print("move obj", tmpobj, olua.move(tmpobj))
+end)

@@ -61,18 +61,6 @@ static int _olua_fun_olua_bool___newindex(lua_State *L)
     return 0;
 }
 
-static int _olua_fun_olua_bool___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_bool *)olua_toobj(L, 1, "olua.bool");
-    olua_push_object(L, self, "olua.bool");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
 static int _olua_fun_olua_bool_buffer(lua_State *L)
 {
     olua_startinvoke(L);
@@ -445,7 +433,6 @@ static int _olua_cls_olua_bool(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_bool___gc);
     oluacls_func(L, "__index", _olua_fun_olua_bool___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_bool___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_bool___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_bool_new);
     oluacls_func(L, "slice", _olua_fun_olua_bool_slice);
     oluacls_func(L, "sub", _olua_fun_olua_bool_sub);
@@ -522,18 +509,6 @@ static int _olua_fun_olua_string___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_string___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_string *)olua_toobj(L, 1, "olua.string");
-    olua_push_object(L, self, "olua.string");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_string_buffer(lua_State *L)
@@ -908,7 +883,6 @@ static int _olua_cls_olua_string(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_string___gc);
     oluacls_func(L, "__index", _olua_fun_olua_string___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_string___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_string___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_string_new);
     oluacls_func(L, "slice", _olua_fun_olua_string_slice);
     oluacls_func(L, "sub", _olua_fun_olua_string_sub);
@@ -985,18 +959,6 @@ static int _olua_fun_olua_int8___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_int8___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_int8 *)olua_toobj(L, 1, "olua.int8");
-    olua_push_object(L, self, "olua.int8");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_int8_buffer(lua_State *L)
@@ -1371,7 +1333,6 @@ static int _olua_cls_olua_int8(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_int8___gc);
     oluacls_func(L, "__index", _olua_fun_olua_int8___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_int8___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_int8___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_int8_new);
     oluacls_func(L, "slice", _olua_fun_olua_int8_slice);
     oluacls_func(L, "sub", _olua_fun_olua_int8_sub);
@@ -1448,18 +1409,6 @@ static int _olua_fun_olua_int16___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_int16___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_int16 *)olua_toobj(L, 1, "olua.int16");
-    olua_push_object(L, self, "olua.int16");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_int16_buffer(lua_State *L)
@@ -1834,7 +1783,6 @@ static int _olua_cls_olua_int16(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_int16___gc);
     oluacls_func(L, "__index", _olua_fun_olua_int16___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_int16___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_int16___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_int16_new);
     oluacls_func(L, "slice", _olua_fun_olua_int16_slice);
     oluacls_func(L, "sub", _olua_fun_olua_int16_sub);
@@ -1911,18 +1859,6 @@ static int _olua_fun_olua_int32___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_int32___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_int32 *)olua_toobj(L, 1, "olua.int32");
-    olua_push_object(L, self, "olua.int32");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_int32_buffer(lua_State *L)
@@ -2297,7 +2233,6 @@ static int _olua_cls_olua_int32(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_int32___gc);
     oluacls_func(L, "__index", _olua_fun_olua_int32___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_int32___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_int32___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_int32_new);
     oluacls_func(L, "slice", _olua_fun_olua_int32_slice);
     oluacls_func(L, "sub", _olua_fun_olua_int32_sub);
@@ -2374,18 +2309,6 @@ static int _olua_fun_olua_int64___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_int64___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_int64 *)olua_toobj(L, 1, "olua.int64");
-    olua_push_object(L, self, "olua.int64");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_int64_buffer(lua_State *L)
@@ -2760,7 +2683,6 @@ static int _olua_cls_olua_int64(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_int64___gc);
     oluacls_func(L, "__index", _olua_fun_olua_int64___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_int64___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_int64___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_int64_new);
     oluacls_func(L, "slice", _olua_fun_olua_int64_slice);
     oluacls_func(L, "sub", _olua_fun_olua_int64_sub);
@@ -2837,18 +2759,6 @@ static int _olua_fun_olua_uint8___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_uint8___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_uint8 *)olua_toobj(L, 1, "olua.uint8");
-    olua_push_object(L, self, "olua.uint8");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_uint8_buffer(lua_State *L)
@@ -3223,7 +3133,6 @@ static int _olua_cls_olua_uint8(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_uint8___gc);
     oluacls_func(L, "__index", _olua_fun_olua_uint8___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_uint8___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_uint8___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_uint8_new);
     oluacls_func(L, "slice", _olua_fun_olua_uint8_slice);
     oluacls_func(L, "sub", _olua_fun_olua_uint8_sub);
@@ -3300,18 +3209,6 @@ static int _olua_fun_olua_uint16___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_uint16___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_uint16 *)olua_toobj(L, 1, "olua.uint16");
-    olua_push_object(L, self, "olua.uint16");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_uint16_buffer(lua_State *L)
@@ -3686,7 +3583,6 @@ static int _olua_cls_olua_uint16(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_uint16___gc);
     oluacls_func(L, "__index", _olua_fun_olua_uint16___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_uint16___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_uint16___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_uint16_new);
     oluacls_func(L, "slice", _olua_fun_olua_uint16_slice);
     oluacls_func(L, "sub", _olua_fun_olua_uint16_sub);
@@ -3763,18 +3659,6 @@ static int _olua_fun_olua_uint32___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_uint32___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_uint32 *)olua_toobj(L, 1, "olua.uint32");
-    olua_push_object(L, self, "olua.uint32");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_uint32_buffer(lua_State *L)
@@ -4149,7 +4033,6 @@ static int _olua_cls_olua_uint32(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_uint32___gc);
     oluacls_func(L, "__index", _olua_fun_olua_uint32___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_uint32___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_uint32___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_uint32_new);
     oluacls_func(L, "slice", _olua_fun_olua_uint32_slice);
     oluacls_func(L, "sub", _olua_fun_olua_uint32_sub);
@@ -4226,18 +4109,6 @@ static int _olua_fun_olua_uint64___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_uint64___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_uint64 *)olua_toobj(L, 1, "olua.uint64");
-    olua_push_object(L, self, "olua.uint64");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_uint64_buffer(lua_State *L)
@@ -4612,7 +4483,6 @@ static int _olua_cls_olua_uint64(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_uint64___gc);
     oluacls_func(L, "__index", _olua_fun_olua_uint64___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_uint64___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_uint64___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_uint64_new);
     oluacls_func(L, "slice", _olua_fun_olua_uint64_slice);
     oluacls_func(L, "sub", _olua_fun_olua_uint64_sub);
@@ -4689,18 +4559,6 @@ static int _olua_fun_olua_char___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_char___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_char *)olua_toobj(L, 1, "olua.char");
-    olua_push_object(L, self, "olua.char");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_char_buffer(lua_State *L)
@@ -5075,7 +4933,6 @@ static int _olua_cls_olua_char(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_char___gc);
     oluacls_func(L, "__index", _olua_fun_olua_char___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_char___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_char___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_char_new);
     oluacls_func(L, "slice", _olua_fun_olua_char_slice);
     oluacls_func(L, "sub", _olua_fun_olua_char_sub);
@@ -5152,18 +5009,6 @@ static int _olua_fun_olua_short___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_short___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_short *)olua_toobj(L, 1, "olua.short");
-    olua_push_object(L, self, "olua.short");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_short_buffer(lua_State *L)
@@ -5538,7 +5383,6 @@ static int _olua_cls_olua_short(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_short___gc);
     oluacls_func(L, "__index", _olua_fun_olua_short___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_short___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_short___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_short_new);
     oluacls_func(L, "slice", _olua_fun_olua_short_slice);
     oluacls_func(L, "sub", _olua_fun_olua_short_sub);
@@ -5615,18 +5459,6 @@ static int _olua_fun_olua_int___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_int___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_int *)olua_toobj(L, 1, "olua.int");
-    olua_push_object(L, self, "olua.int");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_int_buffer(lua_State *L)
@@ -6001,7 +5833,6 @@ static int _olua_cls_olua_int(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_int___gc);
     oluacls_func(L, "__index", _olua_fun_olua_int___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_int___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_int___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_int_new);
     oluacls_func(L, "slice", _olua_fun_olua_int_slice);
     oluacls_func(L, "sub", _olua_fun_olua_int_sub);
@@ -6078,18 +5909,6 @@ static int _olua_fun_olua_long___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_long___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_long *)olua_toobj(L, 1, "olua.long");
-    olua_push_object(L, self, "olua.long");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_long_buffer(lua_State *L)
@@ -6464,7 +6283,6 @@ static int _olua_cls_olua_long(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_long___gc);
     oluacls_func(L, "__index", _olua_fun_olua_long___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_long___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_long___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_long_new);
     oluacls_func(L, "slice", _olua_fun_olua_long_slice);
     oluacls_func(L, "sub", _olua_fun_olua_long_sub);
@@ -6541,18 +6359,6 @@ static int _olua_fun_olua_llong___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_llong___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_llong *)olua_toobj(L, 1, "olua.llong");
-    olua_push_object(L, self, "olua.llong");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_llong_buffer(lua_State *L)
@@ -6927,7 +6733,6 @@ static int _olua_cls_olua_llong(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_llong___gc);
     oluacls_func(L, "__index", _olua_fun_olua_llong___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_llong___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_llong___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_llong_new);
     oluacls_func(L, "slice", _olua_fun_olua_llong_slice);
     oluacls_func(L, "sub", _olua_fun_olua_llong_sub);
@@ -7004,18 +6809,6 @@ static int _olua_fun_olua_uchar___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_uchar___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_uchar *)olua_toobj(L, 1, "olua.uchar");
-    olua_push_object(L, self, "olua.uchar");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_uchar_buffer(lua_State *L)
@@ -7390,7 +7183,6 @@ static int _olua_cls_olua_uchar(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_uchar___gc);
     oluacls_func(L, "__index", _olua_fun_olua_uchar___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_uchar___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_uchar___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_uchar_new);
     oluacls_func(L, "slice", _olua_fun_olua_uchar_slice);
     oluacls_func(L, "sub", _olua_fun_olua_uchar_sub);
@@ -7467,18 +7259,6 @@ static int _olua_fun_olua_ushort___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_ushort___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_ushort *)olua_toobj(L, 1, "olua.ushort");
-    olua_push_object(L, self, "olua.ushort");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_ushort_buffer(lua_State *L)
@@ -7853,7 +7633,6 @@ static int _olua_cls_olua_ushort(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_ushort___gc);
     oluacls_func(L, "__index", _olua_fun_olua_ushort___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_ushort___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_ushort___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_ushort_new);
     oluacls_func(L, "slice", _olua_fun_olua_ushort_slice);
     oluacls_func(L, "sub", _olua_fun_olua_ushort_sub);
@@ -7930,18 +7709,6 @@ static int _olua_fun_olua_uint___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_uint___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_uint *)olua_toobj(L, 1, "olua.uint");
-    olua_push_object(L, self, "olua.uint");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_uint_buffer(lua_State *L)
@@ -8316,7 +8083,6 @@ static int _olua_cls_olua_uint(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_uint___gc);
     oluacls_func(L, "__index", _olua_fun_olua_uint___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_uint___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_uint___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_uint_new);
     oluacls_func(L, "slice", _olua_fun_olua_uint_slice);
     oluacls_func(L, "sub", _olua_fun_olua_uint_sub);
@@ -8393,18 +8159,6 @@ static int _olua_fun_olua_ulong___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_ulong___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_ulong *)olua_toobj(L, 1, "olua.ulong");
-    olua_push_object(L, self, "olua.ulong");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_ulong_buffer(lua_State *L)
@@ -8779,7 +8533,6 @@ static int _olua_cls_olua_ulong(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_ulong___gc);
     oluacls_func(L, "__index", _olua_fun_olua_ulong___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_ulong___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_ulong___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_ulong_new);
     oluacls_func(L, "slice", _olua_fun_olua_ulong_slice);
     oluacls_func(L, "sub", _olua_fun_olua_ulong_sub);
@@ -8856,18 +8609,6 @@ static int _olua_fun_olua_ullong___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_ullong___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_ullong *)olua_toobj(L, 1, "olua.ullong");
-    olua_push_object(L, self, "olua.ullong");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_ullong_buffer(lua_State *L)
@@ -9242,7 +8983,6 @@ static int _olua_cls_olua_ullong(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_ullong___gc);
     oluacls_func(L, "__index", _olua_fun_olua_ullong___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_ullong___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_ullong___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_ullong_new);
     oluacls_func(L, "slice", _olua_fun_olua_ullong_slice);
     oluacls_func(L, "sub", _olua_fun_olua_ullong_sub);
@@ -9319,18 +9059,6 @@ static int _olua_fun_olua_float___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_float___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_float *)olua_toobj(L, 1, "olua.float");
-    olua_push_object(L, self, "olua.float");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_float_buffer(lua_State *L)
@@ -9705,7 +9433,6 @@ static int _olua_cls_olua_float(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_float___gc);
     oluacls_func(L, "__index", _olua_fun_olua_float___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_float___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_float___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_float_new);
     oluacls_func(L, "slice", _olua_fun_olua_float_slice);
     oluacls_func(L, "sub", _olua_fun_olua_float_sub);
@@ -9782,18 +9509,6 @@ static int _olua_fun_olua_double___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_double___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_double *)olua_toobj(L, 1, "olua.double");
-    olua_push_object(L, self, "olua.double");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_double_buffer(lua_State *L)
@@ -10168,7 +9883,6 @@ static int _olua_cls_olua_double(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_double___gc);
     oluacls_func(L, "__index", _olua_fun_olua_double___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_double___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_double___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_double_new);
     oluacls_func(L, "slice", _olua_fun_olua_double_slice);
     oluacls_func(L, "sub", _olua_fun_olua_double_sub);
@@ -10245,18 +9959,6 @@ static int _olua_fun_olua_ldouble___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_ldouble___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_ldouble *)olua_toobj(L, 1, "olua.ldouble");
-    olua_push_object(L, self, "olua.ldouble");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_ldouble_buffer(lua_State *L)
@@ -10631,7 +10333,6 @@ static int _olua_cls_olua_ldouble(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_ldouble___gc);
     oluacls_func(L, "__index", _olua_fun_olua_ldouble___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_ldouble___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_ldouble___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_ldouble_new);
     oluacls_func(L, "slice", _olua_fun_olua_ldouble_slice);
     oluacls_func(L, "sub", _olua_fun_olua_ldouble_sub);
@@ -10708,18 +10409,6 @@ static int _olua_fun_olua_size_t___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_size_t___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_size_t *)olua_toobj(L, 1, "olua.size_t");
-    olua_push_object(L, self, "olua.size_t");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_size_t_buffer(lua_State *L)
@@ -11094,7 +10783,6 @@ static int _olua_cls_olua_size_t(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_size_t___gc);
     oluacls_func(L, "__index", _olua_fun_olua_size_t___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_size_t___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_size_t___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_size_t_new);
     oluacls_func(L, "slice", _olua_fun_olua_size_t_slice);
     oluacls_func(L, "sub", _olua_fun_olua_size_t_sub);
@@ -11171,18 +10859,6 @@ static int _olua_fun_olua_ssize_t___newindex(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_olua_ssize_t___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (olua_ssize_t *)olua_toobj(L, 1, "olua.ssize_t");
-    olua_push_object(L, self, "olua.ssize_t");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_olua_ssize_t_buffer(lua_State *L)
@@ -11557,7 +11233,6 @@ static int _olua_cls_olua_ssize_t(lua_State *L)
     oluacls_func(L, "__gc", _olua_fun_olua_ssize_t___gc);
     oluacls_func(L, "__index", _olua_fun_olua_ssize_t___index);
     oluacls_func(L, "__newindex", _olua_fun_olua_ssize_t___newindex);
-    oluacls_func(L, "__olua_move", _olua_fun_olua_ssize_t___olua_move);
     oluacls_func(L, "new", _olua_fun_olua_ssize_t_new);
     oluacls_func(L, "slice", _olua_fun_olua_ssize_t_slice);
     oluacls_func(L, "sub", _olua_fun_olua_ssize_t_sub);

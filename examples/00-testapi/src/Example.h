@@ -174,6 +174,9 @@ public:
     void setClickCallback(const NotifyCallback &callback) {callback(this, 2);}
     void setTouchCallback(const TouchCallback &callback) {}
     void setDragCallback(const DragCallback &callback) {}
+    void testMoveCallback(const NotifyCallback &callback) {
+        callback(new example::Hello(), 0);
+    }
 
     std::vector<Point> getPoints() { return std::vector<Point>(); }
     void setPoints(const std::vector<Point> &v) {};

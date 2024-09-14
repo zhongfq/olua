@@ -1571,15 +1571,15 @@ static int l_olua_take(lua_State *L)
 
 static int l_olua_move(lua_State *L)
 {
+    lua_settop(L, 1);
     luaL_checktype(L, 1, LUA_TUSERDATA);
-    olua_getfield(L, 1, "__olua_move");
-    if (!olua_isfunction(L, -1)) {
-        luaL_error(L, "method '__olua_move' not found in '%s'", olua_objstring(L, 1));
+    if (olua_hasobjflag(L, 1, OLUA_FLAG_IN_POOL)) {
+        const char *cls = olua_checkfieldstring(L, 1, "classname");
+        void *obj = olua_toobj(L, 1, cls);
+        olua_pushobj(L, obj, cls);
+        olua_setrawobj(L, 1, NULL);
     }
-    lua_insert(L, 1);
-    // maybe move object from object pool to the object table
-    lua_call(L, lua_gettop(L) - 1, LUA_MULTRET);
-    return lua_gettop(L);
+    return 1;
 }
 
 static int l_olua_debug(lua_State *L)

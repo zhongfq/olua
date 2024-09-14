@@ -23,18 +23,6 @@ static int _olua_fun_example_GC___gc(lua_State *L)
     return (int)ret;
 }
 
-static int _olua_fun_example_GC___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::GC *)olua_toobj(L, 1, "example.GC");
-    olua_push_object(L, self, "example.GC");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
 static int _olua_fun_example_GC_gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -55,7 +43,6 @@ static int _olua_cls_example_GC(lua_State *L)
 {
     oluacls_class<example::GC>(L, "example.GC");
     oluacls_func(L, "__gc", _olua_fun_example_GC___gc);
-    oluacls_func(L, "__olua_move", _olua_fun_example_GC___olua_move);
     oluacls_func(L, "gc", _olua_fun_example_GC_gc);
 
     return 1;
@@ -82,18 +69,6 @@ static int _olua_fun_example_TestWildcardListener___gc(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_example_TestWildcardListener___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::TestWildcardListener *)olua_toobj(L, 1, "example.TestWildcardListener");
-    olua_push_object(L, self, "example.TestWildcardListener");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_example_TestWildcardListener_hello(lua_State *L)
@@ -132,7 +107,6 @@ static int _olua_cls_example_TestWildcardListener(lua_State *L)
 {
     oluacls_class<example::TestWildcardListener>(L, "example.TestWildcardListener");
     oluacls_func(L, "__gc", _olua_fun_example_TestWildcardListener___gc);
-    oluacls_func(L, "__olua_move", _olua_fun_example_TestWildcardListener___olua_move);
     oluacls_func(L, "hello", _olua_fun_example_TestWildcardListener_hello);
     oluacls_func(L, "onClick", _olua_fun_example_TestWildcardListener_onClick);
 
@@ -157,18 +131,6 @@ static int _olua_fun_example_Object___gc(lua_State *L)
     olua_endinvoke(L);
 
     return olua_objgc(L);
-}
-
-static int _olua_fun_example_Object___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::Object *)olua_toobj(L, 1, "example.Object");
-    olua_push_object(L, self, "example.Object");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_example_Object_autorelease(lua_State *L)
@@ -223,7 +185,6 @@ static int _olua_cls_example_Object(lua_State *L)
 {
     oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _olua_fun_example_Object___gc);
-    oluacls_func(L, "__olua_move", _olua_fun_example_Object___olua_move);
     oluacls_func(L, "autorelease", _olua_fun_example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _olua_fun_example_Object_getReferenceCount);
     oluacls_func(L, "new", _olua_fun_example_Object_new);
@@ -740,18 +701,6 @@ static int _olua_fun_example_Singleton_example_Hello___gc(lua_State *L)
     return 0;
 }
 
-static int _olua_fun_example_Singleton_example_Hello___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton<example.Hello>");
-    olua_push_object(L, self, "example.Singleton<example.Hello>");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
 static int _olua_fun_example_Singleton_example_Hello_create(lua_State *L)
 {
     olua_startinvoke(L);
@@ -799,7 +748,6 @@ static int _olua_cls_example_Singleton_example_Hello(lua_State *L)
 {
     oluacls_class<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
     oluacls_func(L, "__gc", _olua_fun_example_Singleton_example_Hello___gc);
-    oluacls_func(L, "__olua_move", _olua_fun_example_Singleton_example_Hello___olua_move);
     oluacls_func(L, "create", _olua_fun_example_Singleton_example_Hello_create);
     oluacls_func(L, "new", _olua_fun_example_Singleton_example_Hello_new);
     oluacls_func(L, "printSingleton", _olua_fun_example_Singleton_example_Hello_printSingleton);

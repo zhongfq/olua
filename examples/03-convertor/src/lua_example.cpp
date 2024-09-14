@@ -41,18 +41,6 @@ static int _olua_fun_example_Object___gc(lua_State *L)
     return olua_objgc(L);
 }
 
-static int _olua_fun_example_Object___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::Object *)olua_toobj(L, 1, "example.Object");
-    olua_push_object(L, self, "example.Object");
-
-    olua_endinvoke(L);
-
-    return 1;
-}
-
 static int _olua_fun_example_Object_autorelease(lua_State *L)
 {
     olua_startinvoke(L);
@@ -105,7 +93,6 @@ static int _olua_cls_example_Object(lua_State *L)
 {
     oluacls_class<example::Object>(L, "example.Object");
     oluacls_func(L, "__gc", _olua_fun_example_Object___gc);
-    oluacls_func(L, "__olua_move", _olua_fun_example_Object___olua_move);
     oluacls_func(L, "autorelease", _olua_fun_example_Object_autorelease);
     oluacls_func(L, "getReferenceCount", _olua_fun_example_Object_getReferenceCount);
     oluacls_func(L, "new", _olua_fun_example_Object_new);
@@ -135,18 +122,6 @@ static int _olua_fun_example_Point___gc(lua_State *L)
     olua_endinvoke(L);
 
     return 0;
-}
-
-static int _olua_fun_example_Point___olua_move(lua_State *L)
-{
-    olua_startinvoke(L);
-
-    auto self = (example::Point *)olua_toobj(L, 1, "example.Point");
-    olua_push_object(L, self, "example.Point");
-
-    olua_endinvoke(L);
-
-    return 1;
 }
 
 static int _olua_fun_example_Point_x$1(lua_State *L)
@@ -265,7 +240,6 @@ static int _olua_cls_example_Point(lua_State *L)
 {
     oluacls_class<example::Point>(L, "example.Point");
     oluacls_func(L, "__gc", _olua_fun_example_Point___gc);
-    oluacls_func(L, "__olua_move", _olua_fun_example_Point___olua_move);
     oluacls_prop(L, "x", _olua_fun_example_Point_x, _olua_fun_example_Point_x);
     oluacls_prop(L, "y", _olua_fun_example_Point_y, _olua_fun_example_Point_y);
 
