@@ -364,6 +364,42 @@ function olua.gen_source(module)
     olua.write(path, tostring(arr))
 end
 
+
+---@param func idl.gen.func_desc
+---@param cls? idl.gen.class_desc
+local function gen_overload_annotation(func, cls)
+    local args = olua.array(", ")
+
+    if not func.is_static and cls then
+        args:pushf("self: ${cls.luacls}")
+    end
+
+    for idx, arg in ipairs(func.args) do
+        ---@cast arg idl.gen.type_desc
+        if arg.type.cxxcls ~= "lua_State" then
+            local name = arg.name or ("arg" .. idx)
+            local type = olua.luatype(arg.type)
+            name = name:gsub("%$", "")
+            if olua.can_construct_from_string(arg) then
+                type = olua.format("${type}|string")
+            end
+            olua.use(type)
+            args:pushf("${name}: ${type}")
+        end
+    end
+
+    local exps = olua.array("")
+    exps:push("fun(")
+    exps:push(tostring(args))
+    exps:push(")")
+
+    if func.ret.type.cxxcls ~= "void" then
+        exps:push(": " .. olua.luatype(func.ret.type))
+    end
+
+    return tostring(exps)
+end
+
 ---@param module idl.gen.module_desc
 ---@param cls idl.gen.class_desc
 ---@param write idl.gen.writer
@@ -510,8 +546,13 @@ local function gen_class_annotation(module, cls, write)
                     ---@cast arg idl.gen.type_desc
                     local name = arg.name or "arg${i}"
                     local type = olua.luatype(arg.type)
-                    olua.use(type)
                     caller_args:push(name)
+
+                    if olua.can_construct_from_string(arg) then
+                        type = olua.format("${type}|string")
+                    end
+
+                    olua.use(type)
 
                     local arg_key = olua.format("---\\param +${name} *")
                     if func_comment:find(arg_key) then
@@ -552,7 +593,7 @@ local function gen_class_annotation(module, cls, write)
         for i, olfi in ipairs(arr) do
             if i > 1 then
                 ---@cast olfi idl.gen.func_desc
-                local fn = olua.gen_luafn(olfi, cls)
+                local fn = gen_overload_annotation(olfi, cls)
                 olua.use(fn)
                 local olfi_comment = olfi.comment
                 if func.comment ~= olfi_comment and olfi_comment and #olfi_comment > 0 then

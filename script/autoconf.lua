@@ -2068,57 +2068,6 @@ local function cls_trim_func(cls)
     end)
 end
 
----@param cls idl.model.class_desc
-local function cls_gen_overload(cls)
-    cls.funcs:foreach(function (arr)
-        ---@cast arr olua.array
-        for i = 1, #arr do
-            local func = arr[i] ---@type idl.model.func_desc
-            local args = { {} }
-            if func.args then
-                local function expend(idx, ...)
-                    local len = #args
-                    local tns = { ... }
-                    for _ = 2, #tns do
-                        for m = 1, len do
-                            args[#args + 1] = olua.clone(args[m])
-                        end
-                    end
-                    for m = 1, #args do
-                        args[m][idx] = tns[(m - 1) // len + 1]
-                    end
-                end
-                for idx = 1, #func.args do
-                    local arg = func.args[idx] ---@type idl.model.type_desc
-                    local tn = arg.type:gsub("^const +", ""):gsub(" +&", "")
-                    local visit_cls = visited_types:get(tn) ---@type idl.model.class_desc
-                    if visit_cls and visit_cls.options.fromstring and arg.type:find("^const ") then
-                        expend(idx, arg.type:gsub(tn, "std::string"), arg.type)
-                    else
-                        expend(idx, arg.type)
-                    end
-                end
-            end
-            if #args > 1 then
-                for _, tns in ipairs(args) do
-                    local overload = olua.clone(func)
-                    for n, arg in ipairs(overload.args) do
-                        arg.type = assert(tns[n], arg.type)
-                    end
-                    overload.prototype = gen_prototype(cls, overload)
-                    overload.display_name = gen_display_name(cls, overload)
-
-                    local members = cls.conf.members
-                    if not members:has(overload.display_name) then
-                        members:set(overload.display_name, members:get(func.display_name))
-                    end
-                    arr:push(overload)
-                end
-            end
-        end
-    end)
-end
-
 ---@param module idl.model.module_desc
 local function write_module(module)
     local m = {
@@ -2149,7 +2098,6 @@ local function write_module(module)
         cls_merge_snippet(cls)
         cls_trim_func(cls)
         cls_gen_props(cls)
-        cls_gen_overload(cls)
 
         ::skip_alias_or_template::
     end
@@ -2271,6 +2219,7 @@ local function write_typedefs()
                 conv = idl.type_convs:get(cls.cxxcls).conv,
                 packable = cls.options.packable,
                 packvars = packvars,
+                fromstring = cls.options.fromstring,
             }
             typdefs:push(typedef)
         end)

@@ -32,6 +32,12 @@ local function can_declare_as_pointer(arg)
 end
 
 ---@param arg idl.gen.type_desc
+---@return boolean?
+function olua.can_construct_from_string(arg)
+    return arg.type.fromstring and not olua.has_pointer_flag(arg.type)
+end
+
+---@param arg idl.gen.type_desc
 ---@param name string
 ---@param codeset idl.gen.func_codeset
 function olua.gen_decl_exp(arg, name, codeset)
@@ -43,6 +49,11 @@ function olua.gen_decl_exp(arg, name, codeset)
     codeset.decl_args:pushf([[
         ${decltype}${cast_to_pointer}${name}${initial_value};       /** ${var_name} */
     ]])
+    if olua.can_construct_from_string(arg) then
+        codeset.decl_args:pushf([[
+            ${decltype}${name}_fromstring;       /** ${var_name} */
+        ]])
+    end
 end
 
 ---@param arg idl.gen.type_desc
@@ -104,7 +115,16 @@ function olua.gen_check_exp(arg, name, idx, codeset)
         codeset.check_args:pushf("${func_check}(L, ${idx}, &${name});")
     end
 
-    if arg.attr.nullable then
+    if olua.can_construct_from_string(arg) then
+        check_args:pushf([[
+            if (olua_is_string(L, ${idx})) {
+                ${name}_fromstring = olua_tostring(L, ${idx});
+                ${name} = &${name}_fromstring;
+            } else {
+                ${codeset.check_args}
+            }
+        ]])
+    elseif arg.attr.nullable then
         check_args:pushf([[
             if (!olua_isnoneornil(L, ${idx})) {
                 ${codeset.check_args}
@@ -650,40 +670,42 @@ local function gen_test_and_call(cls, fns)
             local test_exps = olua.array(" && ")
             local max_vars = 1
             local argn = (fi.is_static and 0 or 1)
-            for i, ai in ipairs(fi.args) do
+            for i, arg in ipairs(fi.args) do
                 if olua.is_oluaret(fi) and i == 1 then
                     goto continue
                 end
 
-                local func_is = olua.conv_func(ai.type, ai.attr.pack and "canpack" or "is")
-                local test_nil = ""
-
+                ---@cast arg idl.gen.type_desc
+                local func_is = olua.conv_func(arg.type, arg.attr.pack and "canpack" or "is")
+                local test_another = ""
                 argn = argn + 1
+                max_vars = math.max(arg.type.packvars or 1, max_vars)
 
-                max_vars = math.max(ai.type.packvars or 1, max_vars)
-
-                if ai.attr.nullable then
-                    test_nil = " " .. olua.format("|| olua_isnil(L, ${argn})")
+                if olua.can_construct_from_string(arg) then
+                    test_another = " " .. olua.format("|| olua_is_string(L, ${argn})")
+                elseif arg.attr.nullable then
+                    test_another = " " .. olua.format("|| olua_isnil(L, ${argn})")
                 end
 
-                if olua.is_pointer_type(ai.type) or olua.is_func_type(ai.type) then
-                    if ai.attr.pack then
+                olua.use(func_is, test_another)
+                if olua.is_pointer_type(arg.type) or olua.is_func_type(arg.type) then
+                    if arg.attr.pack then
                         test_exps:pushf([[
-                            (${func_is}(L, ${argn}, (${ai.type.cxxcls} *)nullptr)${test_nil})
+                            (${func_is}(L, ${argn}, (${arg.type.cxxcls} *)nullptr)${test_another})
                         ]])
                     else
                         test_exps:pushf([[
-                            (${func_is}(L, ${argn}, "${ai.type.luacls}")${test_nil})
+                            (${func_is}(L, ${argn}, "${arg.type.luacls}")${test_another})
                         ]])
                     end
                 else
                     test_exps:pushf([[
-                        (${func_is}(L, ${argn})${test_nil})
+                        (${func_is}(L, ${argn})${test_another})
                     ]])
                 end
 
-                if ai.attr.pack then
-                    argn = argn + ai.type.packvars - 1
+                if arg.attr.pack then
+                    argn = argn + arg.type.packvars - 1
                 end
 
                 ::continue::
@@ -740,15 +762,12 @@ end
 ---@param funcs idl.gen.func_desc[]
 ---@param write idl.gen.writer
 local function gen_multi_func(cls, funcs, write)
-    local luafn = funcs[1].luafn
-    local subone = funcs[1].is_static and "" or " - 1"
-    local ifblock = olua.array("\n\n")
-
+    local exprs = olua.array("\n\n")
     local max_args = 0
 
-    for i, fi in ipairs(funcs) do
-        max_args = math.max(max_args, get_num_args(fi))
-        gen_one_func(cls, fi, write, "$" .. fi.index)
+    for _, func in ipairs(funcs) do
+        max_args = math.max(max_args, get_num_args(func))
+        gen_one_func(cls, func, write, "$" .. func.index)
         write("")
     end
 
@@ -756,7 +775,8 @@ local function gen_multi_func(cls, funcs, write)
         local arr = get_func_with_num_args(funcs, i)
         if #arr > 0 then
             local test_and_call = gen_test_and_call(cls, arr)
-            ifblock:pushf([[
+            olua.use(test_and_call)
+            exprs:pushf([[
                 if (num_args == ${i}) {
                     ${test_and_call}
                 }
@@ -764,12 +784,15 @@ local function gen_multi_func(cls, funcs, write)
         end
     end
 
+    local luafn = funcs[1].luafn
+    local subone = funcs[1].is_static and "" or " - 1"
+    olua.use(subone, luafn)
     write(olua.format([[
         static int _olua_fun_${cls.cxxcls#}_${luafn}(lua_State *L)
         {
             int num_args = lua_gettop(L)${subone};
 
-            ${ifblock}
+            ${exprs}
 
             luaL_error(L, "method '${cls.cxxcls}::${luafn}' not support '%d' arguments", num_args);
 

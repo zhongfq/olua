@@ -210,6 +210,7 @@ function typedef(cxxcls)
     ---@field luatype? string
     ---@field packable? boolean
     ---@field packvars? integer
+    ---@field fromstring? boolean
     ---@field smartptr? boolean
     ---@field override? boolean
     local cls = { cxxcls = cxxcls }
@@ -584,7 +585,6 @@ function typeconf(cxxcls)
     ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.cmd.typeconf
     ---@field packable fun(packable:booltype):idl.cmd.typeconf
     ---@field packvars fun(packvars:string):idl.cmd.typeconf
-    ---@field fromstring fun(fromstring:booltype):idl.cmd.typeconf
     ---@field private maincls fun(cls:idl.model.class_desc):idl.cmd.typeconf
     local CMD = {}
 
@@ -696,6 +696,13 @@ function typeconf(cxxcls)
     add_value_command(CMD, cls.options, "packable", checkboolean)
     add_value_command(CMD, cls.options, "packvars", checkinteger)
     add_value_command(CMD, cls.options, "fromstring", checkboolean)
+
+    ---Can construct a c++ class from string.
+    ---@param fromstring string
+    function CMD.fromstring(fromstring)
+        cls.options.fromstring = checkboolean("fromstring",fromstring)
+        return CMD
+    end
 
     ---Extend a c++ class with another class, all static members of `extcls`
     ---will be copied into the current class.
