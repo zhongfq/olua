@@ -33,6 +33,19 @@ public:
     Point(float x, float y):x(x), y(y) {}
 
     float length() {return (float)sqrt(x * x + y * y);}
+
+
+    Point operator-() {return Point(-x, -y);}
+    bool operator==(const Point &p) {return (x == p.x && y == p.y);}
+    Point operator+(const Point &p) {return Point(x + p.x, y + p.y);}
+    Point operator-(const Point &p) {return Point(x - p.x, y - p.y);}
+    Point operator*(float s) {return Point(x * s, y * s);}
+    Point operator/(float s) {return Point(x / s, y / s);}
+
+    olua_Return __tostring(lua_State *L) {
+        lua_pushfstring(L, "Point(%f, %f)", x, y);
+        return 1;
+    }
 };
 
 class Const {

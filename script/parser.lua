@@ -513,6 +513,41 @@ local function gen_func_desc(cls, fi)
 end
 
 
+---@param func idl.gen.func_desc
+---@param cls? idl.gen.class_desc
+function olua.gen_luafn(func, cls)
+    local args = olua.array(", ")
+
+    if not func.is_static and cls then
+        args:pushf("self: ${cls.luacls}")
+    end
+
+    for idx, arg in ipairs(func.args) do
+        ---@cast arg idl.gen.type_desc
+        if arg.type.cxxcls ~= "lua_State" then
+            local name = arg.name or ("arg" .. idx)
+            local type = olua.luatype(arg.type)
+            name = name:gsub("%$", "")
+            if olua.can_construct_from_string(arg) then
+                type = olua.format("${type}|string")
+            end
+            olua.use(type)
+            args:pushf("${name}: ${type}")
+        end
+    end
+
+    local exps = olua.array("")
+    exps:push("fun(")
+    exps:push(tostring(args))
+    exps:push(")")
+
+    if func.ret.type.cxxcls ~= "void" then
+        exps:push(": " .. olua.luatype(func.ret.type))
+    end
+
+    return tostring(exps)
+end
+
 ---@param comment string
 ---@return string
 function olua.process_comment(comment)

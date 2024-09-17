@@ -100,6 +100,15 @@ local operator   = {
     ["operator-"] = "__sub",
     ["operator*"] = "__mul",
     ["operator/"] = "__div",
+    ["operator%"] = "__mod",
+    ["operator=="] = "__eq",
+    ["operator<"] = "__lt",
+    ["operator<="] = "__le",
+    ["operator<<"] = "__shl",
+    ["operator>>"] = "__shr",
+    ["operator&"] = "__band",
+    ["operator|"] = "__bor",
+    ["operator^"] = "__bxor",
 }
 
 
@@ -741,10 +750,6 @@ local function parse_func(cls, cur, template_types)
 
     setmetatable(func, { __olua_ignore = { display_name = true } })
 
-    if op then
-        func.ret.attr:pushf("@operator(${cur.name})")
-    end
-
     for _, c in ipairs(cur.children) do
         if c.kind == CursorKind.ParmDecl and c.parent == cur then
             local i = #func.args + 1
@@ -756,6 +761,16 @@ local function parse_func(cls, cur, template_types)
                 attr = olua.array()
             })
             func_def.args[i] = c
+        end
+    end
+
+    if op then
+        func.ret.attr:pushf("@operator(${cur.name})")
+        if cur.name == "operator-" then
+            if #func.args == 0 then
+                func.cxxfn = "__unm"
+                func.luafn = "__unm"
+            end
         end
     end
 

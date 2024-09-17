@@ -364,41 +364,21 @@ function olua.gen_source(module)
     olua.write(path, tostring(arr))
 end
 
-
----@param func idl.gen.func_desc
----@param cls? idl.gen.class_desc
-local function gen_overload_annotation(func, cls)
-    local args = olua.array(", ")
-
-    if not func.is_static and cls then
-        args:pushf("self: ${cls.luacls}")
-    end
-
-    for idx, arg in ipairs(func.args) do
-        ---@cast arg idl.gen.type_desc
-        if arg.type.cxxcls ~= "lua_State" then
-            local name = arg.name or ("arg" .. idx)
-            local type = olua.luatype(arg.type)
-            name = name:gsub("%$", "")
-            if olua.can_construct_from_string(arg) then
-                type = olua.format("${type}|string")
-            end
-            olua.use(type)
-            args:pushf("${name}: ${type}")
-        end
-    end
-
-    local exps = olua.array("")
-    exps:push("fun(")
-    exps:push(tostring(args))
-    exps:push(")")
-
-    if func.ret.type.cxxcls ~= "void" then
-        exps:push(": " .. olua.luatype(func.ret.type))
-    end
-
-    return tostring(exps)
-end
+local operator = {
+    __add = "add",
+    __sub = "sub",
+    __mul = "mul",
+    __div = "div",
+    __mod = "mod",
+    __pow = "pow",
+    __unm = "unm",
+    __band = "band",
+    __bor = "bor",
+    __bxor = "bxor",
+    __shl = "shl",
+    __shr = "shr",
+    __call = "call",
+}
 
 ---@param module idl.gen.module_desc
 ---@param cls idl.gen.class_desc
@@ -481,6 +461,45 @@ local function gen_class_annotation(module, cls, write)
             ---@field ${ci.name} ${type}
         ]]))
     end
+
+    cls.funcs:foreach(function (arr)
+        olua.use(cls, luacls)
+        ---@cast arr idl.gen.func_desc[]
+        local func = arr[1]
+        if not operator[func.luafn] then
+            return
+        end
+        local exprs = olua.array("")
+        exprs:push(operator[func.luafn])
+        if func.args and #func.args > 0 then
+            local skip_first_arg = olua.is_oluaret(func)
+            exprs:push("(")
+            for i, arg in ipairs(func.args) do
+                if skip_first_arg then
+                    skip_first_arg = false
+                    goto continue
+                end
+                local type = olua.luatype(arg.type)
+                if olua.can_construct_from_string(arg) then
+                    type = olua.format("${type}|string")
+                end
+                exprs:pushf(type)
+                if i < #func.args then
+                    exprs:push(", ")
+                end
+                ::continue::
+            end
+            exprs:push(")")
+        end
+        if func.ret and func.ret.type.cxxcls ~= "void" and not olua.is_oluaret(func) then
+            exprs:push(":" .. olua.luatype(func.ret.type))
+        end
+        if func.args and #func.args > 0 or func.ret then
+            write(olua.format([[
+                ---@operator ${exprs}
+            ]]))
+        end
+    end)
 
     if olua.is_enum_type(cls) then
         local fields = olua.array("\n")
@@ -590,12 +609,12 @@ local function gen_class_annotation(module, cls, write)
         end
 
         -- write overload
-        for i, olfi in ipairs(arr) do
+        for i, overload_func in ipairs(arr) do
             if i > 1 then
-                ---@cast olfi idl.gen.func_desc
-                local fn = gen_overload_annotation(olfi, cls)
+                ---@cast overload_func idl.gen.func_desc
+                local fn = olua.gen_luafn(overload_func, cls)
                 olua.use(fn)
-                local olfi_comment = olfi.comment
+                local olfi_comment = overload_func.comment
                 if func.comment ~= olfi_comment and olfi_comment and #olfi_comment > 0 then
                     olfi_comment = olfi_comment:gsub("\n", "\n---")
                     write("---")
