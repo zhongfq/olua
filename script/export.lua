@@ -491,11 +491,16 @@ local function gen_func_desc(cls, fi)
         end
         exps:push(fi.cxxfn)
     else
+        local operator = fi.ret.attr:find(function (v) return v:find("^@operator") end)
         if fi.is_contructor then
             exps:push(cls.cxxcls)
         else
             exps:push(olua.decltype(fi.ret.type, nil, true))
-            exps:push(fi.cxxfn)
+            if operator then
+                exps:push(operator:match("%(([^()]+)%)"))
+            else
+                exps:push(fi.cxxfn)
+            end
         end
         exps:push("(")
         for i, v in ipairs(fi.args) do
@@ -509,42 +514,6 @@ local function gen_func_desc(cls, fi)
         end
         exps:push(")")
     end
-    return tostring(exps)
-end
-
-
----@param func idl.gen.func_desc
----@param cls? idl.gen.class_desc
-function olua.gen_luafn(func, cls)
-    local args = olua.array(", ")
-
-    if not func.is_static and cls then
-        args:pushf("self: ${cls.luacls}")
-    end
-
-    for idx, arg in ipairs(func.args) do
-        ---@cast arg idl.gen.type_desc
-        if arg.type.cxxcls ~= "lua_State" then
-            local name = arg.name or ("arg" .. idx)
-            local type = olua.luatype(arg.type)
-            name = name:gsub("%$", "")
-            if olua.can_construct_from_string(arg) then
-                type = olua.format("${type}|string")
-            end
-            olua.use(type)
-            args:pushf("${name}: ${type}")
-        end
-    end
-
-    local exps = olua.array("")
-    exps:push("fun(")
-    exps:push(tostring(args))
-    exps:push(")")
-
-    if func.ret.type.cxxcls ~= "void" then
-        exps:push(": " .. olua.luatype(func.ret.type))
-    end
-
     return tostring(exps)
 end
 
@@ -563,27 +532,6 @@ function olua.process_comment(comment)
     comment = comment:gsub("\n *@", "\n\\")         -- convert @ to \\
     comment = comment:gsub("\\brief *", "")
     return comment
-end
-
----@param ti idl.gen.typeinfo
----@return string
-function olua.luatype(ti)
-    if ti.luacls == "void" then
-        return "nil"
-    elseif ti.luacls == "void *" then
-        return "any"
-    elseif ti.luatype == "array" then
-        return olua.luatype(ti.subtypes[1]) .. "[]"
-    elseif ti.luatype == "map" then
-        local key_luatype = olua.luatype(ti.subtypes[1])
-        local value_luatype = olua.luatype(ti.subtypes[2])
-        -- { [string]: boolean }
-        return string.format("{ [%s]: %s }", key_luatype, value_luatype)
-    elseif ti.luacls == "std.function" then
-        return olua.gen_luafn(ti.callback)
-    else
-        return ti.luatype or ti.luacls or "any"
-    end
 end
 
 ---@param tn string|idl.gen.typeinfo
@@ -740,14 +688,17 @@ function olua.typedef(typeinfo)
 end
 
 function olua.export(path)
-    local m = dofile(path)
-
     ---@class idl.gen.module_desc : idl.model.module_desc
-    ---@field class_types olua.array # idl.gen.class_desc[]
+    ---@field class_types idl.gen.class_desc[]
     ---@field private luacls unknown
 
     ---@class idl.gen.class_desc : idl.model.class_desc
     ---@field luacls string
+    ---@field funcs idl.gen.func_desc[][]
+    ---@field enums idl.gen.enum_desc[]
+    ---@field props idl.gen.prop_desc[]
+    ---@field vars idl.gen.var_desc[]
+    ---@field consts idl.gen.const_desc[]
 
     ---@class idl.gen.attr_desc
     ---@field addref? table # @addref
@@ -763,6 +714,12 @@ function olua.export(path)
     ---@field type? table
     ---@field unpack? table
     ---@field using? table
+
+    ---@class idl.gen.enum_desc
+    ---@field name string
+    ---@field value string
+    ---@field intvalue integer|unknown
+    ---@field comment string|nil
 
     ---@class idl.gen.const_desc : idl.model.const_desc
     ---@field type idl.gen.typeinfo
@@ -783,25 +740,27 @@ function olua.export(path)
     ---@field funcdesc string
     ---@field index integer
     ---@field ret idl.gen.type_desc
-    ---@field args olua.array # idl.gen.type_desc[]
+    ---@field args idl.gen.type_desc[]
 
-    olua.make_array(m.class_types):foreach(function (cls)
-        ---@cast cls idl.gen.class_desc
+    ---@type idl.gen.module_desc
+    local m = dofile(path)
+
+    for _, cls in ipairs(m.class_types) do
         class_map[cls.cxxcls] = cls
 
         local func_map = {}
 
-        olua.make_ordered_map(cls.funcs):foreach(function (arr)
-            ---@cast arr idl.gen.func_desc[]
+        cls.funcs = olua.values(cls.funcs)
+        for _, arr in ipairs(cls.funcs) do
             for _, func in ipairs(arr) do
                 if func.prototype then
                     func_map[func.prototype] = func
                 end
             end
-        end)
+        end
 
-        olua.make_ordered_map(cls.props):foreach(function (prop)
-            ---@cast prop idl.gen.prop_desc
+        cls.props = olua.values(cls.props)
+        for _, prop in ipairs(cls.props) do
             if prop.get then
                 prop.get = func_map[prop.get]
                 if not prop.get then
@@ -814,10 +773,10 @@ function olua.export(path)
                     olua.error("set function not found: ${cls.cxxcls} => ${prop.set}")
                 end
             end
-        end)
+        end
 
-        olua.make_ordered_map(cls.vars):foreach(function (var)
-            ---@cast var idl.gen.var_desc|idl.model.var_desc
+        cls.vars = olua.values(cls.vars)
+        for _, var in ipairs(cls.vars) do
             if var.get then
                 var.get = func_map[var.get]
                 if not var.get then
@@ -830,33 +789,39 @@ function olua.export(path)
                     olua.error("set function not found: ${cls.cxxcls} => ${var.set}")
                 end
             end
-        end)
+        end
 
-        olua.make_ordered_map(cls.consts):foreach(function (const)
-            ---@cast const idl.gen.const_desc|idl.model.const_desc
+        cls.consts = olua.values(cls.consts)
+        for _, const in ipairs(cls.consts) do
             local tn = const.type --[[@as string]]
             const.type = olua.typeinfo(tn, cls)
-        end)
+        end
 
-        cls.enums = olua.make_ordered_map(cls.enums)
-        cls.funcs:foreach(function (arr)
-            olua.make_array(arr):foreach(function (func, idx)
-                ---@cast func idl.gen.func_desc
+        cls.enums = olua.values(cls.enums)
+
+        for _, arr in ipairs(cls.funcs) do
+            for idx, func in ipairs(arr) do
                 func.index = idx
                 if func.body then
                     func.funcdesc = ""
                     func.luafn = func.luafn or func.cxxfn
                 else
+                    olua.make_array(func.ret.attr)
                     func.funcdesc = gen_func_desc(cls, func)
                     func.ret = olua.parse_type(func.ret, cls)
-                    olua.make_array(func.args):foreach(function (arg, idx)
-                        ---@cast arg idl.model.type_desc
-                        func.args[idx] = olua.parse_type(arg, cls)
-                    end)
+                    for i, arg in ipairs(func.args) do
+                        func.args[i] = olua.parse_type(arg, cls)
+                    end
                 end
-            end)
-        end)
-    end)
+            end
+        end
+
+        olua.sort(cls.funcs, function (a, b) return a[1].luafn < b[1].luafn end)
+        olua.sort(cls.props, function (a, b) return a.name < b.name end)
+        olua.sort(cls.vars, function (a, b) return a.index < b.index end)
+        olua.sort(cls.enums, function (a, b) return a.name < b.name end)
+        olua.sort(cls.consts, function (a, b) return a.name < b.name end)
+    end
 
     olua.gen_header(m)
     olua.gen_source(m)

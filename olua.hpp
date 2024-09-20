@@ -628,6 +628,18 @@ int olua_copy_object(lua_State *L, T &value, const char *cls)
     return 1;
 }
 
+template <class T>
+void olua_object_fromstring(lua_State *L, int idx, T *value)
+{
+    *value = olua_checkstring(L, idx);
+}
+
+template <class T>
+void olua_object_fromtable(lua_State *L, int idx, T *value)
+{
+    static_assert(false, "not implemented yet");
+}
+
 // std::shared_ptr & std::weak_ptr
 #define OLUA_SMART_PRT ".olua.ref.smartptr<>"
 

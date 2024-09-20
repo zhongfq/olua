@@ -9,6 +9,10 @@
 #include <deque>
 #include <memory>
 
+#if __cplusplus >= 202002L
+#include <compare>
+#endif
+
 typedef void GLvoid;
 typedef char GLchar;
 typedef float GLfloat;
@@ -36,8 +40,7 @@ public:
 
 
     Point operator-() {return Point(-x, -y);}
-    bool operator==(const Point &p) {return (x == p.x && y == p.y);}
-    Point operator+(const Point &p) {return Point(x + p.x, y + p.y);}
+    friend bool operator==(const Point &p1, const Point &p2) {return (p1.x == p2.x && p1.y == p2.y);}
     Point operator-(const Point &p) {return Point(x - p.x, y - p.y);}
     Point operator*(float s) {return Point(x * s, y * s);}
     Point operator/(float s) {return Point(x / s, y / s);}
@@ -46,7 +49,19 @@ public:
         lua_pushfstring(L, "Point(%f, %f)", x, y);
         return 1;
     }
+
+#if __cplusplus >= 202002L
+    friend std::strong_ordering operator<=>(const Point &p1, const Point &p2) { 
+        if (p1.x < p2.x) return std::strong_ordering::less;
+        if (p1.x > p2.x) return std::strong_ordering::greater;
+        if (p1.y < p2.y) return std::strong_ordering::less;
+        if (p1.y > p2.y) return std::strong_ordering::greater;
+        return std::strong_ordering::equal;
+    };
+#endif
 };
+
+inline Point operator+(const Point &p1, const Point &p2) {return Point(p1.x + p2.x, p1.y + p2.y);}
 
 class Const {
 public:

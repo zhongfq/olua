@@ -255,7 +255,7 @@ end
 
 ---@class idl.model.func_desc
 ---@field cxxfn string # C++ function name
----@field luafn? string # Lua function name
+---@field luafn string # Lua function name
 ---@field prototype? string # C++ prototype
 ---@field display_name? string # C++ prototype without return type
 ---@field comment? string
@@ -289,6 +289,7 @@ end
 ---@field name string
 ---@field get string
 ---@field set? string
+---@field index integer
 
 ---@class idl.model.const_desc
 ---@field name string
@@ -700,7 +701,7 @@ function typeconf(cxxcls)
     ---Can construct a c++ class from string.
     ---@param fromstring string
     function CMD.fromstring(fromstring)
-        cls.options.fromstring = checkboolean("fromstring",fromstring)
+        cls.options.fromstring = checkboolean("fromstring", fromstring)
         return CMD
     end
 

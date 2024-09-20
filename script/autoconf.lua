@@ -58,12 +58,13 @@ olua.PARSE_ALL_COMMENTS = false
 
 local clang_tu
 
-local type_cursors    = olua.ordered_map(false)
-local comment_cursors = olua.ordered_map(false)
-local visited_types   = olua.ordered_map(false)
-local alias_types     = olua.ordered_map(false)
-local type_checker    = olua.array()
-local type_packvars   = olua.ordered_map()
+local type_cursors     = olua.ordered_map(false)
+local operator_cursors = olua.ordered_map(false)
+local comment_cursors  = olua.ordered_map(false)
+local visited_types    = olua.ordered_map(false)
+local alias_types      = olua.ordered_map(false)
+local type_checker     = olua.array()
+local type_packvars    = olua.ordered_map()
 
 
 local metamethod = {
@@ -109,6 +110,7 @@ local operator   = {
     ["operator&"] = "__band",
     ["operator|"] = "__bor",
     ["operator^"] = "__bxor",
+    ["operator<=>"] = "__cmp",
 }
 
 
@@ -875,52 +877,74 @@ function Autoconf:visit_method(cls, cur, template_desc)
     cls.conf.excludes:replace(func.display_name, true)
     cls.conf.excludes:replace(cur.displayName, true)
 
-    local funcs = cls.funcs:get(func.cxxfn)
-    if not funcs then
-        funcs = olua.array()
-        cls.funcs:set(func.cxxfn, funcs)
-    end
+    if cur.name:find("operator<=>") then
+        local v = func.ret.attr:find(function (v) return v:find("^@operator") end)
+        func.ret.attr:remove(v)
+        for _, op in ipairs({ "operator==", "operator<", "operator<=" }) do
+            local op_func = olua.clone(func)
+            local op_name = operator[op]
+            op_func.cxxfn = op_name
+            op_func.luafn = op_name
+            op_func.ret.type = "bool"
+            op_func.ret.attr:pushf("@operator(${op})")
+            op_func.macro = "#if __cplusplus >= 202002L"
+            op_func.prototype = gen_prototype(cls, op_func)
+            op_func.display_name = gen_display_name(cls, op_func)
+            local funcs = cls.funcs:get(op_func.cxxfn)
+            if not funcs then
+                funcs = olua.array()
+                cls.funcs:set(op_func.cxxfn, funcs)
+            end
+            funcs:push(op_func)
+        end
+    else
+        local funcs = cls.funcs:get(func.cxxfn)
+        if not funcs then
+            funcs = olua.array()
+            cls.funcs:set(func.cxxfn, funcs)
+        end
 
-    funcs:push(func)
+        funcs:push(func)
 
-    local ret_attr = func.ret.attr:find(function (value)
-        return value:find("@getter") or value:find("@setter")
-    end)
-    if ret_attr then
-        local what = ret_attr:find("@getter") and "get" or "set"
-        olua.assert((what == "get" and num_args == 0) or num_args == 1, [[
+        local ret_attr = func.ret.attr:find(function (value)
+            return value:find("@getter") or value:find("@setter")
+        end)
+        if ret_attr then
+            local what = ret_attr:find("@getter") and "get" or "set"
+            olua.assert((what == "get" and num_args == 0) or num_args == 1, [[
             ${what}ter function has wrong argument:
                 prototype: ${decl}
         ]])
-        local prop = cls.props:get(func.luafn)
-        if not prop then
-            prop = { name = func.luafn, get = "" } ---@type idl.model.prop_desc
-            cls.props:set(func.luafn, prop)
-        end
-        prop[what] = func.prototype
-        func.is_exposed = false
-    elseif cur.isVariadic then
-        for n = 1, olua.MAX_VARIADIC_ARGS do
-            local variadic_func = olua.clone(func)
-            for i = 1, n do
-                local arg = olua.clone(variadic_func.args[num_args]) ---@type idl.model.type_desc
-                olua.use(i)
-                arg.name = olua.format("${arg.name}_$${i}")
-                variadic_func.args:push(arg)
+            local prop = cls.props:get(func.luafn)
+            if not prop then
+                prop = { name = func.luafn, get = "" } ---@type idl.model.prop_desc
+                cls.props:set(func.luafn, prop)
             end
-            variadic_func.prototype = gen_prototype(cls, variadic_func)
-            variadic_func.display_name = gen_display_name(cls, variadic_func)
-            funcs:push(variadic_func)
-            cls.CMD.func(variadic_func.display_name)
-        end
-    elseif has_optional then
-        for n = min_args, #func.args - 1 do
-            local overload_func = olua.clone(func)
-            overload_func.args = overload_func.args:slice(1, n)
-            overload_func.prototype = gen_prototype(cls, overload_func)
-            overload_func.display_name = gen_display_name(cls, overload_func)
-            funcs:push(overload_func)
-            cls.CMD.func(overload_func.display_name)
+            prop[what] = func.prototype
+            func.is_exposed = false
+        elseif cur.isVariadic then
+            for n = 1, olua.MAX_VARIADIC_ARGS do
+                local variadic_func = olua.clone(func)
+                for i = 1, n do
+                    local arg = olua.clone(variadic_func.args[num_args]) ---@type idl.model.type_desc
+                    olua.use(i)
+                    arg.name = olua.format("${arg.name}_$${i}")
+                    variadic_func.args:push(arg)
+                end
+                variadic_func.prototype = gen_prototype(cls, variadic_func)
+                variadic_func.display_name = gen_display_name(cls, variadic_func)
+                funcs:push(variadic_func)
+                cls.CMD.func(variadic_func.display_name)
+            end
+        elseif has_optional then
+            for n = min_args, #func.args - 1 do
+                local overload_func = olua.clone(func)
+                overload_func.args = overload_func.args:slice(1, n)
+                overload_func.prototype = gen_prototype(cls, overload_func)
+                overload_func.display_name = gen_display_name(cls, overload_func)
+                funcs:push(overload_func)
+                cls.CMD.func(overload_func.display_name)
+            end
         end
     end
 end
@@ -1111,6 +1135,32 @@ function Autoconf:visit_alias_class(alias, cxxcls)
     end
 end
 
+---@param cls idl.model.class_desc
+---@param cur clang.Cursor
+---@param is_cxx_abstract boolean
+---@return boolean
+local function can_visit_method(cls, cur, is_cxx_abstract)
+    local kind = cur.kind
+    local is_constructor = kind == CursorKind.Constructor
+    local is_operator = cur.name:find("operator[^%w]+")
+    if is_excluded_memeber(cls, cur)
+        or cur.isCXXDeletedMethod
+        or cur.isCXXCopyConstructor
+        or cur.isCXXMoveConstructor
+        or (is_constructor and (cls.conf.excludes:has("new")))
+        or (is_constructor and is_cxx_abstract)
+        or has_deprecated_attr(cur)
+        or has_exclude_attr(cur)
+        or is_operator and (not operator[cur.name] or not cls.options.reg_luatype)
+        or cur.name == "as" -- 'as used to cast object'
+        or not check_included_method(cls, cur)
+    then
+        return false
+    else
+        return true
+    end
+end
+
 ---@param cxxcls string
 ---@param cur clang.Cursor
 ---@param template_types? string[]
@@ -1232,23 +1282,9 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
             or kind == CursorKind.FunctionDecl
             or kind == CursorKind.CXXMethod
         then
-            local isConstructor = kind == CursorKind.Constructor
-            if is_excluded_memeber(cls, c)
-                or c.isCXXDeletedMethod
-                or c.isCXXCopyConstructor
-                or c.isCXXMoveConstructor
-                or (isConstructor and (cls.conf.excludes:has("new")))
-                -- or (isConstructor and cur.kind == CursorKind.ClassTemplate)
-                or (isConstructor and cur.isCXXAbstract)
-                or has_deprecated_attr(c)
-                or has_exclude_attr(c)
-                or (c.name:find("operator[%[%]~|&%^%-=+/*><!()]+") and not operator[c.name])
-                or c.name == "as" -- 'as used to cast object'
-                or not check_included_method(cls, c)
-            then
-                goto continue
+            if can_visit_method(cls, c, cur.isCXXAbstract) then
+                self:visit_method(cls, c)
             end
-            self:visit_method(cls, c)
         elseif kind == CursorKind.FunctionTemplate then
             local member = cls.conf.members:get(c.name) ---@type idl.conf.member_desc
             if not member and cls.conf.maincls then
@@ -1266,9 +1302,23 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
                     })
                 end
             end
+        elseif kind == CursorKind.FriendDecl then
+            for _, cc in ipairs(c.children) do
+                if cc.kind == CursorKind.FunctionDecl and can_visit_method(cls, cc, false) then
+                    self:visit_method(cls, cc)
+                end
+            end
         end
 
         ::continue::
+    end
+
+    if operator_cursors:has(cxxcls) then
+        for _, c in ipairs(operator_cursors:get(cxxcls)) do
+            if can_visit_method(cls, c, false) then
+                self:visit_method(cls, c)
+            end
+        end
     end
 end
 
@@ -1360,6 +1410,20 @@ end
 local function prepare_cursor(cur)
     local kind = cur.kind
     local cxxcls = parse_from_ast({ declaration = cur, name = cur.name })
+    if cur.kind == CursorKind.FunctionDecl and operator[cur.name] then
+        for _, c in ipairs(cur.children) do
+            if c.kind == CursorKind.ParmDecl and c.parent == cur then
+                local type = raw_typename(typename(c.type))
+                local arr = operator_cursors:get(type) ---@type olua.array|nil
+                if not arr then
+                    arr = olua.array()
+                    operator_cursors:set(type, arr)
+                end
+                arr:push(cur)
+                break
+            end
+        end
+    end
     if kind == CursorKind.ClassDecl
         or kind == CursorKind.EnumDecl
         or kind == CursorKind.ClassTemplate

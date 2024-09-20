@@ -2029,14 +2029,14 @@ static int _olua_fun_example_Point___add(lua_State *L)
 {
     olua_startinvoke(L);
 
-    example::Point *self = nullptr;
-    example::Point *arg1;       /** p */
+    example::Point *arg1;       /** p1 */
+    example::Point *arg2;       /** p2 */
 
-    olua_to_object(L, 1, &self, "example.Point");
-    olua_check_object(L, 2, &arg1, "example.Point");
+    olua_check_object(L, 1, &arg1, "example.Point");
+    olua_check_object(L, 2, &arg2, "example.Point");
 
-    // @operator(operator+) example::Point __add(const example::Point &p)
-    example::Point ret = self->operator+(*arg1);
+    // @operator(operator+) static example::Point operator+(const example::Point &p1, const example::Point &p2)
+    example::Point ret = (*arg1) + (*arg2);
     int num_ret = olua_copy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);
@@ -2054,8 +2054,8 @@ static int _olua_fun_example_Point___div(lua_State *L)
     olua_to_object(L, 1, &self, "example.Point");
     olua_check_number(L, 2, &arg1);
 
-    // @operator(operator/) example::Point __div(float s)
-    example::Point ret = self->operator/(arg1);
+    // @operator(operator/) example::Point operator/(float s)
+    example::Point ret = (*self) / (arg1);
     int num_ret = olua_copy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);
@@ -2067,14 +2067,14 @@ static int _olua_fun_example_Point___eq(lua_State *L)
 {
     olua_startinvoke(L);
 
-    example::Point *self = nullptr;
-    example::Point *arg1;       /** p */
+    example::Point *arg1;       /** p1 */
+    example::Point *arg2;       /** p2 */
 
-    olua_to_object(L, 1, &self, "example.Point");
-    olua_check_object(L, 2, &arg1, "example.Point");
+    olua_check_object(L, 1, &arg1, "example.Point");
+    olua_check_object(L, 2, &arg2, "example.Point");
 
-    // @operator(operator==) bool __eq(const example::Point &p)
-    bool ret = self->operator==(*arg1);
+    // @operator(operator==) static bool operator==(const example::Point &p1, const example::Point &p2)
+    bool ret = (*arg1) == (*arg2);
     int num_ret = olua_push_bool(L, ret);
 
     olua_endinvoke(L);
@@ -2104,8 +2104,8 @@ static int _olua_fun_example_Point___mul(lua_State *L)
     olua_to_object(L, 1, &self, "example.Point");
     olua_check_number(L, 2, &arg1);
 
-    // @operator(operator*) example::Point __mul(float s)
-    example::Point ret = self->operator*(arg1);
+    // @operator(operator*) example::Point operator*(float s)
+    example::Point ret = (*self) * (arg1);
     int num_ret = olua_copy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);
@@ -2123,8 +2123,8 @@ static int _olua_fun_example_Point___sub(lua_State *L)
     olua_to_object(L, 1, &self, "example.Point");
     olua_check_object(L, 2, &arg1, "example.Point");
 
-    // @operator(operator-) example::Point __sub(const example::Point &p)
-    example::Point ret = self->operator-(*arg1);
+    // @operator(operator-) example::Point operator-(const example::Point &p)
+    example::Point ret = (*self) - (*arg1);
     int num_ret = olua_copy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);
@@ -2156,8 +2156,8 @@ static int _olua_fun_example_Point___unm(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Point");
 
-    // @operator(operator-) example::Point __unm()
-    example::Point ret = self->operator-();
+    // @operator(operator-) example::Point operator-()
+    example::Point ret = -(*self);
     int num_ret = olua_copy_object(L, ret, "example.Point");
 
     olua_endinvoke(L);

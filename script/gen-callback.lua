@@ -32,7 +32,7 @@ end
 ---@param idx integer
 local function check_tag_store(func, idx)
     if idx > 0 then
-        local ai = func.args[idx] ---@type idl.gen.type_desc
+        local ai = func.args[idx]
         olua.assert(olua.is_pointer_type(ai.type), "arg #${idx} is not a userdata")
     end
 end

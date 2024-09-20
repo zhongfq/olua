@@ -220,8 +220,8 @@ static int _olua_cls_example_Event(lua_State *L)
 {
     oluacls_class<example::Event>(L, "example.Event");
     oluacls_func(L, "__gc", _olua_fun_example_Event___gc);
-    oluacls_prop(L, "data", _olua_fun_example_Event_data, _olua_fun_example_Event_data);
     oluacls_prop(L, "name", _olua_fun_example_Event_name, _olua_fun_example_Event_name);
+    oluacls_prop(L, "data", _olua_fun_example_Event_data, _olua_fun_example_Event_data);
 
     return 1;
 }

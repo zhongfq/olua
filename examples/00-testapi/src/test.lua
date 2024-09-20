@@ -23,7 +23,7 @@ assert(not Hello.getExcludeType)
 assert(not Hello.setExcludeType)
 assert(not Hello.setExcludeTypes)
 
-local nogc = NoGC.new(0, function () end)
+local nogc = NoGC.new(0, function () return 0 end)
 print("nogc", NoGC.create(), nogc)
 olua.printobj("brefore take", nogc)
 olua.take(nogc)
@@ -84,9 +84,11 @@ obj:setClickCallback(ClickCallback(function (...)
 end))
 obj:setClickCallback(function (...)
     print("click", ...)
+    return ""
 end)
 obj:setCallback(function (this, p)
     print("callback", this, p, p.x, p.y)
+    return 0
 end)
 obj:doCallback()
 
@@ -194,6 +196,7 @@ print(chars:sub(2, 4):tostring(3))
 
 obj:testMoveCallback(function (tmpobj, value)
     print("move obj", tmpobj, olua.move(tmpobj))
+    return ""
 end)
 
 print("==================== test poing ===================")

@@ -1,5 +1,6 @@
 {
   "diagnostics.disable": ["redundant-return-value"],
+  "workspace.library": ["addons"],
   "diagnostics.globals": [
     "api_dir",
     "autoconf",

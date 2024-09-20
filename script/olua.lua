@@ -163,6 +163,23 @@ function olua.clone(t)
     end
 end
 
+---Get a slice from array.
+---@generic T
+---@param t T[]
+---@param from? integer
+---@param to? integer
+---@return T[]
+function olua.slice(t, from, to)
+    local arr = {}
+    for i = from or 1, to or #t do
+        if i > #t then
+            break
+        end
+        arr[#arr + 1] = t[i]
+    end
+    return arr
+end
+
 ---Get the keys of a table.
 ---@param t table
 ---@return olua.array
@@ -174,9 +191,10 @@ function olua.keys(t)
     return keys
 end
 
----Iterate over the table.
----@param t table
----@param fn fun(value:any, key:any, t:table)
+---Iterate over the array.
+---@generic T
+---@param t T[]
+---@param fn fun(value:T, key:integer, t:T[])
 function olua.foreach(t, fn)
     for k, v in pairs(t) do
         fn(v, k, t)
@@ -185,18 +203,19 @@ end
 
 ---Get the values of a table.
 ---@param t table
----@return olua.array
+---@return table
 function olua.values(t)
-    local values = olua.array()
+    local values = {}
     for _, v in pairs(t) do
-        values:push(v)
+        values[#values + 1] = v
     end
     return values
 end
 
 ---Sort the table.
----@param t table
----@param field? string|fun(a:any, b:any):boolean
+---@generic T
+---@param t T[]
+---@param field? string|fun(a:T, b:T):boolean
 function olua.sort(t, field)
     if type(field) == "function" then
         table.sort(t, field)

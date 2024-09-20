@@ -4,6 +4,8 @@ module "example"
 
 output_dir "src"
 
+api_dir "../../addons/example"
+
 headers [[
 #include "Example.h"
 #include "olua-custom.h"

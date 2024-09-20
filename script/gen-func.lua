@@ -118,7 +118,7 @@ function olua.gen_check_exp(arg, name, idx, codeset)
     if olua.can_construct_from_string(arg) then
         check_args:pushf([[
             if (olua_is_string(L, ${idx})) {
-                ${name}_fromstring = olua_tostring(L, ${idx});
+                olua_object_fromstring(L, ${idx}, &${name}_fromstring);
                 ${name} = &${name}_fromstring;
             } else {
                 ${codeset.check_args}
@@ -378,13 +378,13 @@ local function gen_func_args(cls, func, codeset)
         codeset.check_args:pushf('${func_to}(L, 1, &self, "${ti.luacls}");')
     end
 
-    local args = func.args:slice()
+    local args = olua.slice(func.args)
 
     if olua.is_oluaret(func) then
         local arg = args[1]
         olua.assert(arg and arg.type.cxxcls == "lua_State", "first arg type must be 'lua_State *'")
         codeset.caller_args:push("L")
-        args:shift()
+        table.remove(args, 1)
     end
 
     for i, arg in ipairs(args) do
@@ -490,16 +490,6 @@ local function gen_one_func(cls, func, write, fidx)
         return
     end
 
-    if func.ret.attr.extend then
-        caller = func.ret.attr.extend[1] .. "::"
-    end
-
-    if func.ret.attr.operator then
-        cxxfn = func.ret.attr.operator:join(" ")
-    elseif func.ret.attr.template then
-        cxxfn = func.ret.attr.template:join(" ")
-    end
-
     if func.ret.attr.postnew then
         codeset.insert_after:push("olua_postnew(L, ret);")
     end
@@ -527,7 +517,32 @@ local function gen_one_func(cls, func, write, fidx)
         table.insert(codeset.insert_after, 1, "// insert code after call")
     end
 
-    if func.is_contructor then
+    if func.ret.attr.extend then
+        caller = func.ret.attr.extend[1] .. "::"
+    end
+
+    if func.ret.attr.template then
+        cxxfn = func.ret.attr.template:join(" ")
+    end
+
+    if func.ret.attr.operator then
+        local caller_args = codeset.caller_args:slice()
+        if not func.is_static then
+            caller_args:unshift("*self")
+        end
+        cxxfn = func.ret.attr.operator:join(" ")
+        local op = cxxfn:gsub("operator", "")
+        local arg1 = caller_args[1]
+        local arg2 = caller_args[2]
+        if arg1 and arg2 then
+            caller = olua.format("(${arg1}) ${op} (${arg2})");
+        else
+            caller = olua.format("${op}(${arg1})");
+        end
+        args_begin = "";
+        args_end = "";
+        codeset.caller_args:clear()
+    elseif func.is_contructor then
         caller = "new " .. cls.cxxcls
         codeset.post_new = "olua_postnew(L, ret);"
     else
@@ -580,6 +595,7 @@ local function gen_one_func(cls, func, write, fidx)
             return 1;
         ]])
     else
+        olua.use(args_begin, args_end)
         func_body = olua.format([[
             olua_startinvoke(L);
 
@@ -632,7 +648,6 @@ end
 local function get_num_args(func)
     local count = 0
     for _, arg in ipairs(func.args) do
-        ---@cast arg idl.gen.type_desc
         if arg.attr.pack then
             count = count + arg.type.packvars
         else
@@ -675,7 +690,6 @@ local function gen_test_and_call(cls, fns)
                     goto continue
                 end
 
-                ---@cast arg idl.gen.type_desc
                 local func_is = olua.conv_func(arg.type, arg.attr.pack and "canpack" or "is")
                 local test_another = ""
                 argn = argn + 1
@@ -687,7 +701,7 @@ local function gen_test_and_call(cls, fns)
                     test_another = " " .. olua.format("|| olua_isnil(L, ${argn})")
                 end
 
-                olua.use(func_is, test_another)
+                olua.use(func_is, test_another, cls)
                 if olua.is_pointer_type(arg.type) or olua.is_func_type(arg.type) then
                     if arg.attr.pack then
                         test_exps:pushf([[
@@ -827,7 +841,6 @@ function olua.gen_class_fill(cls, idx, name, codeset)
         for _, v in ipairs(c.vars) do
             vars:replace(v.name, {
                 name = v.name,
-                varname = v.get.varname,
                 attr = v.get.ret.attr,
                 type = v.get.ret.type,
             })
@@ -867,7 +880,6 @@ local function gen_pack_func(cls, write)
         check_args = olua.array("\n"),
     }
     for i, var in ipairs(cls.vars) do
-        ---@type idl.gen.type_desc
         local pi = var.set.args[1]
         local name = "arg" .. i
         local pack = pi.attr.pack
@@ -897,7 +909,7 @@ end
 ---@param cls idl.gen.class_desc
 ---@param write idl.gen.writer
 local function gen_unpack_func(cls, write)
-    local num_args = cls.vars:size()
+    local num_args = #cls.vars
     local codeset = { push_args = olua.array("\n") }
     for _, var in ipairs(cls.vars) do
         local pi = var.set.args[1]
@@ -943,7 +955,6 @@ end
 ---@param write idl.gen.writer
 function olua.gen_pack_header(module, write)
     for _, cls in ipairs(module.class_types) do
-        ---@cast cls idl.gen.class_desc
         if cls.options.packable and not cls.options.packvars then
             write(cls.macro)
             write(olua.format([[
@@ -962,12 +973,8 @@ end
 ---@param write idl.gen.writer
 function olua.gen_pack_source(module, write)
     for _, cls in ipairs(module.class_types) do
-        ---@cast cls idl.gen.class_desc
         if cls.options.packable and not cls.options.packvars then
             write(cls.macro)
-            cls.vars:sort(function (_, _, a, b)
-                return a.index < b.index
-            end)
             gen_pack_func(cls, write)
             gen_unpack_func(cls, write)
             gen_canpack_func(cls, write)

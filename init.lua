@@ -118,10 +118,11 @@ if not isdir(OLUA_HOME) or not isdir(OLUA_HOME .. "/" .. lua) or not isdir(OLUA_
 end
 
 require "script.olua"
-require "script.parser"
+require "script.export"
 require "script.basictype"
 require "script.gen-class"
 require "script.gen-func"
 require "script.gen-callback"
+require "script.gen-annotation"
 require "script.idl"
 require "script.autoconf"

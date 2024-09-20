@@ -22,6 +22,15 @@ typedef {
 }
 
 typedef {
+    cxxcls = [[
+        std::strong_ordering
+        std::partial_ordering
+        std::weak_ordering
+    ]],
+    conv = "<NONE>",
+}
+
+typedef {
     cxxcls = "lua_State",
     luacls = "lua_State",
     conv = "<NONE>",
