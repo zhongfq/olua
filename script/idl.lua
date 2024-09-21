@@ -211,6 +211,7 @@ function typedef(cxxcls)
     ---@field packable? boolean
     ---@field packvars? integer
     ---@field fromstring? boolean
+    ---@field fromtable? boolean
     ---@field smartptr? boolean
     ---@field override? boolean
     local cls = { cxxcls = cxxcls }
@@ -594,6 +595,7 @@ function typeconf(cxxcls)
     ---@field luacls string
     ---@field maincls? idl.model.class_desc
     ---@field fromstring? boolean
+    ---@field fromtable? boolean
     ---@field funcdecl? string # std::function declaration
     ---@field conv string
     local conf = {
@@ -619,6 +621,7 @@ function typeconf(cxxcls)
     ---@field packable? boolean
     ---@field packvars? integer
     ---@field fromstring? boolean
+    ---@field fromtable? boolean
 
     ---@class idl.model.class_desc
     ---@field supercls? string
@@ -696,12 +699,18 @@ function typeconf(cxxcls)
     add_value_command(CMD, cls.options, "indexerror")
     add_value_command(CMD, cls.options, "packable", checkboolean)
     add_value_command(CMD, cls.options, "packvars", checkinteger)
-    add_value_command(CMD, cls.options, "fromstring", checkboolean)
 
     ---Can construct a c++ class from string.
-    ---@param fromstring string
+    ---@param fromstring booltype
     function CMD.fromstring(fromstring)
         cls.options.fromstring = checkboolean("fromstring", fromstring)
+        return CMD
+    end
+
+    ---Can construct a c++ class from table.
+    ---@param fromtable booltype
+    function CMD.fromtable(fromtable)
+        cls.options.fromtable = checkboolean("fromtable", fromtable)
         return CMD
     end
 

@@ -219,15 +219,15 @@ static int _olua_fun_example_Hello_setThis$2(lua_State *L)
 
 static int _olua_fun_example_Hello_setThis(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        if ((olua_is_smartptr(L, 2, "example.Hello"))) {
+    if (num_args == 2) {
+        if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_smartptr(L, 2, "example.Hello"))) {
             // void setThis(const std::shared_ptr<example::Hello> &sp)
             return _olua_fun_example_Hello_setThis$1(L);
         }
 
-        // if ((olua_is_integer(L, 2))) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_integer(L, 2))) {
             // void setThis(int v)
             return _olua_fun_example_Hello_setThis$2(L);
         // }

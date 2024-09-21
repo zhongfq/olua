@@ -4,4 +4,3 @@ autobuild/
 build/
 bin/*.zip
 script/test.lua
-addons/example/

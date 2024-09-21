@@ -32,6 +32,7 @@ OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const example::Point *)
     return olua_is_integer(L, idx + 0) && olua_is_integer(L, idx + 1);
 }
 
+
 static int _olua_fun_example_Object___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -161,15 +162,15 @@ static int _olua_fun_example_Point_x$2(lua_State *L)
 
 static int _olua_fun_example_Point_x(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // int x
         return _olua_fun_example_Point_x$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Point")) && (olua_is_integer(L, 2))) {
             // int x
             return _olua_fun_example_Point_x$2(L);
         // }
@@ -217,15 +218,15 @@ static int _olua_fun_example_Point_y$2(lua_State *L)
 
 static int _olua_fun_example_Point_y(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // int y
         return _olua_fun_example_Point_y$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Point")) && (olua_is_integer(L, 2))) {
             // int y
             return _olua_fun_example_Point_y$2(L);
         // }

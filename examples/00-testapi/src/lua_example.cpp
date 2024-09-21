@@ -32,6 +32,28 @@ OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const example::Point *)
     return olua_is_number(L, idx + 0) && olua_is_number(L, idx + 1);
 }
 
+OLUA_LIB void olua_check_table(lua_State *L, int idx, example::Point *value)
+{
+    float arg1 = 0;       /** x */
+    float arg2 = 0;       /** y */
+
+    olua_getfield(L, idx, "x");
+    olua_check_number(L, -1, &arg1);
+    value->x = arg1;
+    lua_pop(L, 1);
+
+    olua_getfield(L, idx, "y");
+    olua_check_number(L, -1, &arg2);
+    value->y = arg2;
+    lua_pop(L, 1);
+}
+
+OLUA_LIB bool olua_is_table(lua_State *L, int idx, example::Point *)
+{
+    return olua_hasfield(L, idx, "y") && olua_hasfield(L, idx, "x");
+}
+
+
 static int _olua_fun_example_Object___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -391,17 +413,17 @@ static int _olua_fun_example_VectorInt_slice$2(lua_State *L)
 
 static int _olua_fun_example_VectorInt_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorInt")) && (olua_is_integer(L, 2))) {
             // @postnew example::VectorInt *slice(size_t from)
             return _olua_fun_example_VectorInt_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.VectorInt")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::VectorInt *slice(size_t from, @optional size_t to)
             return _olua_fun_example_VectorInt_slice$1(L);
         // }
@@ -460,17 +482,17 @@ static int _olua_fun_example_VectorInt_sub$2(lua_State *L)
 
 static int _olua_fun_example_VectorInt_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorInt")) && (olua_is_integer(L, 2))) {
             // @postnew example::VectorInt *sub(size_t from)
             return _olua_fun_example_VectorInt_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.VectorInt")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::VectorInt *sub(size_t from, @optional size_t to)
             return _olua_fun_example_VectorInt_sub$1(L);
         // }
@@ -557,15 +579,15 @@ static int _olua_fun_example_VectorInt_value$2(lua_State *L)
 
 static int _olua_fun_example_VectorInt_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const std::vector<int> &value()
         return _olua_fun_example_VectorInt_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_array(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorInt")) && (olua_is_array(L, 2))) {
             // @setter @name(value) void value(const std::vector<int> &v)
             return _olua_fun_example_VectorInt_value$2(L);
         // }
@@ -849,17 +871,17 @@ static int _olua_fun_example_VectorPoint_slice$2(lua_State *L)
 
 static int _olua_fun_example_VectorPoint_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorPoint")) && (olua_is_integer(L, 2))) {
             // @postnew example::VectorPoint *slice(size_t from)
             return _olua_fun_example_VectorPoint_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.VectorPoint")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::VectorPoint *slice(size_t from, @optional size_t to)
             return _olua_fun_example_VectorPoint_slice$1(L);
         // }
@@ -918,17 +940,17 @@ static int _olua_fun_example_VectorPoint_sub$2(lua_State *L)
 
 static int _olua_fun_example_VectorPoint_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorPoint")) && (olua_is_integer(L, 2))) {
             // @postnew example::VectorPoint *sub(size_t from)
             return _olua_fun_example_VectorPoint_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.VectorPoint")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::VectorPoint *sub(size_t from, @optional size_t to)
             return _olua_fun_example_VectorPoint_sub$1(L);
         // }
@@ -1015,15 +1037,15 @@ static int _olua_fun_example_VectorPoint_value$2(lua_State *L)
 
 static int _olua_fun_example_VectorPoint_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const std::vector<example::Point> &value()
         return _olua_fun_example_VectorPoint_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_array(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorPoint")) && (olua_is_array(L, 2))) {
             // @setter @name(value) void value(const std::vector<example::Point> &v)
             return _olua_fun_example_VectorPoint_value$2(L);
         // }
@@ -1307,17 +1329,17 @@ static int _olua_fun_example_VectorString_slice$2(lua_State *L)
 
 static int _olua_fun_example_VectorString_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorString")) && (olua_is_integer(L, 2))) {
             // @postnew example::VectorString *slice(size_t from)
             return _olua_fun_example_VectorString_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.VectorString")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::VectorString *slice(size_t from, @optional size_t to)
             return _olua_fun_example_VectorString_slice$1(L);
         // }
@@ -1376,17 +1398,17 @@ static int _olua_fun_example_VectorString_sub$2(lua_State *L)
 
 static int _olua_fun_example_VectorString_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorString")) && (olua_is_integer(L, 2))) {
             // @postnew example::VectorString *sub(size_t from)
             return _olua_fun_example_VectorString_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.VectorString")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::VectorString *sub(size_t from, @optional size_t to)
             return _olua_fun_example_VectorString_sub$1(L);
         // }
@@ -1473,15 +1495,15 @@ static int _olua_fun_example_VectorString_value$2(lua_State *L)
 
 static int _olua_fun_example_VectorString_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const std::vector<std::string> &value()
         return _olua_fun_example_VectorString_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_array(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.VectorString")) && (olua_is_array(L, 2))) {
             // @setter @name(value) void value(const std::vector<std::string> &v)
             return _olua_fun_example_VectorString_value$2(L);
         // }
@@ -1563,10 +1585,16 @@ static int _olua_fun_example_PointArray___newindex(lua_State *L)
     example::PointArray *self = nullptr;
     unsigned int arg1 = 0;       /** idx */
     example::Point *arg2;       /** v */
+    example::Point arg2_fromtable;       /** v */
 
     olua_to_object(L, 1, &self, "example.PointArray");
     olua_check_integer(L, 2, &arg1);
-    olua_check_object(L, 3, &arg2, "example.Point");
+    if (olua_istable(L, 3)) {
+        olua_check_table(L, 3, &arg2_fromtable);
+        arg2 = &arg2_fromtable;
+    } else {
+        olua_check_object(L, 3, &arg2, "example.Point");
+    }
 
     // void __newindex(unsigned int idx, const example::Point &v)
     self->__newindex(arg1, *arg2);
@@ -1761,17 +1789,17 @@ static int _olua_fun_example_PointArray_slice$2(lua_State *L)
 
 static int _olua_fun_example_PointArray_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.PointArray")) && (olua_is_integer(L, 2))) {
             // @postnew example::PointArray *slice(size_t from)
             return _olua_fun_example_PointArray_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.PointArray")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::PointArray *slice(size_t from, @optional size_t to)
             return _olua_fun_example_PointArray_slice$1(L);
         // }
@@ -1830,17 +1858,17 @@ static int _olua_fun_example_PointArray_sub$2(lua_State *L)
 
 static int _olua_fun_example_PointArray_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.PointArray")) && (olua_is_integer(L, 2))) {
             // @postnew example::PointArray *sub(size_t from)
             return _olua_fun_example_PointArray_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.PointArray")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew example::PointArray *sub(size_t from, @optional size_t to)
             return _olua_fun_example_PointArray_sub$1(L);
         // }
@@ -1909,9 +1937,15 @@ static int _olua_fun_example_PointArray_value$2(lua_State *L)
 
     example::PointArray *self = nullptr;
     example::Point *arg1;       /** v */
+    example::Point arg1_fromtable;       /** v */
 
     olua_to_object(L, 1, &self, "example.PointArray");
-    olua_check_object(L, 2, &arg1, "example.Point");
+    if (olua_istable(L, 2)) {
+        olua_check_table(L, 2, &arg1_fromtable);
+        arg1 = &arg1_fromtable;
+    } else {
+        olua_check_object(L, 2, &arg1, "example.Point");
+    }
 
     // @setter @name(value) void value(const example::Point &v)
     self->value(*arg1);
@@ -1923,15 +1957,15 @@ static int _olua_fun_example_PointArray_value$2(lua_State *L)
 
 static int _olua_fun_example_PointArray_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const example::Point &value()
         return _olua_fun_example_PointArray_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_object(L, 2, "example.Point"))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.PointArray")) && (olua_is_object(L, 2, "example.Point") || olua_is_table(L, 2, (example::Point *)nullptr))) {
             // @setter @name(value) void value(const example::Point &v)
             return _olua_fun_example_PointArray_value$2(L);
         // }
@@ -2025,15 +2059,52 @@ OLUA_LIB int luaopen_example_Type(lua_State *L)
 }
 OLUA_END_DECLS
 
-static int _olua_fun_example_Point___add(lua_State *L)
+static int _olua_fun_example_Point___add$1(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    example::Point *self = nullptr;
+    example::Point *arg1;       /** p */
+    example::Point arg1_fromtable;       /** p */
+
+    olua_to_object(L, 1, &self, "example.Point");
+    if (olua_istable(L, 2)) {
+        olua_check_table(L, 2, &arg1_fromtable);
+        arg1 = &arg1_fromtable;
+    } else {
+        olua_check_object(L, 2, &arg1, "example.Point");
+    }
+
+    // @operator(operator+) example::Point operator+(const example::Point &p)
+    example::Point ret = (*self) + (*arg1);
+    int num_ret = olua_copy_object(L, ret, "example.Point");
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_fun_example_Point___add$2(lua_State *L)
 {
     olua_startinvoke(L);
 
     example::Point *arg1;       /** p1 */
+    example::Point arg1_fromtable;       /** p1 */
     example::Point *arg2;       /** p2 */
+    example::Point arg2_fromtable;       /** p2 */
 
-    olua_check_object(L, 1, &arg1, "example.Point");
-    olua_check_object(L, 2, &arg2, "example.Point");
+    if (olua_istable(L, 1)) {
+        olua_check_table(L, 1, &arg1_fromtable);
+        arg1 = &arg1_fromtable;
+    } else {
+        olua_check_object(L, 1, &arg1, "example.Point");
+    }
+    if (olua_istable(L, 2)) {
+        olua_check_table(L, 2, &arg2_fromtable);
+        arg2 = &arg2_fromtable;
+    } else {
+        olua_check_object(L, 2, &arg2, "example.Point");
+    }
 
     // @operator(operator+) static example::Point operator+(const example::Point &p1, const example::Point &p2)
     example::Point ret = (*arg1) + (*arg2);
@@ -2042,6 +2113,27 @@ static int _olua_fun_example_Point___add(lua_State *L)
     olua_endinvoke(L);
 
     return num_ret;
+}
+
+static int _olua_fun_example_Point___add(lua_State *L)
+{
+    int num_args = lua_gettop(L);
+
+    if (num_args == 2) {
+        if ((olua_is_object(L, 1, "example.Point")) && (olua_is_object(L, 2, "example.Point") || olua_is_table(L, 2, (example::Point *)nullptr))) {
+            // @operator(operator+) example::Point operator+(const example::Point &p)
+            return _olua_fun_example_Point___add$1(L);
+        }
+
+        // if ((olua_is_object(L, 1, "example.Point") || olua_is_table(L, 1, (example::Point *)nullptr)) && (olua_is_object(L, 2, "example.Point") || olua_is_table(L, 2, (example::Point *)nullptr))) {
+            // @operator(operator+) static example::Point operator+(const example::Point &p1, const example::Point &p2)
+            return _olua_fun_example_Point___add$2(L);
+        // }
+    }
+
+    luaL_error(L, "method 'example::Point::__add' not support '%d' arguments", num_args);
+
+    return 0;
 }
 
 static int _olua_fun_example_Point___div(lua_State *L)
@@ -2068,10 +2160,22 @@ static int _olua_fun_example_Point___eq(lua_State *L)
     olua_startinvoke(L);
 
     example::Point *arg1;       /** p1 */
+    example::Point arg1_fromtable;       /** p1 */
     example::Point *arg2;       /** p2 */
+    example::Point arg2_fromtable;       /** p2 */
 
-    olua_check_object(L, 1, &arg1, "example.Point");
-    olua_check_object(L, 2, &arg2, "example.Point");
+    if (olua_istable(L, 1)) {
+        olua_check_table(L, 1, &arg1_fromtable);
+        arg1 = &arg1_fromtable;
+    } else {
+        olua_check_object(L, 1, &arg1, "example.Point");
+    }
+    if (olua_istable(L, 2)) {
+        olua_check_table(L, 2, &arg2_fromtable);
+        arg2 = &arg2_fromtable;
+    } else {
+        olua_check_object(L, 2, &arg2, "example.Point");
+    }
 
     // @operator(operator==) static bool operator==(const example::Point &p1, const example::Point &p2)
     bool ret = (*arg1) == (*arg2);
@@ -2119,9 +2223,15 @@ static int _olua_fun_example_Point___sub(lua_State *L)
 
     example::Point *self = nullptr;
     example::Point *arg1;       /** p */
+    example::Point arg1_fromtable;       /** p */
 
     olua_to_object(L, 1, &self, "example.Point");
-    olua_check_object(L, 2, &arg1, "example.Point");
+    if (olua_istable(L, 2)) {
+        olua_check_table(L, 2, &arg1_fromtable);
+        arg1 = &arg1_fromtable;
+    } else {
+        olua_check_object(L, 2, &arg1, "example.Point");
+    }
 
     // @operator(operator-) example::Point operator-(const example::Point &p)
     example::Point ret = (*self) - (*arg1);
@@ -2274,15 +2384,15 @@ static int _olua_fun_example_Point_x$2(lua_State *L)
 
 static int _olua_fun_example_Point_x(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // float x
         return _olua_fun_example_Point_x$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_number(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Point")) && (olua_is_number(L, 2))) {
             // float x
             return _olua_fun_example_Point_x$2(L);
         // }
@@ -2330,15 +2440,15 @@ static int _olua_fun_example_Point_y$2(lua_State *L)
 
 static int _olua_fun_example_Point_y(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // float y
         return _olua_fun_example_Point_y$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_number(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Point")) && (olua_is_number(L, 2))) {
             // float y
             return _olua_fun_example_Point_y$2(L);
         // }
@@ -2467,9 +2577,15 @@ static int _olua_fun_example_Hello_convertPoint$1(lua_State *L)
 
     example::Hello *self = nullptr;
     example::Point *arg1;       /** p */
+    example::Point arg1_fromtable;       /** p */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_object(L, 2, &arg1, "example.Point");
+    if (olua_istable(L, 2)) {
+        olua_check_table(L, 2, &arg1_fromtable);
+        arg1 = &arg1_fromtable;
+    } else {
+        olua_check_object(L, 2, &arg1, "example.Point");
+    }
 
     // example::Point convertPoint(const example::Point &p)
     example::Point ret = self->convertPoint(*arg1);
@@ -2501,17 +2617,17 @@ static int _olua_fun_example_Hello_convertPoint$2(lua_State *L)
 
 static int _olua_fun_example_Hello_convertPoint(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_object(L, 2, "example.Point"))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Point") || olua_is_table(L, 2, (example::Point *)nullptr))) {
             // example::Point convertPoint(const example::Point &p)
             return _olua_fun_example_Hello_convertPoint$1(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_canpack_object(L, 2, (example::Point *)nullptr))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_canpack_object(L, 2, (example::Point *)nullptr))) {
             // @unpack example::Point convertPoint(@pack const example::Point &p)
             return _olua_fun_example_Hello_convertPoint$2(L);
         // }
@@ -3643,122 +3759,122 @@ static int _olua_fun_example_Hello_run$17(lua_State *L)
 
 static int _olua_fun_example_Hello_run(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_object(L, 2, "example.Hello"))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello"))) {
             // @variadic void run(example::Hello *obj)
             return _olua_fun_example_Hello_run$1(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello"))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1)
             return _olua_fun_example_Hello_run$2(L);
         // }
     }
 
-    if (num_args == 3) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello"))) {
+    if (num_args == 4) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2)
             return _olua_fun_example_Hello_run$3(L);
         // }
     }
 
-    if (num_args == 4) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello"))) {
+    if (num_args == 5) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3)
             return _olua_fun_example_Hello_run$4(L);
         // }
     }
 
-    if (num_args == 5) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello"))) {
+    if (num_args == 6) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4)
             return _olua_fun_example_Hello_run$5(L);
         // }
     }
 
-    if (num_args == 6) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello"))) {
+    if (num_args == 7) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5)
             return _olua_fun_example_Hello_run$6(L);
         // }
     }
 
-    if (num_args == 7) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello"))) {
+    if (num_args == 8) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6)
             return _olua_fun_example_Hello_run$7(L);
         // }
     }
 
-    if (num_args == 8) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello"))) {
+    if (num_args == 9) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7)
             return _olua_fun_example_Hello_run$8(L);
         // }
     }
 
-    if (num_args == 9) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello"))) {
+    if (num_args == 10) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8)
             return _olua_fun_example_Hello_run$9(L);
         // }
     }
 
-    if (num_args == 10) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello"))) {
+    if (num_args == 11) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9)
             return _olua_fun_example_Hello_run$10(L);
         // }
     }
 
-    if (num_args == 11) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello"))) {
+    if (num_args == 12) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9, example::Hello *obj_$10)
             return _olua_fun_example_Hello_run$11(L);
         // }
     }
 
-    if (num_args == 12) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello"))) {
+    if (num_args == 13) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9, example::Hello *obj_$10, example::Hello *obj_$11)
             return _olua_fun_example_Hello_run$12(L);
         // }
     }
 
-    if (num_args == 13) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello"))) {
+    if (num_args == 14) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9, example::Hello *obj_$10, example::Hello *obj_$11, example::Hello *obj_$12)
             return _olua_fun_example_Hello_run$13(L);
         // }
     }
 
-    if (num_args == 14) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello"))) {
+    if (num_args == 15) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9, example::Hello *obj_$10, example::Hello *obj_$11, example::Hello *obj_$12, example::Hello *obj_$13)
             return _olua_fun_example_Hello_run$14(L);
         // }
     }
 
-    if (num_args == 15) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello"))) {
+    if (num_args == 16) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9, example::Hello *obj_$10, example::Hello *obj_$11, example::Hello *obj_$12, example::Hello *obj_$13, example::Hello *obj_$14)
             return _olua_fun_example_Hello_run$15(L);
         // }
     }
 
-    if (num_args == 16) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello")) && (olua_is_object(L, 17, "example.Hello"))) {
+    if (num_args == 17) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello")) && (olua_is_object(L, 17, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9, example::Hello *obj_$10, example::Hello *obj_$11, example::Hello *obj_$12, example::Hello *obj_$13, example::Hello *obj_$14, example::Hello *obj_$15)
             return _olua_fun_example_Hello_run$16(L);
         // }
     }
 
-    if (num_args == 17) {
-        // if ((olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello")) && (olua_is_object(L, 17, "example.Hello")) && (olua_is_object(L, 18, "example.Hello"))) {
+    if (num_args == 18) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_object(L, 2, "example.Hello")) && (olua_is_object(L, 3, "example.Hello")) && (olua_is_object(L, 4, "example.Hello")) && (olua_is_object(L, 5, "example.Hello")) && (olua_is_object(L, 6, "example.Hello")) && (olua_is_object(L, 7, "example.Hello")) && (olua_is_object(L, 8, "example.Hello")) && (olua_is_object(L, 9, "example.Hello")) && (olua_is_object(L, 10, "example.Hello")) && (olua_is_object(L, 11, "example.Hello")) && (olua_is_object(L, 12, "example.Hello")) && (olua_is_object(L, 13, "example.Hello")) && (olua_is_object(L, 14, "example.Hello")) && (olua_is_object(L, 15, "example.Hello")) && (olua_is_object(L, 16, "example.Hello")) && (olua_is_object(L, 17, "example.Hello")) && (olua_is_object(L, 18, "example.Hello"))) {
             // @variadic void run(example::Hello *obj, example::Hello *obj_$1, example::Hello *obj_$2, example::Hello *obj_$3, example::Hello *obj_$4, example::Hello *obj_$5, example::Hello *obj_$6, example::Hello *obj_$7, example::Hello *obj_$8, example::Hello *obj_$9, example::Hello *obj_$10, example::Hello *obj_$11, example::Hello *obj_$12, example::Hello *obj_$13, example::Hello *obj_$14, example::Hello *obj_$15, example::Hello *obj_$16)
             return _olua_fun_example_Hello_run$17(L);
         // }
@@ -3965,15 +4081,15 @@ static int _olua_fun_example_Hello_setClickCallback$2(lua_State *L)
 
 static int _olua_fun_example_Hello_setClickCallback(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        if ((olua_is_callback(L, 2, "example.ClickCallback"))) {
+    if (num_args == 2) {
+        if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_callback(L, 2, "example.ClickCallback"))) {
             // void setClickCallback(const example::ClickCallback &callback)
             return _olua_fun_example_Hello_setClickCallback$1(L);
         }
 
-        // if ((olua_is_callback(L, 2, "std.function"))) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_callback(L, 2, "std.function"))) {
             // void setClickCallback(const std::function<std::string (example::Hello *, int)> &callback)
             return _olua_fun_example_Hello_setClickCallback$2(L);
         // }
@@ -4623,17 +4739,17 @@ static int _olua_fun_example_Hello_testPointerTypes$2(lua_State *L)
 
 static int _olua_fun_example_Hello_testPointerTypes(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_callback(L, 2, "std.function"))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_callback(L, 2, "std.function"))) {
             // void testPointerTypes(const std::function<void (char *, unsigned char *, short *, short *, std::vector<short> &, unsigned short *, unsigned short *, std::vector<unsigned short> &, int *, int *, std::vector<int> &, unsigned int *, unsigned int *, std::vector<unsigned int> &, long *, long *, std::vector<long> &, unsigned long *, unsigned long *, std::vector<unsigned long> &, long long *, long long *, std::vector<long long> &, unsigned long long *, unsigned long long *, std::vector<unsigned long long> &, float *, std::vector<float> &, double *, std::vector<double> &, long double *, std::vector<long double> &)> &arg1)
             return _olua_fun_example_Hello_testPointerTypes$2(L);
         // }
     }
 
-    if (num_args == 32) {
-        // if ((olua_is_pointer(L, 2, "olua.char")) && (olua_is_pointer(L, 3, "olua.uchar")) && (olua_is_pointer(L, 4, "olua.short")) && (olua_is_pointer(L, 5, "olua.short")) && (olua_is_array(L, 6)) && (olua_is_pointer(L, 7, "olua.ushort")) && (olua_is_pointer(L, 8, "olua.ushort")) && (olua_is_array(L, 9)) && (olua_is_pointer(L, 10, "olua.int")) && (olua_is_pointer(L, 11, "olua.int")) && (olua_is_pointer(L, 12, "example.VectorInt")) && (olua_is_pointer(L, 13, "olua.uint")) && (olua_is_pointer(L, 14, "olua.uint")) && (olua_is_array(L, 15)) && (olua_is_pointer(L, 16, "olua.long")) && (olua_is_pointer(L, 17, "olua.long")) && (olua_is_array(L, 18)) && (olua_is_pointer(L, 19, "olua.ulong")) && (olua_is_pointer(L, 20, "olua.ulong")) && (olua_is_array(L, 21)) && (olua_is_pointer(L, 22, "olua.llong")) && (olua_is_pointer(L, 23, "olua.llong")) && (olua_is_array(L, 24)) && (olua_is_pointer(L, 25, "olua.ullong")) && (olua_is_pointer(L, 26, "olua.ullong")) && (olua_is_array(L, 27)) && (olua_is_pointer(L, 28, "olua.float")) && (olua_is_array(L, 29)) && (olua_is_pointer(L, 30, "olua.double")) && (olua_is_array(L, 31)) && (olua_is_pointer(L, 32, "olua.ldouble")) && (olua_is_array(L, 33))) {
+    if (num_args == 33) {
+        // if ((olua_is_object(L, 1, "example.Hello")) && (olua_is_pointer(L, 2, "olua.char")) && (olua_is_pointer(L, 3, "olua.uchar")) && (olua_is_pointer(L, 4, "olua.short")) && (olua_is_pointer(L, 5, "olua.short")) && (olua_is_array(L, 6)) && (olua_is_pointer(L, 7, "olua.ushort")) && (olua_is_pointer(L, 8, "olua.ushort")) && (olua_is_array(L, 9)) && (olua_is_pointer(L, 10, "olua.int")) && (olua_is_pointer(L, 11, "olua.int")) && (olua_is_pointer(L, 12, "example.VectorInt")) && (olua_is_pointer(L, 13, "olua.uint")) && (olua_is_pointer(L, 14, "olua.uint")) && (olua_is_array(L, 15)) && (olua_is_pointer(L, 16, "olua.long")) && (olua_is_pointer(L, 17, "olua.long")) && (olua_is_array(L, 18)) && (olua_is_pointer(L, 19, "olua.ulong")) && (olua_is_pointer(L, 20, "olua.ulong")) && (olua_is_array(L, 21)) && (olua_is_pointer(L, 22, "olua.llong")) && (olua_is_pointer(L, 23, "olua.llong")) && (olua_is_array(L, 24)) && (olua_is_pointer(L, 25, "olua.ullong")) && (olua_is_pointer(L, 26, "olua.ullong")) && (olua_is_array(L, 27)) && (olua_is_pointer(L, 28, "olua.float")) && (olua_is_array(L, 29)) && (olua_is_pointer(L, 30, "olua.double")) && (olua_is_array(L, 31)) && (olua_is_pointer(L, 32, "olua.ldouble")) && (olua_is_array(L, 33))) {
             // void testPointerTypes(@type(olua_char_t *) char *arg1, @type(olua_uchar_t *) unsigned char *arg2, short *arg3, short *arg4, std::vector<short> &arg5, unsigned short *arg6, unsigned short *arg7, std::vector<unsigned short> &arg8, int *arg9, int *arg10, std::vector<int> &arg11, unsigned int *arg12, unsigned int *arg13, std::vector<unsigned int> &arg14, long *arg15, long *arg16, std::vector<long> &arg17, unsigned long *arg18, unsigned long *arg19, std::vector<unsigned long> &arg20, long long *arg21, long long *arg22, std::vector<long long> &arg23, unsigned long long *arg24, unsigned long long *arg25, std::vector<unsigned long long> &arg26, float *arg27, std::vector<float> &arg28, double *arg29, std::vector<double> &arg30, long double *arg31, std::vector<long double> &arg32)
             return _olua_fun_example_Hello_testPointerTypes$1(L);
         // }

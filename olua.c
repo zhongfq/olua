@@ -228,8 +228,19 @@ OLUA_API int olua_pcall(lua_State *L, int nargs, int nresults)
 
 OLUA_API void olua_require(lua_State *L, const char *name, lua_CFunction func)
 {
-    luaL_requiref(L, name, func, false);
-    lua_pop(L, 1); // pop result
+    luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
+    olua_getfield(L, -1, name);
+    if (!lua_toboolean(L, -1)) {
+        lua_pushcfunction(L, func);
+        olua_pushstring(L, name);
+        lua_call(L, 1, 1);
+        if (!lua_toboolean(L, -1)) {
+            lua_pop(L, 1);
+            lua_pushboolean(L, true);
+        }
+        olua_setfield(L, -3, name);
+    }
+    lua_pop(L, 2);
 }
 
 OLUA_API void olua_import(lua_State *L, lua_CFunction m)
@@ -1814,24 +1825,6 @@ OLUA_API int luaL_getsubtable(lua_State *L, int idx, const char *fname) {
         lua_pushvalue(L, -1);
         olua_setfield(L, idx, fname);
         return 0;
-    }
-}
-
-OLUA_API void luaL_requiref(lua_State *L, const char *modname, lua_CFunction openf, int glb) {
-    luaL_getsubtable(L, LUA_REGISTRYINDEX, LUA_LOADED_TABLE);
-    olua_getfield(L, -1, modname);
-    if (!lua_toboolean(L, -1)) {
-        lua_pop(L, 1);
-        lua_pushcfunction(L, openf);
-        olua_pushstring(L, modname);
-        lua_call(L, 1, 1);
-        lua_pushvalue(L, -1);
-        olua_setfield(L, -3, modname);
-    }
-    lua_remove(L, -2);
-    if (glb) {
-        lua_pushvalue(L, -1);
-        olua_setglobal(L, modname);
     }
 }
 

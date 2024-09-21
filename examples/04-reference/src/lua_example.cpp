@@ -133,17 +133,17 @@ static int _olua_fun_example_Node_addChild$2(lua_State *L)
 
 static int _olua_fun_example_Node_addChild(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_object(L, 2, "example.Node"))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Node")) && (olua_is_object(L, 2, "example.Node"))) {
             // void addChild(@addref(children |) example::Node *child)
             return _olua_fun_example_Node_addChild$1(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_object(L, 2, "example.Node")) && (olua_is_string(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "example.Node")) && (olua_is_object(L, 2, "example.Node")) && (olua_is_string(L, 3))) {
             // void addChild(@addref(children |) example::Node *child, const std::string &name)
             return _olua_fun_example_Node_addChild$2(L);
         // }

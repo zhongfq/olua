@@ -1,6 +1,7 @@
----@type {[string]: idl.gen.typeinfo}
-local typeinfo_map   = {}
-local class_map      = {}
+local typeinfo_map = {} ---@type {[string]: idl.gen.typeinfo}
+local class_map = {} ---@type {[string]: idl.gen.class_desc}
+local idls = {} ---@type idl.gen.module_desc[]
+
 
 local kFLAG_CONST    = 1 << 1 -- is const
 local kFLAG_LVALUE   = 1 << 2 -- is left value
@@ -18,7 +19,7 @@ end
 ---@param cxxcls string
 ---@return idl.gen.class_desc
 function olua.get_class(cxxcls)
-    return class_map[cxxcls]
+    return class_map[cxxcls] or class_map[":" .. cxxcls]
 end
 
 ---@param tn string
@@ -617,7 +618,7 @@ end
 ---@param func idl.gen.func_desc
 ---@return boolean
 function olua.is_oluaret(func)
-    return func.ret.type.cxxcls == "olua_Return"
+    return func.ret and func.ret.type.cxxcls == "olua_Return"
 end
 
 ---@param ti idl.gen.typeinfo
@@ -687,7 +688,7 @@ function olua.typedef(typeinfo)
     end
 end
 
-function olua.export(path)
+function olua.load_idl(path)
     ---@class idl.gen.module_desc : idl.model.module_desc
     ---@field class_types idl.gen.class_desc[]
     ---@field private luacls unknown
@@ -747,6 +748,7 @@ function olua.export(path)
 
     for _, cls in ipairs(m.class_types) do
         class_map[cls.cxxcls] = cls
+        class_map[":" .. cls.luacls] = cls
 
         local func_map = {}
 
@@ -823,9 +825,13 @@ function olua.export(path)
         olua.sort(cls.consts, function (a, b) return a.name < b.name end)
     end
 
-    olua.gen_header(m)
-    olua.gen_source(m)
-    olua.gen_annotation(m)
+    idls[#idls + 1] = m
 end
 
-return olua
+function olua.export()
+    for _, m in ipairs(idls) do
+        olua.gen_header(m)
+        olua.gen_source(m)
+        olua.gen_annotation(m)
+    end
+end

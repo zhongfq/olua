@@ -150,9 +150,11 @@ function olua.gen_callback(cls, func, arg, idx, codeset)
         insert_cbefore = func.insert_cbefore or "",
         insert_cafter = func.insert_cafter or "",
 
-        capture_get_main_thread = "",
-        capture_main_thread = "",
-        capture_use_main_thread = "",
+        capture = {
+            main_thread = "",
+            use_main_thread = "",
+            get_main_thread = "",
+        }
     }
 
     local pool_enabled = false
@@ -277,20 +279,20 @@ function olua.gen_callback(cls, func, arg, idx, codeset)
     end
 
     if olua.CAPTURE_MAINTHREAD then
-        cb_codeset.capture_get_main_thread = "lua_State *ML = olua_mainthread(L);"
-        cb_codeset.capture_main_thread = ", ML"
-        cb_codeset.capture_use_main_thread = "lua_State *L = ML;"
+        cb_codeset.capture.get_main_thread = "lua_State *ML = olua_mainthread(L);"
+        cb_codeset.capture.main_thread = ", ML"
+        cb_codeset.capture.use_main_thread = "lua_State *L = ML;"
     else
-        cb_codeset.capture_get_main_thread = "// lua_State *ML = olua_mainthread(L);"
-        cb_codeset.capture_main_thread = " /*, ML */"
-        cb_codeset.capture_use_main_thread = "lua_State *L = olua_mainthread(NULL);"
+        cb_codeset.capture.get_main_thread = "// lua_State *ML = olua_mainthread(L);"
+        cb_codeset.capture.main_thread = " /*, ML */"
+        cb_codeset.capture.use_main_thread = "lua_State *L = olua_mainthread(NULL);"
     end
 
     local callback_block = olua.format([[
         olua_Context cb_ctx = olua_context(L);
-        ${cb_codeset.capture_get_main_thread}
-        ${arg_name} = [cb_store, cb_name, cb_ctx${cb_codeset.capture_main_thread}](${cb_codeset.args}) {
-            ${cb_codeset.capture_use_main_thread}
+        ${cb_codeset.capture.get_main_thread}
+        ${arg_name} = [cb_store, cb_name, cb_ctx${cb_codeset.capture.main_thread}](${cb_codeset.args}) {
+            ${cb_codeset.capture.use_main_thread}
             olua_checkhostthread();
             ${cb_codeset.decl_result}
             if (olua_contextequal(L, cb_ctx)) {

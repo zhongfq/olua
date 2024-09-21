@@ -2299,6 +2299,7 @@ local function write_typedefs()
                 packable = cls.options.packable,
                 packvars = packvars,
                 fromstring = cls.options.fromstring,
+                fromtable = cls.options.fromtable,
             }
             typdefs:push(typedef)
         end)
@@ -2382,7 +2383,7 @@ end
 local function write_makefile()
     local class_files = olua.array("\n")
     for _, v in ipairs(idl.modules) do
-        class_files:pushf('olua.export "${v.class_file}"')
+        class_files:pushf('olua.load_idl("${v.class_file}")')
     end
     olua.write("autobuild/make.lua", olua.format([[
         require "init"
@@ -2390,6 +2391,8 @@ local function write_makefile()
         dofile "autobuild/typedefs.idl"
 
         ${class_files}
+
+        olua.export()
     ]]))
 end
 

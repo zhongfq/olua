@@ -141,15 +141,15 @@ static int _olua_fun_example_Event_data$2(lua_State *L)
 
 static int _olua_fun_example_Event_data(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // std::string data
         return _olua_fun_example_Event_data$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_string(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Event")) && (olua_is_string(L, 2))) {
             // std::string data
             return _olua_fun_example_Event_data$2(L);
         // }
@@ -197,15 +197,15 @@ static int _olua_fun_example_Event_name$2(lua_State *L)
 
 static int _olua_fun_example_Event_name(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // std::string name
         return _olua_fun_example_Event_name$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_string(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "example.Event")) && (olua_is_string(L, 2))) {
             // std::string name
             return _olua_fun_example_Event_name$2(L);
         // }

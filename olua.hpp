@@ -497,14 +497,12 @@ bool olua_is_string(lua_State *L, int idx)
 template <class T> inline
 void olua_check_string(lua_State *L, int idx, T *value)
 {
-    static_assert(sizeof(olua::remove_cvrp_t<T>) == sizeof(char), "only support char type");
     *value = (T)olua_checkstring(L, idx);
 }
 
 template <class T> inline
 int olua_push_string(lua_State *L, const T &value)
 {
-    static_assert(sizeof(olua::remove_cvrp_t<T>) == sizeof(char), "only support char type");
     olua_pushstring(L, (const char *)value);
     return 1;
 }
@@ -514,7 +512,7 @@ void olua_check_string<std::string>(lua_State *L, int idx, std::string *value)
 {
     size_t len;
     const char *str = olua_checklstring(L, idx, &len);
-    *value = std::string(str, len);
+    value->assign(str, len);
 }
 
 template <> inline
@@ -626,18 +624,6 @@ int olua_copy_object(lua_State *L, T &value, const char *cls)
     olua_emplaceobj(L, -1, obj, olua_getluatype<T>(L, nullptr, cls));
     olua_setobjflag(L, -1, OLUA_FLAG_IN_USERDATA);
     return 1;
-}
-
-template <class T>
-void olua_object_fromstring(lua_State *L, int idx, T *value)
-{
-    *value = olua_checkstring(L, idx);
-}
-
-template <class T>
-void olua_object_fromtable(lua_State *L, int idx, T *value)
-{
-    static_assert(false, "not implemented yet");
 }
 
 // std::shared_ptr & std::weak_ptr

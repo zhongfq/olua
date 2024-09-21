@@ -42,6 +42,7 @@ public:
     Point operator-() {return Point(-x, -y);}
     friend bool operator==(const Point &p1, const Point &p2) {return (p1.x == p2.x && p1.y == p2.y);}
     Point operator-(const Point &p) {return Point(x - p.x, y - p.y);}
+    Point operator+(const Point &p) {return Point(x + p.x, y + p.y);}
     Point operator*(float s) {return Point(x * s, y * s);}
     Point operator/(float s) {return Point(x / s, y / s);}
 

@@ -246,17 +246,17 @@ static int _olua_fun_olua_bool_slice$2(lua_State *L)
 
 static int _olua_fun_olua_bool_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.bool")) && (olua_is_integer(L, 2))) {
             // @postnew olua_bool *slice(size_t from)
             return _olua_fun_olua_bool_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.bool")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_bool *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_bool_slice$1(L);
         // }
@@ -315,17 +315,17 @@ static int _olua_fun_olua_bool_sub$2(lua_State *L)
 
 static int _olua_fun_olua_bool_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.bool")) && (olua_is_integer(L, 2))) {
             // @postnew olua_bool *sub(size_t from)
             return _olua_fun_olua_bool_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.bool")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_bool *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_bool_sub$1(L);
         // }
@@ -408,15 +408,15 @@ static int _olua_fun_olua_bool_value$2(lua_State *L)
 
 static int _olua_fun_olua_bool_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const bool &value()
         return _olua_fun_olua_bool_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_bool(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.bool")) && (olua_is_bool(L, 2))) {
             // @setter @name(value) void value(const bool &v)
             return _olua_fun_olua_bool_value$2(L);
         // }
@@ -696,17 +696,17 @@ static int _olua_fun_olua_string_slice$2(lua_State *L)
 
 static int _olua_fun_olua_string_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.string")) && (olua_is_integer(L, 2))) {
             // @postnew olua_string *slice(size_t from)
             return _olua_fun_olua_string_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.string")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_string *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_string_slice$1(L);
         // }
@@ -765,17 +765,17 @@ static int _olua_fun_olua_string_sub$2(lua_State *L)
 
 static int _olua_fun_olua_string_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.string")) && (olua_is_integer(L, 2))) {
             // @postnew olua_string *sub(size_t from)
             return _olua_fun_olua_string_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.string")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_string *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_string_sub$1(L);
         // }
@@ -858,15 +858,15 @@ static int _olua_fun_olua_string_value$2(lua_State *L)
 
 static int _olua_fun_olua_string_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const std::string &value()
         return _olua_fun_olua_string_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_string(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.string")) && (olua_is_string(L, 2))) {
             // @setter @name(value) void value(const std::string &v)
             return _olua_fun_olua_string_value$2(L);
         // }
@@ -1146,17 +1146,17 @@ static int _olua_fun_olua_int8_slice$2(lua_State *L)
 
 static int _olua_fun_olua_int8_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int8")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int8 *slice(size_t from)
             return _olua_fun_olua_int8_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int8")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int8 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_int8_slice$1(L);
         // }
@@ -1215,17 +1215,17 @@ static int _olua_fun_olua_int8_sub$2(lua_State *L)
 
 static int _olua_fun_olua_int8_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int8")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int8 *sub(size_t from)
             return _olua_fun_olua_int8_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int8")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int8 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_int8_sub$1(L);
         // }
@@ -1308,15 +1308,15 @@ static int _olua_fun_olua_int8_value$2(lua_State *L)
 
 static int _olua_fun_olua_int8_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const int8_t &value()
         return _olua_fun_olua_int8_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int8")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const int8_t &v)
             return _olua_fun_olua_int8_value$2(L);
         // }
@@ -1596,17 +1596,17 @@ static int _olua_fun_olua_int16_slice$2(lua_State *L)
 
 static int _olua_fun_olua_int16_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int16")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int16 *slice(size_t from)
             return _olua_fun_olua_int16_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int16")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int16 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_int16_slice$1(L);
         // }
@@ -1665,17 +1665,17 @@ static int _olua_fun_olua_int16_sub$2(lua_State *L)
 
 static int _olua_fun_olua_int16_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int16")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int16 *sub(size_t from)
             return _olua_fun_olua_int16_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int16")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int16 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_int16_sub$1(L);
         // }
@@ -1758,15 +1758,15 @@ static int _olua_fun_olua_int16_value$2(lua_State *L)
 
 static int _olua_fun_olua_int16_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const int16_t &value()
         return _olua_fun_olua_int16_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int16")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const int16_t &v)
             return _olua_fun_olua_int16_value$2(L);
         // }
@@ -2046,17 +2046,17 @@ static int _olua_fun_olua_int32_slice$2(lua_State *L)
 
 static int _olua_fun_olua_int32_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int32")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int32 *slice(size_t from)
             return _olua_fun_olua_int32_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int32")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int32 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_int32_slice$1(L);
         // }
@@ -2115,17 +2115,17 @@ static int _olua_fun_olua_int32_sub$2(lua_State *L)
 
 static int _olua_fun_olua_int32_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int32")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int32 *sub(size_t from)
             return _olua_fun_olua_int32_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int32")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int32 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_int32_sub$1(L);
         // }
@@ -2208,15 +2208,15 @@ static int _olua_fun_olua_int32_value$2(lua_State *L)
 
 static int _olua_fun_olua_int32_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const int32_t &value()
         return _olua_fun_olua_int32_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int32")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const int32_t &v)
             return _olua_fun_olua_int32_value$2(L);
         // }
@@ -2496,17 +2496,17 @@ static int _olua_fun_olua_int64_slice$2(lua_State *L)
 
 static int _olua_fun_olua_int64_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int64")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int64 *slice(size_t from)
             return _olua_fun_olua_int64_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int64")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int64 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_int64_slice$1(L);
         // }
@@ -2565,17 +2565,17 @@ static int _olua_fun_olua_int64_sub$2(lua_State *L)
 
 static int _olua_fun_olua_int64_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int64")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int64 *sub(size_t from)
             return _olua_fun_olua_int64_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int64")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int64 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_int64_sub$1(L);
         // }
@@ -2658,15 +2658,15 @@ static int _olua_fun_olua_int64_value$2(lua_State *L)
 
 static int _olua_fun_olua_int64_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const int64_t &value()
         return _olua_fun_olua_int64_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int64")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const int64_t &v)
             return _olua_fun_olua_int64_value$2(L);
         // }
@@ -2946,17 +2946,17 @@ static int _olua_fun_olua_uint8_slice$2(lua_State *L)
 
 static int _olua_fun_olua_uint8_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint8")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint8 *slice(size_t from)
             return _olua_fun_olua_uint8_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint8")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint8 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_uint8_slice$1(L);
         // }
@@ -3015,17 +3015,17 @@ static int _olua_fun_olua_uint8_sub$2(lua_State *L)
 
 static int _olua_fun_olua_uint8_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint8")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint8 *sub(size_t from)
             return _olua_fun_olua_uint8_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint8")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint8 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_uint8_sub$1(L);
         // }
@@ -3108,15 +3108,15 @@ static int _olua_fun_olua_uint8_value$2(lua_State *L)
 
 static int _olua_fun_olua_uint8_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const uint8_t &value()
         return _olua_fun_olua_uint8_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint8")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const uint8_t &v)
             return _olua_fun_olua_uint8_value$2(L);
         // }
@@ -3396,17 +3396,17 @@ static int _olua_fun_olua_uint16_slice$2(lua_State *L)
 
 static int _olua_fun_olua_uint16_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint16")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint16 *slice(size_t from)
             return _olua_fun_olua_uint16_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint16")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint16 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_uint16_slice$1(L);
         // }
@@ -3465,17 +3465,17 @@ static int _olua_fun_olua_uint16_sub$2(lua_State *L)
 
 static int _olua_fun_olua_uint16_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint16")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint16 *sub(size_t from)
             return _olua_fun_olua_uint16_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint16")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint16 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_uint16_sub$1(L);
         // }
@@ -3558,15 +3558,15 @@ static int _olua_fun_olua_uint16_value$2(lua_State *L)
 
 static int _olua_fun_olua_uint16_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const uint16_t &value()
         return _olua_fun_olua_uint16_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint16")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const uint16_t &v)
             return _olua_fun_olua_uint16_value$2(L);
         // }
@@ -3846,17 +3846,17 @@ static int _olua_fun_olua_uint32_slice$2(lua_State *L)
 
 static int _olua_fun_olua_uint32_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint32")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint32 *slice(size_t from)
             return _olua_fun_olua_uint32_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint32")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint32 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_uint32_slice$1(L);
         // }
@@ -3915,17 +3915,17 @@ static int _olua_fun_olua_uint32_sub$2(lua_State *L)
 
 static int _olua_fun_olua_uint32_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint32")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint32 *sub(size_t from)
             return _olua_fun_olua_uint32_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint32")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint32 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_uint32_sub$1(L);
         // }
@@ -4008,15 +4008,15 @@ static int _olua_fun_olua_uint32_value$2(lua_State *L)
 
 static int _olua_fun_olua_uint32_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const uint32_t &value()
         return _olua_fun_olua_uint32_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint32")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const uint32_t &v)
             return _olua_fun_olua_uint32_value$2(L);
         // }
@@ -4296,17 +4296,17 @@ static int _olua_fun_olua_uint64_slice$2(lua_State *L)
 
 static int _olua_fun_olua_uint64_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint64")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint64 *slice(size_t from)
             return _olua_fun_olua_uint64_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint64")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint64 *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_uint64_slice$1(L);
         // }
@@ -4365,17 +4365,17 @@ static int _olua_fun_olua_uint64_sub$2(lua_State *L)
 
 static int _olua_fun_olua_uint64_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint64")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint64 *sub(size_t from)
             return _olua_fun_olua_uint64_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint64")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint64 *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_uint64_sub$1(L);
         // }
@@ -4458,15 +4458,15 @@ static int _olua_fun_olua_uint64_value$2(lua_State *L)
 
 static int _olua_fun_olua_uint64_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const uint64_t &value()
         return _olua_fun_olua_uint64_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint64")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const uint64_t &v)
             return _olua_fun_olua_uint64_value$2(L);
         // }
@@ -4746,17 +4746,17 @@ static int _olua_fun_olua_char_slice$2(lua_State *L)
 
 static int _olua_fun_olua_char_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.char")) && (olua_is_integer(L, 2))) {
             // @postnew olua_char *slice(size_t from)
             return _olua_fun_olua_char_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.char")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_char *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_char_slice$1(L);
         // }
@@ -4815,17 +4815,17 @@ static int _olua_fun_olua_char_sub$2(lua_State *L)
 
 static int _olua_fun_olua_char_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.char")) && (olua_is_integer(L, 2))) {
             // @postnew olua_char *sub(size_t from)
             return _olua_fun_olua_char_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.char")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_char *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_char_sub$1(L);
         // }
@@ -4908,15 +4908,15 @@ static int _olua_fun_olua_char_value$2(lua_State *L)
 
 static int _olua_fun_olua_char_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_char_t &value()
         return _olua_fun_olua_char_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.char")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_char_t &v)
             return _olua_fun_olua_char_value$2(L);
         // }
@@ -5196,17 +5196,17 @@ static int _olua_fun_olua_short_slice$2(lua_State *L)
 
 static int _olua_fun_olua_short_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.short")) && (olua_is_integer(L, 2))) {
             // @postnew olua_short *slice(size_t from)
             return _olua_fun_olua_short_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.short")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_short *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_short_slice$1(L);
         // }
@@ -5265,17 +5265,17 @@ static int _olua_fun_olua_short_sub$2(lua_State *L)
 
 static int _olua_fun_olua_short_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.short")) && (olua_is_integer(L, 2))) {
             // @postnew olua_short *sub(size_t from)
             return _olua_fun_olua_short_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.short")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_short *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_short_sub$1(L);
         // }
@@ -5358,15 +5358,15 @@ static int _olua_fun_olua_short_value$2(lua_State *L)
 
 static int _olua_fun_olua_short_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_short_t &value()
         return _olua_fun_olua_short_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.short")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_short_t &v)
             return _olua_fun_olua_short_value$2(L);
         // }
@@ -5646,17 +5646,17 @@ static int _olua_fun_olua_int_slice$2(lua_State *L)
 
 static int _olua_fun_olua_int_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int *slice(size_t from)
             return _olua_fun_olua_int_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_int_slice$1(L);
         // }
@@ -5715,17 +5715,17 @@ static int _olua_fun_olua_int_sub$2(lua_State *L)
 
 static int _olua_fun_olua_int_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int")) && (olua_is_integer(L, 2))) {
             // @postnew olua_int *sub(size_t from)
             return _olua_fun_olua_int_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.int")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_int *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_int_sub$1(L);
         // }
@@ -5808,15 +5808,15 @@ static int _olua_fun_olua_int_value$2(lua_State *L)
 
 static int _olua_fun_olua_int_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_int_t &value()
         return _olua_fun_olua_int_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.int")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_int_t &v)
             return _olua_fun_olua_int_value$2(L);
         // }
@@ -6096,17 +6096,17 @@ static int _olua_fun_olua_long_slice$2(lua_State *L)
 
 static int _olua_fun_olua_long_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.long")) && (olua_is_integer(L, 2))) {
             // @postnew olua_long *slice(size_t from)
             return _olua_fun_olua_long_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.long")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_long *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_long_slice$1(L);
         // }
@@ -6165,17 +6165,17 @@ static int _olua_fun_olua_long_sub$2(lua_State *L)
 
 static int _olua_fun_olua_long_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.long")) && (olua_is_integer(L, 2))) {
             // @postnew olua_long *sub(size_t from)
             return _olua_fun_olua_long_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.long")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_long *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_long_sub$1(L);
         // }
@@ -6258,15 +6258,15 @@ static int _olua_fun_olua_long_value$2(lua_State *L)
 
 static int _olua_fun_olua_long_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_long_t &value()
         return _olua_fun_olua_long_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.long")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_long_t &v)
             return _olua_fun_olua_long_value$2(L);
         // }
@@ -6546,17 +6546,17 @@ static int _olua_fun_olua_llong_slice$2(lua_State *L)
 
 static int _olua_fun_olua_llong_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.llong")) && (olua_is_integer(L, 2))) {
             // @postnew olua_llong *slice(size_t from)
             return _olua_fun_olua_llong_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.llong")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_llong *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_llong_slice$1(L);
         // }
@@ -6615,17 +6615,17 @@ static int _olua_fun_olua_llong_sub$2(lua_State *L)
 
 static int _olua_fun_olua_llong_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.llong")) && (olua_is_integer(L, 2))) {
             // @postnew olua_llong *sub(size_t from)
             return _olua_fun_olua_llong_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.llong")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_llong *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_llong_sub$1(L);
         // }
@@ -6708,15 +6708,15 @@ static int _olua_fun_olua_llong_value$2(lua_State *L)
 
 static int _olua_fun_olua_llong_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_llong_t &value()
         return _olua_fun_olua_llong_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.llong")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_llong_t &v)
             return _olua_fun_olua_llong_value$2(L);
         // }
@@ -6996,17 +6996,17 @@ static int _olua_fun_olua_uchar_slice$2(lua_State *L)
 
 static int _olua_fun_olua_uchar_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uchar")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uchar *slice(size_t from)
             return _olua_fun_olua_uchar_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uchar")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uchar *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_uchar_slice$1(L);
         // }
@@ -7065,17 +7065,17 @@ static int _olua_fun_olua_uchar_sub$2(lua_State *L)
 
 static int _olua_fun_olua_uchar_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uchar")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uchar *sub(size_t from)
             return _olua_fun_olua_uchar_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uchar")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uchar *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_uchar_sub$1(L);
         // }
@@ -7158,15 +7158,15 @@ static int _olua_fun_olua_uchar_value$2(lua_State *L)
 
 static int _olua_fun_olua_uchar_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_uchar_t &value()
         return _olua_fun_olua_uchar_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uchar")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_uchar_t &v)
             return _olua_fun_olua_uchar_value$2(L);
         // }
@@ -7446,17 +7446,17 @@ static int _olua_fun_olua_ushort_slice$2(lua_State *L)
 
 static int _olua_fun_olua_ushort_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ushort")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ushort *slice(size_t from)
             return _olua_fun_olua_ushort_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ushort")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ushort *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_ushort_slice$1(L);
         // }
@@ -7515,17 +7515,17 @@ static int _olua_fun_olua_ushort_sub$2(lua_State *L)
 
 static int _olua_fun_olua_ushort_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ushort")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ushort *sub(size_t from)
             return _olua_fun_olua_ushort_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ushort")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ushort *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_ushort_sub$1(L);
         // }
@@ -7608,15 +7608,15 @@ static int _olua_fun_olua_ushort_value$2(lua_State *L)
 
 static int _olua_fun_olua_ushort_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_ushort_t &value()
         return _olua_fun_olua_ushort_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ushort")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_ushort_t &v)
             return _olua_fun_olua_ushort_value$2(L);
         // }
@@ -7896,17 +7896,17 @@ static int _olua_fun_olua_uint_slice$2(lua_State *L)
 
 static int _olua_fun_olua_uint_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint *slice(size_t from)
             return _olua_fun_olua_uint_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_uint_slice$1(L);
         // }
@@ -7965,17 +7965,17 @@ static int _olua_fun_olua_uint_sub$2(lua_State *L)
 
 static int _olua_fun_olua_uint_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint")) && (olua_is_integer(L, 2))) {
             // @postnew olua_uint *sub(size_t from)
             return _olua_fun_olua_uint_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.uint")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_uint *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_uint_sub$1(L);
         // }
@@ -8058,15 +8058,15 @@ static int _olua_fun_olua_uint_value$2(lua_State *L)
 
 static int _olua_fun_olua_uint_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_uint_t &value()
         return _olua_fun_olua_uint_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.uint")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_uint_t &v)
             return _olua_fun_olua_uint_value$2(L);
         // }
@@ -8346,17 +8346,17 @@ static int _olua_fun_olua_ulong_slice$2(lua_State *L)
 
 static int _olua_fun_olua_ulong_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ulong")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ulong *slice(size_t from)
             return _olua_fun_olua_ulong_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ulong")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ulong *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_ulong_slice$1(L);
         // }
@@ -8415,17 +8415,17 @@ static int _olua_fun_olua_ulong_sub$2(lua_State *L)
 
 static int _olua_fun_olua_ulong_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ulong")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ulong *sub(size_t from)
             return _olua_fun_olua_ulong_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ulong")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ulong *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_ulong_sub$1(L);
         // }
@@ -8508,15 +8508,15 @@ static int _olua_fun_olua_ulong_value$2(lua_State *L)
 
 static int _olua_fun_olua_ulong_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_ulong_t &value()
         return _olua_fun_olua_ulong_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ulong")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_ulong_t &v)
             return _olua_fun_olua_ulong_value$2(L);
         // }
@@ -8796,17 +8796,17 @@ static int _olua_fun_olua_ullong_slice$2(lua_State *L)
 
 static int _olua_fun_olua_ullong_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ullong")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ullong *slice(size_t from)
             return _olua_fun_olua_ullong_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ullong")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ullong *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_ullong_slice$1(L);
         // }
@@ -8865,17 +8865,17 @@ static int _olua_fun_olua_ullong_sub$2(lua_State *L)
 
 static int _olua_fun_olua_ullong_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ullong")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ullong *sub(size_t from)
             return _olua_fun_olua_ullong_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ullong")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ullong *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_ullong_sub$1(L);
         // }
@@ -8958,15 +8958,15 @@ static int _olua_fun_olua_ullong_value$2(lua_State *L)
 
 static int _olua_fun_olua_ullong_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_ullong_t &value()
         return _olua_fun_olua_ullong_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ullong")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const olua_ullong_t &v)
             return _olua_fun_olua_ullong_value$2(L);
         // }
@@ -9246,17 +9246,17 @@ static int _olua_fun_olua_float_slice$2(lua_State *L)
 
 static int _olua_fun_olua_float_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.float")) && (olua_is_integer(L, 2))) {
             // @postnew olua_float *slice(size_t from)
             return _olua_fun_olua_float_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.float")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_float *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_float_slice$1(L);
         // }
@@ -9315,17 +9315,17 @@ static int _olua_fun_olua_float_sub$2(lua_State *L)
 
 static int _olua_fun_olua_float_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.float")) && (olua_is_integer(L, 2))) {
             // @postnew olua_float *sub(size_t from)
             return _olua_fun_olua_float_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.float")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_float *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_float_sub$1(L);
         // }
@@ -9408,15 +9408,15 @@ static int _olua_fun_olua_float_value$2(lua_State *L)
 
 static int _olua_fun_olua_float_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_float_t &value()
         return _olua_fun_olua_float_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_number(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.float")) && (olua_is_number(L, 2))) {
             // @setter @name(value) void value(const olua_float_t &v)
             return _olua_fun_olua_float_value$2(L);
         // }
@@ -9696,17 +9696,17 @@ static int _olua_fun_olua_double_slice$2(lua_State *L)
 
 static int _olua_fun_olua_double_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.double")) && (olua_is_integer(L, 2))) {
             // @postnew olua_double *slice(size_t from)
             return _olua_fun_olua_double_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.double")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_double *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_double_slice$1(L);
         // }
@@ -9765,17 +9765,17 @@ static int _olua_fun_olua_double_sub$2(lua_State *L)
 
 static int _olua_fun_olua_double_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.double")) && (olua_is_integer(L, 2))) {
             // @postnew olua_double *sub(size_t from)
             return _olua_fun_olua_double_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.double")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_double *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_double_sub$1(L);
         // }
@@ -9858,15 +9858,15 @@ static int _olua_fun_olua_double_value$2(lua_State *L)
 
 static int _olua_fun_olua_double_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_double_t &value()
         return _olua_fun_olua_double_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_number(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.double")) && (olua_is_number(L, 2))) {
             // @setter @name(value) void value(const olua_double_t &v)
             return _olua_fun_olua_double_value$2(L);
         // }
@@ -10146,17 +10146,17 @@ static int _olua_fun_olua_ldouble_slice$2(lua_State *L)
 
 static int _olua_fun_olua_ldouble_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ldouble")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ldouble *slice(size_t from)
             return _olua_fun_olua_ldouble_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ldouble")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ldouble *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_ldouble_slice$1(L);
         // }
@@ -10215,17 +10215,17 @@ static int _olua_fun_olua_ldouble_sub$2(lua_State *L)
 
 static int _olua_fun_olua_ldouble_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ldouble")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ldouble *sub(size_t from)
             return _olua_fun_olua_ldouble_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ldouble")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ldouble *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_ldouble_sub$1(L);
         // }
@@ -10308,15 +10308,15 @@ static int _olua_fun_olua_ldouble_value$2(lua_State *L)
 
 static int _olua_fun_olua_ldouble_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const olua_ldouble_t &value()
         return _olua_fun_olua_ldouble_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_number(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ldouble")) && (olua_is_number(L, 2))) {
             // @setter @name(value) void value(const olua_ldouble_t &v)
             return _olua_fun_olua_ldouble_value$2(L);
         // }
@@ -10596,17 +10596,17 @@ static int _olua_fun_olua_size_t_slice$2(lua_State *L)
 
 static int _olua_fun_olua_size_t_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.size_t")) && (olua_is_integer(L, 2))) {
             // @postnew olua_size_t *slice(size_t from)
             return _olua_fun_olua_size_t_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.size_t")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_size_t *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_size_t_slice$1(L);
         // }
@@ -10665,17 +10665,17 @@ static int _olua_fun_olua_size_t_sub$2(lua_State *L)
 
 static int _olua_fun_olua_size_t_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.size_t")) && (olua_is_integer(L, 2))) {
             // @postnew olua_size_t *sub(size_t from)
             return _olua_fun_olua_size_t_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.size_t")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_size_t *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_size_t_sub$1(L);
         // }
@@ -10758,15 +10758,15 @@ static int _olua_fun_olua_size_t_value$2(lua_State *L)
 
 static int _olua_fun_olua_size_t_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const size_t &value()
         return _olua_fun_olua_size_t_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.size_t")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const size_t &v)
             return _olua_fun_olua_size_t_value$2(L);
         // }
@@ -11046,17 +11046,17 @@ static int _olua_fun_olua_ssize_t_slice$2(lua_State *L)
 
 static int _olua_fun_olua_ssize_t_slice(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ssize_t")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ssize_t *slice(size_t from)
             return _olua_fun_olua_ssize_t_slice$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ssize_t")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ssize_t *slice(size_t from, @optional size_t to)
             return _olua_fun_olua_ssize_t_slice$1(L);
         // }
@@ -11115,17 +11115,17 @@ static int _olua_fun_olua_ssize_t_sub$2(lua_State *L)
 
 static int _olua_fun_olua_ssize_t_sub(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ssize_t")) && (olua_is_integer(L, 2))) {
             // @postnew olua_ssize_t *sub(size_t from)
             return _olua_fun_olua_ssize_t_sub$2(L);
         // }
     }
 
-    if (num_args == 2) {
-        // if ((olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
+    if (num_args == 3) {
+        // if ((olua_is_object(L, 1, "olua.ssize_t")) && (olua_is_integer(L, 2)) && (olua_is_integer(L, 3))) {
             // @postnew olua_ssize_t *sub(size_t from, @optional size_t to)
             return _olua_fun_olua_ssize_t_sub$1(L);
         // }
@@ -11208,15 +11208,15 @@ static int _olua_fun_olua_ssize_t_value$2(lua_State *L)
 
 static int _olua_fun_olua_ssize_t_value(lua_State *L)
 {
-    int num_args = lua_gettop(L) - 1;
+    int num_args = lua_gettop(L);
 
-    if (num_args == 0) {
+    if (num_args == 1) {
         // @getter @name(value) const ssize_t &value()
         return _olua_fun_olua_ssize_t_value$1(L);
     }
 
-    if (num_args == 1) {
-        // if ((olua_is_integer(L, 2))) {
+    if (num_args == 2) {
+        // if ((olua_is_object(L, 1, "olua.ssize_t")) && (olua_is_integer(L, 2))) {
             // @setter @name(value) void value(const ssize_t &v)
             return _olua_fun_olua_ssize_t_value$2(L);
         // }
