@@ -17,12 +17,6 @@
 ---@field exceptionSpecificationType integer Retrieve the exception specification type associated with a function type. This is a value of type CXCursor_ExceptionSpecificationKind. <br><br>If a non-function type is passed in, an error code of -1 is returned.
 ---@field fields clang.Cursor[] Get the fields of a record type
 ---@field functionTypeCallingConv clang.CallingConv Retrieve the calling convention associated with a function type. <br><br>If a non-function type is passed in, CXCallingConv_Invalid is returned.
----@field isConstQualified boolean Determine whether a CXType has the "const" qualifier set, without looking through typedefs that may have added "const" at a different level.
----@field isFunctionTypeVariadic boolean Return 1 if the CXType is a variadic function type, and 0 otherwise.
----@field isPOD boolean Return 1 if the CXType is a POD (plain old data) type, and 0 otherwise.
----@field isRestrictQualified boolean Determine whether a CXType has the "restrict" qualifier set, without looking through typedefs that may have added "restrict" at a different level.
----@field isTransparentTagTypedef boolean Determine if a typedef is 'transparent' tag. <br><br>A typedef is considered 'transparent' if it shares a name and spelling location with its underlying tag type, as is the case with the NS_ENUM macro. <br><br>\returns non-zero if transparent and zero otherwise.
----@field isVolatileQualified boolean Determine whether a CXType has the "volatile" qualifier set, without looking through typedefs that may have added "volatile" at a different level.
 ---@field kind clang.TypeKind The kind of type
 ---@field kindSpelling string Retrieve the spelling of a given CXTypeKind.
 ---@field modifiedType clang.Type Return the type that was modified by this attributed type. <br><br>If the type is not an attributed type, an invalid type is returned.
@@ -82,6 +76,41 @@ function Type:getOffsetOf(field) end
 ---@param i integer
 ---@return clang.Type
 function Type:getTemplateArgument(i) end
+
+---Determine whether a CXType has the "const" qualifier set,
+---without looking through typedefs that may have added "const" at a
+---different level.
+---@return boolean
+function Type:isConstQualified() end
+
+---Return 1 if the CXType is a variadic function type, and 0 otherwise.
+---@return boolean
+function Type:isFunctionTypeVariadic() end
+
+---Return 1 if the CXType is a POD (plain old data) type, and 0
+---otherwise.
+---@return boolean
+function Type:isPOD() end
+
+---Determine whether a CXType has the "restrict" qualifier set,
+---without looking through typedefs that may have added "restrict" at a
+---different level.
+---@return boolean
+function Type:isRestrictQualified() end
+
+---Determine if a typedef is 'transparent' tag.
+---
+---A typedef is considered 'transparent' if it shares a name and spelling
+---location with its underlying tag type, as is the case with the NS_ENUM macro.
+---
+---@return boolean # s non-zero if transparent and zero otherwise.
+function Type:isTransparentTagTypedef() end
+
+---Determine whether a CXType has the "volatile" qualifier set,
+---without looking through typedefs that may have added "volatile" at
+---a different level.
+---@return boolean
+function Type:isVolatileQualified() end
 
 ---@return clang.Type
 function Type:shared_from_this() end

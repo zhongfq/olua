@@ -36,6 +36,7 @@ local TypeKind = {
     Float16 = 32,
     FunctionNoProto = 110,
     FunctionProto = 111,
+    HLSLAttributedResource = 180,
     HLSLResource = 179,
     Half = 31,
     Ibm128 = 40,

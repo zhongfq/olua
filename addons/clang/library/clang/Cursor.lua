@@ -35,50 +35,11 @@
 ---@field exceptionSpecificationType integer Retrieve the exception specification type associated with a given cursor. This is a value of type CXCursor_ExceptionSpecificationKind. <br><br>This only returns a valid result if the cursor refers to a function or method.
 ---@field fieldDeclBitWidth integer Retrieve the bit width of a bit-field declaration as an integer. <br><br>If the cursor does not reference a bit-field, or if the bit-field's width expression cannot be evaluated, -1 is returned. <br><br>For example: ``` if (clang_Cursor_isBitField(Cursor)) { int Width = clang_getFieldDeclBitWidth(Cursor); if (Width != -1) { The bit-field width is not value-dependent. } } ```
 ---@field getModule clang.Module Given a CXCursor_ModuleImportDecl cursor, return the associated module.
----@field hasAttrs boolean Determine whether the given cursor has any attributes.
 ---@field hasVarDeclExternalStorage integer If cursor refers to a variable declaration that has external storage returns 1. If cursor refers to a variable declaration that doesn't have external storage returns 0. Otherwise returns -1.
 ---@field hasVarDeclGlobalStorage integer If cursor refers to a variable declaration that has global storage returns 1. If cursor refers to a variable declaration that doesn't have global storage returns 0. Otherwise returns -1.
 ---@field hash integer Compute a hash value for the given cursor.
 ---@field includedFile clang.File Retrieve the file that is included by the given inclusion directive cursor.
----@field isAnonymous boolean Determine whether the given cursor represents an anonymous tag or namespace
----@field isAnonymousRecordDecl boolean Determine whether the given cursor represents an anonymous record declaration.
----@field isAttribute boolean Determine whether the given cursor kind represents an attribute.
----@field isBitField boolean Returns non-zero if the cursor specifies a Record member that is a bit-field.
----@field isCXXAbstract boolean Determine if a C++ record is abstract, i.e. whether a class or struct has a pure virtual member function.
----@field isCXXConstMethod boolean Determine if a C++ member function or member function template is declared 'const'.
----@field isCXXConvertingConstructor boolean Determine if a C++ constructor is a converting constructor.
----@field isCXXCopyAssignmentOperator boolean Determine if a C++ member function is a copy-assignment operator, returning 1 if such is the case and 0 otherwise. <br><br>> A copy-assignment operator `X::operator=` is a non-static, > non-template member function of _class_ `X` with exactly one > parameter of type `X`, `X&`, `const X&`, `volatile X&` or `const > volatile X&`. <br><br>That is, for example, the `operator=` in: <br><br>class Foo { bool operator=(const volatile Foo&); }; <br><br>Is a copy-assignment operator, while the `operator=` in: <br><br>class Bar { bool operator=(const int&); }; <br><br>Is not.
----@field isCXXCopyConstructor boolean Determine if a C++ constructor is a copy constructor.
----@field isCXXDefaultConstructor boolean Determine if a C++ constructor is the default constructor.
----@field isCXXDefaultedMethod boolean Determine if a C++ method is declared '= default'.
----@field isCXXDeletedMethod boolean Determine if a C++ method is declared '= delete'.
----@field isCXXExplicitMethod boolean Determines if a C++ constructor or conversion function was declared explicit, returning 1 if such is the case and 0 otherwise. <br><br>Constructors or conversion functions are declared explicit through the use of the explicit specifier. <br><br>For example, the following constructor and conversion function are not explicit as they lack the explicit specifier: <br><br>class Foo { Foo(); operator int(); }; <br><br>While the following constructor and conversion function are explicit as they are declared with the explicit specifier. <br><br>class Foo { explicit Foo(); explicit operator int(); }; <br><br>This function will return 0 when given a cursor pointing to one of the former declarations and it will return 1 for a cursor pointing to the latter declarations. <br><br>The explicit specifier allows the user to specify a conditional compile-time expression whose value decides whether the marked element is explicit or not. <br><br>For example: <br><br>constexpr bool foo(int i) { return i % 2 == 0; } <br><br>class Foo { explicit(foo(1)) Foo(); explicit(foo(2)) operator int(); } <br><br>This function will return 0 for the constructor and 1 for the conversion function.
----@field isCXXMoveAssignmentOperator boolean Determine if a C++ member function is a move-assignment operator, returning 1 if such is the case and 0 otherwise. <br><br>> A move-assignment operator `X::operator=` is a non-static, > non-template member function of _class_ `X` with exactly one > parameter of type `X&&`, `const X&&`, `volatile X&&` or `const > volatile X&&`. <br><br>That is, for example, the `operator=` in: <br><br>class Foo { bool operator=(const volatile Foo&&); }; <br><br>Is a move-assignment operator, while the `operator=` in: <br><br>class Bar { bool operator=(const int&&); }; <br><br>Is not.
----@field isCXXMoveConstructor boolean Determine if a C++ constructor is a move constructor.
----@field isCXXMutableField boolean Determine if a C++ field is declared 'mutable'.
----@field isCXXPureVirtualMethod boolean Determine if a C++ member function or member function template is pure virtual.
----@field isCXXStaticMethod boolean Determine if a C++ member function or member function template is declared 'static'.
----@field isCXXVirtualMethod boolean Determine if a C++ member function or member function template is explicitly declared 'virtual' or if it overrides a virtual method from one of the base classes.
----@field isDeclaration boolean Determine whether the given cursor kind represents a declaration.
----@field isDefinition boolean Determine whether the declaration pointed to by this cursor is also a definition of that entity.
----@field isDeprecated boolean Is this a deprecated member
 ---@field isDynamicCall integer Given a cursor pointing to a C++ method call or an Objective-C message, returns non-zero if the method/message is "dynamic", meaning: <br><br>For a C++ method: the call is virtual. For an Objective-C message: the receiver is an object instance, not 'super' or a specific class. <br><br>If the method/message is "static" or the cursor does not point to a method/message, it will return zero.
----@field isExpression boolean Determine whether the given cursor kind represents an expression.
----@field isFunctionInlined boolean Determine whether a  CXCursor that is a function declaration, is an inline declaration.
----@field isInlineNamespace boolean Determine whether the given cursor represents an inline namespace declaration.
----@field isInvalid boolean Determine whether the given cursor kind represents an invalid cursor.
----@field isInvalidDeclaration boolean Determine whether the given declaration is invalid. <br><br>A declaration is invalid if it could not be parsed successfully. <br><br>\returns non-zero if the cursor represents a declaration and it is invalid, otherwise NULL.
----@field isMacroBuiltin boolean Determine whether a  CXCursor that is a macro, is a builtin one.
----@field isMacroFunctionLike boolean Determine whether a  CXCursor that is a macro, is function like.
----@field isNull boolean Returns non-zero if \p cursor is null.
----@field isPreprocessing boolean Determine whether the given cursor represents a preprocessing element, such as a preprocessor directive or macro instantiation.
----@field isReference boolean Determine whether the given cursor kind represents a simple reference. <br><br>Note that other kinds of cursors (such as expressions) can also refer to other cursors. Use clang_getCursorReferenced() to determine whether a particular cursor refers to another entity.
----@field isScopedEnumDecl boolean Determine if an enum declaration refers to a scoped enum.
----@field isStatement boolean Determine whether the given cursor kind represents a statement.
----@field isTranslationUnit boolean Determine whether the given cursor kind represents a translation unit.
----@field isUnexposed boolean Determine whether the given cursor represents a currently unexposed piece of the AST (e.g., CXCursor_UnexposedStmt).
----@field isVariadic boolean Returns non-zero if the given cursor is a variadic function or method.
----@field isVirtualBase boolean Returns 1 if the base class specified by the cursor with kind CX_CXXBaseSpecifier is virtual.
 ---@field kind clang.CursorKind Retrieve the kind of the given cursor.
 ---@field kindSpelling string \defgroup CINDEX_DEBUG Debugging facilities <br><br>These routines are used for testing and debugging, only, and should not be relied upon. <br><br>\{
 ---@field language clang.LanguageKind Determine the "language" of the entity referred to by a given cursor.
@@ -106,6 +67,7 @@
 ---@field translationUnit clang.TranslationUnit Returns the translation unit that a cursor originated from.
 ---@field type clang.Type Retrieve the type of a CXCursor (if any).
 ---@field typedefDeclUnderlyingType clang.Type Retrieve the underlying type of a typedef declaration. <br><br>If the cursor does not reference a typedef declaration, an invalid type is returned.
+---@field usr string Retrieve a Unified Symbol Resolution (USR) for the entity referenced by the given cursor. <br><br>A Unified Symbol Resolution (USR) is a string that identifies a particular entity (function, class, variable, etc.) within a program. USRs can be compared across translation units to determine, e.g., when references in one translation refer to an entity defined in another translation unit.
 ---@field varDeclInitializer clang.Cursor If cursor refers to a variable declaration and it has initializer returns cursor referring to the initializer otherwise return null cursor.
 ---@field visibility clang.VisibilityKind Describe the visibility of the entity referred to by a cursor. <br><br>This returns the default visibility if not explicitly specified by a visibility attribute. The default visibility may be changed by commandline arguments. <br><br>\param cursor The cursor to query. <br><br>\returns The visibility of the cursor.
 local Cursor = {}
@@ -209,6 +171,269 @@ function Cursor:getTemplateArgumentUnsignedValue(index) end
 ---@param index integer
 ---@return integer
 function Cursor:getTemplateArgumentValue(index) end
+
+---Determine whether the given cursor has any attributes.
+---@return boolean
+function Cursor:hasAttrs() end
+
+---Determine whether the given cursor represents an anonymous
+---tag or namespace
+---@return boolean
+function Cursor:isAnonymous() end
+
+---Determine whether the given cursor represents an anonymous record
+---declaration.
+---@return boolean
+function Cursor:isAnonymousRecordDecl() end
+
+---Determine whether the given cursor kind represents an attribute.
+---@return boolean
+function Cursor:isAttribute() end
+
+---Returns non-zero if the cursor specifies a Record member that is a bit-field.
+---@return boolean
+function Cursor:isBitField() end
+
+---Determine if a C++ record is abstract, i.e. whether a class or struct
+---has a pure virtual member function.
+---@return boolean
+function Cursor:isCXXAbstract() end
+
+---Determine if a C++ member function or member function template is
+---declared 'const'.
+---@return boolean
+function Cursor:isCXXConstMethod() end
+
+---Determine if a C++ constructor is a converting constructor.
+---@return boolean
+function Cursor:isCXXConvertingConstructor() end
+
+---Determine if a C++ member function is a copy-assignment operator,
+---returning 1 if such is the case and 0 otherwise.
+---
+---> A copy-assignment operator `X::operator=` is a non-static,
+---> non-template member function of _class_ `X` with exactly one
+---> parameter of type `X`, `X&`, `const X&`, `volatile X&` or `const
+---> volatile X&`.
+---
+---That is, for example, the `operator=` in:
+---
+---class Foo {
+---bool operator=(const volatile Foo&);
+---};
+---
+---Is a copy-assignment operator, while the `operator=` in:
+---
+---class Bar {
+---bool operator=(const int&);
+---};
+---
+---Is not.
+---@return boolean
+function Cursor:isCXXCopyAssignmentOperator() end
+
+---Determine if a C++ constructor is a copy constructor.
+---@return boolean
+function Cursor:isCXXCopyConstructor() end
+
+---Determine if a C++ constructor is the default constructor.
+---@return boolean
+function Cursor:isCXXDefaultConstructor() end
+
+---Determine if a C++ method is declared '= default'.
+---@return boolean
+function Cursor:isCXXDefaultedMethod() end
+
+---Determine if a C++ method is declared '= delete'.
+---@return boolean
+function Cursor:isCXXDeletedMethod() end
+
+---Determines if a C++ constructor or conversion function was declared
+---explicit, returning 1 if such is the case and 0 otherwise.
+---
+---Constructors or conversion functions are declared explicit through
+---the use of the explicit specifier.
+---
+---For example, the following constructor and conversion function are
+---not explicit as they lack the explicit specifier:
+---
+---class Foo {
+---Foo();
+---operator int();
+---};
+---
+---While the following constructor and conversion function are
+---explicit as they are declared with the explicit specifier.
+---
+---class Foo {
+---explicit Foo();
+---explicit operator int();
+---};
+---
+---This function will return 0 when given a cursor pointing to one of
+---the former declarations and it will return 1 for a cursor pointing
+---to the latter declarations.
+---
+---The explicit specifier allows the user to specify a
+---conditional compile-time expression whose value decides
+---whether the marked element is explicit or not.
+---
+---For example:
+---
+---constexpr bool foo(int i) { return i % 2 == 0; }
+---
+---class Foo {
+---explicit(foo(1)) Foo();
+---explicit(foo(2)) operator int();
+---}
+---
+---This function will return 0 for the constructor and 1 for
+---the conversion function.
+---@return boolean
+function Cursor:isCXXExplicitMethod() end
+
+---Determine if a C++ member function is a move-assignment operator,
+---returning 1 if such is the case and 0 otherwise.
+---
+---> A move-assignment operator `X::operator=` is a non-static,
+---> non-template member function of _class_ `X` with exactly one
+---> parameter of type `X&&`, `const X&&`, `volatile X&&` or `const
+---> volatile X&&`.
+---
+---That is, for example, the `operator=` in:
+---
+---class Foo {
+---bool operator=(const volatile Foo&&);
+---};
+---
+---Is a move-assignment operator, while the `operator=` in:
+---
+---class Bar {
+---bool operator=(const int&&);
+---};
+---
+---Is not.
+---@return boolean
+function Cursor:isCXXMoveAssignmentOperator() end
+
+---Determine if a C++ constructor is a move constructor.
+---@return boolean
+function Cursor:isCXXMoveConstructor() end
+
+---Determine if a C++ field is declared 'mutable'.
+---@return boolean
+function Cursor:isCXXMutableField() end
+
+---Determine if a C++ member function or member function template is
+---pure virtual.
+---@return boolean
+function Cursor:isCXXPureVirtualMethod() end
+
+---Determine if a C++ member function or member function template is
+---declared 'static'.
+---@return boolean
+function Cursor:isCXXStaticMethod() end
+
+---Determine if a C++ member function or member function template is
+---explicitly declared 'virtual' or if it overrides a virtual method from
+---one of the base classes.
+---@return boolean
+function Cursor:isCXXVirtualMethod() end
+
+---Determine whether the given cursor kind represents a declaration.
+---@return boolean
+function Cursor:isDeclaration() end
+
+---Determine whether the declaration pointed to by this cursor
+---is also a definition of that entity.
+---@return boolean
+function Cursor:isDefinition() end
+
+---Is this a deprecated member
+---@return boolean
+function Cursor:isDeprecated() end
+
+---Determine whether the given cursor kind represents an expression.
+---@return boolean
+function Cursor:isExpression() end
+
+---Determine whether a  CXCursor that is a function declaration, is an
+---inline declaration.
+---@return boolean
+function Cursor:isFunctionInlined() end
+
+---Determine whether the given cursor represents an inline namespace
+---declaration.
+---@return boolean
+function Cursor:isInlineNamespace() end
+
+---Determine whether the given cursor kind represents an invalid
+---cursor.
+---@return boolean
+function Cursor:isInvalid() end
+
+---Determine whether the given declaration is invalid.
+---
+---A declaration is invalid if it could not be parsed successfully.
+---
+---@return boolean # s non-zero if the cursor represents a declaration and it is
+---invalid, otherwise NULL.
+function Cursor:isInvalidDeclaration() end
+
+---Determine whether a  CXCursor that is a macro, is a
+---builtin one.
+---@return boolean
+function Cursor:isMacroBuiltin() end
+
+---Determine whether a  CXCursor that is a macro, is
+---function like.
+---@return boolean
+function Cursor:isMacroFunctionLike() end
+
+---Returns non-zero if \p cursor is null.
+---@return boolean
+function Cursor:isNull() end
+
+---Determine whether the given cursor represents a preprocessing
+---element, such as a preprocessor directive or macro instantiation.
+---@return boolean
+function Cursor:isPreprocessing() end
+
+---Determine whether the given cursor kind represents a simple
+---reference.
+---
+---Note that other kinds of cursors (such as expressions) can also refer to
+---other cursors. Use clang_getCursorReferenced() to determine whether a
+---particular cursor refers to another entity.
+---@return boolean
+function Cursor:isReference() end
+
+---Determine if an enum declaration refers to a scoped enum.
+---@return boolean
+function Cursor:isScopedEnumDecl() end
+
+---Determine whether the given cursor kind represents a statement.
+---@return boolean
+function Cursor:isStatement() end
+
+---Determine whether the given cursor kind represents a translation
+---unit.
+---@return boolean
+function Cursor:isTranslationUnit() end
+
+---Determine whether the given cursor represents a currently
+---unexposed piece of the AST (e.g., CXCursor_UnexposedStmt).
+---@return boolean
+function Cursor:isUnexposed() end
+
+---Returns non-zero if the given cursor is a variadic function or method.
+---@return boolean
+function Cursor:isVariadic() end
+
+---Returns 1 if the base class specified by the cursor with kind
+---CX_CXXBaseSpecifier is virtual.
+---@return boolean
+function Cursor:isVirtualBase() end
 
 ---@return clang.Cursor
 function Cursor:shared_from_this() end

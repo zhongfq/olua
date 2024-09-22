@@ -69,7 +69,7 @@ static int _olua_fun_olua_bool_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.bool");
 
-    // @getter @name(buffer) @type(void *) bool *buffer()
+    // @getter @type(void *) bool *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -86,7 +86,7 @@ static int _olua_fun_olua_bool_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.bool");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -379,7 +379,7 @@ static int _olua_fun_olua_bool_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.bool");
 
-    // @getter @name(value) const bool &value()
+    // @getter const bool &value()
     const bool &ret = self->value();
     int num_ret = olua_push_bool(L, ret);
 
@@ -398,7 +398,7 @@ static int _olua_fun_olua_bool_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.bool");
     olua_check_bool(L, 2, &arg1);
 
-    // @setter @name(value) void value(const bool &v)
+    // @setter void value(const bool &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -411,13 +411,13 @@ static int _olua_fun_olua_bool_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const bool &value()
+        // @getter const bool &value()
         return _olua_fun_olua_bool_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.bool")) && (olua_is_bool(L, 2))) {
-            // @setter @name(value) void value(const bool &v)
+            // @setter void value(const bool &v)
             return _olua_fun_olua_bool_value$2(L);
         // }
     }
@@ -519,7 +519,7 @@ static int _olua_fun_olua_string_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.string");
 
-    // @getter @name(buffer) @type(void *) std::string *buffer()
+    // @getter @type(void *) std::string *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -536,7 +536,7 @@ static int _olua_fun_olua_string_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.string");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -829,7 +829,7 @@ static int _olua_fun_olua_string_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.string");
 
-    // @getter @name(value) const std::string &value()
+    // @getter const std::string &value()
     const std::string &ret = self->value();
     int num_ret = olua_push_string(L, ret);
 
@@ -848,7 +848,7 @@ static int _olua_fun_olua_string_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.string");
     olua_check_string(L, 2, &arg1);
 
-    // @setter @name(value) void value(const std::string &v)
+    // @setter void value(const std::string &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -861,13 +861,13 @@ static int _olua_fun_olua_string_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const std::string &value()
+        // @getter const std::string &value()
         return _olua_fun_olua_string_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.string")) && (olua_is_string(L, 2))) {
-            // @setter @name(value) void value(const std::string &v)
+            // @setter void value(const std::string &v)
             return _olua_fun_olua_string_value$2(L);
         // }
     }
@@ -969,7 +969,7 @@ static int _olua_fun_olua_int8_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int8");
 
-    // @getter @name(buffer) @type(void *) int8_t *buffer()
+    // @getter @type(void *) int8_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -986,7 +986,7 @@ static int _olua_fun_olua_int8_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int8");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -1279,7 +1279,7 @@ static int _olua_fun_olua_int8_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int8");
 
-    // @getter @name(value) const int8_t &value()
+    // @getter const int8_t &value()
     const int8_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -1298,7 +1298,7 @@ static int _olua_fun_olua_int8_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.int8");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const int8_t &v)
+    // @setter void value(const int8_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -1311,13 +1311,13 @@ static int _olua_fun_olua_int8_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const int8_t &value()
+        // @getter const int8_t &value()
         return _olua_fun_olua_int8_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.int8")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const int8_t &v)
+            // @setter void value(const int8_t &v)
             return _olua_fun_olua_int8_value$2(L);
         // }
     }
@@ -1419,7 +1419,7 @@ static int _olua_fun_olua_int16_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int16");
 
-    // @getter @name(buffer) @type(void *) int16_t *buffer()
+    // @getter @type(void *) int16_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -1436,7 +1436,7 @@ static int _olua_fun_olua_int16_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int16");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -1729,7 +1729,7 @@ static int _olua_fun_olua_int16_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int16");
 
-    // @getter @name(value) const int16_t &value()
+    // @getter const int16_t &value()
     const int16_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -1748,7 +1748,7 @@ static int _olua_fun_olua_int16_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.int16");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const int16_t &v)
+    // @setter void value(const int16_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -1761,13 +1761,13 @@ static int _olua_fun_olua_int16_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const int16_t &value()
+        // @getter const int16_t &value()
         return _olua_fun_olua_int16_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.int16")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const int16_t &v)
+            // @setter void value(const int16_t &v)
             return _olua_fun_olua_int16_value$2(L);
         // }
     }
@@ -1869,7 +1869,7 @@ static int _olua_fun_olua_int32_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int32");
 
-    // @getter @name(buffer) @type(void *) int32_t *buffer()
+    // @getter @type(void *) int32_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -1886,7 +1886,7 @@ static int _olua_fun_olua_int32_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int32");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -2179,7 +2179,7 @@ static int _olua_fun_olua_int32_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int32");
 
-    // @getter @name(value) const int32_t &value()
+    // @getter const int32_t &value()
     const int32_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -2198,7 +2198,7 @@ static int _olua_fun_olua_int32_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.int32");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const int32_t &v)
+    // @setter void value(const int32_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -2211,13 +2211,13 @@ static int _olua_fun_olua_int32_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const int32_t &value()
+        // @getter const int32_t &value()
         return _olua_fun_olua_int32_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.int32")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const int32_t &v)
+            // @setter void value(const int32_t &v)
             return _olua_fun_olua_int32_value$2(L);
         // }
     }
@@ -2319,7 +2319,7 @@ static int _olua_fun_olua_int64_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int64");
 
-    // @getter @name(buffer) @type(void *) int64_t *buffer()
+    // @getter @type(void *) int64_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -2336,7 +2336,7 @@ static int _olua_fun_olua_int64_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int64");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -2629,7 +2629,7 @@ static int _olua_fun_olua_int64_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int64");
 
-    // @getter @name(value) const int64_t &value()
+    // @getter const int64_t &value()
     const int64_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -2648,7 +2648,7 @@ static int _olua_fun_olua_int64_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.int64");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const int64_t &v)
+    // @setter void value(const int64_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -2661,13 +2661,13 @@ static int _olua_fun_olua_int64_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const int64_t &value()
+        // @getter const int64_t &value()
         return _olua_fun_olua_int64_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.int64")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const int64_t &v)
+            // @setter void value(const int64_t &v)
             return _olua_fun_olua_int64_value$2(L);
         // }
     }
@@ -2769,7 +2769,7 @@ static int _olua_fun_olua_uint8_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint8");
 
-    // @getter @name(buffer) @type(void *) uint8_t *buffer()
+    // @getter @type(void *) uint8_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -2786,7 +2786,7 @@ static int _olua_fun_olua_uint8_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint8");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -3079,7 +3079,7 @@ static int _olua_fun_olua_uint8_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint8");
 
-    // @getter @name(value) const uint8_t &value()
+    // @getter const uint8_t &value()
     const uint8_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -3098,7 +3098,7 @@ static int _olua_fun_olua_uint8_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.uint8");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const uint8_t &v)
+    // @setter void value(const uint8_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -3111,13 +3111,13 @@ static int _olua_fun_olua_uint8_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const uint8_t &value()
+        // @getter const uint8_t &value()
         return _olua_fun_olua_uint8_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.uint8")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const uint8_t &v)
+            // @setter void value(const uint8_t &v)
             return _olua_fun_olua_uint8_value$2(L);
         // }
     }
@@ -3219,7 +3219,7 @@ static int _olua_fun_olua_uint16_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint16");
 
-    // @getter @name(buffer) @type(void *) uint16_t *buffer()
+    // @getter @type(void *) uint16_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -3236,7 +3236,7 @@ static int _olua_fun_olua_uint16_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint16");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -3529,7 +3529,7 @@ static int _olua_fun_olua_uint16_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint16");
 
-    // @getter @name(value) const uint16_t &value()
+    // @getter const uint16_t &value()
     const uint16_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -3548,7 +3548,7 @@ static int _olua_fun_olua_uint16_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.uint16");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const uint16_t &v)
+    // @setter void value(const uint16_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -3561,13 +3561,13 @@ static int _olua_fun_olua_uint16_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const uint16_t &value()
+        // @getter const uint16_t &value()
         return _olua_fun_olua_uint16_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.uint16")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const uint16_t &v)
+            // @setter void value(const uint16_t &v)
             return _olua_fun_olua_uint16_value$2(L);
         // }
     }
@@ -3669,7 +3669,7 @@ static int _olua_fun_olua_uint32_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint32");
 
-    // @getter @name(buffer) @type(void *) uint32_t *buffer()
+    // @getter @type(void *) uint32_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -3686,7 +3686,7 @@ static int _olua_fun_olua_uint32_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint32");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -3979,7 +3979,7 @@ static int _olua_fun_olua_uint32_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint32");
 
-    // @getter @name(value) const uint32_t &value()
+    // @getter const uint32_t &value()
     const uint32_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -3998,7 +3998,7 @@ static int _olua_fun_olua_uint32_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.uint32");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const uint32_t &v)
+    // @setter void value(const uint32_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -4011,13 +4011,13 @@ static int _olua_fun_olua_uint32_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const uint32_t &value()
+        // @getter const uint32_t &value()
         return _olua_fun_olua_uint32_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.uint32")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const uint32_t &v)
+            // @setter void value(const uint32_t &v)
             return _olua_fun_olua_uint32_value$2(L);
         // }
     }
@@ -4119,7 +4119,7 @@ static int _olua_fun_olua_uint64_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint64");
 
-    // @getter @name(buffer) @type(void *) uint64_t *buffer()
+    // @getter @type(void *) uint64_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -4136,7 +4136,7 @@ static int _olua_fun_olua_uint64_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint64");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -4429,7 +4429,7 @@ static int _olua_fun_olua_uint64_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint64");
 
-    // @getter @name(value) const uint64_t &value()
+    // @getter const uint64_t &value()
     const uint64_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -4448,7 +4448,7 @@ static int _olua_fun_olua_uint64_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.uint64");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const uint64_t &v)
+    // @setter void value(const uint64_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -4461,13 +4461,13 @@ static int _olua_fun_olua_uint64_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const uint64_t &value()
+        // @getter const uint64_t &value()
         return _olua_fun_olua_uint64_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.uint64")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const uint64_t &v)
+            // @setter void value(const uint64_t &v)
             return _olua_fun_olua_uint64_value$2(L);
         // }
     }
@@ -4569,7 +4569,7 @@ static int _olua_fun_olua_char_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.char");
 
-    // @getter @name(buffer) @type(void *) olua_char_t *buffer()
+    // @getter @type(void *) olua_char_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -4586,7 +4586,7 @@ static int _olua_fun_olua_char_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.char");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -4879,7 +4879,7 @@ static int _olua_fun_olua_char_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.char");
 
-    // @getter @name(value) const olua_char_t &value()
+    // @getter const olua_char_t &value()
     const olua_char_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -4898,7 +4898,7 @@ static int _olua_fun_olua_char_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.char");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_char_t &v)
+    // @setter void value(const olua_char_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -4911,13 +4911,13 @@ static int _olua_fun_olua_char_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_char_t &value()
+        // @getter const olua_char_t &value()
         return _olua_fun_olua_char_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.char")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_char_t &v)
+            // @setter void value(const olua_char_t &v)
             return _olua_fun_olua_char_value$2(L);
         // }
     }
@@ -5019,7 +5019,7 @@ static int _olua_fun_olua_short_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.short");
 
-    // @getter @name(buffer) @type(void *) olua_short_t *buffer()
+    // @getter @type(void *) olua_short_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -5036,7 +5036,7 @@ static int _olua_fun_olua_short_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.short");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -5329,7 +5329,7 @@ static int _olua_fun_olua_short_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.short");
 
-    // @getter @name(value) const olua_short_t &value()
+    // @getter const olua_short_t &value()
     const olua_short_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -5348,7 +5348,7 @@ static int _olua_fun_olua_short_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.short");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_short_t &v)
+    // @setter void value(const olua_short_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -5361,13 +5361,13 @@ static int _olua_fun_olua_short_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_short_t &value()
+        // @getter const olua_short_t &value()
         return _olua_fun_olua_short_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.short")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_short_t &v)
+            // @setter void value(const olua_short_t &v)
             return _olua_fun_olua_short_value$2(L);
         // }
     }
@@ -5469,7 +5469,7 @@ static int _olua_fun_olua_int_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int");
 
-    // @getter @name(buffer) @type(void *) olua_int_t *buffer()
+    // @getter @type(void *) olua_int_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -5486,7 +5486,7 @@ static int _olua_fun_olua_int_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -5779,7 +5779,7 @@ static int _olua_fun_olua_int_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.int");
 
-    // @getter @name(value) const olua_int_t &value()
+    // @getter const olua_int_t &value()
     const olua_int_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -5798,7 +5798,7 @@ static int _olua_fun_olua_int_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.int");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_int_t &v)
+    // @setter void value(const olua_int_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -5811,13 +5811,13 @@ static int _olua_fun_olua_int_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_int_t &value()
+        // @getter const olua_int_t &value()
         return _olua_fun_olua_int_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.int")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_int_t &v)
+            // @setter void value(const olua_int_t &v)
             return _olua_fun_olua_int_value$2(L);
         // }
     }
@@ -5919,7 +5919,7 @@ static int _olua_fun_olua_long_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.long");
 
-    // @getter @name(buffer) @type(void *) olua_long_t *buffer()
+    // @getter @type(void *) olua_long_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -5936,7 +5936,7 @@ static int _olua_fun_olua_long_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.long");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -6229,7 +6229,7 @@ static int _olua_fun_olua_long_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.long");
 
-    // @getter @name(value) const olua_long_t &value()
+    // @getter const olua_long_t &value()
     const olua_long_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -6248,7 +6248,7 @@ static int _olua_fun_olua_long_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.long");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_long_t &v)
+    // @setter void value(const olua_long_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -6261,13 +6261,13 @@ static int _olua_fun_olua_long_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_long_t &value()
+        // @getter const olua_long_t &value()
         return _olua_fun_olua_long_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.long")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_long_t &v)
+            // @setter void value(const olua_long_t &v)
             return _olua_fun_olua_long_value$2(L);
         // }
     }
@@ -6369,7 +6369,7 @@ static int _olua_fun_olua_llong_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.llong");
 
-    // @getter @name(buffer) @type(void *) olua_llong_t *buffer()
+    // @getter @type(void *) olua_llong_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -6386,7 +6386,7 @@ static int _olua_fun_olua_llong_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.llong");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -6679,7 +6679,7 @@ static int _olua_fun_olua_llong_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.llong");
 
-    // @getter @name(value) const olua_llong_t &value()
+    // @getter const olua_llong_t &value()
     const olua_llong_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -6698,7 +6698,7 @@ static int _olua_fun_olua_llong_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.llong");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_llong_t &v)
+    // @setter void value(const olua_llong_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -6711,13 +6711,13 @@ static int _olua_fun_olua_llong_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_llong_t &value()
+        // @getter const olua_llong_t &value()
         return _olua_fun_olua_llong_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.llong")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_llong_t &v)
+            // @setter void value(const olua_llong_t &v)
             return _olua_fun_olua_llong_value$2(L);
         // }
     }
@@ -6819,7 +6819,7 @@ static int _olua_fun_olua_uchar_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uchar");
 
-    // @getter @name(buffer) @type(void *) olua_uchar_t *buffer()
+    // @getter @type(void *) olua_uchar_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -6836,7 +6836,7 @@ static int _olua_fun_olua_uchar_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uchar");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -7129,7 +7129,7 @@ static int _olua_fun_olua_uchar_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uchar");
 
-    // @getter @name(value) const olua_uchar_t &value()
+    // @getter const olua_uchar_t &value()
     const olua_uchar_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -7148,7 +7148,7 @@ static int _olua_fun_olua_uchar_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.uchar");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_uchar_t &v)
+    // @setter void value(const olua_uchar_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -7161,13 +7161,13 @@ static int _olua_fun_olua_uchar_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_uchar_t &value()
+        // @getter const olua_uchar_t &value()
         return _olua_fun_olua_uchar_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.uchar")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_uchar_t &v)
+            // @setter void value(const olua_uchar_t &v)
             return _olua_fun_olua_uchar_value$2(L);
         // }
     }
@@ -7269,7 +7269,7 @@ static int _olua_fun_olua_ushort_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ushort");
 
-    // @getter @name(buffer) @type(void *) olua_ushort_t *buffer()
+    // @getter @type(void *) olua_ushort_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -7286,7 +7286,7 @@ static int _olua_fun_olua_ushort_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ushort");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -7579,7 +7579,7 @@ static int _olua_fun_olua_ushort_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ushort");
 
-    // @getter @name(value) const olua_ushort_t &value()
+    // @getter const olua_ushort_t &value()
     const olua_ushort_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -7598,7 +7598,7 @@ static int _olua_fun_olua_ushort_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.ushort");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_ushort_t &v)
+    // @setter void value(const olua_ushort_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -7611,13 +7611,13 @@ static int _olua_fun_olua_ushort_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_ushort_t &value()
+        // @getter const olua_ushort_t &value()
         return _olua_fun_olua_ushort_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.ushort")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_ushort_t &v)
+            // @setter void value(const olua_ushort_t &v)
             return _olua_fun_olua_ushort_value$2(L);
         // }
     }
@@ -7719,7 +7719,7 @@ static int _olua_fun_olua_uint_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint");
 
-    // @getter @name(buffer) @type(void *) olua_uint_t *buffer()
+    // @getter @type(void *) olua_uint_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -7736,7 +7736,7 @@ static int _olua_fun_olua_uint_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -8029,7 +8029,7 @@ static int _olua_fun_olua_uint_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.uint");
 
-    // @getter @name(value) const olua_uint_t &value()
+    // @getter const olua_uint_t &value()
     const olua_uint_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -8048,7 +8048,7 @@ static int _olua_fun_olua_uint_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.uint");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_uint_t &v)
+    // @setter void value(const olua_uint_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -8061,13 +8061,13 @@ static int _olua_fun_olua_uint_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_uint_t &value()
+        // @getter const olua_uint_t &value()
         return _olua_fun_olua_uint_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.uint")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_uint_t &v)
+            // @setter void value(const olua_uint_t &v)
             return _olua_fun_olua_uint_value$2(L);
         // }
     }
@@ -8169,7 +8169,7 @@ static int _olua_fun_olua_ulong_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ulong");
 
-    // @getter @name(buffer) @type(void *) olua_ulong_t *buffer()
+    // @getter @type(void *) olua_ulong_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -8186,7 +8186,7 @@ static int _olua_fun_olua_ulong_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ulong");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -8479,7 +8479,7 @@ static int _olua_fun_olua_ulong_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ulong");
 
-    // @getter @name(value) const olua_ulong_t &value()
+    // @getter const olua_ulong_t &value()
     const olua_ulong_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -8498,7 +8498,7 @@ static int _olua_fun_olua_ulong_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.ulong");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_ulong_t &v)
+    // @setter void value(const olua_ulong_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -8511,13 +8511,13 @@ static int _olua_fun_olua_ulong_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_ulong_t &value()
+        // @getter const olua_ulong_t &value()
         return _olua_fun_olua_ulong_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.ulong")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_ulong_t &v)
+            // @setter void value(const olua_ulong_t &v)
             return _olua_fun_olua_ulong_value$2(L);
         // }
     }
@@ -8619,7 +8619,7 @@ static int _olua_fun_olua_ullong_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ullong");
 
-    // @getter @name(buffer) @type(void *) olua_ullong_t *buffer()
+    // @getter @type(void *) olua_ullong_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -8636,7 +8636,7 @@ static int _olua_fun_olua_ullong_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ullong");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -8929,7 +8929,7 @@ static int _olua_fun_olua_ullong_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ullong");
 
-    // @getter @name(value) const olua_ullong_t &value()
+    // @getter const olua_ullong_t &value()
     const olua_ullong_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -8948,7 +8948,7 @@ static int _olua_fun_olua_ullong_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.ullong");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_ullong_t &v)
+    // @setter void value(const olua_ullong_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -8961,13 +8961,13 @@ static int _olua_fun_olua_ullong_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_ullong_t &value()
+        // @getter const olua_ullong_t &value()
         return _olua_fun_olua_ullong_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.ullong")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const olua_ullong_t &v)
+            // @setter void value(const olua_ullong_t &v)
             return _olua_fun_olua_ullong_value$2(L);
         // }
     }
@@ -9069,7 +9069,7 @@ static int _olua_fun_olua_float_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.float");
 
-    // @getter @name(buffer) @type(void *) olua_float_t *buffer()
+    // @getter @type(void *) olua_float_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -9086,7 +9086,7 @@ static int _olua_fun_olua_float_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.float");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -9379,7 +9379,7 @@ static int _olua_fun_olua_float_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.float");
 
-    // @getter @name(value) const olua_float_t &value()
+    // @getter const olua_float_t &value()
     const olua_float_t &ret = self->value();
     int num_ret = olua_push_number(L, ret);
 
@@ -9398,7 +9398,7 @@ static int _olua_fun_olua_float_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.float");
     olua_check_number(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_float_t &v)
+    // @setter void value(const olua_float_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -9411,13 +9411,13 @@ static int _olua_fun_olua_float_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_float_t &value()
+        // @getter const olua_float_t &value()
         return _olua_fun_olua_float_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.float")) && (olua_is_number(L, 2))) {
-            // @setter @name(value) void value(const olua_float_t &v)
+            // @setter void value(const olua_float_t &v)
             return _olua_fun_olua_float_value$2(L);
         // }
     }
@@ -9519,7 +9519,7 @@ static int _olua_fun_olua_double_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.double");
 
-    // @getter @name(buffer) @type(void *) olua_double_t *buffer()
+    // @getter @type(void *) olua_double_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -9536,7 +9536,7 @@ static int _olua_fun_olua_double_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.double");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -9829,7 +9829,7 @@ static int _olua_fun_olua_double_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.double");
 
-    // @getter @name(value) const olua_double_t &value()
+    // @getter const olua_double_t &value()
     const olua_double_t &ret = self->value();
     int num_ret = olua_push_number(L, ret);
 
@@ -9848,7 +9848,7 @@ static int _olua_fun_olua_double_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.double");
     olua_check_number(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_double_t &v)
+    // @setter void value(const olua_double_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -9861,13 +9861,13 @@ static int _olua_fun_olua_double_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_double_t &value()
+        // @getter const olua_double_t &value()
         return _olua_fun_olua_double_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.double")) && (olua_is_number(L, 2))) {
-            // @setter @name(value) void value(const olua_double_t &v)
+            // @setter void value(const olua_double_t &v)
             return _olua_fun_olua_double_value$2(L);
         // }
     }
@@ -9969,7 +9969,7 @@ static int _olua_fun_olua_ldouble_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ldouble");
 
-    // @getter @name(buffer) @type(void *) olua_ldouble_t *buffer()
+    // @getter @type(void *) olua_ldouble_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -9986,7 +9986,7 @@ static int _olua_fun_olua_ldouble_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ldouble");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -10279,7 +10279,7 @@ static int _olua_fun_olua_ldouble_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ldouble");
 
-    // @getter @name(value) const olua_ldouble_t &value()
+    // @getter const olua_ldouble_t &value()
     const olua_ldouble_t &ret = self->value();
     int num_ret = olua_push_number(L, ret);
 
@@ -10298,7 +10298,7 @@ static int _olua_fun_olua_ldouble_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.ldouble");
     olua_check_number(L, 2, &arg1);
 
-    // @setter @name(value) void value(const olua_ldouble_t &v)
+    // @setter void value(const olua_ldouble_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -10311,13 +10311,13 @@ static int _olua_fun_olua_ldouble_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const olua_ldouble_t &value()
+        // @getter const olua_ldouble_t &value()
         return _olua_fun_olua_ldouble_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.ldouble")) && (olua_is_number(L, 2))) {
-            // @setter @name(value) void value(const olua_ldouble_t &v)
+            // @setter void value(const olua_ldouble_t &v)
             return _olua_fun_olua_ldouble_value$2(L);
         // }
     }
@@ -10419,7 +10419,7 @@ static int _olua_fun_olua_size_t_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.size_t");
 
-    // @getter @name(buffer) @type(void *) size_t *buffer()
+    // @getter @type(void *) size_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -10436,7 +10436,7 @@ static int _olua_fun_olua_size_t_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.size_t");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -10729,7 +10729,7 @@ static int _olua_fun_olua_size_t_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.size_t");
 
-    // @getter @name(value) const size_t &value()
+    // @getter const size_t &value()
     const size_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -10748,7 +10748,7 @@ static int _olua_fun_olua_size_t_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.size_t");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const size_t &v)
+    // @setter void value(const size_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -10761,13 +10761,13 @@ static int _olua_fun_olua_size_t_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const size_t &value()
+        // @getter const size_t &value()
         return _olua_fun_olua_size_t_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.size_t")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const size_t &v)
+            // @setter void value(const size_t &v)
             return _olua_fun_olua_size_t_value$2(L);
         // }
     }
@@ -10869,7 +10869,7 @@ static int _olua_fun_olua_ssize_t_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ssize_t");
 
-    // @getter @name(buffer) @type(void *) ssize_t *buffer()
+    // @getter @type(void *) ssize_t *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -10886,7 +10886,7 @@ static int _olua_fun_olua_ssize_t_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ssize_t");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -11179,7 +11179,7 @@ static int _olua_fun_olua_ssize_t_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "olua.ssize_t");
 
-    // @getter @name(value) const ssize_t &value()
+    // @getter const ssize_t &value()
     const ssize_t &ret = self->value();
     int num_ret = olua_push_integer(L, ret);
 
@@ -11198,7 +11198,7 @@ static int _olua_fun_olua_ssize_t_value$2(lua_State *L)
     olua_to_object(L, 1, &self, "olua.ssize_t");
     olua_check_integer(L, 2, &arg1);
 
-    // @setter @name(value) void value(const ssize_t &v)
+    // @setter void value(const ssize_t &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -11211,13 +11211,13 @@ static int _olua_fun_olua_ssize_t_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const ssize_t &value()
+        // @getter const ssize_t &value()
         return _olua_fun_olua_ssize_t_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "olua.ssize_t")) && (olua_is_integer(L, 2))) {
-            // @setter @name(value) void value(const ssize_t &v)
+            // @setter void value(const ssize_t &v)
             return _olua_fun_olua_ssize_t_value$2(L);
         // }
     }

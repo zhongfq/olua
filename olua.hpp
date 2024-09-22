@@ -980,10 +980,10 @@ public:
         return ret;
     }
     
-    OLUA_GETTER OLUA_NAME(buffer) OLUA_TYPE(void *) T *buffer() {return _data;}
-    OLUA_GETTER OLUA_NAME(value) const T &value() {return *_data;}
-    OLUA_SETTER OLUA_NAME(value) void value(const T &v) {*_data = v;}
-    OLUA_GETTER OLUA_NAME(length) size_t length() {return _len;}
+    OLUA_GETTER OLUA_TYPE(void *) T *buffer() {return _data;}
+    OLUA_GETTER const T &value() {return *_data;}
+    OLUA_SETTER void value(const T &v) {*_data = v;}
+    OLUA_GETTER size_t length() {return _len;}
 private:
     T *_data = nullptr;
     size_t _len = 0;

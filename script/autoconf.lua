@@ -186,7 +186,7 @@ local function parse_from_ast(type)
     local fullexps = olua.array("::")
     while cur and cur.kind ~= CursorKind.TranslationUnit do
         local value = raw_typename(cur.name)
-        if cur.isInlineNamespace then
+        if cur:isInlineNamespace() then
             cur = cur.parent
             fullexps:unshift(value)
         elseif value then
@@ -222,7 +222,7 @@ local function parse_from_type(type, template_types, try_underlying, level, from
     local pointee = type.pointeeType
     if level and level > 4 then
         return tn
-    elseif type.isConstQualified then
+    elseif type:isConstQualified() then
         pointee = type.unqualifiedType
         return "const " .. parse_from_type(pointee, template_types, try_underlying, level, from)
     elseif #template_arg_types > 0 and (not try_underlying or not underlying) then
@@ -499,7 +499,7 @@ local function has_deprecated_attr(cur)
     if olua.ENABLE_DEPRECATED then
         return false
     end
-    return cur.isDeprecated
+    return cur:isDeprecated()
 end
 
 ---@param cur clang.Cursor
@@ -538,7 +538,7 @@ end
 
 ---@param cur clang.Cursor
 local function is_static_func(cur)
-    return cur.isCXXStaticMethod
+    return cur:isCXXStaticMethod()
         or cur.kind == CursorKind.FunctionDecl
         or cur.kind == CursorKind.Constructor
 end
@@ -810,7 +810,7 @@ function Autoconf:visit_method(cls, cur, template_desc)
     func.luacats = member.luacats
     func.luafn = member.luafn
 
-    if cur.isVariadic then
+    if cur:isVariadic() then
         func.is_variadic = true
         func.ret.attr:push("@variadic")
     end
@@ -922,7 +922,7 @@ function Autoconf:visit_method(cls, cur, template_desc)
             end
             prop[what] = func.prototype
             func.is_exposed = false
-        elseif cur.isVariadic then
+        elseif cur:isVariadic() then
             for n = 1, olua.MAX_VARIADIC_ARGS do
                 local variadic_func = olua.clone(func)
                 for i = 1, n do
@@ -1035,7 +1035,7 @@ function Autoconf:visit_var(cls, cur)
         return value:find("@readonly")
     end)
 
-    if cur.type.isConstQualified or has_readonly then
+    if cur.type:isConstQualified() or has_readonly then
         if not has_readonly then
             getter.ret.attr:push("@readonly")
         end
@@ -1144,9 +1144,9 @@ local function can_visit_method(cls, cur, is_cxx_abstract)
     local is_constructor = kind == CursorKind.Constructor
     local is_operator = cur.name:find("operator[^%w]+")
     if is_excluded_memeber(cls, cur)
-        or cur.isCXXDeletedMethod
-        or cur.isCXXCopyConstructor
-        or cur.isCXXMoveConstructor
+        or cur:isCXXDeletedMethod()
+        or cur:isCXXCopyConstructor()
+        or cur:isCXXMoveConstructor()
         or (is_constructor and (cls.conf.excludes:has("new")))
         or (is_constructor and is_cxx_abstract)
         or has_deprecated_attr(cur)
@@ -1266,7 +1266,7 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
             if is_excluded_memeber(cls, c) then
                 goto continue
             end
-            if vartype.isConstQualified and kind == CursorKind.VarDecl then
+            if vartype:isConstQualified() and kind == CursorKind.VarDecl then
                 if not is_excluded_type(vartype) then
                     cls.consts:set(varname, {
                         name = varname,
@@ -1282,7 +1282,7 @@ function Autoconf:visit_class(cxxcls, cur, template_types, specializedcls)
             or kind == CursorKind.FunctionDecl
             or kind == CursorKind.CXXMethod
         then
-            if can_visit_method(cls, c, cur.isCXXAbstract) then
+            if can_visit_method(cls, c, cur:isCXXAbstract()) then
                 self:visit_method(cls, c)
             end
         elseif kind == CursorKind.FunctionTemplate then

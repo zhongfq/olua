@@ -3,15 +3,12 @@
 
 ---
 ---@class clang.Cursor.SourceLocation 
----@field column integer
----@field line integer
 ---@field path string
+---@field line integer
+---@field column integer
 local SourceLocation = {}
 
 ---@return any
 function SourceLocation:__gc() end
-
----@return any
-function SourceLocation:__olua_move() end
 
 return SourceLocation

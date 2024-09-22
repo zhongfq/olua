@@ -236,7 +236,7 @@ static int _olua_fun_example_VectorInt_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorInt");
 
-    // @getter @name(buffer) @type(void *) std::vector<int> *buffer()
+    // @getter @type(void *) std::vector<int> *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -253,7 +253,7 @@ static int _olua_fun_example_VectorInt_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorInt");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -546,7 +546,7 @@ static int _olua_fun_example_VectorInt_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorInt");
 
-    // @getter @name(value) const std::vector<int> &value()
+    // @getter const std::vector<int> &value()
     const std::vector<int> &ret = self->value();
     int num_ret = olua_push_array<int>(L, ret, [L](int &arg1) {
         olua_push_integer(L, arg1);
@@ -569,7 +569,7 @@ static int _olua_fun_example_VectorInt_value$2(lua_State *L)
         olua_check_integer(L, -1, arg1);
     });
 
-    // @setter @name(value) void value(const std::vector<int> &v)
+    // @setter void value(const std::vector<int> &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -582,13 +582,13 @@ static int _olua_fun_example_VectorInt_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const std::vector<int> &value()
+        // @getter const std::vector<int> &value()
         return _olua_fun_example_VectorInt_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "example.VectorInt")) && (olua_is_array(L, 2))) {
-            // @setter @name(value) void value(const std::vector<int> &v)
+            // @setter void value(const std::vector<int> &v)
             return _olua_fun_example_VectorInt_value$2(L);
         // }
     }
@@ -694,7 +694,7 @@ static int _olua_fun_example_VectorPoint_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorPoint");
 
-    // @getter @name(buffer) @type(void *) std::vector<example::Point> *buffer()
+    // @getter @type(void *) std::vector<example::Point> *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -711,7 +711,7 @@ static int _olua_fun_example_VectorPoint_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorPoint");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -1004,7 +1004,7 @@ static int _olua_fun_example_VectorPoint_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorPoint");
 
-    // @getter @name(value) const std::vector<example::Point> &value()
+    // @getter const std::vector<example::Point> &value()
     const std::vector<example::Point> &ret = self->value();
     int num_ret = olua_push_array<example::Point>(L, ret, [L](example::Point &arg1) {
         olua_copy_object(L, arg1, "example.Point");
@@ -1027,7 +1027,7 @@ static int _olua_fun_example_VectorPoint_value$2(lua_State *L)
         olua_check_object(L, -1, arg1, "example.Point");
     });
 
-    // @setter @name(value) void value(const std::vector<example::Point> &v)
+    // @setter void value(const std::vector<example::Point> &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -1040,13 +1040,13 @@ static int _olua_fun_example_VectorPoint_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const std::vector<example::Point> &value()
+        // @getter const std::vector<example::Point> &value()
         return _olua_fun_example_VectorPoint_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "example.VectorPoint")) && (olua_is_array(L, 2))) {
-            // @setter @name(value) void value(const std::vector<example::Point> &v)
+            // @setter void value(const std::vector<example::Point> &v)
             return _olua_fun_example_VectorPoint_value$2(L);
         // }
     }
@@ -1152,7 +1152,7 @@ static int _olua_fun_example_VectorString_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorString");
 
-    // @getter @name(buffer) @type(void *) std::vector<std::string> *buffer()
+    // @getter @type(void *) std::vector<std::string> *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -1169,7 +1169,7 @@ static int _olua_fun_example_VectorString_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorString");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -1462,7 +1462,7 @@ static int _olua_fun_example_VectorString_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorString");
 
-    // @getter @name(value) const std::vector<std::string> &value()
+    // @getter const std::vector<std::string> &value()
     const std::vector<std::string> &ret = self->value();
     int num_ret = olua_push_array<std::string>(L, ret, [L](std::string &arg1) {
         olua_push_string(L, arg1);
@@ -1485,7 +1485,7 @@ static int _olua_fun_example_VectorString_value$2(lua_State *L)
         olua_check_string(L, -1, arg1);
     });
 
-    // @setter @name(value) void value(const std::vector<std::string> &v)
+    // @setter void value(const std::vector<std::string> &v)
     self->value(arg1);
 
     olua_endinvoke(L);
@@ -1498,13 +1498,13 @@ static int _olua_fun_example_VectorString_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const std::vector<std::string> &value()
+        // @getter const std::vector<std::string> &value()
         return _olua_fun_example_VectorString_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "example.VectorString")) && (olua_is_array(L, 2))) {
-            // @setter @name(value) void value(const std::vector<std::string> &v)
+            // @setter void value(const std::vector<std::string> &v)
             return _olua_fun_example_VectorString_value$2(L);
         // }
     }
@@ -1612,7 +1612,7 @@ static int _olua_fun_example_PointArray_buffer(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.PointArray");
 
-    // @getter @name(buffer) @type(void *) example::Point *buffer()
+    // @getter @type(void *) example::Point *buffer()
     void *ret = self->buffer();
     int num_ret = olua_push_object(L, ret, "void *");
 
@@ -1629,7 +1629,7 @@ static int _olua_fun_example_PointArray_length(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.PointArray");
 
-    // @getter @name(length) size_t length()
+    // @getter size_t length()
     size_t ret = self->length();
     int num_ret = olua_push_integer(L, ret);
 
@@ -1922,7 +1922,7 @@ static int _olua_fun_example_PointArray_value$1(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.PointArray");
 
-    // @getter @name(value) const example::Point &value()
+    // @getter const example::Point &value()
     const example::Point &ret = self->value();
     int num_ret = olua_push_object(L, ret, "example.Point");
 
@@ -1947,7 +1947,7 @@ static int _olua_fun_example_PointArray_value$2(lua_State *L)
         olua_check_object(L, 2, &arg1, "example.Point");
     }
 
-    // @setter @name(value) void value(const example::Point &v)
+    // @setter void value(const example::Point &v)
     self->value(*arg1);
 
     olua_endinvoke(L);
@@ -1960,13 +1960,13 @@ static int _olua_fun_example_PointArray_value(lua_State *L)
     int num_args = lua_gettop(L);
 
     if (num_args == 1) {
-        // @getter @name(value) const example::Point &value()
+        // @getter const example::Point &value()
         return _olua_fun_example_PointArray_value$1(L);
     }
 
     if (num_args == 2) {
         // if ((olua_is_object(L, 1, "example.PointArray")) && (olua_is_object(L, 2, "example.Point") || olua_is_table(L, 2, (example::Point *)nullptr))) {
-            // @setter @name(value) void value(const example::Point &v)
+            // @setter void value(const example::Point &v)
             return _olua_fun_example_PointArray_value$2(L);
         // }
     }

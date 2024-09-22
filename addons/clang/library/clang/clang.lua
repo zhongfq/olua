@@ -10,9 +10,6 @@ local clang = {}
 ---@return any
 function clang:__gc() end
 
----@return any
-function clang:__olua_move() end
-
 ---Provides a shared context for creating translation units.
 ---
 ---It provides two options:
