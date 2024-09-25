@@ -2348,7 +2348,7 @@ local function write_typedefs()
                 packable = td.packable,
                 packvars = td.packvars,
                 smartptr = td.smartptr,
-                replace = td.override,
+                override = td.override,
             }
             typdefs:push(typedef)
             if td.packable then
@@ -2380,6 +2380,7 @@ local function write_typedefs()
                 packvars = packvars,
                 fromstring = cls.options.fromstring,
                 fromtable = cls.options.fromtable,
+                default = cls.conf.default,
             }
             typdefs:push(typedef)
         end)

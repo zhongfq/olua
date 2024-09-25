@@ -10,7 +10,6 @@ local kFLAG_POINTER  = 1 << 4 -- is pointer
 local kFLAG_CALLBACK = 1 << 5 -- is callback
 local kFLAG_CAST     = 1 << 6 -- cast ref to pointer
 
-local format         = olua.format
 
 local function has_flag(kind, flag)
     return (kind & flag) ~= 0
@@ -631,7 +630,7 @@ function olua.initial_value(ti)
     elseif ti.conv == "olua_$$_integer" or ti.conv == "olua_$$_number" then
         return " = 0"
     elseif ti.conv == "olua_$$_enum" then
-        return format(" = (${ti.cxxcls})0"), nil
+        return olua.format(" = (${ti.cxxcls})0"), nil
     else
         return ""
     end

@@ -214,6 +214,7 @@ function typedef(cxxcls)
     ---@field fromtable? boolean
     ---@field smartptr? boolean
     ---@field override? boolean
+    ---@field default? string
     local cls = { cxxcls = cxxcls }
 
     for c in cxxcls:gmatch("[^;\n\r]+") do
@@ -612,6 +613,7 @@ function typeconf(cxxcls)
     ---@field indexerror fun(mode:"r" | "w" | "rw"):idl.cmd.typeconf
     ---@field packable fun(packable:booltype):idl.cmd.typeconf
     ---@field packvars fun(packvars:string):idl.cmd.typeconf
+    ---@field default fun(default:string):idl.cmd.typeconf
     ---@field private maincls fun(cls:idl.model.class_desc):idl.cmd.typeconf
     local CMD = {}
 
@@ -622,6 +624,7 @@ function typeconf(cxxcls)
     ---@field iterator idl.conf.iterator_desc
     ---@field fromstring? boolean
     ---@field fromtable? boolean
+    ---@field default? string
     ---@field funcdecl? string # std::function declaration
     ---@field conv string
     local conf = {
@@ -723,6 +726,7 @@ function typeconf(cxxcls)
 
     add_value_command(CMD, cls.conf, "luaname", function (_, v) return v end)
     add_value_command(CMD, cls.conf, "maincls", function (_, v) return v end)
+    add_value_command(CMD, cls.conf, "default", checkstring)
     add_value_command(CMD, cls.options, "indexerror")
     add_value_command(CMD, cls.options, "packable", checkboolean)
     add_value_command(CMD, cls.options, "packvars", checkinteger)

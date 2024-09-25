@@ -76,12 +76,16 @@ function olua.gen_decl_exp(arg, name, codeset)
         ${decltype}${cast_to_pointer}${name}${initial_value};       /** ${var_name} */
     ]])
     if olua.can_construct_from_string(arg) then
+        local default = arg.type.default and olua.format(" = ${arg.type.default}") or ""
+        olua.use(default)
         codeset.decl_args:pushf([[
-            ${decltype}${name}_fromstring;       /** ${var_name} */
+            ${decltype}${name}_fromstring${default};       /** ${var_name} */
         ]])
     elseif olua.can_construct_from_table(arg) then
+        local default = arg.type.default and olua.format(" = ${arg.type.default}") or ""
+        olua.use(default)
         codeset.decl_args:pushf([[
-            ${decltype}${name}_fromtable;       /** ${var_name} */
+            ${decltype}${name}_fromtable${default};       /** ${var_name} */
         ]])
     end
 end
