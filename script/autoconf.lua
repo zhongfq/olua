@@ -60,6 +60,7 @@ local clang_tu
 
 local type_cursors     = olua.ordered_map(false)
 local operator_cursors = olua.ordered_map(false)
+local iterator_cursors = olua.ordered_map(true)
 local comment_cursors  = olua.ordered_map(false)
 local visited_types    = olua.ordered_map(false)
 local alias_types      = olua.ordered_map(false)
@@ -1423,6 +1424,31 @@ local function prepare_cursor(cur)
                 break
             end
         end
+    elseif cur.name == "begin" then
+        if kind == CursorKind.FunctionDecl then
+            local i = 0
+            local tn
+            for _, c in ipairs(cur.children) do
+                if c.kind == CursorKind.ParmDecl and c.parent == cur then
+                    tn = raw_typename(typename(c.type))
+                    i = i + 1
+                end
+            end
+            if i == 1 and tn then
+                iterator_cursors:set(tn, cur)
+            end
+        elseif kind == CursorKind.CXXMethod then
+            local i = 0
+            for _, c in ipairs(cur.children) do
+                if c.kind == CursorKind.ParmDecl and c.parent == cur then
+                    i = i + 1
+                end
+            end
+            if i == 0 then
+                local tn = raw_typename(typename(cur.resultType))
+                iterator_cursors:set(tn, cur)
+            end
+        end
     end
     if kind == CursorKind.ClassDecl
         or kind == CursorKind.EnumDecl
@@ -1961,11 +1987,10 @@ local function cls_gen_metamethod(cls)
     if has_type_flag(cls, kFLAG_FUNC) then
         cls.CMD.func "__call"
             .body(olua.format([[
-            {
                 luaL_checktype(L, -1, LUA_TFUNCTION);
                 olua_push_callback(L, (${cls.cxxcls} *)nullptr, "${cls.conf.luacls}");
                 return 1;
-            }]]))
+            ]]))
             .luacats(olua.format([[
                 ---@return ${cls.conf.luacls}
             ]]))
@@ -1973,11 +1998,10 @@ local function cls_gen_metamethod(cls)
         if not cls.options.disallow_gc and not has_method(cls, "__gc") then
             cls.CMD.func "__gc"
                 .body(olua.format([[
-                {
                     auto self = (${cls.cxxcls} *)olua_toobj(L, 1, "${cls.conf.luacls}");
                     olua_postgc(L, self);
                     return 0;
-                }]]))
+                ]]))
         end
     end
 end
@@ -2147,6 +2171,48 @@ local function cls_trim_func(cls)
     end)
 end
 
+---@param cls idl.model.class_desc
+local function cls_gen_iterator(cls)
+    if not cls.conf.iterator.name then
+        return
+    end
+    local iterator = cls.conf.iterator
+    local cur = iterator_cursors:get(iterator.name) ---@type clang.Cursor
+    if not cur then
+        olua.error("iterator '${iterator.name}' not found")
+    end
+
+    local once = iterator.once and "true" or "false"
+    cls.CMD.func "__pairs"
+        .body(olua.format([[
+            auto self = olua_toobj<${cls.cxxcls}>(L, 1);
+            int ret = olua_pairs<${cls.cxxcls}, ${iterator.name}>(L, self, ${once});
+            return ret;
+        ]]))
+    if cur.kind == CursorKind.CXXMethod then
+        cls.funcs:remove("begin")
+        cls.funcs:remove("end")
+    elseif cur.kind == CursorKind.FunctionDecl then
+        local begin_fn = parse_from_ast({ declaration = cur, name = cur.name })
+        local end_fn = begin_fn:gsub("begin$", "end")
+        local codeblock = cls.codeblock or ""
+        olua.use(once, end_fn, codeblock)
+        cls.codeblock = olua.format([[
+            ${codeblock}
+
+            template <> inline
+            ${iterator.name} olua_iterator_begin<${cls.cxxcls}, ${iterator.name}>(${cls.cxxcls} *obj) {
+                return ${begin_fn}(*obj);
+            }
+
+            template <> inline
+            ${iterator.name} olua_iterator_end<${cls.cxxcls}, ${iterator.name}>(${cls.cxxcls} *obj) {
+                return ${end_fn}(*obj);
+            }
+        ]])
+    end
+end
+
 ---@param module idl.model.module_desc
 local function write_module(module)
     local m = {
@@ -2174,6 +2240,7 @@ local function write_module(module)
         cls_merge_extends(cls)
         cls_gen_metamethod(cls)
         cls_gen_pack_overload(cls)
+        cls_gen_iterator(cls)
         cls_merge_snippet(cls)
         cls_trim_func(cls)
         cls_gen_props(cls)

@@ -1,23 +1,41 @@
 ---@param cls idl.gen.class_desc
 ---@param func idl.gen.func_desc
+---@param body string
+local function wrap_func_with_try(cls, func, body)
+    if olua.ENABLE_EXCEPTION then
+        body = olua.format([[
+            try {
+                ${body}
+            } catch (std::exception &e) {
+                lua_pushfstring(L, "${cls.cxxcls}::${func.cxxfn}(): %s", e.what());
+                luaL_error(L, olua_tostring(L, -1));
+                return 0;
+            }
+        ]])
+    end
+    return body
+end
+
+---@param cls idl.gen.class_desc
+---@param func idl.gen.func_desc
 ---@param write idl.gen.writer
 local function gen_func_body(cls, func, write)
-    local body = assert(func.body)
-    body = string.gsub(body, "^[\n ]*{", "{\n    olua_startinvoke(L);\n")
-    body = string.gsub(body, "(\n)([ ]*)(return )", function (lf, indent, ret)
-        olua.use(lf, indent, ret)
-        return olua.format([[
-            ${lf}
-
-            ${indent}olua_endinvoke(L);
-
-            ${indent}${ret}
-        ]]), nil
-    end)
-    olua.use(cls)
+    local exprs = olua.array("\n")
+    exprs:push("olua_startinvoke(L);")
+    for line in string.gmatch(func.body, "[^\n]+") do
+        local space = line:match("^([ ]*)return ")
+        if space then
+            exprs:push("olua_endinvoke(L);")
+        end
+        exprs:push(line)
+    end
+    local body = wrap_func_with_try(cls, func, tostring(exprs))
+    olua.use(body)
     write(olua.format([[
         static int _olua_fun_${cls.cxxcls#}_${func.luafn}(lua_State *L)
-        ${body}
+        {
+            ${body}
+        }
     ]]))
 end
 
@@ -643,19 +661,8 @@ local function gen_one_func(cls, func, write, fidx)
         ]])
     end
 
-    if olua.ENABLE_EXCEPTION then
-        func_body = olua.format([[
-            try {
-                ${func_body}
-            } catch (std::exception &e) {
-                lua_pushfstring(L, "${cls.cxxcls}::${func.cxxfn}(): %s", e.what());
-                luaL_error(L, olua_tostring(L, -1));
-                return 0;
-            }
-        ]])
-    end
+    func_body = wrap_func_with_try(cls, func, func_body)
 
-    olua.use(func_body)
     write(olua.format([[
         static int _olua_fun_${cls.cxxcls#}_${func.luafn}${fidx}(lua_State *L)
         {

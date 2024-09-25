@@ -1059,4 +1059,59 @@ int olua_push_pointer(lua_State *L, T *value, const char *cls)
     return 1;
 }
 
+// iterator
+#define OLUA_INVALID_ITERACTOR  ".olua.invalid_iterator"
+
+template <class T, class Iter> inline
+Iter olua_iterator_begin(T *obj) {
+    return obj->begin();
+}
+
+template <class T, class Iter> inline
+Iter olua_iterator_end(T *obj) {
+    return obj->end();
+}
+
+template <class T, class Iter> inline
+int olua_pairs_next(lua_State *L) {
+    lua_settop(L, 2);
+    
+    auto self = olua_toobj<T>(L, 1);
+
+    if (olua_isnil(L, 2)) {
+        lua_pop(L, 1);
+        auto itor = olua_iterator_begin<T, Iter>(self);
+        olua_copy_object(L, itor, nullptr);
+    }
+
+    auto itor = olua_toobj<Iter>(L, 2);
+
+    if (*itor != olua_iterator_end<T, Iter>(self)) {
+        auto v = **itor;
+        ++(*itor);
+        olua_copy_object(L, v, nullptr);
+        return 2;
+    } else {
+        lua_pushnil(L);
+        return 1;
+    }
+}
+
+template <class T, class Iter> inline
+int olua_pairs(lua_State *L, T *self, bool once = false) {
+    if (once) {
+        lua_pushstring(L, OLUA_INVALID_ITERACTOR);
+        if (olua_getvariable(L, 1) != LUA_TNIL) {
+            luaL_error(L, "'%s' has already been used", olua_objstring(L, 1));
+        }
+        lua_pushstring(L, OLUA_INVALID_ITERACTOR);
+        lua_pushboolean(L, true);
+        olua_setvariable(L, 1);
+    }
+    lua_pushcfunction(L, (olua_pairs_next<T, Iter>));
+    lua_pushvalue(L, 1);
+    lua_pushnil(L);
+    return 3;
+}
+
 #endif

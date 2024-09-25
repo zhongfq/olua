@@ -340,18 +340,17 @@ static void olua_pushpooltable(lua_State *L)
     }
 }
 
-static void olua_pushpoolobj(lua_State *L, void *obj)
+static void olua_pushpoolobj(lua_State *L, olua_VMEnv *env, void *obj)
 {
     olua_Object *luaobj;
-    olua_VMEnv *mt = olua_getvmenv(L);
     
     olua_pushpooltable(L);
     
-    if (olua_unlikely(olua_rawgeti(L, -1, ++mt->poolsize) != LUA_TUSERDATA)) {
+    if (olua_unlikely(olua_rawgeti(L, -1, ++env->poolsize) != LUA_TUSERDATA)) {
         lua_pop(L, 1);
         olua_newrawobj(L, NULL, 0);
         lua_pushvalue(L, -1);
-        olua_rawseti(L, -3, mt->poolsize);
+        olua_rawseti(L, -3, env->poolsize);
     }
     
     lua_replace(L, -2);  // rm pool table
@@ -400,7 +399,7 @@ OLUA_API int olua_pushobj(lua_State *L, void *obj, const char *cls)
         olua_VMEnv *env = olua_getvmenv(L);
         lua_pop(L, 1);
         if (olua_unlikely(env->poolenabled)) {
-            olua_pushpoolobj(L, obj);
+            olua_pushpoolobj(L, env, obj);
             status = OLUA_OBJ_EXIST;
         } else {
             olua_newrawobj(L, obj, 0);

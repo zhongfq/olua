@@ -543,6 +543,33 @@ end
 ---@param parent idl.cmd.typeconf
 ---@param cls idl.model.class_desc
 ---@param name string
+local function typeconf_iterator(parent, cls, name)
+    ---@class idl.cmd.iterator : idl.cmd.typeconf
+    local CMD = {}
+
+    ---@class idl.conf.iterator_desc
+    ---@field name? string
+    ---@field once? boolean
+
+    cls.conf.iterator.name = name
+
+    if not idl.current_module.class_types:has(name) then
+        typeonly(name)
+    end
+
+    ---@param once booltype
+    function CMD.once(once)
+        cls.conf.iterator.once = checkboolean("once", once)
+        return CMD
+    end
+
+    ---@type idl.cmd.iterator
+    return setmetatable(CMD, { __index = parent })
+end
+
+---@param parent idl.cmd.typeconf
+---@param cls idl.model.class_desc
+---@param name string
 local function typeconf_prop(parent, cls, name)
     ---@class idl.conf.prop_desc
     ---@field get string
@@ -552,8 +579,6 @@ local function typeconf_prop(parent, cls, name)
     cls.conf.props:set(name, prop)
 
     ---@class idl.cmd.prop : idl.cmd.typeconf
-    ---@field get fun(get:string):idl.cmd.prop
-    ---@field set fun(get:string):idl.cmd.prop
     local CMD = {}
 
     ---@param get string
@@ -594,6 +619,7 @@ function typeconf(cxxcls)
     ---@field kind integer
     ---@field luacls string
     ---@field maincls? idl.model.class_desc
+    ---@field iterator idl.conf.iterator_desc
     ---@field fromstring? boolean
     ---@field fromtable? boolean
     ---@field funcdecl? string # std::function declaration
@@ -601,6 +627,7 @@ function typeconf(cxxcls)
     local conf = {
         luacls = idl.current_module.luacls(cxxcls),
         conv = "olua_$$_object",
+        iterator = {},
         extends = olua.ordered_map(false),
         excludes = olua.ordered_map(),
         wildcards = olua.ordered_map(),
@@ -790,6 +817,12 @@ function typeconf(cxxcls)
     ---@return idl.cmd.var
     function CMD.var(name)
         return typeconf_var(CMD, cls, name)
+    end
+
+    ---@param name string
+    ---@return idl.cmd.iterator
+    function CMD.iterator(name)
+        return typeconf_iterator(CMD, cls, name)
     end
 
     return CMD

@@ -10,9 +10,7 @@ static int _olua_module_example(lua_State *L);
 static int _olua_fun_example_Object___gc(lua_State *L)
 {
     olua_startinvoke(L);
-
     olua_endinvoke(L);
-
     return olua_objgc(L);
 }
 
@@ -79,7 +77,7 @@ static int _olua_cls_example_Object(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Object(lua_State *L)
 {
-    olua_require(L, "example",  _olua_module_example);
+    olua_require(L, ".olua.module.example",  _olua_module_example);
     if (!olua_getclass(L, "example.Object")) {
         luaL_error(L, "class not found: example::Object");
     }
@@ -90,12 +88,9 @@ OLUA_END_DECLS
 static int _olua_fun_example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
-
     auto self = (example::Hello *)olua_toobj(L, 1, "example.Hello");
     olua_postgc(L, self);
-
     olua_endinvoke(L);
-
     return 0;
 }
 
@@ -275,7 +270,7 @@ static int _olua_cls_example_Hello(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Hello(lua_State *L)
 {
-    olua_require(L, "example",  _olua_module_example);
+    olua_require(L, ".olua.module.example",  _olua_module_example);
     if (!olua_getclass(L, "example.Hello")) {
         luaL_error(L, "class not found: example::Hello");
     }
@@ -294,7 +289,7 @@ int _olua_module_example(lua_State *L)
 OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example(lua_State *L)
 {
-    olua_require(L, "example",  _olua_module_example);
+    olua_require(L, ".olua.module.example",  _olua_module_example);
 
     return 0;
 }

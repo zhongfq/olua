@@ -152,7 +152,7 @@ local function gen_class_open(module, cls, write)
         OLUA_BEGIN_DECLS
         OLUA_LIB int luaopen_${cls.luacls#}(lua_State *L)
         {
-            olua_require(L, "${module.name}",  _olua_module_${module.name});
+            olua_require(L, ".olua.module.${module.name}",  _olua_module_${module.name});
             if (!olua_getclass(L, "${cls.luacls}")) {
                 luaL_error(L, "class not found: ${cls.cxxcls}");
             }
@@ -315,7 +315,7 @@ local function gen_luaopen(module, write)
             OLUA_BEGIN_DECLS
             OLUA_LIB int luaopen_${module.name}(lua_State *L)
             {
-                olua_require(L, "${module.name}",  _olua_module_${module.name});
+                olua_require(L, ".olua.module.${module.name}",  _olua_module_${module.name});
 
                 ${entry}
 
