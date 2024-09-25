@@ -714,9 +714,22 @@ function Autoconf:parse()
 
     -- scan method, variable, enum, const value
     for _, cls in ipairs(self.class_types:values()) do
-        local cur = type_cursors:get(cls.cxxcls)
+        ---@cast cls idl.model.class_desc
+        local cur = type_cursors:get(cls.cxxcls) ---@type clang.Cursor
         if cur then
             self:visit(cur, cls.cxxcls)
+        elseif cls.cxxcls:find("<") then
+            local tempcls, arg_cls = cls.cxxcls:match("^(.+)<(.+)>$")
+            cur = type_cursors:get(tempcls) ---@type clang.Cursor
+            if cur then
+                if cls.conf.iterator.name then
+                    iterator_cursors:set(cls.conf.iterator.name, {
+                        name = cls.conf.iterator.name,
+                        kind = CursorKind.CXXMethod,
+                    })
+                end
+                self:visit_class(cls.cxxcls, cur, {arg_cls})
+            end
         end
     end
 end
