@@ -33,3 +33,8 @@ typeconf "example::Hello"
 typeconf "example::Const"
 typeconf "example::SharedHello"
 typeconf "example::NoGC"
+
+typeconf "example::PointIterator"
+    .iterator "example::PointIterator::Iterator"
+typeconf "example::IntIterator"
+    .iterator "example::IntIterator::Iterator"

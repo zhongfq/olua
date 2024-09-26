@@ -673,7 +673,11 @@ static int _olua_fun_example_VectorPoint___newindex(lua_State *L)
     olua_to_object(L, 1, &self, "example.VectorPoint");
     olua_check_integer(L, 2, &arg1);
     olua_check_array<example::Point>(L, 3, arg2, [L](example::Point *arg1) {
-        olua_check_object(L, -1, arg1, "example.Point");
+        if (olua_istable(L, -1)) {
+            olua_check_table(L, -1, arg1);
+        } else {
+            olua_check_object(L, -1, arg1, "example.Point");
+        }
     });
 
     // void __newindex(unsigned int idx, const std::vector<example::Point> &v)
@@ -1022,7 +1026,11 @@ static int _olua_fun_example_VectorPoint_value$2(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.VectorPoint");
     olua_check_array<example::Point>(L, 2, arg1, [L](example::Point *arg1) {
-        olua_check_object(L, -1, arg1, "example.Point");
+        if (olua_istable(L, -1)) {
+            olua_check_table(L, -1, arg1);
+        } else {
+            olua_check_object(L, -1, arg1, "example.Point");
+        }
     });
 
     // @setter void value(const std::vector<example::Point> &v)
@@ -4361,7 +4369,11 @@ static int _olua_fun_example_Hello_setPoints(lua_State *L)
 
     olua_to_object(L, 1, &self, "example.Hello");
     olua_check_array<example::Point>(L, 2, arg1, [L](example::Point *arg1) {
-        olua_check_object(L, -1, arg1, "example.Point");
+        if (olua_istable(L, -1)) {
+            olua_check_table(L, -1, arg1);
+        } else {
+            olua_check_object(L, -1, arg1, "example.Point");
+        }
     });
 
     // void setPoints(const std::vector<example::Point> &v)
@@ -5198,6 +5210,184 @@ OLUA_LIB int luaopen_example_NoGC(lua_State *L)
 }
 OLUA_END_DECLS
 
+static int _olua_fun_example_PointIterator___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+    auto self = (example::PointIterator *)olua_toobj(L, 1, "example.PointIterator");
+    olua_postgc(L, self);
+    olua_endinvoke(L);
+    return 0;
+}
+
+static int _olua_fun_example_PointIterator___pairs(lua_State *L)
+{
+    olua_startinvoke(L);
+    auto self = olua_toobj<example::PointIterator>(L, 1);
+    int ret = olua_pairs<example::PointIterator, example::PointIterator::Iterator>(L, self, false);
+    olua_endinvoke(L);
+    return ret;
+}
+
+static int _olua_fun_example_PointIterator_new(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    std::vector<example::Point> arg1;       /** points */
+
+    olua_check_array<example::Point>(L, 1, arg1, [L](example::Point *arg1) {
+        if (olua_istable(L, -1)) {
+            olua_check_table(L, -1, arg1);
+        } else {
+            olua_check_object(L, -1, arg1, "example.Point");
+        }
+    });
+
+    // example::PointIterator(const std::vector<example::Point> &points)
+    example::PointIterator *ret = new example::PointIterator(arg1);
+    int num_ret = olua_push_object(L, ret, "example.PointIterator");
+    olua_postnew(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_cls_example_PointIterator(lua_State *L)
+{
+    oluacls_class<example::PointIterator>(L, "example.PointIterator");
+    oluacls_func(L, "__gc", _olua_fun_example_PointIterator___gc);
+    oluacls_func(L, "__pairs", _olua_fun_example_PointIterator___pairs);
+    oluacls_func(L, "new", _olua_fun_example_PointIterator_new);
+
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_PointIterator(lua_State *L)
+{
+    olua_require(L, ".olua.module.example",  _olua_module_example);
+    if (!olua_getclass(L, "example.PointIterator")) {
+        luaL_error(L, "class not found: example::PointIterator");
+    }
+    return 1;
+}
+OLUA_END_DECLS
+
+static int _olua_fun_example_PointIterator_Iterator___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+    auto self = (example::PointIterator::Iterator *)olua_toobj(L, 1, "example.PointIterator.Iterator");
+    olua_postgc(L, self);
+    olua_endinvoke(L);
+    return 0;
+}
+
+static int _olua_cls_example_PointIterator_Iterator(lua_State *L)
+{
+    oluacls_class<example::PointIterator::Iterator>(L, "example.PointIterator.Iterator");
+    oluacls_func(L, "__gc", _olua_fun_example_PointIterator_Iterator___gc);
+
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_PointIterator_Iterator(lua_State *L)
+{
+    olua_require(L, ".olua.module.example",  _olua_module_example);
+    if (!olua_getclass(L, "example.PointIterator.Iterator")) {
+        luaL_error(L, "class not found: example::PointIterator::Iterator");
+    }
+    return 1;
+}
+OLUA_END_DECLS
+
+static int _olua_fun_example_IntIterator___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+    auto self = (example::IntIterator *)olua_toobj(L, 1, "example.IntIterator");
+    olua_postgc(L, self);
+    olua_endinvoke(L);
+    return 0;
+}
+
+static int _olua_fun_example_IntIterator___pairs(lua_State *L)
+{
+    olua_startinvoke(L);
+    auto self = olua_toobj<example::IntIterator>(L, 1);
+    int ret = olua_pairs<example::IntIterator, example::IntIterator::Iterator>(L, self, false);
+    olua_endinvoke(L);
+    return ret;
+}
+
+static int _olua_fun_example_IntIterator_new(lua_State *L)
+{
+    olua_startinvoke(L);
+
+    std::vector<int> arg1;       /** ints */
+
+    olua_check_array<int>(L, 1, arg1, [L](int *arg1) {
+        olua_check_integer(L, -1, arg1);
+    });
+
+    // example::IntIterator(const std::vector<int> &ints)
+    example::IntIterator *ret = new example::IntIterator(arg1);
+    int num_ret = olua_push_object(L, ret, "example.IntIterator");
+    olua_postnew(L, ret);
+
+    olua_endinvoke(L);
+
+    return num_ret;
+}
+
+static int _olua_cls_example_IntIterator(lua_State *L)
+{
+    oluacls_class<example::IntIterator>(L, "example.IntIterator");
+    oluacls_func(L, "__gc", _olua_fun_example_IntIterator___gc);
+    oluacls_func(L, "__pairs", _olua_fun_example_IntIterator___pairs);
+    oluacls_func(L, "new", _olua_fun_example_IntIterator_new);
+
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_IntIterator(lua_State *L)
+{
+    olua_require(L, ".olua.module.example",  _olua_module_example);
+    if (!olua_getclass(L, "example.IntIterator")) {
+        luaL_error(L, "class not found: example::IntIterator");
+    }
+    return 1;
+}
+OLUA_END_DECLS
+
+static int _olua_fun_example_IntIterator_Iterator___gc(lua_State *L)
+{
+    olua_startinvoke(L);
+    auto self = (example::IntIterator::Iterator *)olua_toobj(L, 1, "example.IntIterator.Iterator");
+    olua_postgc(L, self);
+    olua_endinvoke(L);
+    return 0;
+}
+
+static int _olua_cls_example_IntIterator_Iterator(lua_State *L)
+{
+    oluacls_class<example::IntIterator::Iterator>(L, "example.IntIterator.Iterator");
+    oluacls_func(L, "__gc", _olua_fun_example_IntIterator_Iterator___gc);
+
+    return 1;
+}
+
+OLUA_BEGIN_DECLS
+OLUA_LIB int luaopen_example_IntIterator_Iterator(lua_State *L)
+{
+    olua_require(L, ".olua.module.example",  _olua_module_example);
+    if (!olua_getclass(L, "example.IntIterator.Iterator")) {
+        luaL_error(L, "class not found: example::IntIterator::Iterator");
+    }
+    return 1;
+}
+OLUA_END_DECLS
+
 static int _olua_fun_example_Singleton_example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
@@ -5287,6 +5477,10 @@ int _olua_module_example(lua_State *L)
     olua_require(L, "example.Const", _olua_cls_example_Const);
     olua_require(L, "example.SharedHello", _olua_cls_example_SharedHello);
     olua_require(L, "example.NoGC", _olua_cls_example_NoGC);
+    olua_require(L, "example.PointIterator", _olua_cls_example_PointIterator);
+    olua_require(L, "example.PointIterator.Iterator", _olua_cls_example_PointIterator_Iterator);
+    olua_require(L, "example.IntIterator", _olua_cls_example_IntIterator);
+    olua_require(L, "example.IntIterator.Iterator", _olua_cls_example_IntIterator_Iterator);
     olua_require(L, "example.Singleton<example.Hello>", _olua_cls_example_Singleton_example_Hello);
 
     return 0;

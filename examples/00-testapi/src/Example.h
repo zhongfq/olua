@@ -62,6 +62,32 @@ public:
 #endif
 };
 
+class PointIterator {
+public:
+    using Iterator = std::vector<Point>::iterator;
+
+    PointIterator(const std::vector<Point> &points): _points(points) {}
+
+    Iterator begin() {return _points.begin();}
+    Iterator end() {return _points.end();}
+
+private:
+    std::vector<Point> _points;
+};
+
+class IntIterator {
+public:
+    using Iterator = std::vector<int>::iterator;
+
+    IntIterator(const std::vector<int> &ints): _ints(ints) {}
+
+    Iterator begin() {return _ints.begin();}
+    Iterator end() {return _ints.end();}
+
+private:
+    std::vector<int> _ints;
+};
+
 inline Point operator+(const Point &p1, const Point &p2) {return Point(p1.x + p2.x, p1.y + p2.y);}
 
 class Const {

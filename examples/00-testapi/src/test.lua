@@ -211,3 +211,19 @@ print("p1 / 3:", p1 / 3)
 print("p3 == p2:", p3 == p2)
 print("-p1", -p1)
 print(obj:convertPoint({ x = 4, y = 4 }))
+
+print("==================== test iterator ===================")
+local PointIterator = require "example.PointIterator"
+local itor = PointIterator.new({
+    { x = 1, y = 1 },
+    { x = 2, y = 2 },
+    { x = 3, y = 3 },
+})
+for _, v in pairs(itor) do
+    print("iterator point:", v, v.x, v.y)
+end
+
+local IntIterator = require "example.IntIterator"
+for _, v in pairs(IntIterator.new({ 1, 2, 3 })) do
+    print("iterator int:", v)
+end

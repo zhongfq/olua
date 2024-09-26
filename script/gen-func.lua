@@ -55,12 +55,16 @@ function olua.can_construct_from_string(arg)
     return arg.type.fromstring and not olua.has_pointer_flag(arg.type)
 end
 
----@param arg idl.gen.type_desc
+---@param arg idl.gen.type_desc|idl.gen.typeinfo
 ---@return boolean?
 function olua.can_construct_from_table(arg)
-    return arg.type.fromtable
-        and not arg.attr.pack
-        and not olua.has_pointer_flag(arg.type)
+    if arg.attr then
+        local ti = arg.type
+        return ti.fromtable and not olua.has_pointer_flag(ti) and not arg.attr.pack
+    else
+        local ti = arg --[[@as idl.gen.typeinfo]]
+        return ti.fromtable and not olua.has_pointer_flag(ti)
+    end
 end
 
 ---@param arg idl.gen.type_desc
@@ -129,7 +133,15 @@ function olua.gen_check_exp(arg, name, idx, codeset)
             olua.use(subtype_func_check, subtype_name, decltype, declarg)
             subtype_decl_args:pushf("${declarg}*${subtype_name}")
             subtype_template_args:pushf("${decltype}")
-            if olua.is_pointer_type(subtype) then
+            if olua.can_construct_from_table(subtype) then
+                subtype_check_exp:pushf([[
+                    if (olua_istable(L, ${subtype_idx})) {
+                        olua_check_table(L, ${subtype_idx}, ${subtype_name});
+                    } else {
+                        ${subtype_func_check}(L, ${subtype_idx}, ${subtype_name}, "${subtype.luacls}");
+                    }
+                ]])
+            elseif olua.is_pointer_type(subtype) then
                 subtype_check_exp:pushf([[
                     ${subtype_func_check}(L, ${subtype_idx}, ${subtype_name}, "${subtype.luacls}");
                 ]])

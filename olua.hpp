@@ -1089,12 +1089,37 @@ int olua_pairs_next(lua_State *L) {
     if (*itor != olua_iterator_end<T, Iter>(self)) {
         auto v = **itor;
         ++(*itor);
-        olua_copy_object(L, v, nullptr);
+        olua_iterator_pushvalue(L, v);
         return 2;
     } else {
         lua_pushnil(L);
         return 1;
     }
+}
+
+template <class T, std::enable_if_t<!std::is_pointer<T>::value && std::is_class<T>::value, bool> = true> inline
+int olua_iterator_pushvalue(lua_State *L, T &value) {
+    return olua_copy_object(L, value, nullptr);
+}
+
+template <class T, std::enable_if_t<std::is_integral<T>::value, bool> = true> inline
+int olua_iterator_pushvalue(lua_State *L, T &value) {
+    return std::is_same<T, bool>::value ? olua_push_bool(L, value) : olua_push_integer(L, value);
+}
+
+template <class T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true> inline
+int olua_iterator_pushvalue(lua_State *L, T &value) {
+    return olua_push_number(L, value);
+}
+
+template <class T, std::enable_if_t<std::is_enum<T>::value, bool> = true> inline
+int olua_iterator_pushvalue(lua_State *L, T &value) {
+    return olua_push_enum(L, value);
+}
+
+template <> inline
+int olua_iterator_pushvalue(lua_State *L, std::string &value) {
+    return olua_push_string(L, value);
 }
 
 template <class T, class Iter> inline
