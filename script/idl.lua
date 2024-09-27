@@ -102,6 +102,16 @@ function clang(args)
     end
 end
 
+---@param luacls string
+local function transform_template_luacls(luacls)
+    local template_cls, template_args = luacls:match("^(.*)<(.*)>$")
+    if template_cls then
+        template_args = template_args:gsub("[^%w_]", "_")
+        luacls = olua.format("${template_cls}_${template_args}")
+    end
+    return luacls
+end
+
 ---Define config module.
 ---@param name string
 function module(name)
@@ -121,7 +131,7 @@ function module(name)
         wildcard_types = olua.ordered_map(),
         typedef_types = olua.ordered_map(),
         luacls = function (cxxcls)
-            return string.gsub(cxxcls, "::", ".")
+            return transform_template_luacls(string.gsub(cxxcls, "::", "."))
         end,
     }
     idl.macros:clear()
@@ -171,7 +181,9 @@ end
 ---@param maker fun(cxxcls:string):string
 function luacls(maker)
     check_module()
-    idl.current_module.luacls = maker
+    idl.current_module.luacls = function (cxxcls)
+        return transform_template_luacls(maker(cxxcls))
+    end
 end
 
 ---@param cxxcls string
