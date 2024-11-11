@@ -1591,13 +1591,13 @@ static int _olua_fun_example_PointArray___newindex(lua_State *L)
     example::PointArray *self = nullptr;
     unsigned int arg1 = 0;       /** idx */
     example::Point *arg2;       /** v */
-    example::Point arg2_fromtable;       /** v */
+    example::Point arg2_from_table;       /** v */
 
     olua_to_object(L, 1, &self, "example.PointArray");
     olua_check_integer(L, 2, &arg1);
     if (olua_istable(L, 3)) {
-        olua_check_table(L, 3, &arg2_fromtable);
-        arg2 = &arg2_fromtable;
+        olua_check_table(L, 3, &arg2_from_table);
+        arg2 = &arg2_from_table;
     } else {
         olua_check_object(L, 3, &arg2, "example.Point");
     }
@@ -1943,12 +1943,12 @@ static int _olua_fun_example_PointArray_value$2(lua_State *L)
 
     example::PointArray *self = nullptr;
     example::Point *arg1;       /** v */
-    example::Point arg1_fromtable;       /** v */
+    example::Point arg1_from_table;       /** v */
 
     olua_to_object(L, 1, &self, "example.PointArray");
     if (olua_istable(L, 2)) {
-        olua_check_table(L, 2, &arg1_fromtable);
-        arg1 = &arg1_fromtable;
+        olua_check_table(L, 2, &arg1_from_table);
+        arg1 = &arg1_from_table;
     } else {
         olua_check_object(L, 2, &arg1, "example.Point");
     }
@@ -2068,12 +2068,12 @@ static int _olua_fun_example_Point___add$1(lua_State *L)
 
     example::Point *self = nullptr;
     example::Point *arg1;       /** p */
-    example::Point arg1_fromtable;       /** p */
+    example::Point arg1_from_table;       /** p */
 
     olua_to_object(L, 1, &self, "example.Point");
     if (olua_istable(L, 2)) {
-        olua_check_table(L, 2, &arg1_fromtable);
-        arg1 = &arg1_fromtable;
+        olua_check_table(L, 2, &arg1_from_table);
+        arg1 = &arg1_from_table;
     } else {
         olua_check_object(L, 2, &arg1, "example.Point");
     }
@@ -2092,19 +2092,19 @@ static int _olua_fun_example_Point___add$2(lua_State *L)
     olua_startinvoke(L);
 
     example::Point *arg1;       /** p1 */
-    example::Point arg1_fromtable;       /** p1 */
+    example::Point arg1_from_table;       /** p1 */
     example::Point *arg2;       /** p2 */
-    example::Point arg2_fromtable;       /** p2 */
+    example::Point arg2_from_table;       /** p2 */
 
     if (olua_istable(L, 1)) {
-        olua_check_table(L, 1, &arg1_fromtable);
-        arg1 = &arg1_fromtable;
+        olua_check_table(L, 1, &arg1_from_table);
+        arg1 = &arg1_from_table;
     } else {
         olua_check_object(L, 1, &arg1, "example.Point");
     }
     if (olua_istable(L, 2)) {
-        olua_check_table(L, 2, &arg2_fromtable);
-        arg2 = &arg2_fromtable;
+        olua_check_table(L, 2, &arg2_from_table);
+        arg2 = &arg2_from_table;
     } else {
         olua_check_object(L, 2, &arg2, "example.Point");
     }
@@ -2163,19 +2163,19 @@ static int _olua_fun_example_Point___eq(lua_State *L)
     olua_startinvoke(L);
 
     example::Point *arg1;       /** p1 */
-    example::Point arg1_fromtable;       /** p1 */
+    example::Point arg1_from_table;       /** p1 */
     example::Point *arg2;       /** p2 */
-    example::Point arg2_fromtable;       /** p2 */
+    example::Point arg2_from_table;       /** p2 */
 
     if (olua_istable(L, 1)) {
-        olua_check_table(L, 1, &arg1_fromtable);
-        arg1 = &arg1_fromtable;
+        olua_check_table(L, 1, &arg1_from_table);
+        arg1 = &arg1_from_table;
     } else {
         olua_check_object(L, 1, &arg1, "example.Point");
     }
     if (olua_istable(L, 2)) {
-        olua_check_table(L, 2, &arg2_fromtable);
-        arg2 = &arg2_fromtable;
+        olua_check_table(L, 2, &arg2_from_table);
+        arg2 = &arg2_from_table;
     } else {
         olua_check_object(L, 2, &arg2, "example.Point");
     }
@@ -2223,12 +2223,12 @@ static int _olua_fun_example_Point___sub(lua_State *L)
 
     example::Point *self = nullptr;
     example::Point *arg1;       /** p */
-    example::Point arg1_fromtable;       /** p */
+    example::Point arg1_from_table;       /** p */
 
     olua_to_object(L, 1, &self, "example.Point");
     if (olua_istable(L, 2)) {
-        olua_check_table(L, 2, &arg1_fromtable);
-        arg1 = &arg1_fromtable;
+        olua_check_table(L, 2, &arg1_from_table);
+        arg1 = &arg1_from_table;
     } else {
         olua_check_object(L, 2, &arg1, "example.Point");
     }
@@ -2577,12 +2577,12 @@ static int _olua_fun_example_Hello_convertPoint$1(lua_State *L)
 
     example::Hello *self = nullptr;
     example::Point *arg1;       /** p */
-    example::Point arg1_fromtable;       /** p */
+    example::Point arg1_from_table;       /** p */
 
     olua_to_object(L, 1, &self, "example.Hello");
     if (olua_istable(L, 2)) {
-        olua_check_table(L, 2, &arg1_fromtable);
-        arg1 = &arg1_fromtable;
+        olua_check_table(L, 2, &arg1_from_table);
+        arg1 = &arg1_from_table;
     } else {
         olua_check_object(L, 2, &arg1, "example.Point");
     }
@@ -5391,7 +5391,7 @@ OLUA_END_DECLS
 static int _olua_fun_example_Singleton_example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
-    auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton<example.Hello>");
+    auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton_example_Hello");
     olua_postgc(L, self);
     olua_endinvoke(L);
     return 0;
@@ -5416,7 +5416,7 @@ static int _olua_fun_example_Singleton_example_Hello_new(lua_State *L)
 
     // example::Singleton<example::Hello>()
     example::Singleton<example::Hello> *ret = new example::Singleton<example::Hello>();
-    int num_ret = olua_push_object(L, ret, "example.Singleton<example.Hello>");
+    int num_ret = olua_push_object(L, ret, "example.Singleton_example_Hello");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -5430,7 +5430,7 @@ static int _olua_fun_example_Singleton_example_Hello_printSingleton(lua_State *L
 
     example::Singleton<example::Hello> *self = nullptr;
 
-    olua_to_object(L, 1, &self, "example.Singleton<example.Hello>");
+    olua_to_object(L, 1, &self, "example.Singleton_example_Hello");
 
     // void printSingleton()
     self->printSingleton();
@@ -5442,7 +5442,7 @@ static int _olua_fun_example_Singleton_example_Hello_printSingleton(lua_State *L
 
 static int _olua_cls_example_Singleton_example_Hello(lua_State *L)
 {
-    oluacls_class<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
+    oluacls_class<example::Singleton<example::Hello>>(L, "example.Singleton_example_Hello");
     oluacls_func(L, "__gc", _olua_fun_example_Singleton_example_Hello___gc);
     oluacls_func(L, "create", _olua_fun_example_Singleton_example_Hello_create);
     oluacls_func(L, "new", _olua_fun_example_Singleton_example_Hello_new);
@@ -5455,7 +5455,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
     olua_require(L, ".olua.module.example",  _olua_module_example);
-    if (!olua_getclass(L, "example.Singleton<example.Hello>")) {
+    if (!olua_getclass(L, "example.Singleton_example_Hello")) {
         luaL_error(L, "class not found: example::Singleton<example::Hello>");
     }
     return 1;
@@ -5481,7 +5481,7 @@ int _olua_module_example(lua_State *L)
     olua_require(L, "example.PointIterator.Iterator", _olua_cls_example_PointIterator_Iterator);
     olua_require(L, "example.IntIterator", _olua_cls_example_IntIterator);
     olua_require(L, "example.IntIterator.Iterator", _olua_cls_example_IntIterator_Iterator);
-    olua_require(L, "example.Singleton<example.Hello>", _olua_cls_example_Singleton_example_Hello);
+    olua_require(L, "example.Singleton_example_Hello", _olua_cls_example_Singleton_example_Hello);
 
     return 0;
 }

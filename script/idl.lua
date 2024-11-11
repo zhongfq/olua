@@ -219,11 +219,12 @@ function typedef(cxxcls)
     ---@field cxxcls string
     ---@field conv string
     ---@field luacls? string
+    ---@field template_luacls? string
     ---@field luatype? string
     ---@field packable? boolean
     ---@field packvars? integer
-    ---@field fromstring? boolean
-    ---@field fromtable? boolean
+    ---@field from_string? boolean
+    ---@field from_table? boolean
     ---@field smartptr? boolean
     ---@field override? boolean
     ---@field default? string
@@ -632,10 +633,11 @@ function typeconf(cxxcls)
     ---@class idl.conf.typeconf_desc
     ---@field kind integer
     ---@field luacls string
+    ---@field template_luacls? string
     ---@field maincls? idl.model.class_desc
     ---@field iterator idl.conf.iterator_desc
-    ---@field fromstring? boolean
-    ---@field fromtable? boolean
+    ---@field from_string? boolean
+    ---@field from_table? boolean
     ---@field default? string
     ---@field funcdecl? string # std::function declaration
     ---@field conv string
@@ -656,14 +658,18 @@ function typeconf(cxxcls)
         luaname = function (name, kind) return name end,
     }
 
+    if cxxcls:find("<") then
+        conf.template_luacls = idl.current_module.luacls(cxxcls:match("^[^<]+"))
+    end
+
     ---@class idl.model.class_option_desc
     ---@field reg_luatype boolean
     ---@field disallow_gc? boolean
     ---@field indexerror? "r" | "w" | "rw"
     ---@field packable? boolean
     ---@field packvars? integer
-    ---@field fromstring? boolean
-    ---@field fromtable? boolean
+    ---@field from_string? boolean
+    ---@field from_table? boolean
 
     ---@class idl.model.class_desc
     ---@field supercls? string
@@ -744,16 +750,16 @@ function typeconf(cxxcls)
     add_value_command(CMD, cls.options, "packvars", checkinteger)
 
     ---Can construct a c++ class from string.
-    ---@param fromstring booltype
-    function CMD.fromstring(fromstring)
-        cls.options.fromstring = checkboolean("fromstring", fromstring)
+    ---@param from_string booltype
+    function CMD.from_string(from_string)
+        cls.options.from_string = checkboolean("from_string", from_string)
         return CMD
     end
 
     ---Can construct a c++ class from table.
-    ---@param fromtable booltype
-    function CMD.fromtable(fromtable)
-        cls.options.fromtable = checkboolean("fromtable", fromtable)
+    ---@param from_table booltype
+    function CMD.from_table(from_table)
+        cls.options.from_table = checkboolean("from_table", from_table)
         return CMD
     end
 

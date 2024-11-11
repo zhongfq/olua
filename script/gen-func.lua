@@ -52,7 +52,7 @@ end
 ---@param arg idl.gen.type_desc
 ---@return boolean?
 function olua.can_construct_from_string(arg)
-    return arg.type.fromstring and not olua.has_pointer_flag(arg.type)
+    return arg.type.from_string and not olua.has_pointer_flag(arg.type)
 end
 
 ---@param arg idl.gen.type_desc|idl.gen.typeinfo
@@ -60,10 +60,10 @@ end
 function olua.can_construct_from_table(arg)
     if arg.attr then
         local ti = arg.type
-        return ti.fromtable and not olua.has_pointer_flag(ti) and not arg.attr.pack
+        return ti.from_table and not olua.has_pointer_flag(ti) and not arg.attr.pack
     else
         local ti = arg --[[@as idl.gen.typeinfo]]
-        return ti.fromtable and not olua.has_pointer_flag(ti)
+        return ti.from_table and not olua.has_pointer_flag(ti)
     end
 end
 
@@ -83,13 +83,13 @@ function olua.gen_decl_exp(arg, name, codeset)
         local default = arg.type.default and olua.format(" = ${arg.type.default}") or ""
         olua.use(default)
         codeset.decl_args:pushf([[
-            ${decltype}${name}_fromstring${default};       /** ${var_name} */
+            ${decltype}${name}_from_string${default};       /** ${var_name} */
         ]])
     elseif olua.can_construct_from_table(arg) then
         local default = arg.type.default and olua.format(" = ${arg.type.default}") or ""
         olua.use(default)
         codeset.decl_args:pushf([[
-            ${decltype}${name}_fromtable${default};       /** ${var_name} */
+            ${decltype}${name}_from_table${default};       /** ${var_name} */
         ]])
     end
 end
@@ -164,8 +164,8 @@ function olua.gen_check_exp(arg, name, idx, codeset)
     if olua.can_construct_from_string(arg) then
         check_args:pushf([[
             if (olua_isstring(L, ${idx})) {
-                olua_check_string(L, ${idx}, &${name}_fromstring);
-                ${name} = &${name}_fromstring;
+                olua_check_string(L, ${idx}, &${name}_from_string);
+                ${name} = &${name}_from_string;
             } else {
                 ${codeset.check_args}
             }
@@ -173,8 +173,8 @@ function olua.gen_check_exp(arg, name, idx, codeset)
     elseif olua.can_construct_from_table(arg) then
         check_args:pushf([[
             if (olua_istable(L, ${idx})) {
-                olua_check_table(L, ${idx}, &${name}_fromtable);
-                ${name} = &${name}_fromtable;
+                olua_check_table(L, ${idx}, &${name}_from_table);
+                ${name} = &${name}_from_table;
             } else {
                 ${codeset.check_args}
             }
@@ -620,7 +620,7 @@ local function gen_one_func(cls, func, write, fidx)
         local asexp = olua.array("\n")
         for _, ascls in ipairs(func.ret.attr.as) do
             local asti = olua.typeinfo(ascls .. "*")
-            local asluacls = asti.luacls:match("^[^< ]+")
+            local asluacls = asti.template_luacls or asti.luacls
             asexp:pushf([[
                 if (olua_strequal(arg1, "${asluacls}")) {
                     olua_pushobj_as<${ascls}>(L, 1, self, "as.${asluacls}");
@@ -1036,7 +1036,7 @@ function olua.gen_pack_header(module, write)
                 OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const ${cls.cxxcls} *);
             ]])
         end
-        if cls.options.fromtable then
+        if cls.options.from_table then
             exps:pushf([[
                 OLUA_LIB bool olua_is_table(lua_State *L, int idx, ${cls.cxxcls} *);
                 OLUA_LIB void olua_check_table(lua_State *L, int idx, ${cls.cxxcls} *value);
@@ -1067,7 +1067,7 @@ function olua.gen_pack_source(module, write)
             gen_unpack_func(cls, write_func)
             gen_canpack_func(cls, write_func)
         end
-        if cls.options.fromtable then
+        if cls.options.from_table then
             gen_checktable_func(cls, write_func)
             gen_istable_func(cls, write_func)
         end

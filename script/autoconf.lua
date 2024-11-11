@@ -728,7 +728,7 @@ function Autoconf:parse()
                         kind = CursorKind.CXXMethod,
                     })
                 end
-                self:visit_class(cls.cxxcls, cur, {arg_cls})
+                self:visit_class(cls.cxxcls, cur, { arg_cls })
             end
         end
     end
@@ -2373,13 +2373,14 @@ local function write_typedefs()
                 from = olua.format([[module: ${m.path} -> typedef "${cls.cxxcls}"]]),
                 cxxcls = cls.cxxcls,
                 luacls = cls.conf.luacls,
+                template_luacls = cls.conf.template_luacls,
                 supercls = cls.supercls,
                 funcdecl = cls.conf.funcdecl,
                 conv = idl.type_convs:get(cls.cxxcls).conv,
                 packable = cls.options.packable,
                 packvars = packvars,
-                fromstring = cls.options.fromstring,
-                fromtable = cls.options.fromtable,
+                from_string = cls.options.from_string,
+                from_table = cls.options.from_table,
                 default = cls.conf.default,
             }
             typdefs:push(typedef)

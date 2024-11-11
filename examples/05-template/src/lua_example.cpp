@@ -362,7 +362,7 @@ static int _olua_fun_example_Hello_getSingleton(lua_State *L)
 
     // example::Singleton<example::Hello> *getSingleton()
     example::Singleton<example::Hello> *ret = self->getSingleton();
-    int num_ret = olua_push_object(L, ret, "example.Singleton<example.Hello>");
+    int num_ret = olua_push_object(L, ret, "example.Singleton_example_Hello");
 
     olua_endinvoke(L);
 
@@ -493,7 +493,7 @@ static int _olua_fun_example_Hello_setSingleton(lua_State *L)
     example::Singleton<example::Hello> *arg1 = nullptr;       /** sh */
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_object(L, 2, &arg1, "example.Singleton<example.Hello>");
+    olua_check_object(L, 2, &arg1, "example.Singleton_example_Hello");
 
     // void setSingleton(example::Singleton<example::Hello> *sh)
     self->setSingleton(arg1);
@@ -687,7 +687,7 @@ OLUA_END_DECLS
 static int _olua_fun_example_Singleton_example_Hello___gc(lua_State *L)
 {
     olua_startinvoke(L);
-    auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton<example.Hello>");
+    auto self = (example::Singleton<example::Hello> *)olua_toobj(L, 1, "example.Singleton_example_Hello");
     olua_postgc(L, self);
     olua_endinvoke(L);
     return 0;
@@ -712,7 +712,7 @@ static int _olua_fun_example_Singleton_example_Hello_new(lua_State *L)
 
     // example::Singleton<example::Hello>()
     example::Singleton<example::Hello> *ret = new example::Singleton<example::Hello>();
-    int num_ret = olua_push_object(L, ret, "example.Singleton<example.Hello>");
+    int num_ret = olua_push_object(L, ret, "example.Singleton_example_Hello");
     olua_postnew(L, ret);
 
     olua_endinvoke(L);
@@ -726,7 +726,7 @@ static int _olua_fun_example_Singleton_example_Hello_printSingleton(lua_State *L
 
     example::Singleton<example::Hello> *self = nullptr;
 
-    olua_to_object(L, 1, &self, "example.Singleton<example.Hello>");
+    olua_to_object(L, 1, &self, "example.Singleton_example_Hello");
 
     // void printSingleton()
     self->printSingleton();
@@ -738,7 +738,7 @@ static int _olua_fun_example_Singleton_example_Hello_printSingleton(lua_State *L
 
 static int _olua_cls_example_Singleton_example_Hello(lua_State *L)
 {
-    oluacls_class<example::Singleton<example::Hello>>(L, "example.Singleton<example.Hello>");
+    oluacls_class<example::Singleton<example::Hello>>(L, "example.Singleton_example_Hello");
     oluacls_func(L, "__gc", _olua_fun_example_Singleton_example_Hello___gc);
     oluacls_func(L, "create", _olua_fun_example_Singleton_example_Hello_create);
     oluacls_func(L, "new", _olua_fun_example_Singleton_example_Hello_new);
@@ -751,7 +751,7 @@ OLUA_BEGIN_DECLS
 OLUA_LIB int luaopen_example_Singleton_example_Hello(lua_State *L)
 {
     olua_require(L, ".olua.module.example",  _olua_module_example);
-    if (!olua_getclass(L, "example.Singleton<example.Hello>")) {
+    if (!olua_getclass(L, "example.Singleton_example_Hello")) {
         luaL_error(L, "class not found: example::Singleton<example::Hello>");
     }
     return 1;
@@ -768,7 +768,7 @@ int _olua_module_example(lua_State *L)
     olua_require(L, "example.TestGC", _olua_cls_example_TestGC);
     olua_require(L, "example.TestWildcardClickEvent", _olua_cls_example_TestWildcardClickEvent);
     olua_require(L, "example.TestWildcardTouchEvent", _olua_cls_example_TestWildcardTouchEvent);
-    olua_require(L, "example.Singleton<example.Hello>", _olua_cls_example_Singleton_example_Hello);
+    olua_require(L, "example.Singleton_example_Hello", _olua_cls_example_Singleton_example_Hello);
 
     return 0;
 }
