@@ -192,9 +192,10 @@ function olua.keys(t)
 end
 
 ---Iterate over the array.
----@generic T
----@param t T[]
----@param fn fun(value:T, key:integer, t:T[])
+---@generic V
+---@generic K
+---@param t {[K]:V}
+---@param fn fun(value:V, key:K, t:{[K]:V})
 function olua.foreach(t, fn)
     for k, v in pairs(t) do
         fn(v, k, t)
@@ -1032,37 +1033,83 @@ local replace_char = {
 function olua.json_stringify(data, options)
     local json_array_stringify
     local json_object_stringify
+    local json_value_stringify
 
     local stacks = olua.array("->")
-    local indent = options and options.indent or 4
+    local indent_count = options and options.indent or 4
+    local current_indent = 0
 
-    local function json_value_stringify(value)
+    local out = olua.array("")
+
+    local function indent()
+        current_indent = current_indent + indent_count
+    end
+
+    local function unindent()
+        current_indent = current_indent - indent_count
+    end
+
+    local function padding()
+        if indent_count > 0 then
+            out:push(string.rep(" ", current_indent))
+        end
+    end
+
+    local function linefeed()
+        if indent_count > 0 then
+            out:push("\n")
+        end
+    end
+
+    local function write_line(value)
+        padding()
+        out:push(value)
+        linefeed()
+    end
+
+    local function write_string(value)
+        out:push(value)
+    end
+
+    local function write_object_or_array(prefix, value, posfix)
+        write_line(prefix)
+        indent()
+        json_value_stringify(value)
+        unindent()
+        padding()
+        write_string(posfix)
+    end
+
+    function json_value_stringify(value)
         local type_name = type(value)
         if type_name == "number" then
             if value == value // 1 then
-                return value >> 0
+                write_string(value >> 0)
             else
-                return value
+                write_string(value)
             end
         elseif type_name == "boolean" then
-            return tostring(value)
+            write_string(tostring(value))
         elseif type_name == "string" then
             value = value:gsub("\r\n", "\n"):gsub("[\n\"\\]", replace_char)
-            return '"' .. value .. '"'
+            write_string('"' .. value .. '"')
         elseif type_name == "table" then
             local mt = getmetatable(value)
             if mt and mt.__tostring then
-                return mt.__tostring(value)
+                local str = mt.__tostring(value)
+                for line in str:gmatch("[^\n]+") do
+                    write_line(line)
+                end
             elseif mt and mt.__olua_type == "olua.ordered_map" then
                 ---@cast value olua.ordered_map
-                return json_object_stringify(value:raw_map())
+                json_object_stringify(value:raw_map())
             elseif is_array(value) then
-                return json_array_stringify(value)
+                json_array_stringify(value)
             else
-                return json_object_stringify(value)
+                json_object_stringify(value)
             end
         elseif value == cjson.null then
-            return "null"
+            write_string("null")
         else
             olua.error("unsupport type: ${type_name}")
         end
@@ -1080,15 +1127,14 @@ function olua.json_stringify(data, options)
                 return a < b
             end
         end)
-        local out = olua.array(",\n")
         local ignore = olua.get_metafield(value, "__olua_ignore") or {}
-        for _, k in ipairs(keys) do
+        for i, k in ipairs(keys) do
             if ignore[k] then
                 goto skip_ignore
             end
 
             local v = value[k]
-            local v_str = json_value_stringify(v)
+            local comma = i < #keys and "," or ""
             local type_name = type(v)
             local k_str
             stacks:push(k)
@@ -1097,74 +1143,48 @@ function olua.json_stringify(data, options)
             else
                 k_str = string.format("%q", k)
             end
-            olua.use(v_str, k_str)
             if type_name ~= "table" then
-                out:pushf([[
-                    ${k_str}: ${v_str}
-                ]], indent)
+                padding()
+                write_string(k_str)
+                write_string(": ")
+                json_value_stringify(v)
             elseif is_array(v) then
-                out:pushf([[
-                    ${k_str}: [
-                        ${v_str}
-                    ]
-                ]], indent)
+                write_object_or_array(k_str .. ": [", v, "]")
             else
-                out:pushf([[
-                    ${k_str}: {
-                        ${v_str}
-                    }
-                ]], indent)
+                write_object_or_array(k_str .. ": {", v, "}")
             end
+            write_string(comma)
+            linefeed()
             stacks:pop()
 
             ::skip_ignore::
         end
-        return out
     end
 
     function json_array_stringify(value)
-        local out = olua.array(",\n")
         for i, v in ipairs(value) do
-            local v_str = json_value_stringify(v)
             local type_name = type(v)
-            olua.use(v_str)
+            local comma = i < #value and "," or ""
             if type_name ~= "table" then
-                out:pushf([[
-                    ${v_str}
-                ]], indent)
+                padding()
+                json_value_stringify(v)
             elseif is_array(v) then
-                out:pushf([[
-                    [
-                        ${v_str}
-                    ]
-                ]], indent)
+                write_object_or_array("[", v, "]")
             else
-                out:pushf([[
-                    {
-                        ${v_str}
-                    }
-                ]], indent)
+                write_object_or_array("{", v, "}")
             end
+            write_string(comma)
+            linefeed()
         end
-        return out
     end
 
     local olua_object = olua.get_metafield(data, "__olua_object")
-    local str = json_value_stringify(data)
     if not olua_object and is_array(data) then
-        str = olua.format([[
-            [
-                ${str}
-            ]
-        ]], indent)
+        write_object_or_array("[", data, "]")
     else
-        str = olua.format([[
-            {
-                ${str}
-            }
-        ]], indent)
+        write_object_or_array("{", data, "}")
     end
-    return str
+    return tostring(out)
 end
 
 ---@class olua.lua_options
