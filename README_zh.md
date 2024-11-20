@@ -1,8 +1,8 @@
 > [English(Translated by ChatGPT)](./README.md) | [中文](./README_zh.md)
 
-> olua is a code generation-based Lua binding library. It can generate Lua binding code for C++ classes, enums, lambda functions, operator functions, instantiated templates, etc. You can customize the generated details, such as inserting code before and after function calls, generating code blocks with exception handling, creating iterators, generating [Lua comments](https://luals.github.io), and more.
+> olua 是一个基于代码生成的 lua 绑定库，能够生成 c++ 类、枚举、lambda 函数、运算符函数、实例化模版等的 lua 绑定代码，你可以对生成的细节做一些定制，比如在函数调用前后插入代码，生成带异常捕获的代码块，生成迭代器，生成 [lua 注释](https://luals.github.io)等等。
 
-### Usage Examples
+### 使用示例
 
 - [clang](https://github.com/zhongfq/lua-clang)
 - [cocoslua](https://github.com/zhongfq/cocos-lua)
@@ -11,18 +11,19 @@
 - [pugixml](https://github.com/zhongfq/lua-pugixml)
 - [luacmake](https://github.com/zhongfq/luacmake)
 
-#### Creation
+#### 创建
 
-Create a new directory to store the configuration and olua script with the following structure:
+新建一个目录存放配置和 olua 脚本，结构如下：
 
 ```
 tree -L 2 .
 .
 ├── build.lua
 └── olua -> git@github.com:zhongfq/olua.git
+
 ```
 
-#### Clang Parameters Configuration
+#### clang 参数配置
 
 ```lua
 clang {
@@ -33,7 +34,7 @@ clang {
 }
 ```
 
-#### Build Script
+#### 构建脚本
 
 ```lua
 require "olua"
@@ -58,46 +59,46 @@ include "../common/lua-object.lua"
 typeconf "example::Hello"
 ```
 
-#### Generation
+#### 生成
 
-Once the required classes for export are configured, you can run the following command to export the bindings:
+当配置好所需要导出的类之后，就可以执行以下命令导出绑定。
 
 ```bash
 lua build.lua
 ```
 
-### Optional Configurations
+### 可选配置
 
-You can adjust the scanning behavior by setting variables in the `build.lua` file:
+可以在 `build.lua` 文件中，设置变量以调整扫描行为：
 
-- `olua.AUTO_BUILD`: Default `true`. Automatically exports the binding code after scanning.
-- `olua.AUTO_GEN_PROP`: Default `true`. Automatically generates `name` and `visible` properties for `getName` and `isVisible`.
-- `olua.AUTO_EXPORT_PARENT`: Default `false`. Automatically exports the parent class if it is not explicitly specified using `typeconf`.
-- `olua.ENABLE_DEPRECATED`: Default `false`. Exports deprecated methods or variables.
-- `olua.ENABLE_WITH_UNDERSCORE`: Default `false`. Exports variables or methods starting with `_`.
-- `olua.MAX_VARIADIC_ARGS`: Default 16. Specifies the maximum number of arguments for generating overloaded methods.
-- `olua.ENABLE_EXCEPTION`: Default `false`. Generates code with exception handling.
-- `olua.CAPTURE_MAINTHREAD`: Default `false`. Captures the `L` main thread.
-- `olua.PARSE_ALL_COMMENTS`: Default `false`. Parses all comments.
+- `olua.AUTO_BUILD`：默认 `true`，扫描完成后，自动导出绑定代码。
+- `olua.AUTO_GEN_PROP`：默认 `true`，是否自动为 `getName`、`isVisible` 生成 `name`、`visible` 属性。
+- `olua.AUTO_EXPORT_PARENT`：默认 `false`，当没有用 `typeconf` 指定父类时，是否自动导出。
+- `olua.ENABLE_DEPRECATED`：默认 `false`，是否导出已丢弃方法或变量。
+- `olua.ENABLE_WITH_UNDERSCORE`：默认 `false`，是否导出以 `_` 开头的变量或方法。
+- `olua.MAX_VARIADIC_ARGS`：默认 16，生成重载方法时，最多支持的参数个数。
+- `olua.ENABLE_EXCEPTION`：默认 `false`，是否生成异常捕获代码。
+- `olua.CAPTURE_MAINTHREAD`：默认 `false`，是否捕获 `L` 线程。
+- `olua.PARSE_ALL_COMMENTS`：默认 `false`，是否解析所有注释。
 
-### Configuration Directives
+### 配置指令
 
 #### module
 
-Specifies the module name, which is also part of the exported file name.
+指定模块名称，它也是构建导出文件名称的一部分。
 
 ```lua
 module "example"
 ```
 
-Exported information:
+导出信息：
 
-- Exported file names: `lua_example.h` and `lua_example.cpp`
-- Module function: `luaopen_example`
+- 导出文件名称 `lua_example.h` 和 `lua_exmaple.cpp`
+- 模块函数是 `luaopen_example`
 
 #### output_dir
 
-Specifies the directory for the exported files, which can be either an absolute path or a relative path.
+指定导出的目录，可以是绝对路径，也可以相当路径。
 
 ```lua
 output_dir '../../src'
@@ -105,7 +106,7 @@ output_dir '../../src'
 
 #### headers
 
-Specifies the required header files. These are prerequisites for successful compilation.
+指定需要包含的头文件，这是保证编译成功的前置条件。
 
 ```lua
 headers [[
@@ -118,7 +119,7 @@ headers [[
 
 #### codeblock
 
-If handwritten code needs to be included, it can be specified using `codeblock`. This code is copied as-is into the exported file.
+如果需要引入手写代码，可以由 `codeblock` 指定，此代码原封不动的拷贝至导出的文件中。
 
 ```lua
 codeblock [[
@@ -130,15 +131,13 @@ static const std::string makeScheduleCallbackTag(const std::string &key)
 
 #### luaopen
 
-Inserts code into the `luaopen` function.
+在 `luaopen` 函数中，插入代码。
 
 ```lua
 module 'example'
 
 luaopen 'printf("hello luaopen!");'
 ```
-
-Generated code:
 
 ```c++
 static int luaopen_example(lua_State *L)
@@ -152,7 +151,7 @@ static int luaopen_example(lua_State *L)
 
 #### api_dir
 
-Specifies the directory for the generated [Lua annotation API](https://luals.github.io).
+指定 [lua annotation api](https://luals.github.io) 生成的目录。
 
 ```lua
 api_dir '../../addons/example'
@@ -160,13 +159,11 @@ api_dir '../../addons/example'
 
 #### entry
 
-Specifies the class returned by the `luaopen` function.
+指定 `luaopen` 函数返回的类。
 
 ```lua
 entry 'example::Hello'
 ```
-
-Generated code:
 
 ```c++
 OLUA_LIB int luaopen_example(lua_State *L)
@@ -181,7 +178,7 @@ OLUA_LIB int luaopen_example(lua_State *L)
 
 #### exclude_type
 
-Specifies types that should not be exported. If a type is excluded, any methods or variables involving this type are also ignored.
+指定不需要导出的类型，一旦排除了一个类型，那么包含此类型的方法和变量都将忽略。
 
 ```lua
 -- exclude example::Command and example::Command *
@@ -193,7 +190,7 @@ exclude_type 'example::Command *'
 
 #### import
 
-Imports another configuration file.
+引入另一个配置文件。
 
 ```lua
 import 'olua/lua-types.lua'
@@ -201,7 +198,7 @@ import 'olua/lua-types.lua'
 
 #### luacls
 
-Customizes the Lua class name generation function.
+自定义 lua 类名的生成函数。
 
 ```lua
 luacls(function (cppname)
@@ -211,7 +208,7 @@ end)
 
 #### macro
 
-`macro` is typically used for conditional compilation.
+`macro` 一般用于条件编译。
 
 ```lua
 macro '#ifdef CCLUA_BUILD_EXAMPLE'
@@ -219,21 +216,21 @@ typeconf "Object"
 macro '#endif'
 ```
 
-Code generated for `Object` will be wrapped with `CCLUA_BUILD_EXAMPLE`.
+`Object` 所生成的代码都被 `CCLUA_BUILD_EXAMPLE` 包裹。
 
 ```c++
 #ifdef CCLUA_BUILD_EXAMPLE
-// Code generated for Object
+// Object 生成的代码
 #endif
 ```
 
 #### typedef
 
-The `typedef` directive defines a type, usually when you've manually implemented the type's convertor. It links the type with the configuration through `typedef`.
+`typedef` 定义了一个类型，一般来说，你已经手动实现该类型的转换器，只是使用 `typedef` 将其关联。
 
-##### Syntax
+##### 语法
 
-```lua
+```
 typedef 'ClassName'
     [.luacls]
     [.conv]
@@ -249,41 +246,39 @@ typedef 'ClassName'
 
 ##### .luacls
 
-Specifies the Lua class name.
+指定 lua 类名。
 
 ##### .conv
 
-Specifies the converter. If the type or converter is not explicitly declared, the default is `olua_$$_ClassName`.
+指定转换器，若未指定申明类型或未指定转换器，则默认是 `olua_$$_ClassName`。
 
 ##### .packable
 
-Indicates whether the type supports `@pack` and `@unpack`.
+指定此类型支持 `@pack` 和 `@unpack`。
 
 ##### .packvars
 
-Specifies how many member variables the type comprises.
+指定此类型由多少个成员变量组成。
 
 ##### .smartptr
 
-Specifies whether the type is a smart pointer. If true, for example, `std::shared_ptr<Node *>` is treated as a whole rather than as a template container.
+指定类型是否为智能指针类型，如果是，会把 `std::shared_ptr<Node *>` 当作一个整体，而不是一个模版容器。
 
 ##### .override
 
-Replaces existing type information.
+替换已有的类型信息。
 
 ##### .default
 
-Specifies the default value for the type.
+指定默认值。
 
 ##### .luatype
 
-Specifies the Lua type.
+指定 lua 类型。
 
 ##### .from_string
 
-Indicates whether the class's constructor supports initialization from a string. Defaults to `false`.
-
-Example:
+指定此类的构造函数是否支持字符串初始化，默认为 `false`。
 
 ```c++
 static int _olua_fun_std_filesystem_ls$1(lua_State *L)
@@ -319,9 +314,7 @@ static int _olua_fun_std_filesystem_ls$1(lua_State *L)
 
 ##### .from_table
 
-Indicates whether instances of the class can be created using a table. Defaults to `false`.
-
-Example:
+指定此类的实例对象是否支持使用 table 来创建，默认为 `false`。
 
 ```c++
 OLUA_LIB void olua_check_table(lua_State *L, int idx, example::Point *value)
@@ -366,18 +359,15 @@ static int _olua_fun_example_Point___add$1(lua_State *L)
 }
 ```
 
-##### Examples
+##### 示例
 
 ```lua
 typedef 'example::vector'
-
 typedef 'example::Color'
     .packable 'true'
     .packvars '4'
-
 typedef 'Uint'
     .conv 'olua_$$_integer'
-
 typedef 'Uint *'
     .conv 'olua_$$_array'
     .luacls 'olua.uint'
@@ -385,23 +375,24 @@ typedef 'Uint *'
 
 #### typeconf
 
-`typeconf` is used to specify the export of a class or enum, including static methods, static variables, object methods, and object variables. It also generates `typedef` information based on the scanned data, equivalent to:
+`typeconf` 用于指定类或枚举的导出，包括类的静态方法、静态变量、对象方法、对像变量。
+同时会根据已经扫描到的信息，生成 `typedef` 信息，相当于：
 
 ```lua
--- C++ object
+// c++ 对象
 typedef 'Object'
     .conv 'olua_$$_object'
     .luacls 'Object'
 
--- Enum
+// 枚举
 typedef 'Object'
     .conv 'olua_$$_enum'
     .luacls 'Object'
 ```
 
-##### Syntax
+##### 语法
 
-```lua
+```
 typeconf 'ClassName'
     [.codeblock]
     [.luaname]
@@ -452,7 +443,7 @@ typeconf 'ClassName'
 
 ##### .codeblock
 
-Specifies handwritten code for export.
+导出手写代码。
 
 ```lua
 typeconf 'Object'
@@ -466,7 +457,7 @@ typeconf 'Object'
 
 ##### .luaname
 
-Customizes the Lua name for methods or variables.
+自定义方法或变量的 `lua` 名称。
 
 ```lua
 typeconf 'Object'
@@ -490,7 +481,7 @@ static int luaopen_Object(lua_State *L)
 
 ##### .supercls
 
-Specifies the parent class name. Defaults to `nil` and is determined by the export tool based on scanned data.
+指定此类的父类名称，默认为 `nil`，由导出工具根据扫描信息而定。
 
 ```lua
 typeconf 'Hello'
@@ -499,9 +490,9 @@ typeconf 'Hello'
 
 ##### .packable
 
-Indicates that this class supports `@pack` and `@unpack`. Automatically generates the following functions:
+指定此类支持 `@pack` 和 `@unpack` 标记，同时在导出时自动生成以下几个函数：
 
-```c++
+```C++
 OLUA_LIB void olua_pack_object(lua_State *L, int idx, Object *value);
 OLUA_LIB int olua_unpack_object(lua_State *L, const Object *value);
 OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const Object *);
@@ -509,11 +500,11 @@ OLUA_LIB bool olua_canpack_object(lua_State *L, int idx, const Object *);
 
 ##### .packvars
 
-Specifies the number of member variables for this type. If set, you must manually provide the above functions.
+指定此类型由多少个成员变量组成，一旦设置此变量，将不会自动生成上面三个函数，必须由使用者自己提供这三个函数。
 
 ##### .luaopen
 
-Inserts code into the `luaopen_Hello` function.
+在 `luaopen_Hello` 函数中，插入代码。
 
 ```lua
 typeconf 'Hello'
@@ -532,19 +523,19 @@ static int luaopen_Hello(lua_State *L)
 
 ##### .indexerror
 
-Specifies the accessibility of class properties.
+指定类的可访问性
 
 ```lua
 typeconf 'Object'
     .indexerror 'rw'
 ```
 
-- `r`: Throws an error when accessing non-existent properties.
-- `w`: Throws an error when writing new properties.
+- `r` 访问不存的属性时抛出错误
+- `w` 写入新的属性时抛出错误
 
 ##### .from_string
 
-Indicates whether the class constructor supports string initialization. Defaults to `false`.
+指定此类的构造函数是否支持字符串初始化，默认为 `false`。
 
 ```lua
 typeconf "std::filesystem::path"
@@ -555,11 +546,11 @@ typeconf "std::filesystem::path"
 
 ##### .from_table
 
-Indicates whether the class supports creating instances using a table. Defaults to `false`.
+指定此类的实例对象是否支持使用 table 来创建，默认为 `false`。
 
 ##### .exclude
 
-Exports all methods and variables by default, except those specified.
+所有方法和变量默认导出，除了指定的。
 
 ```lua
 typeconf 'Object'
@@ -567,11 +558,11 @@ typeconf 'Object'
     .exclude 'retain'
 ```
 
-Supports wildcard patterns: `.exclude '^m_.*'`
+`.exclude` 还支持通配符形式：「`.exclude '^m_.*'`」
 
 ##### .include
 
-Exports no methods and variables by default, except those specified.
+所有方法和变量默认不导出，除了指定的。
 
 ```lua
 typeconf 'Object'
@@ -581,7 +572,7 @@ typeconf 'Object'
 
 ##### .macro
 
-Specifies methods that should be conditionally compiled using macros.
+指定哪些方法需要根据宏来决定要不要编译。
 
 ```lua
 typeconf 'Object'
@@ -606,13 +597,14 @@ static int luaopen_Object(lua_State *L)
     oluacls_func("pay", _Object_pay);
 #endif
     ...
+    printf("hello require!");
     return 1;
 }
 ```
 
 ##### .iterator
 
-Generates an iterator.
+生成迭代器。
 
 ```lua
 typeconf "std::filesystem::path"
@@ -638,26 +630,28 @@ static int _olua_fun_std_filesystem_path___pairs(lua_State *L)
 
 ##### .extend
 
-Extends the specified class.
+扩展指定的类。
 
 ```lua
 typeconf 'Object'
     .extend 'ObjectExtend'
 ```
 
-Merges all static methods of `ObjectExtend` into `Object`.
+把所有 `ObjectExtend` 的静态方法合并至 `Object` 中。
 
 ##### .var
 
-`.ret` and `.arg1...N` provide details on how to handle return values and arguments during function export. For detailed usage instructions, refer to [**Parameter Tags**](#Parameter-Tags).
+定义一个变量。
 
-`.insert_before`, `.insert_after`, `.insert_cbefore`, and `.insert_cafter` specify code insertion points during function execution. For detailed usage, refer to [**Code Insertion**](#Code-Insertion).
+`.ret` 和 `.arg1...N` 使用说明参见 [**参数标记**](#参数标记)
 
-`.tag_scope`, `.tag_store`, `.tag_maker`, `.tag_mode`, and `.tag_usepool` define how to configure callback functions. For detailed instructions, refer to [**Callback Function Configuration**](#Callback-Function-Configuration).
+`.insert_before`、`.insert_after`、`.insert_cbefore`、和 `.insert_cafter` 使用说明参见 [**插入代码**](#插入代码)
+
+`.tag_scope`、`.tag_store`、`.tag_maker`、`.tag_mode`、`.tag_usepool` 使用说明参见 [**回调函数配置**](#回调函数配置)
 
 ##### .func
 
-Defines a method.
+定义方法。
 
 ```lua
 typeconf 'Object'
@@ -686,7 +680,7 @@ static int luaopen_Object(lua_State *L)
 }
 ```
 
-`.inst` Instantiate the template function.
+`.inst` 实例化模版方法。
 
 ```lua
 typeconf "OpenXLSX::XLQuery"
@@ -702,20 +696,20 @@ typeconf "OpenXLSX::XLQuery"
         .inst "getParamBool<bool>"
 ```
 
-`.ret` and `.arg1...N` provide details on how to handle return values and arguments during function export. For detailed usage instructions, refer to [**Parameter Tags**](#Parameter-Tags).
+`.ret` 和 `.arg1...N` 使用说明参见 [**参数标记**](#参数标记)
 
-`.insert_before`, `.insert_after`, `.insert_cbefore`, and `.insert_cafter` specify code insertion points during function execution. For detailed usage, refer to [**Code Insertion**](#Code-Insertion).
+`.insert_before`、`.insert_after`、`.insert_cbefore`、和 `.insert_cafter` 使用说明参见 [**插入代码**](#插入代码)
 
-`.tag_scope`, `.tag_store`, `.tag_maker`, `.tag_mode`, and `.tag_usepool` define how to configure callback functions. For detailed instructions, refer to [**Callback Function Configuration**](#Callback-Function-Configuration).
+`.tag_scope`、`.tag_store`、`.tag_maker`、`.tag_mode`、`.tag_usepool` 使用说明参见 [**回调函数配置**](#回调函数配置)
 
 ##### .prop
 
-Defines a property.
+定义属性。
 
 ```lua
 typeconf 'Object'
     .prop 'visible'
-        .get 'bool isVisible()'
+       .get 'bool isVisible()'
     .prop 'y'
         .get 'int getY()'
         .set 'void setY(int value)'
@@ -758,21 +752,21 @@ static int luaopen_Object(lua_State *L)
 
 #### typeonly
 
-Exports only type information without any methods or variables, equivalent to:
+只导出类型信息，不导出任何方法和变量，等价于：
 
 ```lua
 typeconf 'Object'
     .exclude '*'
 ```
 
-#### Code Insertion
+#### 插入代码
 
-Allows code insertion at specific points during export. There are four insertion points:
+在导出插入代码，共有 4 个可以插入：
 
-- `insert_before`: Before the function call.
-- `insert_after`: After the function call.
-- `insert_cbefore`: Before the callback function call.
-- `insert_cafter`: After the callback function call.
+- `insert_before` 函数调用前。
+- `insert_after` 函数调用后。
+- `insert_cbefore` 回调函数调用前。
+- `insert_cafter` 回调函数调用后。
 
 ```lua
 typeconf 'Object'
@@ -790,8 +784,6 @@ typeconf 'Object'
             printf("hello callback_after!");
         ]]
 ```
-
-Generated code:
 
 ```c++
 static int _Object_pay(lua_State *L)
@@ -811,11 +803,11 @@ static int _Object_pay(lua_State *L)
 }
 ```
 
-#### Callback Function Configuration
+#### 回调函数配置
 
-Defines the details of `std::function` callbacks. Refer to: [olua Callback Function Design](https://codetypes.com/posts/5890848b/#回调函数)
+定义 `std::function` 回调细节。回调函数实现参见：[olua 回调函数设计](https://codetypes.com/posts/5890848b/#回调函数)
 
-```lua
+```
 typeconf 'Object'
     .func 'onClick'
         .tag_usepool 'true'
@@ -825,9 +817,9 @@ typeconf 'Object'
         .tag_scope 'object|once|invoker'
 ```
 
-**Callback Storage Details:**
+回调函数存储细节：
 
-```lua
+```
 callback functions
 obj.uservalue {
     |---id----|--class--|--tag--|
@@ -839,25 +831,23 @@ obj.uservalue {
 }
 ```
 
-- **`tag_usepool`**: Specifies whether the callback's arguments use the [object pool](https://codetypes.com/posts/5890848b/#临时对象池). Default: `true`.
-- **`tag_mode`**: Specifies the tag matching mode. Defaults:
-  - `replace`: Replaces existing callback if the tag matches, otherwise creates a new tag.
-  - `new`: Always creates a new tag for storing the callback.
-  - `startwith`: Deletes callbacks whose tags start with the specified value.
-  - `equal`: Deletes callbacks with matching tags.
-- **`tag_store`**: Specifies where the callback is stored. Default: `0`. Possible values:
-  - `0`: For static methods, stored in `.classobj`. For object methods, stored in `userdata`.
-  - `-1`: Stored in the return value.
-  - `1, 2...N`: Stored in the N-th argument from left to right.
-- **`tag_maker`**: Specifies the key for storing the callback. Two forms:
-  - `string`: A literal string.
-  - `makeTag(#N)` or `makeTag(#-N)`: Uses the N-th argument to generate the key via `makeTag`.
-- **`tag_scope`**: Specifies the callback's lifecycle. Default: `object`. Possible values:
-  - `object`: Managed by the object.
-  - `once`: Removed after a single invocation.
-  - `invoker`: Removed after the underlying function call.
-
-Example generated code:
+- `tag_usepool` 回调函数的参数是否使用[对象池](https://codetypes.com/posts/5890848b/#临时对象池)，默认值 `true`。
+- `tag_mode` 标签匹配模式，如果回调函数作为参数，默认值为 `replace`；如果回调函数作为返回值，默认值为 `equal`。
+  - `replace` 如果存在指定 `tag` 的回调函数，则替换，否则创建新 `tag` 存储回调函数。
+  - `new` 始终创建新 `tag` 存储回调函数。
+  - `startwith` 删除开头包含 `tag` 的回调函数。
+  - `equal` 删除与 `tag` 相同的回调函数。
+- `tag_store` 回调函数存储位置，默认值为 `0`，合法值有：
+  - `0` 如果是静态方法，存储在 `.classobj` 中；如果对象方法，则存储在 `userdata` 中。
+  - `-1` 存储在返回值中。
+  - `1、2...N` 从左到右数，存储在第 `N` 个参数中。
+- `tag_maker` 指定存储回调函数的键值，有两种形式：
+  - `string` 纯字符串。
+  - `makeTag(#N)`、`makeTag(#-N)`，将第 N 个参数作为参数调用 `makeTag` 生成键值。
+- `tag_scope` 回调函数的生命周期，默认为 `object`，合法值有：
+  - `object` 由对象管理。
+  - `once` 调用一次就移除。
+  - `invoker` 调用完底层函数后就移除.
 
 ```c++
 static int _Object_onClick(lua_State *L)
@@ -895,15 +885,13 @@ static int _Object_onClick(lua_State *L)
 }
 ```
 
-#### Parameter Tags
+#### 参数标记
 
-Both `.ret` and `.arg1...N` support the `@` keyword to add additional behaviors to parameters.
-
----
+`.ret` 和 `.arg1...N` 都支持 `@` 关键字的标记，给参数添加更多的行为。
 
 ##### @postnew
 
-Marks the return value as newly created and applies `olua_postnew`.
+标记返回值属于新创建，要使用 `olua_postnew`。
 
 ```lua
 typeconf 'Object'
@@ -914,19 +902,17 @@ typeconf 'Object'
 static int _Object_create(lua_State *L)
 {
     ...
-    Object ret = Object::create();
-    // Insert code after the call
+    Object ret = Object::create()
+    // insert code after call
     olua_postnew(L, ret);
     ...
     return 0;
 }
 ```
 
----
-
 ##### @nullable
 
-Marks the parameter as nullable (can be `nil`).
+标记参数是否可以为 `nil`。
 
 ```lua
 -- void onClick(const ClickCallback &callback);
@@ -937,7 +923,7 @@ typeconf 'Object'
 ```c++
 static int _Object_onClick(lua_State *L)
 {
-    if (olua_isfunction(L, 2)) {
+    if (olua_isfunction(L, 2) {
         arg1 = ...
     } else {
         arg1 = nullptr;
@@ -948,57 +934,56 @@ static int _Object_onClick(lua_State *L)
 }
 ```
 
----
-
 ##### @addref
 
-Adds a reference to a parameter: `@addref(name mode [where])`.
+给参数添加使用引用标记：`@addref(name mode [where])`
 
-- **`name`**: Reference name.
-- **`mode`**: Reference storage mode:
-  - `^`: Exists independently.
-  - `|`: Coexists with others.
+`name` 引用名称。
 
-Example with `^` (independent existence):
+`mode` 引用存储模式，有两种：
 
-```lua
--- void setScene(Object *scene);
-typeconf 'Object'
-    .func 'setScene' .arg1 '@addref(scene ^) @nullable'
-```
+- `^` 独立存在。
 
-```c++
-static int _Object_setScene(lua_State *L)
-{
-    ...
-    self->setScene(arg1);
-    ...
-    olua_addref(L, 1, "scene", -1, OLUA_REF_ALONE);
-    ...
-}
-```
+  ```lua
+  -- void setScene(Object *scene);
+  typeconf 'Object'
+      .func 'setScene' .arg1 '@addref(scene ^) @nullable'
+  ```
 
-Example with `|` (coexistence):
+  ```c++
+  static int _Object_setScene(lua_State *L)
+  {
+      ...
+      self->setScene(arg1);
+      ...
+      olua_addref(L, 1, "scene", -1, OLUA_REF_ALONE);
+      ...
+  }
+  ```
 
-```lua
--- void addChild(Object *child);
-typeconf 'Object'
-    .func 'addChild' .arg1 '@addref(children |)' .ret '@delref(children ~)'
-```
+- `|` 共存。
 
-```c++
-static int _Object_addChild(lua_State *L)
-{
-    ...
-    olua_startcmpref(L, 1, "children");
-    self->addChild(arg1);
-    olua_addref(L, 1, "children", -1, OLUA_REF_MULTI);
-    olua_endcmpref(L, 1, "children");
-    ...
-}
-```
+  ```lua
+  -- void addChild(Object *child);
+  typeconf 'Object'
+      .func 'addChild' .arg1 '@addref(children |)' .ret '@delref(children ~)'
+  ```
 
-If a `where` is specified, you must include insertion code to retrieve it.
+  ```c++
+  static int _Object_addChild(lua_State *L)
+  {
+      ...
+      olua_startcmpref(L, 1, "children");
+      ...
+      self->addChild(arg1);
+      ...
+      olua_addref(L, 1, "children", -1, OLUA_REF_MULTI);
+      olua_endcmpref(L, 1, "children");
+      ...
+  }
+  ```
+
+`where` 引用存储的位置，如果提供此值，同时得使用插入代码，用于获取此值。
 
 ```lua
 -- void show();
@@ -1017,91 +1002,205 @@ static int _Object_show(lua_State *L)
     olua_pushobj<Object>(L, Object::getRoot());
     int parent = lua_gettop(L);
     self->show();
+    ...
     olua_addref(L, parent, "children", 1, OLUA_REF_MULTI);
     ...
 }
 ```
 
----
+关于引用实现参见 [olua 引用链](https://codetypes.com/posts/5890848b/#引用链)
 
 ##### @delref
 
-Removes a reference: `@delref(name mode [where])`.
+给参数添加移除引用标记：`@delref(name mode [where])`
 
-- **`mode`**: Reference storage modes:
-  - `^`: Independent existence.
-  - `|`: Coexistence.
-  - `~`: Removes references using comparison.
-  - `*`: Removes all references.
+`name` 引用名称。
 
-Example with `^`:
+`mode` 引用存储模式，有四种：
+
+- `^` 独立存在。
+
+  ```lua
+  -- void setScene(Object *scene);
+  typeconf 'Object'
+      .func 'setScene' .arg1 '@delref(scene ^) @nullable'
+  ```
+
+  ```c++
+  static int _Object_setScene(lua_State *L)
+  {
+      ...
+      self->setScene(arg1);
+      ...
+      olua_delref(L, 1, "scene", -1, OLUA_REF_ALONE);
+      ...
+  }
+  ```
+
+- `|` 共存。
+
+  ```lua
+  -- void removeChild(Object *child);
+  typeconf 'Object'
+      .func 'removeChild' .arg1 '@addref(children |)'
+  ```
+
+  ```c++
+  static int _Object_removeChild(lua_State *L)
+  {
+      ...
+      self->removeChild(arg1);
+      ...
+      olua_delref(L, 1, "children", -1, OLUA_REF_MULTI);
+      ...
+  }
+  ```
+
+- `~` 生成使用比较移除引用的代码。
+
+  ```lua
+  -- void removeChildByName(const std::string &name);
+  typeconf 'Object'
+      .func 'removeChildByName' .ret '@delref(children ~)'
+  ```
+
+  ```c++
+  static int _Object_removeChildByName(lua_State *L)
+  {
+      ...
+      olua_startcmpref(L, 1, "children");
+      ...
+      self->removeChildByName(arg1);
+      ...
+      olua_endcmpref(L, 1, "children");
+      ...
+  }
+  ```
+
+- `*` 移除所有引用。
+
+  ```lua
+  -- void removeChildren();
+  typeconf 'Object'
+      .func 'removeChildren' .arg1 '@delref(children *)'
+  ```
+
+  ```c++
+  static int _Object_removeChildren(lua_State *L)
+  {
+      ...
+      self->removeChildren();
+      ...
+      olua_delallrefs(L, 1, "children");
+      ...
+  }
+  ```
+
+`where` 引用存储的位置，如果提供此值，同时得使用插入代码，用于获取此值。
 
 ```lua
--- void setScene(Object *scene);
+-- void removeSelf();
 typeconf 'Object'
-    .func 'setScene' .arg1 '@delref(scene ^) @nullable'
+    .func 'removeSelf' .ret '@delref(children | parent)'
+        .insert_before [[
+            if (!self->getParent()) {
+                return 0;
+            }
+            olua_pushobj<Object>(L, self->getParent()));
+            int parent = lua_gettop(L);
+        ]]
 ```
 
 ```c++
-static int _Object_setScene(lua_State *L)
+static int _Object_removeSelf(lua_State *L)
 {
     ...
-    self->setScene(arg1);
-    olua_delref(L, 1, "scene", -1, OLUA_REF_ALONE);
+    if (!self->getParent()) {
+        return 0;
+    }
+    olua_pushobj<Object>(L, self->getParent()));
+    int parent = lua_gettop(L);
+    self->removeSelf();
+    ...
+    olua_delref(L, parent, "children", 1, OLUA_REF_MULTI);
     ...
 }
 ```
 
-Example with `~`:
-
-```lua
--- void removeChildByName(const std::string &name);
-typeconf 'Object'
-    .func 'removeChildByName' .ret '@delref(children ~)'
-```
-
-```c++
-static int _Object_removeChildByName(lua_State *L)
-{
-    ...
-    olua_startcmpref(L, 1, "children");
-    self->removeChildByName(arg1);
-    olua_endcmpref(L, 1, "children");
-    ...
-}
-```
-
----
+关于引用实现参见 [olua 引用链](https://codetypes.com/posts/5890848b/#引用链)
 
 ##### @optional
 
-Marks a parameter as optional. Primarily used with `.var` and `.func`.
+标记参数是否可选，一般情况下用于 `.var` 命令，函数参数的 `@optional` 标记由自动扫描添加。
 
-Example for `.var`:
+- 用于 `.var` 命令：
 
-```lua
-typeconv 'Object'
-    .var 'x' .optional 'true'
-```
+  ```lua
+  typeconv 'Object'
+      .var 'x' .optional 'true'
+  ```
 
-```c++
-void olua_check_Object(lua_State *L, int idx, Object *value)
-{
-    ...
-    olua_getfield(L, idx, "x");
-    if (!olua_isnoneornil(L, -1)) {
-        olua_check_integer(L, -1, &arg1);
-        value->x = arg1;
-    }
-    lua_pop(L, 1);
-}
-```
+  ```c++
+  void olua_check_Object(lua_State *L, int idx, Object *value)
+  {
+      ...
+      int arg1 = 0;       /** x */
+      ...
+      olua_getfield(L, idx, "x");
+      if (!olua_isnoneornil(L, -1)) {
+          olua_check_integer(L, -1, &arg1);
+          value->x = arg1;
+      }
+      lua_pop(L, 1);
+      ...
+  }
+  ```
 
----
+- 用于 `.func` 命令：
+
+  ```lua
+  -- 原型
+  -- void play(bool loop = true);
+  -- 扫描得到
+  -- void play(@optional bool loop = true);
+  -- 导出时转换为两个函数
+  -- void play();
+  -- void play(bool loop);
+
+  typeconf 'Object'
+  ```
+
+  ```c++
+  static _Object_play1(lua_State *L)
+  {
+      ...
+      self->play();
+      ...
+  }
+
+  static _Object_play2(lua_State *L)
+  {
+      ...
+      self->play(arg1);
+      ...
+  }
+
+  static _Object_play(lua_State *L)
+  {
+      if (num_args == 0) {
+          reutrn _Object_play1(L);
+      }
+      if (num_args == 1) {
+          reutrn _Object_play2(L);
+      }
+      luaL_error(L, "method 'Object::play' not support '%d' arguments", num_args);
+      return 0;
+  }
+  ```
 
 ##### @pack
 
-Packs multiple parameters into a single object.
+将多个参数打包一个值对象。
 
 ```lua
 -- void setPosition(const Point &p);
@@ -1121,11 +1220,9 @@ local p = obj:convert({x = 1, y = 1})
 local x, y = obj:convert(1, 1)
 ```
 
----
-
 ##### @unpack
 
-Unpacks an object into multiple values.
+将值对象拆解为多个值。
 
 ```lua
 -- const Point &getPosition();
@@ -1138,37 +1235,35 @@ local obj = Object.new()
 local x, y = obj:getPosition()
 ```
 
----
-
 ##### @readonly
 
-Marks a variable as read-only, generating only a getter function.
-
----
+只读变量标记，用于 `.var` 命令。使用此标记后，只生成 `getter` 函数。
 
 ##### @type
 
-Specifies an alternative type for a parameter.
+类型替换，提供的类型必须是原类型的其它表现形式。
 
-```c++
+```C++
 void read(char *buf, size_t *len);
 ```
 
-Normal behavior treats `buf` as a string, but if it's a writable buffer, `@type` can clarify the intention.
+正常情况下，`buf` 会被解析为字符串，使用的转换器是 `olua_$$_string`，但是这里可能是一个可写入的变量，这时就可以使用 `@type` 进行标记，以实现准确的意图。
 
 ```lua
+-- typedef char olua_char_t;
+-- typedef olua::pointer<olua_char_t> olua_char;
 typeconf 'Object'
     .func 'read'
         .arg1 '@type(olua_char_t *)'
 ```
 
----
+通过此配置，可以在生成代码时，使用 `olua_char_t *` 的转换器。
 
-##### Header File Annotations
+##### 头文件标注
 
-Use macro commands to directly annotate parameters or methods. The `autoconf` script parses these annotations during the scanning phase.
+可以直接使用宏命令对参数或方法进行标注，`autoconf` 脚本会在扫描阶段解析这些信息。
 
-Macro commands:
+宏命令：
 
 ```c++
 #define OLUA_EXCLUDE        __attribute__((annotate("@exclude")))
@@ -1186,7 +1281,7 @@ Macro commands:
 #define OLUA_SETTER         __attribute__((annotate("@setter")))
 ```
 
-Example:
+使用示例：
 
 ```c++
 class Object {
@@ -1198,11 +1293,24 @@ public:
 
     OLUA_ADDREF(root ^) Scene *getRoot();
 
+    static int pushParent(lua_State *L) OLUA_EXCLUDE;
+    OLUA_DELREF(children | ::pushParent) void removeFrameParent();
+
     void addChild(OLUA_ADDREF(children |) Object *child);
-    OLUA_DELREF(children |) void removeChild(Object *child);
+    OLUA_ADDREF(children |) Child getChildByName(const std::string &name);
+    void removeChild(OLUA_DELREF(children |) Object *child);
+
+    OLUA_EXCLUDE void update();
 
     Point localToGlobal(OLUA_PACK const Point &p);
 
+    const char read(OLUA_RET size_t *len);
+
     OLUA_READONLY int id;
-};
+
+    void read(OLUA_TYPE(olua_char_t *) char *result, size_t *len)
+
+    OLUA_GETTER OLUA_NAME(name) std::string getName();
+    OLUA_SETTER OLUA_NAME(name) void setName(const std::string *);
+}
 ```
