@@ -453,10 +453,12 @@ static int _olua_fun_example_Hello_setBool(lua_State *L)
 
     example::Hello *self = nullptr;
     std::vector<bool> arg1;       /** bools */
+    int arg1_top;
 
     olua_to_object(L, 1, &self, "example.Hello");
-    olua_check_array<bool>(L, 2, arg1, [L](bool *arg1) {
-        olua_check_bool(L, -1, arg1);
+    arg1_top = lua_gettop(L);
+    olua_check_array<bool>(L, 2, arg1, [L, arg1_top](bool *arg1) {
+        olua_check_bool(L, arg1_top + 1, arg1);
     });
 
     // void setBool(const std::vector<bool> &bools)

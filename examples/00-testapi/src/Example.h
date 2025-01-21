@@ -8,6 +8,7 @@
 #include <vector>
 #include <deque>
 #include <memory>
+#include <unordered_map>
 
 #if __cplusplus >= 202002L
 #include <compare>
@@ -248,6 +249,9 @@ public:
     std::vector<int64_t> getInts() {return std::vector<int64_t>();}
     void setInts(const std::vector<int64_t> &v) {};
 
+    void setMap(const std::unordered_map<std::string, int> &v) { _map = v; }
+    std::unordered_map<std::string, int> getMap() { return _map; }
+
     std::vector<short *> getIntPtrs() {return std::vector<short *>();}
     void setIntPtrs(const std::vector<short *> &v) {};
     
@@ -333,6 +337,7 @@ private:
     Point _p;
     Type _type = Type::POINTER;
     std::deque<Hello *> _deque;
+    std::unordered_map<std::string, int> _map;
 };
 
 class SharedHello : public std::enable_shared_from_this<SharedHello> {

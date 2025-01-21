@@ -42,6 +42,12 @@ print("convert", obj:convertPoint(3, 10))
 print("referenceCount", obj.referenceCount)
 print("name", obj.name, obj.id, obj.ptr)
 print("as", obj, obj:as("example.Singleton"))
+
+obj.map = { a = 4, b = 5 }
+util.dump(obj.map)
+assert(obj.map.a == 4)
+assert(obj.map.b == 5)
+
 -- print('ptr', obj.ptr, obj.point, obj.valuePoint)
 -- -- obj:say()
 

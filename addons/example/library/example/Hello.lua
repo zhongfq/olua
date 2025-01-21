@@ -14,6 +14,7 @@
 ---@field intPtr olua.int 
 ---@field intPtrs olua.short[] 
 ---@field ints integer[] 
+---@field map { [string]: integer } 
 ---@field name string 
 ---@field pointers example.Point[] 
 ---@field points example.Point[] 
@@ -87,6 +88,9 @@ function Hello:getIntRef(ref) end
 
 ---@return integer[]
 function Hello:getInts() end
+
+---@return { [string]: integer }
+function Hello:getMap() end
 
 ---@return string
 function Hello:getName() end
@@ -187,6 +191,9 @@ function Hello:setIntPtrs(v) end
 
 ---@param v integer[]
 function Hello:setInts(v) end
+
+---@param v { [string]: integer }
+function Hello:setMap(v) end
 
 ---@param value string
 function Hello:setName(value) end

@@ -355,10 +355,12 @@ static int _olua_fun_example_Node_setChildren(lua_State *L)
 
     example::Node *self = nullptr;
     example::vector<example::Node *> arg1;       /** value */
+    int arg1_top;
 
     olua_to_object(L, 1, &self, "example.Node");
-    olua_check_array<example::Node *>(L, 2, arg1, [L](example::Node **arg1) {
-        olua_check_object(L, -1, arg1, "example.Node");
+    arg1_top = lua_gettop(L);
+    olua_check_array<example::Node *>(L, 2, arg1, [L, arg1_top](example::Node **arg1) {
+        olua_check_object(L, arg1_top + 1, arg1, "example.Node");
     });
 
     // void setChildren(const example::vector<example::Node *> &value)

@@ -124,36 +124,39 @@ function olua.gen_check_exp(arg, name, idx, codeset)
         local subtype_decl_args = olua.array(", ")
         local subtype_template_args = olua.array(", ")
         local subtype_check_exp = olua.array("\n")
-        local subtype_idx = -1
+        local subtype_idx = 1
+        local top = name .. "_top"
+        codeset.decl_args:pushf("int ${top};")
         for i, subtype in ipairs(arg.type.subtypes) do
             local subtype_func_check = olua.conv_func(subtype, "check")
             local subtype_name = "arg" .. i
             local decltype = olua.decltype(subtype)
             local declarg = olua.decltype(subtype, nil, true)
-            olua.use(subtype_func_check, subtype_name, decltype, declarg)
+            olua.use(subtype_func_check, subtype_name, decltype, declarg, top)
             subtype_decl_args:pushf("${declarg}*${subtype_name}")
             subtype_template_args:pushf("${decltype}")
             if olua.can_construct_from_table(subtype) then
                 subtype_check_exp:pushf([[
-                    if (olua_istable(L, ${subtype_idx})) {
-                        olua_check_table(L, ${subtype_idx}, ${subtype_name});
+                    if (olua_istable(L, ${top} + ${subtype_idx})) {
+                        olua_check_table(L, ${top} + ${subtype_idx}, ${subtype_name});
                     } else {
-                        ${subtype_func_check}(L, ${subtype_idx}, ${subtype_name}, "${subtype.luacls}");
+                        ${subtype_func_check}(L, ${top} + ${subtype_idx}, ${subtype_name}, "${subtype.luacls}");
                     }
                 ]])
             elseif olua.is_pointer_type(subtype) then
                 subtype_check_exp:pushf([[
-                    ${subtype_func_check}(L, ${subtype_idx}, ${subtype_name}, "${subtype.luacls}");
+                    ${subtype_func_check}(L, ${top} + ${subtype_idx}, ${subtype_name}, "${subtype.luacls}");
                 ]])
             else
                 subtype_check_exp:pushf([[
-                    ${subtype_func_check}(L, ${subtype_idx}, ${subtype_name});
+                    ${subtype_func_check}(L, ${top} + ${subtype_idx}, ${subtype_name});
                 ]])
             end
-            subtype_idx = subtype_idx - 1
+            subtype_idx = subtype_idx + 1
         end
         codeset.check_args:pushf([[
-            ${func_check}<${subtype_template_args}>(L, ${idx}, ${name}, [L](${subtype_decl_args}) {
+            ${top} = lua_gettop(L);
+            ${func_check}<${subtype_template_args}>(L, ${idx}, ${name}, [L, ${top}](${subtype_decl_args}) {
                 ${subtype_check_exp}
             });
         ]])
