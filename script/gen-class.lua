@@ -172,9 +172,9 @@ local function gen_class_codeblock(cls, write)
 end
 
 ---@param module idl.gen.module_desc
-local function has_packable_class(module)
+local function has_packable_or_fromtable_class(module)
     for _, cls in ipairs(module.class_types) do
-        if cls.options.packable then
+        if cls.options.packable or cls.options.from_table then
             return true
         end
     end
@@ -193,7 +193,7 @@ function olua.gen_header(module)
 
     local HEADER = string.upper(module.name)
     local headers = module.headers
-    if not has_packable_class(module) then
+    if not has_packable_or_fromtable_class(module) then
         headers = '#include "olua/olua.h"'
     end
 
@@ -224,7 +224,7 @@ end
 ---@param write idl.gen.writer
 local function gen_include(module, write)
     local headers = ""
-    if not has_packable_class(module) then
+    if not has_packable_or_fromtable_class(module) then
         headers = module.headers
     end
     write(olua.format([[
