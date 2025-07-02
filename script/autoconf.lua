@@ -1049,7 +1049,11 @@ function Autoconf:visit_var(cls, cur)
         return value:find("@readonly")
     end)
 
-    if cur.type:isConstQualified() or has_readonly then
+    if has_default_value(cur) then
+        getter.ret.attr:push("@optional")
+    end
+
+    if cur.type:isConstQualified() or has_readonly then 
         if not has_readonly then
             getter.ret.attr:push("@readonly")
         end

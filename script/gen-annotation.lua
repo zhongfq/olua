@@ -173,9 +173,10 @@ end
 local function write_cls_var(cls, annotation)
     for _, var in ipairs(cls.vars) do
         local type = olua.luatype(var.get.ret.type)
-        olua.use(type)
+        local optional = var.get.ret.attr.optional and "?" or ""
+        olua.use(type, optional)
         annotation.fields:pushf([[
-            ---@field ${var.name} ${type}
+            ---@field ${var.name}${optional} ${type}
         ]])
     end
 end
