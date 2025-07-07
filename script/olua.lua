@@ -1140,10 +1140,10 @@ function olua.json_stringify(data, options)
         end
 
         local keys = olua.keys(value):sort(function (a, b)
-            if type(a) ~= type(b) then
-                return tostring(a) < tostring(b)
-            else
+            if type(a) == "number" and type(b) == "number" then
                 return a < b
+            else
+                return tostring(a) < tostring(b)
             end
         end)
         local ignore = olua.get_metafield(value, "__olua_ignore") or {}
@@ -1315,10 +1315,10 @@ function olua.lua_stringify(data, options)
         end
 
         local keys = olua.keys(value):sort(function (a, b)
-            if type(a) ~= type(b) then
-                return tostring(a) < tostring(b)
-            else
+            if type(a) == "number" and type(b) == "number" then
                 return a < b
+            else
+                return tostring(a) < tostring(b)
             end
         end)
         local ignore = olua.get_metafield(value, "__olua_ignore") or {}
@@ -1499,10 +1499,10 @@ function olua.ts_stringify(data, options)
         end
 
         local keys = olua.keys(value):sort(function (a, b)
-            if type(a) ~= type(b) then
-                return tostring(a) < tostring(b)
-            else
+            if type(a) == "number" and type(b) == "number" then
                 return a < b
+            else
+                return tostring(a) < tostring(b)
             end
         end)
         local ignore = olua.get_metafield(value, "__olua_ignore") or {}
